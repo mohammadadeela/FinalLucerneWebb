@@ -1,0 +1,10 @@
+node_modules/
+.env
+sql-files.zip
+*.node
+dist/
+build/
+.cache/
+.vite/
+coverage/
+.DS_Store

@@ -1,0 +1,174 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Noto+Sans+Arabic:wght@100..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Cormorant Garamond', serif;
+  --font-sans: 'Jost', sans-serif;
+  --font-arabic: 'Noto Sans Arabic', sans-serif;
+  --news-bar-offset: 0px;
+
+  /* Clean, luxury monochrome palette */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 10%;
+  
+  --card: 0 0% 98%;
+  --card-foreground: 0 0% 10%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  
+  --primary: 0 0% 12%;
+  --primary-foreground: 0 0% 98%;
+  
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 15%;
+  
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 45%;
+  
+  --accent: 0 0% 94%;
+  --accent-foreground: 0 0% 10%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 12%;
+  
+  --radius: 0rem; /* Sharp edges for high fashion feel */
+}
+
+.dark {
+  --background: 0 0% 8%;
+  --foreground: 0 0% 95%;
+  
+  --card: 0 0% 12%;
+  --card-foreground: 0 0% 95%;
+  
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 95%;
+  
+  --primary: 0 0% 95%;
+  --primary-foreground: 0 0% 10%;
+  
+  --secondary: 0 0% 18%;
+  --secondary-foreground: 0 0% 95%;
+  
+  --muted: 0 0% 18%;
+  --muted-foreground: 0 0% 65%;
+  
+  --accent: 0 0% 18%;
+  --accent-foreground: 0 0% 95%;
+  
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 95%;
+  
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 0% 80%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    overflow-x: hidden;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    /* Remove 300ms tap delay on mobile */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  [dir="rtl"] body {
+    font-family: var(--font-arabic);
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-medium tracking-tight;
+  }
+  [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
+    font-family: var(--font-arabic);
+    @apply font-semibold;
+    letter-spacing: 0;
+  }
+  /* Prevent iOS Safari from zooming on input focus — force 16px+ on mobile */
+  @media (max-width: 767px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+    main {
+      overflow-x: clip;
+    }
+    button,
+    [role="button"],
+    a {
+      touch-action: manipulation;
+    }
+  }
+  img,
+  video {
+    max-width: 100%;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .hover-elevate {
+    @apply transition-transform duration-300 hover:-translate-y-1;
+  }
+  .image-fade {
+    @apply transition-opacity duration-500 opacity-0;
+  }
+  .image-fade.loaded {
+    @apply opacity-100;
+  }
+}
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes shake-hint {
+  0%   { transform: translateX(0)    rotate(0deg);  }
+  15%  { transform: translateX(-3px) rotate(-5deg); }
+  30%  { transform: translateX(3px)  rotate(5deg);  }
+  45%  { transform: translateX(-2px) rotate(-4deg); }
+  60%  { transform: translateX(2px)  rotate(4deg);  }
+  75%  { transform: translateX(-1px) rotate(-2deg); }
+  90%  { transform: translateX(1px)  rotate(2deg);  }
+  100% { transform: translateX(0)    rotate(0deg);  }
+}
+
+.animate-shake-hint {
+  animation: shake-hint 1.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.pt-navbar {
+  padding-top: calc(5rem + var(--news-bar-offset, 0px));
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .pt-navbar {
+    padding-top: calc(4.5rem + var(--news-bar-offset, 0px));
+  }
+
+  [data-radix-popper-content-wrapper] {
+    max-width: calc(100vw - 1rem);
+  }
+}

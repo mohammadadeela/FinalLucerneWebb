@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Settings — Lucerne POS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #1a1a1a; color: #fff; padding: 28px; font-size: 14px;
+    }
+    h2 { font-size: 17px; margin-bottom: 20px; color: #a78bfa; }
+    label { display: block; color: #aaa; font-size: 12px; margin-bottom: 5px; }
+    input, select {
+      width: 100%; padding: 9px 12px; background: #111; border: 1px solid #333;
+      border-radius: 7px; color: #fff; font-size: 13px; outline: none;
+      margin-bottom: 16px; direction: ltr; text-align: left;
+    }
+    input:focus, select:focus { border-color: #a78bfa; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .row label { margin: 0; }
+    .toggle {
+      width: 40px; height: 22px; background: #333; border-radius: 11px;
+      border: none; cursor: pointer; position: relative; transition: background 0.2s;
+    }
+    .toggle.on { background: #7c3aed; }
+    .toggle::after {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: left 0.2s;
+    }
+    .toggle.on::after { left: 21px; }
+    .actions { display: flex; gap: 10px; margin-top: 6px; }
+    button {
+      flex: 1; padding: 10px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+    }
+    .save { background: #7c3aed; color: #fff; }
+    .save:hover { background: #6d28d9; }
+    .cancel { background: #333; color: #aaa; }
+    .cancel:hover { background: #444; }
+    .success { color: #34d399; font-size: 12px; margin-top: 8px; display: none; text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>⚙️ الإعدادات / Settings</h2>
+
+  <label>رابط المتجر / Store URL</label>
+  <input type="url" id="urlInput" placeholder="https://your-app.replit.app"/>
+
+  <label>مسار POS / POS Path</label>
+  <input type="text" id="pathInput" value="/admin/pos"/>
+
+  <div class="row">
+    <label>ملء الشاشة عند الفتح / Fullscreen on start</label>
+    <button class="toggle on" id="fsToggle" onclick="toggleFS()"></button>
+  </div>
+
+  <div class="row">
+    <label>وضع Kiosk (لا يمكن الخروج بـ Alt+F4)</label>
+    <button class="toggle" id="kioskToggle" onclick="toggleKiosk()"></button>
+  </div>
+
+  <div class="actions">
+    <button class="save" onclick="saveSettings()">💾 حفظ وإعادة تحميل</button>
+    <button class="cancel" onclick="window.close()">إلغاء</button>
+  </div>
+  <div class="success" id="successMsg">✓ تم الحفظ بنجاح!</div>
+
+  <script>
+    let fs = true, kiosk = false;
+
+    window.electronPOS.getConfig().then(cfg => {
+      document.getElementById("urlInput").value = cfg.url || "";
+      document.getElementById("pathInput").value = cfg.posPath || "/admin/pos";
+      fs = cfg.fullscreen !== false;
+      kiosk = cfg.kiosk === true;
+      document.getElementById("fsToggle").className = "toggle" + (fs ? " on" : "");
+      document.getElementById("kioskToggle").className = "toggle" + (kiosk ? " on" : "");
+    });
+
+    function toggleFS() {
+      fs = !fs;
+      document.getElementById("fsToggle").className = "toggle" + (fs ? " on" : "");
+    }
+    function toggleKiosk() {
+      kiosk = !kiosk;
+      document.getElementById("kioskToggle").className = "toggle" + (kiosk ? " on" : "");
+    }
+
+    async function saveSettings() {
+      const url = document.getElementById("urlInput").value.trim();
+      const posPath = document.getElementById("pathInput").value.trim() || "/admin/pos";
+      const result = await window.electronPOS.saveConfig({ url, posPath, fullscreen: fs, kiosk });
+      if (result.ok) {
+        document.getElementById("successMsg").style.display = "block";
+        setTimeout(() => window.close(), 800);
+      }
+    }
+  </script>
+</body>
+</html>

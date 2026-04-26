@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "DnQNIE5gXIyv4zqPdv1bB"
+uri = "file://lucerne-boutique.zip"
+type = "unspecified"
+title = "Lucerne Boutique — Source Code"
