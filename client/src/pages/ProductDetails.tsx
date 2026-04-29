@@ -7,7 +7,7 @@ import { useProduct, useProducts } from "@/hooks/use-products";
 import { useCart } from "@/store/use-cart";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Minus, Plus, ShoppingBag, Check, X, Heart, Ruler, Share, Link2, BookOpen, ChevronUp, ChevronDown } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Check, X, Heart, Ruler, Share, Link2, BookOpen, ChevronUp, ChevronDown, Truck } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import type { ColorVariant } from "@shared/schema";
 import { COLOR_FAMILIES, translateColorName } from "@/lib/colorFamilies";
@@ -1876,6 +1876,19 @@ export default function ProductDetails() {
                 </div>
               )}
 
+              {/* Low-stock urgency */}
+              {selectedSize && sizeInv[selectedSize] !== undefined && sizeInv[selectedSize] >= 1 && sizeInv[selectedSize] <= 2 && (
+                <div
+                  className="flex items-center gap-2 text-xs font-medium text-foreground/80 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-700/50 px-3 py-2 rounded-xl mb-4"
+                  data-testid="text-low-stock-urgency"
+                >
+                  <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0 animate-pulse" />
+                  {isAr
+                    ? `متبقي ${sizeInv[selectedSize]} ${sizeInv[selectedSize] === 1 ? "قطعة" : "قطع"} فقط بمقاس ${selectedSize} - ينفد بسرعة!`
+                    : `Only ${sizeInv[selectedSize]} left in size ${selectedSize} — selling fast!`}
+                </div>
+              )}
+
               {/* Qty + Add to cart */}
               <div className="flex items-center gap-2.5 mb-4">
                 {/* Quantity pill */}
@@ -2008,7 +2021,8 @@ export default function ProductDetails() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-muted-foreground">
+                    <Truck className="w-3.5 h-3.5 flex-shrink-0" />
                     {t.product.shipping}
                   </span>
                   <span>{t.product.freeDelivery}</span>
