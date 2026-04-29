@@ -1,0 +1,165 @@
+1:05:00 PM [express] GET /api/cart 500 in 240ms :: {"message":"Failed query: select \"cart_items\".\"id\", \"cart_items\".\"user_id\", \"cart_items\".\"product_id\", \"cart_items\".\"quantity\", \"cart_items\".\"size\", \"cart_items\".\"color\", \"cart_items\".\"updated_at\", \"products\".\"id\", \"products\".\"name\", \"products\".\"description\", \"products\".\"price\", \"products\".\"cost_price\", \"products\".\"discount_price\", \"products\".\"main_image\", \"products\".\"images\", \"products\".\"category_id\", \"products\".\"subcategory_id\", \"products\".\"brand\", \"products\".\"barcode\", \"products\".\"sizes\", \"products\".\"colors\", \"products\".\"size_inventory\", \"products\".\"color_variants\", \"products\".\"stock_quantity\", \"products\".\"is_featured\", \"products\".\"is_new_arrival\", \"products\".\"is_best_seller\", \"products\".\"created_at\" from \"cart_items\" inner join \"products\" on \"cart_items\".\"product_id\" = \"products\".\"id\" where \"cart_items\".\"user_id\" = $1\nparams: 1"}
+Menu
+1:05:00 PM [express] GET /api/products/40/recommendations 200 in 261ms :: []
+1:05:00 PM [express] GET /api/wishlist 304 in 20ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"},{"id":2,"userId":1,"productId":20,"createdAt":"2026-04-19T23:35:55.907Z"},{"id":3,"userId":1,"productId":19,"createdAt":"2026-04-19T23:36:06.828Z"}]
+1:05:00 PM [express] POST /api/events/product 200 in 42ms :: {"ok":true}
+1:05:01 PM [express] POST /api/cart 400 in 45ms :: {"message":"Validation error"}
+1:05:01 PM [express] POST /api/events/product 200 in 138ms :: {"ok":true}
+Internal Server Error: DrizzleQueryError: Failed query: select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1
+params: 1
+    at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:66:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+    at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+    at async /opt/render/project/src/dist/index.cjs:3053:19 {
+  query: 'select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1',
+  params: [ 1 ],
+  cause: error: relation "cart_items" does not exist
+      at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:159:18
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:64:16)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+      at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+      at async /opt/render/project/src/dist/index.cjs:3053:19 {
+    length: 110,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '693',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1466',
+    routine: 'parserOpenTable'
+  }
+}
+1:05:02 PM [express] GET /api/cart 500 in 17ms :: {"message":"Failed query: select \"cart_items\".\"id\", \"cart_items\".\"user_id\", \"cart_items\".\"product_id\", \"cart_items\".\"quantity\", \"cart_items\".\"size\", \"cart_items\".\"color\", \"cart_items\".\"updated_at\", \"products\".\"id\", \"products\".\"name\", \"products\".\"description\", \"products\".\"price\", \"products\".\"cost_price\", \"products\".\"discount_price\", \"products\".\"main_image\", \"products\".\"images\", \"products\".\"category_id\", \"products\".\"subcategory_id\", \"products\".\"brand\", \"products\".\"barcode\", \"products\".\"sizes\", \"products\".\"colors\", \"products\".\"size_inventory\", \"products\".\"color_variants\", \"products\".\"stock_quantity\", \"products\".\"is_featured\", \"products\".\"is_new_arrival\", \"products\".\"is_best_seller\", \"products\".\"created_at\" from \"cart_items\" inner join \"products\" on \"cart_items\".\"product_id\" = \"products\".\"id\" where \"cart_items\".\"user_id\" = $1\nparams: 1"}
+1:05:02 PM [express] GET /api/wishlist 304 in 16ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"},{"id":2,"userId":1,"productId":20,"createdAt":"2026-04-19T23:35:55.907Z"},{"id":3,"userId":1,"productId":19,"createdAt":"2026-04-19T23:36:06.828Z"}]
+1:05:05 PM [express] GET /api/wishlist 304 in 18ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"},{"id":2,"userId":1,"productId":20,"createdAt":"2026-04-19T23:35:55.907Z"},{"id":3,"userId":1,"productId":19,"createdAt":"2026-04-19T23:36:06.828Z"}]
+1:05:39 PM [express] GET /api/wishlist 304 in 31ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"},{"id":2,"userId":1,"productId":20,"createdAt":"2026-04-19T23:35:55.907Z"},{"id":3,"userId":1,"productId":19,"createdAt":"2026-04-19T23:36:06.828Z"}]
+1:05:40 PM [express] GET /api/wishlist 304 in 11ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"},{"id":2,"userId":1,"productId":20,"createdAt":"2026-04-19T23:35:55.907Z"},{"id":3,"userId":1,"productId":19,"createdAt":"2026-04-19T23:36:06.828Z"}]
+Internal Server Error: DrizzleQueryError: Failed query: select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1
+params: 1
+    at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:66:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+    at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+    at async /opt/render/project/src/dist/index.cjs:3053:19 {
+  query: 'select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1',
+  params: [ 1 ],
+  cause: error: relation "cart_items" does not exist
+      at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:159:18
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:64:16)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+      at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+      at async /opt/render/project/src/dist/index.cjs:3053:19 {
+    length: 110,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '693',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1466',
+    routine: 'parserOpenTable'
+  }
+}
+1:05:40 PM [express] GET /api/cart 500 in 23ms :: {"message":"Failed query: select \"cart_items\".\"id\", \"cart_items\".\"user_id\", \"cart_items\".\"product_id\", \"cart_items\".\"quantity\", \"cart_items\".\"size\", \"cart_items\".\"color\", \"cart_items\".\"updated_at\", \"products\".\"id\", \"products\".\"name\", \"products\".\"description\", \"products\".\"price\", \"products\".\"cost_price\", \"products\".\"discount_price\", \"products\".\"main_image\", \"products\".\"images\", \"products\".\"category_id\", \"products\".\"subcategory_id\", \"products\".\"brand\", \"products\".\"barcode\", \"products\".\"sizes\", \"products\".\"colors\", \"products\".\"size_inventory\", \"products\".\"color_variants\", \"products\".\"stock_quantity\", \"products\".\"is_featured\", \"products\".\"is_new_arrival\", \"products\".\"is_best_seller\", \"products\".\"created_at\" from \"cart_items\" inner join \"products\" on \"cart_items\".\"product_id\" = \"products\".\"id\" where \"cart_items\".\"user_id\" = $1\nparams: 1"}
+1:05:42 PM [express] GET /api/wishlist 304 in 22ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"},{"id":2,"userId":1,"productId":20,"createdAt":"2026-04-19T23:35:55.907Z"},{"id":3,"userId":1,"productId":19,"createdAt":"2026-04-19T23:36:06.828Z"}]
+Internal Server Error: DrizzleQueryError: Failed query: select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1
+params: 1
+    at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:66:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+    at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+    at async /opt/render/project/src/dist/index.cjs:3053:19 {
+  query: 'select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1',
+  params: [ 1 ],
+  cause: error: relation "cart_items" does not exist
+      at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:159:18
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:64:16)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+      at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+      at async /opt/render/project/src/dist/index.cjs:3053:19 {
+    length: 110,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '693',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1466',
+    routine: 'parserOpenTable'
+  }
+}
+1:05:42 PM [express] GET /api/cart 500 in 207ms :: {"message":"Failed query: select \"cart_items\".\"id\", \"cart_items\".\"user_id\", \"cart_items\".\"product_id\", \"cart_items\".\"quantity\", \"cart_items\".\"size\", \"cart_items\".\"color\", \"cart_items\".\"updated_at\", \"products\".\"id\", \"products\".\"name\", \"products\".\"description\", \"products\".\"price\", \"products\".\"cost_price\", \"products\".\"discount_price\", \"products\".\"main_image\", \"products\".\"images\", \"products\".\"category_id\", \"products\".\"subcategory_id\", \"products\".\"brand\", \"products\".\"barcode\", \"products\".\"sizes\", \"products\".\"colors\", \"products\".\"size_inventory\", \"products\".\"color_variants\", \"products\".\"stock_quantity\", \"products\".\"is_featured\", \"products\".\"is_new_arrival\", \"products\".\"is_best_seller\", \"products\".\"created_at\" from \"cart_items\" inner join \"products\" on \"cart_items\".\"product_id\" = \"products\".\"id\" where \"cart_items\".\"user_id\" = $1\nparams: 1"}
+1:05:42 PM [express] POST /api/events/product 200 in 229ms :: {"ok":true}
+1:05:42 PM [express] GET /api/auth/me 304 in 15ms :: {"id":1,"email":"admin@lucerne.com","role":"admin","fullName":"Store Admin","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-01T15:16:27.625Z"}
+1:05:44 PM [express] POST /api/events/product 200 in 10ms :: {"ok":true}
+1:05:44 PM [express] POST /api/cart 400 in 28ms :: {"message":"Validation error"}
+1:05:44 PM [express] GET /api/wishlist 304 in 17ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"},{"id":2,"userId":1,"productId":20,"createdAt":"2026-04-19T23:35:55.907Z"},{"id":3,"userId":1,"productId":19,"createdAt":"2026-04-19T23:36:06.828Z"}]
+Internal Server Error: DrizzleQueryError: Failed query: select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1
+params: 1
+    at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:66:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+    at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+    at async /opt/render/project/src/dist/index.cjs:3053:19 {
+  query: 'select "cart_items"."id", "cart_items"."user_id", "cart_items"."product_id", "cart_items"."quantity", "cart_items"."size", "cart_items"."color", "cart_items"."updated_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at" from "cart_items" inner join "products" on "cart_items"."product_id" = "products"."id" where "cart_items"."user_id" = $1',
+  params: [ 1 ],
+  cause: error: relation "cart_items" does not exist
+      at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:159:18
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:64:16)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+      at async DatabaseStorage.getCartItems (/opt/render/project/src/dist/index.cjs:701:18)
+      at async /opt/render/project/src/dist/index.cjs:3053:19 {
+    length: 110,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '693',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1466',
+    routine: 'parserOpenTable'
+  }
+}
+1:05:44 PM [express] GET /api/cart 500 in 14ms :: {"message":"Failed query: select \"cart_items\".\"id\", \"cart_items\".\"user_id\", \"cart_items\".\"product_id\", \"cart_items\".\"quantity\", \"cart_items\".\"size\", \"cart_items\".\"color\", \"cart_items\".\"updated_at\", \"products\".\"id\", \"products\".\"name\", \"products\".\"description\", \"products\".\"price\", \"products\".\"cost_price\", \"products\".\"discount_price\", \"products\".\"main_image\", \"products\".\"images\", \"products\".\"category_id\", \"products\".\"subcategory_id\", \"products\".\"brand\", \"products\".\"barcode\", \"products\".\"sizes\", \"products\".\"colors\", \"products\".\"size_inventory\", \"products\".\"color_variants\", \"products\".\"stock_quantity\", \"products\".\"is_featured\", \"products\".\"is_new_arrival\", \"products\".\"is_best_seller\", \"products\".\"created_at\" from \"cart_items\" inner join \"products\" on \"cart_items\".\"product_id\" = \"products\".\"id\" where \"cart_items\".\"user_id\" = $1\nparams: 1"}

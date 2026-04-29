@@ -1,0 +1,17 @@
+DATABASE_URL=postgresql://nn:JDoKIsnonRPojxzH4rvKrgaRN1HVzawV@dpg-d758gnfpm1nc739b5oe0-a/lll_j2u0
+SESSION_SECRET=/eNptDxDouAkJDqN1kHfNeaAl5t7BltHZJf89s+/exKXUSnzuVwEFSkeAvmxf3TAUPSljZNWuovx6P8Rtq0uLQ==
+CLOUDINARY_CLOUD_NAME=dnt2lbk6r
+CLOUDINARY_API_KEY=484497779199815
+CLOUDINARY_API_SECRET=NWHPlIKQXi_WCFu9Sn1mnZJiUYM
+EMAIL_USER=lucernebq@gmail.com
+EMAIL_PASS=seurgtjzlnxbyxmg
+LAHZA_SECRET_KEY=sk_test_bZURuTFycLud72PyaJy74P1KUshQIN05i
+VITE_FIREBASE_API_KEY=AIzaSyAf3Zj4ACc8Fuf6iq-LhY7dejHkWU6dg3o
+VITE_FIREBASE_APP_ID=1:333012566560:web:eb017d26e210d6029bf245
+VITE_FIREBASE_AUTH_DOMAIN=lucerne-69027.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=lucerne-69027
+FRONTEND_URL=https://www.lucerne-boutique.com/
+NODE_ENV=production
+PORT=3000
+VITE_API_URL= https://api.lucerne-boutique.com
+CORS_ORIGIN= https://www.lucerne-boutique.com/

@@ -1,0 +1,26 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "DnQNIE5gXIyv4zqPdv1bB"
+uri = "file://lucerne-boutique.zip"
+type = "unspecified"
+title = "lucerne-boutique.zip"
+
+[[outputs]]
+id = "J9GNnHPuxIgVug_qB6zH1"
+uri = "file://sggs.zip"
+type = "unspecified"
+title = "sggs.zip — Lucerne Boutique source code"
+
+[[outputs]]
+id = "J--VshqwYVI8op-6J_lZG"
+uri = "file://lucerne-boutique-export.zip"
+type = "unspecified"
+title = "Lucerne Boutique — Source Code (Latest)"
+
+[[outputs]]
+id = "CcsxszMmjc5MAx_iBi_1C"
+uri = "file://lucerne-boutique-clean.zip"
+type = "unspecified"
+title = "Lucerne Boutique — Complete (Ready for Render)"

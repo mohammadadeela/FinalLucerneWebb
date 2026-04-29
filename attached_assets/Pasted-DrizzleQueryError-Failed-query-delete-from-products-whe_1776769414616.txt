@@ -1,0 +1,41 @@
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+Menu
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+4:50:13 PM [express] POST /api/orders 400 in 113ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+4:50:22 PM [express] POST /api/orders 400 in 111ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+4:53:07 PM [express] POST /api/orders 400 in 86ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+4:53:18 PM [express] POST /api/orders 400 in 436ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+4:53:19 PM [express] POST /api/orders 400 in 87ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+5:39:51 PM [express] POST /api/orders 400 in 382ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+5:41:06 PM [express] POST /api/orders 400 in 185ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+5:42:36 PM [express] POST /api/orders 400 in 297ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+5:42:38 PM [express] POST /api/orders 400 in 118ms :: {"message":"Validation error"}
+DrizzleQueryError: Failed query: delete from "products" where "products"."id" = $1
+  cause: error: update or delete on table "products" violates foreign key constraint "order_items_product_id_products_id_fk" on table "order_items"
+    severity: 'ERROR',
+5:42:44 PM [express] POST /api/orders 400 in 70ms :: {"message":"Validation error"}

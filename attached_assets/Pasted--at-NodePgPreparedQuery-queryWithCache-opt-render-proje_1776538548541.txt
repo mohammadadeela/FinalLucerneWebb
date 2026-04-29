@@ -1,0 +1,287 @@
+  at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:66:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+    at async DatabaseStorage.getCategories (/opt/render/project/src/dist/index.cjs:415:12)
+    at async /opt/render/project/src/dist/index.cjs:2304:25 {
+  query: 'select "id", "name", "name_ar", "slug", "image", "show_on_home", "size_guide" from "categories"',
+  params: [],
+  cause: error: column "size_guide" does not exist
+      at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:159:18
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:64:16)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+      at async DatabaseStorage.getCategories (/opt/render/project/src/dist/index.cjs:415:12)
+      at async /opt/render/project/src/dist/index.cjs:2304:25 {
+    length: 110,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '66',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+6:53:41 PM [express] GET /api/categories 500 in 115ms :: {"message":"Failed query: select \"id\", \"name\", \"name_ar\", \"slug\", \"image\", \"show_on_home\", \"size_guide\" from \"categories\"\nparams: "}
+6:53:49 PM [express] POST /api/auth/login 200 in 356ms :: {"id":1,"email":"admin@lucerne.com","role":"admin","fullName":"Store Admin","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-01T15:16:27.625Z"}
+6:53:49 PM [express] GET /api/admin/low-stock 200 in 113ms :: [{"id":1,"name":"aa","stockQuantity":1,"mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","price":"861.00","categoryId":1}]
+6:53:49 PM [express] GET /api/stats 200 in 237ms :: {"totalProducts":2,"totalUsers":2,"totalOrders":6,"totalSales":0,"lowStockCount":1}
+6:53:49 PM [express] GET /api/orders 200 in 336ms :: [{"id":6,"userId":1,"totalAmount":"352","shippingCost":"30","shippingRegion":"jerusalem","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T15:43:57.814Z"},{"id":5,"userId":1,"totalAmount":"21","shippingCost":"20","shippingRegion":"westBank","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:33:23.196Z"},{"id":4,"userId":1,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:29:42.360Z"},{"id":3,"userId":2,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:04:30.813Z"},{"id":2,"userId":1,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T13:54:36.783Z"},{"id":1,"userId":1,"totalAmount":"41.78","shippingCost":"30","shippingRegion":"jerusalem","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-03T13:37:16.729Z"}]
+6:53:49 PM [express] GET /api/auth/me 200 in 18ms :: {"id":1,"email":"admin@lucerne.com","role":"admin","fullName":"Store Admin","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-01T15:16:27.625Z"}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "name", "name_ar", "slug", "image", "show_on_home", "size_guide" from "categories"
+params: 
+    at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:66:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+    at async DatabaseStorage.getCategories (/opt/render/project/src/dist/index.cjs:415:12)
+    at async /opt/render/project/src/dist/index.cjs:2304:25 {
+  query: 'select "id", "name", "name_ar", "slug", "image", "show_on_home", "size_guide" from "categories"',
+  params: [],
+  cause: error: column "size_guide" does not exist
+      at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:159:18
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:64:16)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+      at async DatabaseStorage.getCategories (/opt/render/project/src/dist/index.cjs:415:12)
+      at async /opt/render/project/src/dist/index.cjs:2304:25 {
+    length: 110,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '66',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+6:53:50 PM [express] GET /api/products 304 in 132ms :: [{"id":2,"name":"g","description":"n","price":"322.00","costPrice":"45","discountPrice":null,"mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775310654/lucerne-boutique/sfleuahwzmtpgl4cwkxb.jpg","images":[],"categoryId":1,"subcategoryId":null,"brand":"","barcode":"","sizes":["S","M","L"],"colors":["n"],"sizeInventory":{"L":1,"M":2,"S":2},"colorVariants":[{"name":"n","sizes":["S","M","L"],"images":[],"colorCode":"#000000","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775310654/lucerne-boutique/sfleuahwzmtpgl4cwkxb.jpg","sizeInventory":{"L":1,"M":2,"S":2}}],"stockQuantity":5,"isFeatured":false,"isNewArrival":false,"isBestSeller":false,"createdAt":"2026-04-04T13:50:58.139Z"},{"id":1,"name":"aa","description":"aa","price":"861.00","costPrice":"122","discountPrice":"1","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","images":[],"categoryId":1,"subcategoryId":null,"brand":"","barcode":"","sizes":["L","M","S"],"colors":["اسود"],"sizeInventory":{"L":1,"M":0,"S":0},"colorVariants":[{"name":"اسود","sizes":["L","M","S"],"images":[],"colorCode":"#000000","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","sizeInventory":{"L":1,"M":0,"S":0}}],"stockQuantity":1,"isFeatured":true,"isNewArrival":true,"isBestSeller":false,"createdAt":"2026-04-03T13:36:32.667Z"}]
+6:53:50 PM [express] GET /api/products/best-sellers 304 in 174ms :: [{"id":1,"name":"aa","description":"aa","price":"861.00","costPrice":"122","discountPrice":"1","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","images":[],"categoryId":1,"subcategoryId":null,"brand":"","barcode":"","sizes":["L","M","S"],"colors":["اسود"],"sizeInventory":{"L":1,"M":0,"S":0},"colorVariants":[{"name":"اسود","sizes":["L","M","S"],"images":[],"colorCode":"#000000","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","sizeInventory":{"L":1,"M":0,"S":0}}],"stockQuantity":1,"isFeatured":true,"isNewArrival":true,"isBestSeller":false,"createdAt":"2026-04-03T13:36:32.667Z"}]
+6:53:50 PM [express] GET /api/categories 500 in 257ms :: {"message":"Failed query: select \"id\", \"name\", \"name_ar\", \"slug\", \"image\", \"show_on_home\", \"size_guide\" from \"categories\"\nparams: "}
+6:53:50 PM [express] GET /api/auth/me 304 in 251ms :: {"id":1,"email":"admin@lucerne.com","role":"admin","fullName":"Store Admin","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-01T15:16:27.625Z"}
+6:53:51 PM [express] GET /api/subcategories 304 in 12ms :: []
+6:53:51 PM [express] GET /api/site-settings 304 in 11ms :: {"shipping_zones":"[{\"id\":\"westBank\",\"nameAr\":\"الضفة الغربية\",\"nameEn\":\"West Bank\",\"price\":20},{\"id\":\"jerusalem\",\"nameAr\":\"القدس\",\"nameEn\":\"Jerusalem\",\"price\":30},{\"id\":\"interior\",\"nameAr\":\"الداخل\",\"nameEn\":\"Interior\",\"price\":75},{\"id\":\"zone_1775223485359\",\"nameAr\":\"ش\",\"nameEn\":\"a\",\"price\":1}]"}
+6:53:51 PM [express] GET /api/wishlist 200 in 37ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"}]
+6:53:53 PM [express] GET /api/wishlist 304 in 13ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"}]
+6:53:59 PM [express] GET /api/orders 304 in 15ms :: [{"id":6,"userId":1,"totalAmount":"352","shippingCost":"30","shippingRegion":"jerusalem","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T15:43:57.814Z"},{"id":5,"userId":1,"totalAmount":"21","shippingCost":"20","shippingRegion":"westBank","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:33:23.196Z"},{"id":4,"userId":1,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:29:42.360Z"},{"id":3,"userId":2,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:04:30.813Z"},{"id":2,"userId":1,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T13:54:36.783Z"},{"id":1,"userId":1,"totalAmount":"41.78","shippingCost":"30","shippingRegion":"jerusalem","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-03T13:37:16.729Z"}]
+6:53:59 PM [express] GET /api/wishlist 304 in 12ms :: [{"id":1,"userId":1,"productId":1,"createdAt":"2026-04-04T14:30:23.562Z"}]
+6:54:01 PM [express] GET /api/orders 304 in 13ms :: [{"id":6,"userId":1,"totalAmount":"352","shippingCost":"30","shippingRegion":"jerusalem","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T15:43:57.814Z"},{"id":5,"userId":1,"totalAmount":"21","shippingCost":"20","shippingRegion":"westBank","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:33:23.196Z"},{"id":4,"userId":1,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:29:42.360Z"},{"id":3,"userId":2,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T14:04:30.813Z"},{"id":2,"userId":1,"totalAmount":"2","shippingCost":"1","shippingRegion":"zone_1775223485359","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-04T13:54:36.783Z"},{"id":1,"userId":1,"totalAmount":"41.78","shippingCost":"30","shippingRegion":"jerusalem","status":"Pending","paymentMethod":"Cash on delivery","fullName":"Store Admin","phone":"0597314193","phone2":null,"address":"Al-Irsal Street","city":"Ramallah","notes":"","discountCode":null,"discountAmount":null,"createdAt":"2026-04-03T13:37:16.729Z"}]
+6:54:01 PM [express] GET /api/admin/low-stock 304 in 13ms :: [{"id":1,"name":"aa","stockQuantity":1,"mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","price":"861.00","categoryId":1}]
+6:54:01 PM [express] GET /api/stats 304 in 19ms :: {"totalProducts":2,"totalUsers":2,"totalOrders":6,"totalSales":0,"lowStockCount":1}
+6:54:03 PM [express] GET /api/admin/users 200 in 17ms :: [{"id":2,"email":"mohammad.adeela@gmail.com","role":"customer","fullName":"Mohammad Adeela","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-04T14:04:04.843Z","orderCount":1,"deliveredCount":0,"cancelledCount":0},{"id":1,"email":"admin@lucerne.com","role":"admin","fullName":"Store Admin","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-01T15:16:27.625Z","orderCount":5,"deliveredCount":0,"cancelledCount":0}]
+6:54:06 PM [express] PATCH /api/admin/users/2 200 in 11ms :: {"id":2,"email":"mohammad.adeela@gmail.com","role":"employee","fullName":"Mohammad Adeela","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-04T14:04:04.843Z"}
+6:54:06 PM [express] GET /api/admin/users 200 in 67ms :: [{"id":2,"email":"mohammad.adeela@gmail.com","role":"employee","fullName":"Mohammad Adeela","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-04T14:04:04.843Z","orderCount":1,"deliveredCount":0,"cancelledCount":0},{"id":1,"email":"admin@lucerne.com","role":"admin","fullName":"Store Admin","phone":null,"address":null,"isVerified":true,"isBlocked":false,"createdAt":"2026-04-01T15:16:27.625Z","orderCount":5,"deliveredCount":0,"cancelledCount":0}]
+6:54:09 PM [express] POST /api/auth/logout 200 in 13ms :: {"message":"Logged out"}
+6:54:09 PM [express] GET /api/auth/me 401 in 7ms :: {"message":"Unauthorized"}
+6:54:09 PM [express] GET /api/site-settings 304 in 12ms :: {"shipping_zones":"[{\"id\":\"westBank\",\"nameAr\":\"الضفة الغربية\",\"nameEn\":\"West Bank\",\"price\":20},{\"id\":\"jerusalem\",\"nameAr\":\"القدس\",\"nameEn\":\"Jerusalem\",\"price\":30},{\"id\":\"interior\",\"nameAr\":\"الداخل\",\"nameEn\":\"Interior\",\"price\":75},{\"id\":\"zone_1775223485359\",\"nameAr\":\"ش\",\"nameEn\":\"a\",\"price\":1}]"}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "name", "name_ar", "slug", "image", "show_on_home", "size_guide" from "categories"
+params: 
+    at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:66:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+    at async DatabaseStorage.getCategories (/opt/render/project/src/dist/index.cjs:415:12)
+    at async /opt/render/project/src/dist/index.cjs:2304:25 {
+  query: 'select "id", "name", "name_ar", "slug", "image", "show_on_home", "size_guide" from "categories"',
+  params: [],
+  cause: error: column "size_guide" does not exist
+      at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:159:18
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/drizzle-orm/pg-core/session.cjs:64:16)
+      at async /opt/render/project/src/node_modules/drizzle-orm/node-postgres/session.cjs:152:22
+      at async DatabaseStorage.getCategories (/opt/render/project/src/dist/index.cjs:415:12)
+      at async /opt/render/project/src/dist/index.cjs:2304:25 {
+    length: 110,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '66',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+6:54:09 PM [express] GET /api/products 304 in 80ms :: [{"id":2,"name":"g","description":"n","price":"322.00","costPrice":"45","discountPrice":null,"mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775310654/lucerne-boutique/sfleuahwzmtpgl4cwkxb.jpg","images":[],"categoryId":1,"subcategoryId":null,"brand":"","barcode":"","sizes":["S","M","L"],"colors":["n"],"sizeInventory":{"L":1,"M":2,"S":2},"colorVariants":[{"name":"n","sizes":["S","M","L"],"images":[],"colorCode":"#000000","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775310654/lucerne-boutique/sfleuahwzmtpgl4cwkxb.jpg","sizeInventory":{"L":1,"M":2,"S":2}}],"stockQuantity":5,"isFeatured":false,"isNewArrival":false,"isBestSeller":false,"createdAt":"2026-04-04T13:50:58.139Z"},{"id":1,"name":"aa","description":"aa","price":"861.00","costPrice":"122","discountPrice":"1","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","images":[],"categoryId":1,"subcategoryId":null,"brand":"","barcode":"","sizes":["L","M","S"],"colors":["اسود"],"sizeInventory":{"L":1,"M":0,"S":0},"colorVariants":[{"name":"اسود","sizes":["L","M","S"],"images":[],"colorCode":"#000000","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","sizeInventory":{"L":1,"M":0,"S":0}}],"stockQuantity":1,"isFeatured":true,"isNewArrival":true,"isBestSeller":false,"createdAt":"2026-04-03T13:36:32.667Z"}]
+6:54:10 PM [express] GET /api/auth/me 401 in 259ms :: {"message":"Unauthorized"}
+6:54:10 PM [express] GET /api/products/best-sellers 304 in 263ms :: [{"id":1,"name":"aa","description":"aa","price":"861.00","costPrice":"122","discountPrice":"1","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","images":[],"categoryId":1,"subcategoryId":null,"brand":"","barcode":"","sizes":["L","M","S"],"colors":["اسود"],"sizeInventory":{"L":1,"M":0,"S":0},"colorVariants":[{"name":"اسود","sizes":["L","M","S"],"images":[],"colorCode":"#000000","mainImage":"https://res.cloudinary.com/dnt2lbk6r/image/upload/v1775223385/lucerne-boutique/alttfnzjue7qkc3ty66x.jpg","sizeInventory":{"L":1,"M":0,"S":0}}],"stockQuantity":1,"isFeatured":true,"isNewArrival":true,"isBestSeller":false,"createdAt":"2026-04-03T13:36:32.667Z"}]
+6:54:10 PM [express] GET /api/categories 500 in 352ms :: {"message":"Failed query: select \"id\", \"name\", \"name_ar\", \"slug\", \"image\", \"show_on_home\", \"size_guide\" from \"categories\"\nparams: "}
+6:54:10 PM [express] GET /api/subcategories 304 in 293ms :: []
+Internal Server Error: error: relation "session" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PGStore._asyncQuery (/opt/render/project/src/node_modules/connect-pg-simple/index.js:322:21) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '18',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+6:54:16 PM [express] POST /api/auth/firebase-login 500 in 3ms :: {"message":"relation \"session\" does not exist"}
+Internal Server Error: error: relation "session" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PGStore._asyncQuery (/opt/render/project/src/node_modules/connect-pg-simple/index.js:322:21) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '18',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+Internal Server Error: error: relation "session" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PGStore._asyncQuery (/opt/render/project/src/node_modules/connect-pg-simple/index.js:322:21) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '18',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+Internal Server Error: error: relation "session" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PGStore._asyncQuery (/opt/render/project/src/node_modules/connect-pg-simple/index.js:322:21) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '18',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+Internal Server Error: error: relation "session" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PGStore._asyncQuery (/opt/render/project/src/node_modules/connect-pg-simple/index.js:322:21) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '18',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+Internal Server Error: error: relation "session" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PGStore._asyncQuery (/opt/render/project/src/node_modules/connect-pg-simple/index.js:322:21) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '18',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1466',
+  routine: 'parserOpenTable'
+}
+Internal Server Error: error: relation "session" does not exist
+    at /opt/render/project/src/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PGStore._asyncQuery (/opt/render/project/src/node_modules/connect-pg-simple/index.js:322:21) {
+  length: 106,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '18',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,

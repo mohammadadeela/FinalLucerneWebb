@@ -1,0 +1,787 @@
+(node:29804) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders"
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getStats (C:\Users\Ziad\Downloads\tt\server\storage.ts:482:24)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1306:19) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders"',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getStats (C:\Users\Ziad\Downloads\tt\server\storage.ts:482:24)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1306:19) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "exchange_requests"."id", "exchange_requests"."order_id", "exchange_requests"."user_id", "exchange_requests"."order_item_id", "exchange_requests"."product_id", "exchange_requests"."reason", "exchange_requests"."preferred_size", "exchange_requests"."preferred_color", "exchange_requests"."status", "exchange_requests"."admin_note", "exchange_requests"."created_at", "exchange_requests"."resolved_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at", "orders"."id", "orders"."user_id", "orders"."total_amount", "orders"."shipping_cost", "orders"."shipping_region", "orders"."status", "orders"."payment_method", "orders"."full_name", "orders"."phone", "orders"."phone2", "orders"."address", "orders"."city", "orders"."notes", "orders"."discount_code", "orders"."discount_amount", "orders"."credit_used", "orders"."created_at", "orders"."delivered_at" from "exchange_requests" left join "products" on "exchange_requests"."product_id" = "products"."id" left join "orders" on "exchange_requests"."order_id" = "orders"."id" where "exchange_requests"."user_id" = $1 order by "exchange_requests"."created_at" desc
+params: 1
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getUserExchangeRequests (C:\Users\Ziad\Downloads\tt\server\storage.ts:822:18)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:598:18) {
+  query: 'select "exchange_requests"."id", "exchange_requests"."order_id", "exchange_requests"."user_id", "exchange_requests"."order_item_id", "exchange_requests"."product_id", "exchange_requests"."reason", "exchange_requests"."preferred_size", "exchange_requests"."preferred_color", "exchange_requests"."status", "exchange_requests"."admin_note", "exchange_requests"."created_at", "exchange_requests"."resolved_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at", "orders"."id", "orders"."user_id", "orders"."total_amount", "orders"."shipping_cost", "orders"."shipping_region", "orders"."status", "orders"."payment_method", "orders"."full_name", "orders"."phone", "orders"."phone2", "orders"."address", "orders"."city", "orders"."notes", "orders"."discount_code", "orders"."discount_amount", "orders"."credit_used", "orders"."created_at", "orders"."delivered_at" from "exchange_requests" left join "products" on "exchange_requests"."product_id" = "products"."id" left join "orders" on "exchange_requests"."order_id" = "orders"."id" where "exchange_requests"."user_id" = $1 order by "exchange_requests"."created_at" desc',
+  params: [ 1 ],
+  cause: error: relation "exchange_requests" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getUserExchangeRequests (C:\Users\Ziad\Downloads\tt\server\storage.ts:822:18)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:598:18) {
+    length: 118,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '1328',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1466',
+    routine: 'parserOpenTable'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders"
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getStats (C:\Users\Ziad\Downloads\tt\server\storage.ts:482:24)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1306:19) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders"',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getStats (C:\Users\Ziad\Downloads\tt\server\storage.ts:482:24)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1306:19) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "exchange_requests"."id", "exchange_requests"."order_id", "exchange_requests"."user_id", "exchange_requests"."order_item_id", "exchange_requests"."product_id", "exchange_requests"."reason", "exchange_requests"."preferred_size", "exchange_requests"."preferred_color", "exchange_requests"."status", "exchange_requests"."admin_note", "exchange_requests"."created_at", "exchange_requests"."resolved_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at", "orders"."id", "orders"."user_id", "orders"."total_amount", "orders"."shipping_cost", "orders"."shipping_region", "orders"."status", "orders"."payment_method", "orders"."full_name", "orders"."phone", "orders"."phone2", "orders"."address", "orders"."city", "orders"."notes", "orders"."discount_code", "orders"."discount_amount", "orders"."credit_used", "orders"."created_at", "orders"."delivered_at", "users"."id", "users"."email", "users"."password", "users"."role", "users"."full_name", "users"."phone", "users"."address", "users"."is_verified", "users"."is_blocked", "users"."verification_code", "users"."points", "users"."credit", "users"."created_at" from "exchange_requests" left join "products" on "exchange_requests"."product_id" = "products"."id" left join "orders" on "exchange_requests"."order_id" = "orders"."id" left join "users" on "exchange_requests"."user_id" = "users"."id" order by "exchange_requests"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getAllExchangeRequests (C:\Users\Ziad\Downloads\tt\server\storage.ts:833:18)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:604:18) {
+  query: 'select "exchange_requests"."id", "exchange_requests"."order_id", "exchange_requests"."user_id", "exchange_requests"."order_item_id", "exchange_requests"."product_id", "exchange_requests"."reason", "exchange_requests"."preferred_size", "exchange_requests"."preferred_color", "exchange_requests"."status", "exchange_requests"."admin_note", "exchange_requests"."created_at", "exchange_requests"."resolved_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at", "orders"."id", "orders"."user_id", "orders"."total_amount", "orders"."shipping_cost", "orders"."shipping_region", "orders"."status", "orders"."payment_method", "orders"."full_name", "orders"."phone", "orders"."phone2", "orders"."address", "orders"."city", "orders"."notes", "orders"."discount_code", "orders"."discount_amount", "orders"."credit_used", "orders"."created_at", "orders"."delivered_at", "users"."id", "users"."email", "users"."password", "users"."role", "users"."full_name", "users"."phone", "users"."address", "users"."is_verified", "users"."is_blocked", "users"."verification_code", "users"."points", "users"."credit", "users"."created_at" from "exchange_requests" left join "products" on "exchange_requests"."product_id" = "products"."id" left join "orders" on "exchange_requests"."order_id" = "orders"."id" left join "users" on "exchange_requests"."user_id" = "users"."id" order by "exchange_requests"."created_at" desc',
+  params: [],
+  cause: error: relation "exchange_requests" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getAllExchangeRequests (C:\Users\Ziad\Downloads\tt\server\storage.ts:833:18)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:604:18) {
+    length: 118,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '1584',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1466',
+    routine: 'parserOpenTable'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders"
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getStats (C:\Users\Ziad\Downloads\tt\server\storage.ts:482:24)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1306:19) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders"',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getStats (C:\Users\Ziad\Downloads\tt\server\storage.ts:482:24)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1306:19) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "exchange_requests"."id", "exchange_requests"."order_id", "exchange_requests"."user_id", "exchange_requests"."order_item_id", "exchange_requests"."product_id", "exchange_requests"."reason", "exchange_requests"."preferred_size", "exchange_requests"."preferred_color", "exchange_requests"."status", "exchange_requests"."admin_note", "exchange_requests"."created_at", "exchange_requests"."resolved_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at", "orders"."id", "orders"."user_id", "orders"."total_amount", "orders"."shipping_cost", "orders"."shipping_region", "orders"."status", "orders"."payment_method", "orders"."full_name", "orders"."phone", "orders"."phone2", "orders"."address", "orders"."city", "orders"."notes", "orders"."discount_code", "orders"."discount_amount", "orders"."credit_used", "orders"."created_at", "orders"."delivered_at" from "exchange_requests" left join "products" on "exchange_requests"."product_id" = "products"."id" left join "orders" on "exchange_requests"."order_id" = "orders"."id" where "exchange_requests"."user_id" = $1 order by "exchange_requests"."created_at" desc
+params: 1
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getUserExchangeRequests (C:\Users\Ziad\Downloads\tt\server\storage.ts:822:18)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:598:18) {
+  query: 'select "exchange_requests"."id", "exchange_requests"."order_id", "exchange_requests"."user_id", "exchange_requests"."order_item_id", "exchange_requests"."product_id", "exchange_requests"."reason", "exchange_requests"."preferred_size", "exchange_requests"."preferred_color", "exchange_requests"."status", "exchange_requests"."admin_note", "exchange_requests"."created_at", "exchange_requests"."resolved_at", "products"."id", "products"."name", "products"."description", "products"."price", "products"."cost_price", "products"."discount_price", "products"."main_image", "products"."images", "products"."category_id", "products"."subcategory_id", "products"."brand", "products"."barcode", "products"."sizes", "products"."colors", "products"."size_inventory", "products"."color_variants", "products"."stock_quantity", "products"."is_featured", "products"."is_new_arrival", "products"."is_best_seller", "products"."created_at", "orders"."id", "orders"."user_id", "orders"."total_amount", "orders"."shipping_cost", "orders"."shipping_region", "orders"."status", "orders"."payment_method", "orders"."full_name", "orders"."phone", "orders"."phone2", "orders"."address", "orders"."city", "orders"."notes", "orders"."discount_code", "orders"."discount_amount", "orders"."credit_used", "orders"."created_at", "orders"."delivered_at" from "exchange_requests" left join "products" on "exchange_requests"."product_id" = "products"."id" left join "orders" on "exchange_requests"."order_id" = "orders"."id" where "exchange_requests"."user_id" = $1 order by "exchange_requests"."created_at" desc',
+  params: [ 1 ],
+  cause: error: relation "exchange_requests" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getUserExchangeRequests (C:\Users\Ziad\Downloads\tt\server\storage.ts:822:18)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:598:18) {
+    length: 118,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '1328',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1466',
+    routine: 'parserOpenTable'
+  }
+}
+[POST /api/orders] error: DrizzleQueryError: Failed query: insert into "orders" ("id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at") values (default, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, default, default) returning "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at"
+params: 1,225,75,interior,Pending,Cash on delivery,Store Admin,0597314193,,Shufat, Al fajir st2 (SDL),Jerusalem/ירושלים,,,,
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    ... 3 lines matching cause stack trace ...
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1187:21) {
+  query: 'insert into "orders" ("id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at") values (default, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, default, default) returning "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at"',
+  params: [
+    1,
+    '225',
+    '75',
+    'interior',
+    'Pending',
+    'Cash on delivery',
+    'Store Admin',
+    '0597314193',
+    null,
+    'Shufat, Al fajir st2 (SDL)',
+    'Jerusalem/ירושלים',
+    '',
+    null,
+    null,
+    null
+  ],
+  cause: error: column "delivered_at" of relation "orders" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg\lib\client.js:631:17
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\storage.ts:272:26)
+      at async NodePgSession.transaction (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:259:19)
+      at async DatabaseStorage.createOrder (C:\Users\Ziad\Downloads\tt\server\storage.ts:271:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:1187:21) {
+    length: 132,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '245',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_target.c',
+    line: '1068',
+    routine: 'checkInsertTargets'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Internal Server Error: DrizzleQueryError: Failed query: select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc
+params: 
+    at NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+    at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+    at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+  query: 'select "id", "user_id", "total_amount", "shipping_cost", "shipping_region", "status", "payment_method", "full_name", "phone", "phone2", "address", "city", "notes", "discount_code", "discount_amount", "credit_used", "created_at", "delivered_at" from "orders" order by "orders"."created_at" desc',
+  params: [],
+  cause: error: column "delivered_at" does not exist
+      at C:\Users\Ziad\Downloads\tt\node_modules\pg-pool\index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (C:\Users\Ziad\Downloads\tt\node_modules\src\pg-core\session.ts:71:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\node_modules\src\node-postgres\session.ts:154:19)
+      at async DatabaseStorage.getOrders (C:\Users\Ziad\Downloads\tt\server\storage.ts:250:12)
+      at async <anonymous> (C:\Users\Ziad\Downloads\tt\server\routes.ts:982:22) {
+    length: 113,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '230',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+[2m3:08:41 PM[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m Pre-transform error: Failed to load url /src/components/profile/AccountSettingsDialog.tsx (resolved id: C:/Users/Ziad/Downloads/tt/client/src/components/profile/AccountSettingsDialog.tsx) in C:/Users/Ziad/Downloads/tt/client/src/pages/Profile.tsx. Does the file exist?

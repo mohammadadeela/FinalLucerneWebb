@@ -1,0 +1,44 @@
+Run `npm audit` for details.
+Menu
+> rest-express@1.0.0 build
+> node_modules/.bin/tsx script/build.ts
+Building frontend with Vite...
+vite v7.3.2 building client environment for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 3814 modules transformed.
+[plugin vite:reporter] 
+(!) /opt/render/project/src/client/src/lib/queryClient.ts is dynamically imported by /opt/render/project/src/client/src/pages/admin/Products.tsx, /opt/render/project/src/client/src/pages/admin/Products.tsx, /opt/render/project/src/client/src/pages/admin/Products.tsx, /opt/render/project/src/client/src/pages/admin/Products.tsx, /opt/render/project/src/client/src/pages/admin/Products.tsx, /opt/render/project/src/client/src/pages/admin/Products.tsx but also statically imported by /opt/render/project/src/client/src/App.tsx, /opt/render/project/src/client/src/hooks/use-wishlist.ts, /opt/render/project/src/client/src/pages/admin/Categories.tsx, /opt/render/project/src/client/src/pages/admin/DiscountCodes.tsx, /opt/render/project/src/client/src/pages/admin/SiteContent.tsx, /opt/render/project/src/client/src/pages/admin/Users.tsx, /opt/render/project/src/client/src/store/use-cart.ts, dynamic import will not move module into another chunk.
+rendering chunks...
+computing gzip size...
+../dist/public/index.html                     2.40 kB │ gzip:   0.95 kB
+../dist/public/assets/index-Bjn8KEJV.css    160.81 kB │ gzip:  23.60 kB
+../dist/public/assets/index-De52XJvD.js   2,788.71 kB │ gzip: 777.81 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 13.60s
+Building backend with esbuild...
+Build complete!
+==> Uploading build...
+==> Uploaded in 8.9s. Compression took 5.3s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'npm run start'
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.cjs
+[server] listening on port 3000 (production)
+10:56:25 AM [express] serving on port 3000
+[email] Transporter configured for: lu***@gmail.com
+[email] SMTP connection verified successfully ✓
+==> Your service is live 🎉
+==> 
+==> ///////////////////////////////////////////////////////////
+==> 
+==> Available at your primary URL https://finallucernewebb.onrender.com
+==> 
+==> ///////////////////////////////////////////////////////////

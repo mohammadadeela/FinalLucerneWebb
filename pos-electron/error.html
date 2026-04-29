@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Connection Error — Lucerne POS</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f0f; color: #fff;
+      display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    }
+    .card {
+      text-align: center; padding: 40px; max-width: 440px;
+      background: #1a1a1a; border: 1px solid #ef4444; border-radius: 16px;
+    }
+    .icon { font-size: 48px; margin-bottom: 16px; }
+    h2 { font-size: 20px; margin-bottom: 8px; color: #f87171; }
+    p { color: #aaa; font-size: 13px; line-height: 1.6; margin-bottom: 24px; }
+    .actions { display: flex; gap: 10px; justify-content: center; }
+    button {
+      padding: 10px 22px; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .retry { background: #7c3aed; color: #fff; }
+    .retry:hover { background: #6d28d9; }
+    .settings { background: #333; color: #aaa; }
+    .settings:hover { background: #444; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h2>لا يمكن الاتصال بالمتجر</h2>
+    <h2 style="font-size:15px; color:#888; margin-top:4px;">Cannot connect to store</h2>
+    <p>
+      تأكد من أن المتجر منشور ويعمل، وأن الرابط صحيح في الإعدادات.<br><br>
+      Make sure your store is deployed and the URL in Settings is correct.
+    </p>
+    <div class="actions">
+      <button class="retry" onclick="location.reload()">🔄 إعادة المحاولة / Retry</button>
+      <button class="settings" onclick="openSettings()">⚙️ إعدادات</button>
+    </div>
+  </div>
+  <script>
+    function openSettings() {
+      window.electronPOS?.saveConfig({}).then(() => {});
+    }
+  </script>
+</body>
+</html>
