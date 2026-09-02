@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1776866358270,
+      "tag": "0000_smooth_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782580517100,
+      "tag": "0001_product_media_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782580517101,
+      "tag": "0002_product_delete_compatibility",
+      "breakpoints": true
+    }
+  ]
+}

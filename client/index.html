@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+    <title>Lucerne Boutique - لوسيرن بوتيك</title>
+    <meta name="description" content="Lucerne Boutique - لوسيرن بوتيك - أزياء نسائية أنيقة وعصرية" />
+
+    <!-- Open Graph / Twitter Card defaults. Product pages override these
+         server-side (see server/seo.ts) with the specific product's own
+         title/description/image before the HTML is sent. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Lucerne Boutique" />
+    <meta property="og:title" content="Lucerne Boutique - لوسيرن بوتيك" />
+    <meta property="og:description" content="Lucerne Boutique - لوسيرن بوتيك - أزياء نسائية أنيقة وعصرية" />
+    <meta property="og:image" content="https://lucerne-boutique.com/android-chrome-512x512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Lucerne Boutique - لوسيرن بوتيك" />
+    <meta name="twitter:description" content="Lucerne Boutique - لوسيرن بوتيك - أزياء نسائية أنيقة وعصرية" />
+
+    <!-- Favicon — all device types.
+         PNG is declared FIRST because Edge renders a PNG tab icon more reliably
+         than .ico; the .ico is kept as a fallback for older browsers. Version
+         bumped to v6 to force Edge to drop its stubbornly cached old icon. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=6" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=6" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png?v=6" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png?v=6" />
+    <link rel="shortcut icon" href="/favicon.ico?v=6" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=6" />
+
+    <!-- iOS Safari home screen / tab icon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=6" />
+
+    <!-- PWA Web App Manifest -->
+    <link rel="manifest" href="/site.webmanifest?v=6" />
+
+    <!-- Cloudinary CDN — early DNS + connection so images load without extra round-trips -->
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
+
+    <!-- Fonts: only the 3 families actually used by this site -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
