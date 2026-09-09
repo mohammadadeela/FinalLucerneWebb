@@ -13,12 +13,27 @@ type ColumnInfo = {
   data_type: string;
 };
 
+type MediaRole = "image" | "video" | "poster";
+
+type OldRef = {
+  url: string;
+  role: MediaRole;
+};
+
 type SourceSpec = {
   id: string;
   type: "image" | "video";
   sourceUrl: string;
   originalName: string;
-  oldUrls: string[];
+  refs: OldRef[];
+};
+
+type ParsedCloudinary = {
+  type: "image" | "video";
+  role: MediaRole;
+  assetId: string;
+  canonicalSourceUrl: string;
+  originalName: string;
 };
 
 type CheckpointEntry = {
@@ -47,6 +62,14 @@ function qIdent(value: string): string {
 
 function encodeKey(key: string): string {
   return key.split("/").map((part) => encodeURIComponent(part)).join("/");
+}
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 function safeJsonWrite(filePath: string, value: unknown): void {
@@ -163,7 +186,12 @@ async function scanDatabaseForCloudinaryUrls(): Promise<{ urls: string[]; locati
   return { urls: Array.from(urls).sort(), locations };
 }
 
-function parseCloudinary(url: string): { type: "image" | "video"; canonicalUrl: string; originalName: string } | null {
+function looksLikeCloudinaryTransform(segment: string): boolean {
+  if (!segment) return false;
+  return segment.split(",").every((piece) => /^(?:a|ac|af|ar|b|bo|br|c|co|cs|d|dl|dn|dpr|du|e|eo|f|fl|fn|fps|g|h|ki|l|o|p|pg|q|r|so|sp|t|u|vc|vs|w|x|y|z)_.+/i.test(piece));
+}
+
+function parseCloudinary(url: string): ParsedCloudinary | null {
   try {
     const parsed = new URL(url);
     if (parsed.hostname !== "res.cloudinary.com") return null;
@@ -175,23 +203,50 @@ function parseCloudinary(url: string): { type: "image" | "video"; canonicalUrl: 
     if (resourceType !== "image" && resourceType !== "video") return null;
     if (parts[2] !== "upload") return null;
 
-    let rest = parts.slice(3);
-    const versionIndex = rest.findIndex((segment) => /^v\d+$/.test(segment));
+    const afterUpload = parts.slice(3);
+    const versionIndex = afterUpload.findIndex((segment) => /^v\d+$/.test(segment));
+    const transformSegments: string[] = [];
+    let assetSegments: string[];
+
     if (versionIndex >= 0) {
-      rest = rest.slice(versionIndex);
+      transformSegments.push(...afterUpload.slice(0, versionIndex));
+      assetSegments = afterUpload.slice(versionIndex);
     } else {
-      const looksTransform = (segment: string) => {
-        if (!segment) return false;
-        return segment.split(",").every((piece) => /^(?:a|ac|af|ar|b|bo|br|c|co|cs|d|dl|dn|dpr|du|e|eo|f|fl|fn|fps|g|h|ki|l|o|p|pg|q|r|so|sp|t|u|vc|vs|w|x|y|z)_.+/i.test(piece));
-      };
-      while (rest.length > 1 && looksTransform(rest[0])) rest = rest.slice(1);
+      assetSegments = [...afterUpload];
+      while (assetSegments.length > 1 && looksLikeCloudinaryTransform(assetSegments[0])) {
+        transformSegments.push(assetSegments.shift()!);
+      }
     }
 
-    if (rest.length === 0) return null;
-    const assetPath = rest.map((segment) => encodeURIComponent(decodeURIComponent(segment))).join("/");
-    const canonicalUrl = `${parsed.protocol}//${parsed.host}/${encodeURIComponent(cloud)}/${resourceType}/upload/${assetPath}`;
-    const originalName = decodeURIComponent(rest[rest.length - 1]).split(/[?#]/)[0] || (resourceType === "video" ? "video.mp4" : "image.jpg");
-    return { type: resourceType, canonicalUrl, originalName };
+    if (assetSegments.length === 0) return null;
+    const decodedLast = safeDecode(assetSegments[assetSegments.length - 1]);
+    const extension = path.extname(decodedLast).toLowerCase();
+    const transformText = transformSegments.join(",");
+    const isPoster = resourceType === "video" && (
+      /\.(jpg|jpeg|png|webp|avif)$/i.test(extension) ||
+      /(?:^|,)so_|(?:^|,)f_(?:jpg|jpeg|png|webp|avif)(?:,|$)/i.test(transformText)
+    );
+
+    const role: MediaRole = resourceType === "image" ? "image" : (isPoster ? "poster" : "video");
+    const noExtSegments = [...assetSegments];
+    noExtSegments[noExtSegments.length - 1] = decodedLast.replace(/\.[^.]+$/, "");
+    const assetId = `${cloud}|${resourceType}|${noExtSegments.map(safeDecode).join("/")}`;
+
+    const encodedAssetPath = assetSegments.map((segment) => encodeURIComponent(safeDecode(segment))).join("/");
+    const canonicalSourceUrl = role === "poster"
+      ? ""
+      : `${parsed.protocol}//${parsed.host}/${encodeURIComponent(cloud)}/${resourceType}/upload/${encodedAssetPath}`;
+    const originalName = role === "poster"
+      ? `${decodedLast.replace(/\.[^.]+$/, "")}.mp4`
+      : decodedLast;
+
+    return {
+      type: resourceType,
+      role,
+      assetId,
+      canonicalSourceUrl,
+      originalName: originalName || (resourceType === "video" ? "video.mp4" : "image.jpg"),
+    };
   } catch {
     return null;
   }
@@ -208,26 +263,39 @@ function sourceForUrl(oldUrl: string, legacy: Map<string, string>): SourceSpec |
       type: parsed.type,
       sourceUrl: `${PUBLIC_BASE}/${encodeKey(r2Key)}`,
       originalName: path.basename(r2Key) || parsed.originalName,
-      oldUrls: [oldUrl],
+      refs: [{ url: oldUrl, role: parsed.role }],
     };
   }
 
   return {
-    id: `cloudinary:${parsed.canonicalUrl}`,
+    id: `cloudinary:${parsed.assetId}`,
     type: parsed.type,
-    sourceUrl: parsed.canonicalUrl,
+    sourceUrl: parsed.canonicalSourceUrl,
     originalName: parsed.originalName,
-    oldUrls: [oldUrl],
+    refs: [{ url: oldUrl, role: parsed.role }],
   };
 }
 
+function mergeSource(existing: SourceSpec, incoming: SourceSpec): SourceSpec {
+  if (!existing.sourceUrl && incoming.sourceUrl) {
+    existing.sourceUrl = incoming.sourceUrl;
+    existing.originalName = incoming.originalName;
+  }
+  for (const ref of incoming.refs) {
+    if (!existing.refs.some((item) => item.url === ref.url)) existing.refs.push(ref);
+  }
+  return existing;
+}
+
 async function fetchBuffer(url: string): Promise<Buffer> {
+  if (!url) throw new Error("No readable source URL is available for this media asset");
   const response = await fetch(url, { redirect: "follow" });
   if (!response.ok) throw new Error(`Source HTTP ${response.status}: ${url}`);
   return Buffer.from(await response.arrayBuffer());
 }
 
 async function downloadToFile(url: string, filePath: string): Promise<void> {
+  if (!url) throw new Error("No playable source URL is available for this video asset");
   const response = await fetch(url, { redirect: "follow" });
   if (!response.ok || !response.body) throw new Error(`Source HTTP ${response.status}: ${url}`);
   await pipeline(Readable.fromWeb(response.body as any), fs.createWriteStream(filePath));
@@ -283,6 +351,13 @@ async function migrateOne(source: SourceSpec): Promise<string> {
   }
 }
 
+function targetForRef(newCanonicalUrl: string, ref: OldRef): string {
+  if (ref.role === "poster") {
+    return newCanonicalUrl.replace(/\/video\.mp4$/i, "/video.jpg");
+  }
+  return newCanonicalUrl;
+}
+
 async function main() {
   fs.mkdirSync(WORK_DIR, { recursive: true });
 
@@ -314,7 +389,7 @@ async function main() {
       continue;
     }
     const existing = sources.get(spec.id);
-    if (existing) existing.oldUrls.push(oldUrl);
+    if (existing) mergeSource(existing, spec);
     else sources.set(spec.id, spec);
   }
 
@@ -375,19 +450,19 @@ async function main() {
   for (const source of sources.values()) {
     const state = checkpoint.sources[source.id];
     if (state?.status === "ok" && state.newUrl) {
-      for (const oldUrl of source.oldUrls) urlMap[oldUrl] = state.newUrl;
+      for (const ref of source.refs) urlMap[ref.url] = targetForRef(state.newUrl, ref);
     } else {
       failures.push({
         sourceId: source.id,
         type: source.type,
         sourceUrl: source.sourceUrl,
-        oldUrls: source.oldUrls,
+        refs: source.refs,
         error: state?.error || "not processed",
       });
     }
   }
 
-  for (const url of unparsed) failures.push({ sourceId: null, oldUrls: [url], error: "Unable to parse Cloudinary URL" });
+  for (const url of unparsed) failures.push({ sourceId: null, refs: [{ url }], error: "Unable to parse Cloudinary URL" });
 
   safeJsonWrite(URL_MAP_PATH, urlMap);
   safeJsonWrite(FAILURE_PATH, failures);
