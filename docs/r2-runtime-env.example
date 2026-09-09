@@ -1,0 +1,7 @@
+# Do not commit real secrets.
+MEDIA_STORAGE=r2
+R2_BUCKET=lucerne-media
+R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+R2_PUBLIC_BASE_URL=https://media.lucerne-boutique.com
+R2_ACCESS_KEY_ID=<secret>
+R2_SECRET_ACCESS_KEY=<secret>
