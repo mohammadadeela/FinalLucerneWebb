@@ -1,6 +1,23 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
+const R2_MEDIA_HOST = "media.lucerne-boutique.com";
+
+function isR2MediaUrl(url: string): boolean {
+  try {
+    return new URL(url).host === R2_MEDIA_HOST;
+  } catch {
+    return false;
+  }
+}
+
+function r2ImageVariant(url: string, width?: number): string {
+  if (!width || !isR2MediaUrl(url)) return url;
+  if (!/\/media\/images\/[^/]+\/main\.webp(?:[?#].*)?$/i.test(url)) return url;
+  const target = width <= 400 ? 400 : width <= 800 ? 800 : 1200;
+  return url.replace(/\/main\.webp(?:[?#].*)?$/i, `/${target}.webp`);
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -18,27 +35,23 @@ export function isPlaceholderEmail(email: string | null | undefined): boolean {
 }
 
 /**
- * Optimizes a Cloudinary image URL.
- * - Applies f_auto (best format: WebP/AVIF) + q_auto (smart compression)
- * - Optionally constrains the width so browsers never download a
- *   4000px image just to display a 300px thumbnail.
- * Pass `width` in CSS pixels — Cloudinary multiplies by 2 (dpr_2.0)
- * for retina screens automatically when using w_ + dpr_auto.
+ * Optimizes product image URLs.
+ * - Cloudinary URLs keep their existing dynamic f_auto/q_auto behavior.
+ * - R2 URLs produced by the new media pipeline use pre-generated WebP sizes
+ *   (400/800/1200) so no paid image transformation service is required.
  */
 export function optimizeCloudinaryUrl(url: string | null | undefined, width?: number): string | undefined {
   if (!url) return undefined;
+
+  if (isR2MediaUrl(url)) {
+    return r2ImageVariant(url, width);
+  }
+
   if (!url.includes("res.cloudinary.com")) return url;
 
-  // Stored URLs already contain "/f_auto,q_auto/" (injected at upload time).
-  // The old code bailed out here and returned the FULL-resolution image,
-  // which made POS/thumbnail cards download multi-MB photos and sit on a
-  // permanent blur until they slowly loaded. Instead, inject the requested
-  // width into the existing transform block so a small, fast image is served.
   if (url.includes("/f_auto") || url.includes("/q_auto")) {
     if (!width) return url;
-    // If a width is already present, leave the URL as-is.
     if (/\/upload\/[^/]*w_\d+/.test(url)) return url;
-    // Add width to the first transform segment right after /upload/.
     return url.replace(
       /\/upload\/([^/]+)\//,
       (_m, transforms) => `/upload/${transforms},w_${width},dpr_auto,c_limit/`,
@@ -52,13 +65,17 @@ export function optimizeCloudinaryUrl(url: string | null | undefined, width?: nu
 }
 
 /**
- * Generates a tiny (40px) blurred Cloudinary URL to use as an instant
- * placeholder while the full-resolution image loads.
- * Shows a luxury "blur-up" preview instead of empty shimmer boxes.
- * Returns undefined for non-Cloudinary URLs (fall back to shimmer).
+ * Returns the tiny blur-up placeholder for both Cloudinary and R2 media.
+ * New R2 uploads have a 40px pre-generated WebP blur beside the main image.
  */
 export function blurCloudinaryUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
+
+  if (isR2MediaUrl(url)) {
+    if (!/\/media\/images\/[^/]+\/main\.webp(?:[?#].*)?$/i.test(url)) return undefined;
+    return url.replace(/\/main\.webp(?:[?#].*)?$/i, "/blur.webp");
+  }
+
   if (!url.includes("res.cloudinary.com")) return undefined;
   if (url.includes("/f_auto") || url.includes("/q_auto")) {
     return url.replace(/\/upload\/[^/]+\//, "/upload/f_auto,q_1,w_40,e_blur:1000/");
@@ -67,20 +84,17 @@ export function blurCloudinaryUrl(url: string | null | undefined): string | unde
 }
 
 /**
- * Optimizes a Cloudinary video URL for fast streaming delivery.
- * - q_auto:good + bitrate cap + vc_auto (best codec: H.265/VP9/H.264)
- * - Optional width cap to shrink portrait 1080×1920 videos to screen size.
- * Handles URLs that already have Cloudinary transforms applied (e.g. from
- * server-side upload processing) by injecting the width into the existing
- * transform block rather than silently ignoring it.
- * Non-Cloudinary URLs are returned unchanged.
+ * Optimizes product video URLs.
+ * New R2 videos are already transcoded to H.264, resized, silent and fast-start,
+ * so they can be returned directly. Legacy Cloudinary URLs keep the old dynamic
+ * transformation behavior while the migration is in progress.
  */
 export function optimizeCloudinaryVideoUrl(url: string | null | undefined, width?: number): string | undefined {
   if (!url) return undefined;
+  if (isR2MediaUrl(url)) return url;
   if (!url.includes("res.cloudinary.com")) return url;
   const wPart = width ? `,w_${width}` : "";
   if (url.includes("q_auto") || url.includes("br_")) {
-    // URL already has quality/bitrate transforms — inject width if not present
     if (width && !url.match(/w_\d+/)) {
       return url.replace(/\/upload\/([^/]+)\//, `/upload/$1${wPart}/`);
     }
@@ -122,7 +136,7 @@ export function sortSizes(sizes: (string | null | undefined)[] | null | undefine
     const bIsNum = b.trim() !== "" && !isNaN(nb);
 
     if (aIsNum && bIsNum) return na - nb;
-    if (aIsNum && !bIsNum) return -1; // numeric sizes before letter sizes if ever mixed
+    if (aIsNum && !bIsNum) return -1;
     if (!aIsNum && bIsNum) return 1;
 
     const upperA = a.trim().toUpperCase();
@@ -138,12 +152,17 @@ export function sortSizes(sizes: (string | null | undefined)[] | null | undefine
 }
 
 /**
- * Derives a poster (first-frame JPEG thumbnail) from a Cloudinary video URL.
- * Shows instantly as a placeholder while the video buffers — the same image
- * Cloudinary generates for video thumbnails. Returns undefined for non-Cloudinary URLs.
+ * Derives the poster image for both legacy Cloudinary videos and new R2 videos.
+ * R2 uploads store an actual JPEG beside the optimized MP4 at /video.jpg.
  */
 export function getVideoPosterUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
+
+  if (isR2MediaUrl(url)) {
+    if (!/\/media\/videos\/[^/]+\/video\.mp4(?:[?#].*)?$/i.test(url)) return undefined;
+    return url.replace(/\/video\.mp4(?:[?#].*)?$/i, "/video.jpg");
+  }
+
   if (!url.includes("res.cloudinary.com")) return undefined;
   return url
     .replace(/\/upload\/[^/]+\//, "/upload/so_0,f_jpg,q_auto,w_720/")
