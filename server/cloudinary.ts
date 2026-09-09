@@ -1,4 +1,11 @@
 import { v2 as cloudinary } from "cloudinary";
+import {
+  deleteFromR2,
+  isR2Enabled,
+  isR2Url,
+  uploadImageToR2,
+  uploadVideoToR2,
+} from "./r2";
 
 function applyConfig() {
   cloudinary.config({
@@ -14,6 +21,10 @@ export async function uploadToCloudinary(
   buffer: Buffer,
   originalName: string
 ): Promise<string> {
+  if (isR2Enabled()) {
+    return uploadImageToR2(buffer, originalName);
+  }
+
   applyConfig();
   return new Promise((resolve, reject) => {
     const upload = cloudinary.uploader.upload_stream(
@@ -29,8 +40,6 @@ export async function uploadToCloudinary(
         if (error || !result) {
           reject(error || new Error("Upload failed"));
         } else {
-          // Inject f_auto,q_auto so the stored URL always delivers the best
-          // format (WebP/AVIF) and auto-compressed quality to the browser.
           const optimizedUrl = result.secure_url.replace("/upload/", "/upload/f_auto,q_auto/");
           resolve(optimizedUrl);
         }
@@ -44,9 +53,12 @@ export async function uploadVideoToCloudinary(
   source: Buffer | string,
   originalName: string
 ): Promise<string> {
+  if (isR2Enabled()) {
+    return uploadVideoToR2(source, originalName);
+  }
+
   applyConfig();
 
-  // If source is a file path, use Cloudinary's direct upload API (no memory buffering)
   if (typeof source === "string") {
     const result = await cloudinary.uploader.upload(source, {
       folder: "lucerne-boutique",
@@ -56,7 +68,6 @@ export async function uploadVideoToCloudinary(
     return result.secure_url.replace("/upload/", "/upload/f_mp4,vc_h264,q_auto:good,br_2m/");
   }
 
-  // Buffer fallback
   return new Promise((resolve, reject) => {
     const upload = cloudinary.uploader.upload_stream(
       {
@@ -77,25 +88,16 @@ export async function uploadVideoToCloudinary(
   });
 }
 
-/**
- * Extracts the Cloudinary public_id from a stored URL.
- * Works for both clean URLs (no transforms) and pre-transformed URLs.
- */
 function extractPublicId(url: string): string | null {
-  // Skip any transform segments (e.g. f_auto,q_auto/) then grab the public_id
   const match = url.match(/\/upload\/(?:[^/]*\/)*?(?:v\d+\/)?(.+)$/);
   if (!match) return null;
-  return match[1].replace(/\.[^/.]+$/, ""); // strip extension
+  return match[1].replace(/\.[^/.]+$/, "");
 }
 
-/**
- * Pre-generates commonly-used Cloudinary transform variants for a given image URL.
- * This "warms" Cloudinary's cache so the first real user never waits for on-demand
- * generation of a 5+ MB raw photo.
- * Fire-and-forget — errors are swallowed so callers are never blocked.
- */
 export async function warmCloudinaryCache(url: string): Promise<void> {
-  if (!url || !url.includes("res.cloudinary.com")) return;
+  // R2 image variants are generated during upload, so there is nothing to warm.
+  if (!url || isR2Url(url)) return;
+  if (!url.includes("res.cloudinary.com")) return;
   const publicId = extractPublicId(url);
   if (!publicId) return;
   try {
@@ -103,30 +105,29 @@ export async function warmCloudinaryCache(url: string): Promise<void> {
     await cloudinary.uploader.explicit(publicId, {
       type: "upload",
       eager: [
-        { width: 400,  crop: "limit", quality: "auto:good", fetch_format: "auto" },
-        { width: 800,  crop: "limit", quality: "auto:good", fetch_format: "auto" },
+        { width: 400, crop: "limit", quality: "auto:good", fetch_format: "auto" },
+        { width: 800, crop: "limit", quality: "auto:good", fetch_format: "auto" },
         { width: 1200, crop: "limit", quality: "auto:good", fetch_format: "auto" },
       ],
-      eager_async: true, // Cloudinary generates them in the background
+      eager_async: true,
     });
   } catch {
-    // Non-critical — silently ignore
+    // Non-critical — silently ignore.
   }
 }
 
 export async function deleteFromCloudinary(url: string): Promise<void> {
   try {
+    if (isR2Url(url)) {
+      await deleteFromR2(url);
+      return;
+    }
+
     applyConfig();
-    // Skip transformation segments (f_auto,q_auto / f_mp4,vc_h264 / so_0, etc.)
-    // and version segments before extracting the public_id.
     const match = url.match(/\/upload\/(?:[^/]*\/)*?(?:v\d+\/)?(.+)$/);
     if (!match) return;
     const publicId = match[1].replace(/\.[^/.?#]+(?:[?#].*)?$/, "");
 
-    // Cloudinary deletes images by default. Product media can also be videos,
-    // so try the correct type first when the URL clearly points at video, then
-    // fall back to the other type. This makes the admin remove button work for
-    // both photos and videos.
     const looksVideo = /\/video\/upload\//i.test(url) || /\.(mp4|webm|mov|avi|mkv)(?:[?#].*)?$/i.test(url);
     const firstType = looksVideo ? "video" : "image";
     const secondType = looksVideo ? "image" : "video";
@@ -136,7 +137,7 @@ export async function deleteFromCloudinary(url: string): Promise<void> {
       await cloudinary.uploader.destroy(publicId, { resource_type: secondType as any });
     }
   } catch (err) {
-    console.error("Cloudinary delete error:", err);
+    console.error("Media delete error:", err);
   }
 }
 
