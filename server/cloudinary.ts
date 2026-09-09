@@ -3,6 +3,7 @@ import {
   deleteFromR2,
   isR2Enabled,
   isR2Url,
+  listR2Resources,
   uploadImageToR2,
   uploadVideoToR2,
 } from "./r2";
@@ -16,6 +17,24 @@ function applyConfig() {
 }
 
 applyConfig();
+
+// Keep the existing admin media-browser routes untouched. They already call
+// cloudinary.api.resources(). When R2 is enabled, transparently return an
+// equivalent Cloudinary-shaped result from R2; when Cloudinary is enabled,
+// call the original SDK method exactly as before.
+const originalApiResources = cloudinary.api.resources.bind(cloudinary.api);
+(cloudinary.api as any).resources = async (options: any = {}) => {
+  if (isR2Enabled() && (options.resource_type === "image" || options.resource_type === "video")) {
+    return listR2Resources(
+      options.resource_type,
+      Math.min(Number(options.max_results) || 30, 100),
+      options.next_cursor || undefined,
+    );
+  }
+
+  applyConfig();
+  return originalApiResources(options);
+};
 
 export async function uploadToCloudinary(
   buffer: Buffer,
