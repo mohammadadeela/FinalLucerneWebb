@@ -121,19 +121,21 @@ function signedHeadersForRequest(
   return { url, headers: { ...headers, authorization } };
 }
 
+type NodeFetchBody = Buffer | Uint8Array | Readable | string | null | undefined;
+
 async function signedFetch(
   method: string,
   key: string,
   payloadHash: string,
   extraHeaders: Record<string, string> = {},
   query?: Record<string, string | undefined>,
-  body?: BodyInit | null,
+  body?: NodeFetchBody,
 ): Promise<Response> {
   const { url, headers } = signedHeadersForRequest(method, key, payloadHash, extraHeaders, query);
   const response = await fetch(url, {
     method,
     headers,
-    body: body ?? undefined,
+    body: body as any,
     ...(body instanceof Readable ? ({ duplex: "half" } as any) : {}),
   } as any);
   return response;
@@ -183,7 +185,7 @@ async function putFile(key: string, filePath: string, contentType: string): Prom
       "cache-control": "public, max-age=31536000, immutable",
     },
     undefined,
-    body as any,
+    body,
   );
   if (!response.ok) {
     const text = await response.text().catch(() => "");
@@ -287,7 +289,6 @@ export async function uploadVideoToR2(source: Buffer | string, originalName: str
     await Promise.all([
       putFile(`${prefix}/video.mp4`, optimized.videoPath, "video/mp4"),
       putBuffer(`${prefix}/poster.webp`, posterWebp, "image/webp"),
-      // Compatibility alias: existing route logic derives video.jpg from the returned video URL.
       putBuffer(`${prefix}/video.jpg`, posterJpeg, "image/jpeg"),
     ]);
 
@@ -322,7 +323,6 @@ export async function deleteFromR2(url: string): Promise<void> {
       `${prefix}/400.webp`,
       `${prefix}/blur.webp`,
     ];
-    // Original extension varies. Delete known generated files first; exact original is retained as safety backup.
     await Promise.all(keys.map((item) => deleteKey(item).catch(() => {})));
     return;
   }
@@ -335,11 +335,9 @@ export async function deleteFromR2(url: string): Promise<void> {
       `${prefix}/video.jpg`,
       `${prefix}/poster.webp`,
     ].map((item) => deleteKey(item).catch(() => {})));
-    // Original is retained as a safety backup.
     return;
   }
 
-  // Migrated legacy media: remove only the exact referenced object, never a whole prefix.
   await deleteKey(key);
 }
 
