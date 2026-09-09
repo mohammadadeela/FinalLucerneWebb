@@ -1330,6 +1330,7 @@ export default function Products() {
     categoryId: string;
     subcategoryIds: number[];
     clearSubcategories: boolean;
+    keepExistingSubcategories: boolean;
   }>({
     name: "",
     nameAr: "",
@@ -1338,6 +1339,7 @@ export default function Products() {
     categoryId: "",
     subcategoryIds: [],
     clearSubcategories: false,
+    keepExistingSubcategories: false,
   });
   const [bulkEditRegenBarcode, setBulkEditRegenBarcode] = useState(false);
 
@@ -3857,6 +3859,8 @@ export default function Products() {
           ids: Array.from(selectedIds),
           updates,
           regenerateBarcode: bulkEditRegenBarcode,
+          keepExistingSubcategories:
+            bulkEditFields.keepExistingSubcategories,
         }),
       });
       if (!res.ok) throw new Error((await res.json()).message);
@@ -3874,7 +3878,7 @@ export default function Products() {
             : `${updated} product(s) updated`,
       });
       setIsBulkEditOpen(false);
-      setBulkEditFields({ name: "", nameAr: "", price: "", discountPrice: "", categoryId: "", subcategoryIds: [], clearSubcategories: false });
+      setBulkEditFields({ name: "", nameAr: "", price: "", discountPrice: "", categoryId: "", subcategoryIds: [], clearSubcategories: false, keepExistingSubcategories: false });
       setBulkEditRegenBarcode(false);
     } catch (err: any) {
       toast({
@@ -5378,6 +5382,7 @@ export default function Products() {
                 categoryId: "",
                 subcategoryIds: [],
                 clearSubcategories: false,
+                keepExistingSubcategories: false,
               });
               setIsBulkEditOpen(true);
             }}
@@ -6623,7 +6628,7 @@ export default function Products() {
               </label>
               <select
                 value={bulkEditFields.categoryId}
-                onChange={(e) => setBulkEditFields(f => ({ ...f, categoryId: e.target.value, subcategoryIds: [], clearSubcategories: false }))}
+                onChange={(e) => setBulkEditFields(f => ({ ...f, categoryId: e.target.value, subcategoryIds: [], clearSubcategories: false, keepExistingSubcategories: false }))}
                 className="w-full h-9 rounded-md border border-border bg-background px-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="">{language === "ar" ? "— لا تغيير —" : "— no change —"}</option>
@@ -6687,12 +6692,33 @@ export default function Products() {
               <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none pt-0.5">
                 <input
                   type="checkbox"
+                  checked={bulkEditFields.keepExistingSubcategories}
+                  onChange={(e) =>
+                    setBulkEditFields((f) => ({
+                      ...f,
+                      keepExistingSubcategories: e.target.checked,
+                      clearSubcategories: e.target.checked
+                        ? false
+                        : f.clearSubcategories,
+                    }))
+                  }
+                />
+                {language === "ar"
+                  ? "الإبقاء على التصنيفات الفرعية الحالية وإضافة المحددة"
+                  : "Keep current subcategories and add the selected ones"}
+              </label>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none pt-0.5">
+                <input
+                  type="checkbox"
                   checked={bulkEditFields.clearSubcategories}
                   onChange={(e) =>
                     setBulkEditFields((f) => ({
                       ...f,
                       clearSubcategories: e.target.checked,
                       subcategoryIds: e.target.checked ? [] : f.subcategoryIds,
+                      keepExistingSubcategories: e.target.checked
+                        ? false
+                        : f.keepExistingSubcategories,
                     }))
                   }
                 />

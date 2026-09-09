@@ -2223,7 +2223,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       return failureResponse(res, 401, "Unauthorized");
     }
     try {
-      const { ids, updates, regenerateBarcode } = req.body as {
+      const { ids, updates, regenerateBarcode, keepExistingSubcategories } = req.body as {
         ids: number[];
         updates: {
           name?: string;
@@ -2234,6 +2234,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
           subcategoryIds?: (number | string)[];
         };
         regenerateBarcode?: boolean;
+        keepExistingSubcategories?: boolean;
       };
       if (!Array.isArray(ids) || ids.length === 0 || typeof updates !== "object") {
         return failureResponse(res, 400, "Invalid payload");
@@ -2303,8 +2304,35 @@ Sitemap: ${SITE_URL}/sitemap.xml
         const rnd = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
         return `${ts}${rnd}`;
       };
-      await Promise.all(productIds.map((id) => {
+      const shouldKeepExistingSubcategories =
+        keepExistingSubcategories === true &&
+        Array.isArray(normalizedUpdates.subcategoryIds) &&
+        normalizedUpdates.subcategoryIds.length > 0;
+      await Promise.all(productIds.map(async (id) => {
         const rowUpdates = { ...normalizedUpdates };
+        if (shouldKeepExistingSubcategories) {
+          const product = await storage.getProduct(id);
+          if (product) {
+            const existingSubcategoryIds = [
+              ...(Array.isArray(product.subcategoryIds)
+                ? product.subcategoryIds
+                : []),
+              product.subcategoryId,
+            ]
+              .map(Number)
+              .filter((subcategoryId) =>
+                Number.isInteger(subcategoryId) && subcategoryId > 0,
+              );
+            const mergedSubcategoryIds = Array.from(
+              new Set([
+                ...existingSubcategoryIds,
+                ...normalizedUpdates.subcategoryIds,
+              ]),
+            );
+            rowUpdates.subcategoryIds = mergedSubcategoryIds;
+            rowUpdates.subcategoryId = mergedSubcategoryIds[0] ?? null;
+          }
+        }
         if (regenerateBarcode) rowUpdates.barcode = genBarcode();
         return storage.updateProduct(id, rowUpdates as any);
       }));
