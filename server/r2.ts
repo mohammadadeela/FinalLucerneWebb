@@ -132,13 +132,12 @@ async function signedFetch(
   body?: NodeFetchBody,
 ): Promise<Response> {
   const { url, headers } = signedHeadersForRequest(method, key, payloadHash, extraHeaders, query);
-  const response = await fetch(url, {
+  return await fetch(url, {
     method,
     headers,
     body: body as any,
     ...(body instanceof Readable ? ({ duplex: "half" } as any) : {}),
   } as any);
-  return response;
 }
 
 async function putBuffer(key: string, buffer: Buffer, contentType: string): Promise<void> {
@@ -201,6 +200,74 @@ async function deleteKey(key: string): Promise<void> {
   }
 }
 
+type R2Object = {
+  key: string;
+  lastModified: string;
+  size: number;
+};
+
+function xmlDecode(value: string): string {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#x27;/g, "'");
+}
+
+function xmlValue(block: string, tag: string): string {
+  const match = block.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
+  return match ? xmlDecode(match[1]) : "";
+}
+
+async function listR2Objects(prefix: string): Promise<R2Object[]> {
+  const all: R2Object[] = [];
+  let token: string | undefined;
+
+  do {
+    const response = await signedFetch(
+      "GET",
+      "",
+      sha256Hex(""),
+      {},
+      {
+        "list-type": "2",
+        prefix,
+        "max-keys": "1000",
+        "continuation-token": token,
+      },
+    );
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`R2 LIST failed (${response.status}) for ${prefix}: ${text.slice(0, 300)}`);
+    }
+
+    const xml = await response.text();
+    const blocks = xml.match(/<Contents>[\s\S]*?<\/Contents>/g) || [];
+    for (const block of blocks) {
+      const key = xmlValue(block, "Key");
+      if (!key) continue;
+      all.push({
+        key,
+        lastModified: xmlValue(block, "LastModified"),
+        size: Number(xmlValue(block, "Size")) || 0,
+      });
+    }
+
+    const isTruncated = xmlValue(xml, "IsTruncated").toLowerCase() === "true";
+    token = isTruncated ? xmlValue(xml, "NextContinuationToken") || undefined : undefined;
+  } while (token);
+
+  return all;
+}
+
+async function deleteR2Prefix(prefix: string): Promise<void> {
+  const objects = await listR2Objects(prefix).catch(() => [] as R2Object[]);
+  await Promise.all(objects.map((object) => deleteKey(object.key).catch(() => {})));
+}
+
 function safeExtension(originalName: string, fallback: string): string {
   const ext = path.extname(originalName || "").toLowerCase().replace(/[^.a-z0-9]/g, "");
   return ext || fallback;
@@ -230,7 +297,7 @@ function publicUrl(key: string): string {
 }
 
 async function imageVariant(buffer: Buffer, width: number, quality: number, blur = false): Promise<Buffer> {
-  let pipeline = sharp(buffer)
+  let pipeline = sharp(buffer, { animated: !blur })
     .rotate()
     .resize({ width, height: Math.round(width * 1.45), fit: "inside", withoutEnlargement: true });
   if (blur) pipeline = pipeline.blur(3);
@@ -243,24 +310,29 @@ export async function uploadImageToR2(buffer: Buffer, originalName: string): Pro
   const ext = safeExtension(originalName, ".jpg");
   const originalType = mimeFromExtension(ext, "application/octet-stream");
 
-  const [main, v1200, v800, v400, blur] = await Promise.all([
-    imageVariant(buffer, 1600, 82),
-    imageVariant(buffer, 1200, 82),
-    imageVariant(buffer, 800, 80),
-    imageVariant(buffer, 400, 78),
-    imageVariant(buffer, 40, 30, true),
-  ]);
+  try {
+    const [main, v1200, v800, v400, blur] = await Promise.all([
+      imageVariant(buffer, 1600, 82),
+      imageVariant(buffer, 1200, 82),
+      imageVariant(buffer, 800, 80),
+      imageVariant(buffer, 400, 78),
+      imageVariant(buffer, 40, 30, true),
+    ]);
 
-  await Promise.all([
-    putBuffer(`${prefix}/original${ext}`, buffer, originalType),
-    putBuffer(`${prefix}/main.webp`, main, "image/webp"),
-    putBuffer(`${prefix}/1200.webp`, v1200, "image/webp"),
-    putBuffer(`${prefix}/800.webp`, v800, "image/webp"),
-    putBuffer(`${prefix}/400.webp`, v400, "image/webp"),
-    putBuffer(`${prefix}/blur.webp`, blur, "image/webp"),
-  ]);
+    await Promise.all([
+      putBuffer(`${prefix}/original${ext}`, buffer, originalType),
+      putBuffer(`${prefix}/main.webp`, main, "image/webp"),
+      putBuffer(`${prefix}/1200.webp`, v1200, "image/webp"),
+      putBuffer(`${prefix}/800.webp`, v800, "image/webp"),
+      putBuffer(`${prefix}/400.webp`, v400, "image/webp"),
+      putBuffer(`${prefix}/blur.webp`, blur, "image/webp"),
+    ]);
 
-  return publicUrl(`${prefix}/main.webp`);
+    return publicUrl(`${prefix}/main.webp`);
+  } catch (error) {
+    await deleteR2Prefix(`${prefix}/`).catch(() => {});
+    throw error;
+  }
 }
 
 export async function uploadVideoToR2(source: Buffer | string, originalName: string): Promise<string> {
@@ -293,6 +365,9 @@ export async function uploadVideoToR2(source: Buffer | string, originalName: str
     ]);
 
     return publicUrl(`${prefix}/video.mp4`);
+  } catch (error) {
+    await deleteR2Prefix(`${prefix}/`).catch(() => {});
+    throw error;
   } finally {
     await fs.promises.rm(tempRoot, { recursive: true, force: true }).catch(() => {});
   }
@@ -315,30 +390,53 @@ export async function deleteFromR2(url: string): Promise<void> {
 
   const imageMatch = key.match(/^media\/images\/([^/]+)\//);
   if (imageMatch) {
-    const prefix = `media/images/${imageMatch[1]}`;
-    const keys = [
-      `${prefix}/main.webp`,
-      `${prefix}/1200.webp`,
-      `${prefix}/800.webp`,
-      `${prefix}/400.webp`,
-      `${prefix}/blur.webp`,
-    ];
-    await Promise.all(keys.map((item) => deleteKey(item).catch(() => {})));
+    await deleteR2Prefix(`media/images/${imageMatch[1]}/`);
     return;
   }
 
   const videoMatch = key.match(/^media\/videos\/([^/]+)\//);
   if (videoMatch) {
-    const prefix = `media/videos/${videoMatch[1]}`;
-    await Promise.all([
-      `${prefix}/video.mp4`,
-      `${prefix}/video.jpg`,
-      `${prefix}/poster.webp`,
-    ].map((item) => deleteKey(item).catch(() => {})));
+    await deleteR2Prefix(`media/videos/${videoMatch[1]}/`);
     return;
   }
 
   await deleteKey(key);
+}
+
+export async function listR2Resources(
+  resourceType: "image" | "video",
+  maxResults = 30,
+  nextCursor?: string,
+): Promise<any> {
+  const prefix = resourceType === "image" ? "media/images/" : "media/videos/";
+  const canonicalSuffix = resourceType === "image" ? "/main.webp" : "/video.mp4";
+  const objects = (await listR2Objects(prefix))
+    .filter((object) => object.key.endsWith(canonicalSuffix))
+    .sort((a, b) => {
+      const byDate = String(b.lastModified || "").localeCompare(String(a.lastModified || ""));
+      return byDate || b.key.localeCompare(a.key);
+    });
+
+  const parsedOffset = /^r2:(\d+)$/.exec(String(nextCursor || ""));
+  const offset = parsedOffset ? Math.max(0, Number(parsedOffset[1]) || 0) : 0;
+  const limit = Math.max(1, Math.min(Number(maxResults) || 30, 100));
+  const page = objects.slice(offset, offset + limit);
+
+  return {
+    resources: page.map((object) => ({
+      public_id: object.key.replace(/\/(main\.webp|video\.mp4)$/i, ""),
+      secure_url: publicUrl(object.key),
+      width: null,
+      height: null,
+      duration: null,
+      created_at: object.lastModified || null,
+      format: resourceType === "image" ? "webp" : "mp4",
+      bytes: object.size,
+      resource_type: resourceType,
+    })),
+    next_cursor: offset + page.length < objects.length ? `r2:${offset + page.length}` : null,
+    total_count: objects.length,
+  };
 }
 
 export function r2ImageVariantUrl(url: string, requestedWidth?: number): string {
