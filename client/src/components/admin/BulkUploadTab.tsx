@@ -26,7 +26,7 @@ import {
   getOllamaConfig, saveOllamaConfig, checkOllamaHealth,
   getOllamaUrl, saveOllamaUrl, generateWithOllama,
 } from "@/lib/ollamaAI";
-import { cn } from "@/lib/utils";
+import { cn, optimizeCloudinaryUrl } from "@/lib/utils";
 
 /* ─── Types ─── */
 interface SizeRow { size: string; qty: number }
@@ -66,17 +66,11 @@ const STEPS = [
 const CLOTHES_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 const SHOES_SIZES   = ["35", "36", "37", "38", "39", "40", "41", "42", "43"];
 
-// Clean Cloudinary delivery base, e.g. https://res.cloudinary.com/<cloud>/image/upload/
-function cloudinaryBase(url: string): string {
-  const i = url.indexOf("/upload/");
-  return i === -1 ? url : url.slice(0, i + "/upload/".length);
-}
-
-/** Extract the stable public-id key from any Cloudinary URL by stripping:
+/** Extract the stable public-id key from any legacy Cloudinary URL by stripping:
  *  - transformation segments (e.g. f_auto,q_auto / w_400 / so_0)
  *  - version segments (v followed by digits only, e.g. v1780234551)
  *  so URLs stored with/without transforms or version still compare equal. */
-function cloudinaryKey(url: string): string {
+function legacyCloudinaryKey(url: string): string {
   if (!url) return "";
   const i = url.indexOf("/upload/");
   if (i === -1) return url;
@@ -93,41 +87,42 @@ function cloudinaryKey(url: string): string {
 }
 
 /** Same as cloudinaryKey but also strips the file extension, matching the
- *  publicId format that Cloudinary returns from its API (no extension). */
-function cloudinaryPublicId(url: string): string {
-  return cloudinaryKey(url).replace(/\.[^/.]+$/, "");
+ *  publicId format used by the legacy Cloudinary rollback API (no extension). */
+function mediaPublicId(url: string): string {
+  if (!url) return "";
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "media.lucerne-boutique.com") {
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      if (parts.length >= 3 && parts[0] === "media" && (parts[1] === "images" || parts[1] === "videos")) {
+        return parts.slice(0, 3).join("/");
+      }
+      return parts.join("/");
+    }
+  } catch {}
+
+  // Emergency rollback compatibility for legacy Cloudinary URLs.
+  return legacyCloudinaryKey(url).replace(/\.[^/.]+$/, "");
 }
 
-function buildKitPrompt(base: string, exampleFile: string): string {
-  const exampleId = exampleFile.replace(/\.[^.]+$/, "");
-  return `You are a fashion product data generator for a women's boutique (Arabic + English store).
+function buildKitPrompt(exampleFile: string): string {
+  return `You are a fashion product data generator for a women's boutique.
 
-Every dress photo I give you is named with its real image ID. Example file name:
-  ${exampleFile}
-The file name WITHOUT the extension is the image's ID.
+The ZIP contains product photos and template.json.
 
-To build the image link for any photo, use this EXACT pattern:
-  ${base}<FILE-NAME-WITHOUT-EXTENSION>.jpg
-Example for the file above:
-  ${base}${exampleId}.jpg
+IMPORTANT:
+template.json already contains the EXACT live Cloudflare R2 URL for each image.
+Do NOT rebuild, rewrite, shorten, transform, or guess any media URL.
+Do NOT change mainImage or any existing media URL.
+Match every photo to its template entry using imageFile.
 
-For EVERY photo, create ONE product object with these fields:
-- "name": short English product name, max 5 words (e.g. "Floral Wrap Midi Dress").
-- "description": 2 short sentences in English, then the SAME description in Arabic on a new line.
-- "colors": array with EXACTLY ONE hex color code — the single MAIN/DOMINANT fabric color only (e.g. ["#2c3e50"]). IGNORE beads, sequins, crystals, embroidery, trim, lace, buttons, prints and any accent. Never return more than one color.
-- "styleKey": a short English description of the garment's STRUCTURAL design (type, cut, sleeve, neckline, length) WITHOUT any color, so the same item in different colors gets the same key (e.g. "long sleeve ribbed bodycon midi dress").
-- "mainImage": the link you built from this photo's file name (use the pattern above — copy the ID EXACTLY, character for character).
-- "images": an array containing that same link.
-- "categoryName": "Dresses"
-- "price": "100"
-- "sizes": ["S", "M", "L"]
-- "sizeInventory": { "S": 2, "M": 2, "L": 2 }
-- "stockQuantity": 6
+Example image file:
+${exampleFile}
 
-Return ONE JSON object exactly in this shape, valid JSON only — no markdown, no comments, no extra text:
-{ "products": [ { ...one entry per photo... } ] }
-
-EASIEST OPTION: I may also upload a file called "template.json". It already has one entry per photo with the correct "mainImage" link and all store settings filled in. If you get it, DO NOT rebuild the links — just match each photo to its entry by the "imageFile" field, fill in name/description/colors, and return the whole file unchanged otherwise.`;
+Fill only the product information requested by the template, including name, nameAr, description, colors, and styleKey.
+Keep all existing media URLs and store settings unchanged.
+Return valid JSON only using the same template structure.`;
 }
 
 /* ─── Helpers ─── */
@@ -421,7 +416,7 @@ function MediaPickerDialog({
     setLoadingImg(true);
     const p = new URLSearchParams({ max_results: "100" });
     if (cursor) p.set("next_cursor", cursor);
-    fetch(`/api/admin/cloudinary/images?${p}`)
+    fetch(`/api/admin/r2/images?${p}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then(d => {
         setImages(prev => append ? [...prev, ...(d.resources || [])] : (d.resources || []));
@@ -435,7 +430,7 @@ function MediaPickerDialog({
     setLoadingVid(true);
     const p = new URLSearchParams({ max_results: "100" });
     if (cursor) p.set("next_cursor", cursor);
-    fetch(`/api/admin/cloudinary/videos?${p}`)
+    fetch(`/api/admin/r2/videos?${p}`)
       .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
       .then(d => {
         setVideos(prev => append ? [...prev, ...(d.resources || [])] : (d.resources || []));
@@ -495,9 +490,9 @@ function MediaPickerDialog({
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                 {images.map(img => {
                   const sel = photos.includes(img.fullUrl);
-                  const mainPublicId = cloudinaryPublicId(mainImage || "");
+                  const mainPublicId = mediaPublicId(mainImage || "");
                   const isMain = !!mainPublicId && img.publicId === mainPublicId;
-                  const inUse = !isMain && !!(usedImageUrls?.has(img.publicId) || usedImageUrls?.has(cloudinaryPublicId(img.fullUrl)));
+                  const inUse = !isMain && !!(usedImageUrls?.has(img.publicId) || usedImageUrls?.has(mediaPublicId(img.fullUrl)));
                   return (
                     <button key={img.publicId} type="button"
                       onClick={() => !isMain && togglePhoto(img.fullUrl)}
@@ -551,7 +546,7 @@ function MediaPickerDialog({
                 )}
                 {videos.map(v => {
                   const sel = v.url === video;
-                  const inUse = !!(usedVideoUrls?.has(v.publicId) || usedVideoUrls?.has(cloudinaryPublicId(v.url)));
+                  const inUse = !!(usedVideoUrls?.has(v.publicId) || usedVideoUrls?.has(mediaPublicId(v.url)));
                   return (
                     <button key={v.publicId} type="button"
                       onClick={() => setVideo(sel ? undefined : v.url)}
@@ -753,7 +748,7 @@ function ProductCard({
       {/* Image header */}
       <div className="relative w-full aspect-video bg-muted shrink-0">
         <img
-          src={product.imageUrl.replace("/upload/", "/upload/f_auto,q_auto,w_600/")}
+          src={optimizeCloudinaryUrl(product.imageUrl, 600) || product.imageUrl}
           alt="" className="w-full h-full object-cover" loading="lazy"
         />
         <div className="absolute top-2 left-2 flex gap-1">
@@ -800,7 +795,7 @@ function ProductCard({
               )}
               {(product.extraImages || []).map((u, i) => (
                 <span key={i} className="relative w-12 h-12 rounded overflow-hidden border border-border">
-                  <img src={u.replace("/upload/", "/upload/f_auto,q_auto,w_120/")} alt="" className="w-full h-full object-cover" />
+                  <img src={optimizeCloudinaryUrl(u, 120) || u} alt="" className="w-full h-full object-cover" />
                   <button type="button"
                     onClick={() => onUpdate(idx, { extraImages: (product.extraImages || []).filter((_, j) => j !== i) })}
                     className="absolute top-0 right-0 w-4 h-4 bg-black/70 text-white flex items-center justify-center rounded-bl">
@@ -1138,7 +1133,7 @@ export function BulkUploadTab() {
   const [fetchCountInput, setFetchCountInput] = useState("30");
   const [selectNInput, setSelectNInput] = useState("");
   const [loadMoreInput, setLoadMoreInput] = useState("50");
-  const [cloudinaryImages, setCloudinaryImages] = useState<any[]>([]);
+  const [mediaImages, setR2Images] = useState<any[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingImages, setLoadingImages] = useState(false);
@@ -1167,17 +1162,17 @@ export function BulkUploadTab() {
   const [globalSubcategory, setGlobalSubcategory] = useState("");
   const [importLoading, setImportLoading] = useState(false);
 
-  // ── Existing products — for "In use" indicators on Cloudinary media ──────────
+  // ── Existing products — for "In use" indicators on R2 media ──────────
   const { data: existingProducts } = useQuery<any[]>({ queryKey: ["/api/products"] });
   const usedImageUrls = useMemo(() => {
     const s = new Set<string>();
     (existingProducts || []).forEach((p: any) => {
-      if (p.mainImage) s.add(cloudinaryPublicId(p.mainImage));
-      (p.images || []).forEach((u: string) => s.add(cloudinaryPublicId(u)));
+      if (p.mainImage) s.add(mediaPublicId(p.mainImage));
+      (p.images || []).forEach((u: string) => s.add(mediaPublicId(u)));
       (p.colorVariants || []).forEach((v: any) => {
-        if (v.mainImage) s.add(cloudinaryPublicId(v.mainImage));
-        (v.images || []).forEach((u: string) => s.add(cloudinaryPublicId(u)));
-        (v.media || []).forEach((m: any) => { if (m?.url) s.add(cloudinaryPublicId(m.url)); });
+        if (v.mainImage) s.add(mediaPublicId(v.mainImage));
+        (v.images || []).forEach((u: string) => s.add(mediaPublicId(u)));
+        (v.media || []).forEach((m: any) => { if (m?.url) s.add(mediaPublicId(m.url)); });
       });
     });
     return s;
@@ -1185,9 +1180,9 @@ export function BulkUploadTab() {
   const usedVideoUrls = useMemo(() => {
     const s = new Set<string>();
     (existingProducts || []).forEach((p: any) => {
-      if (p.videoUrl) s.add(cloudinaryPublicId(p.videoUrl));
+      if (p.videoUrl) s.add(mediaPublicId(p.videoUrl));
       (p.colorVariants || []).forEach((v: any) => {
-        (v.media || []).forEach((m: any) => { if (m?.type === "video" && m?.url) s.add(cloudinaryPublicId(m.url)); });
+        (v.media || []).forEach((m: any) => { if (m?.type === "video" && m?.url) s.add(mediaPublicId(m.url)); });
       });
     });
     return s;
@@ -1195,7 +1190,7 @@ export function BulkUploadTab() {
 
   // ── Ollama (via backend proxy) ──────────────────────────────────────────────
   const [showOllamaSettings, setShowOllamaSettings] = useState(false);
-  const [useOllama, setUseOllama] = useState(() => getOllamaConfig().enabled);
+  const useOllama = false;
   const [ollamaHost, setOllamaHost] = useState("");
   const [ollamaModel, setOllamaModel] = useState(() => getOllamaConfig().model);
   const [ollamaStatus, setOllamaStatus] = useState<"idle" | "checking" | "ok" | "error">("idle");
@@ -1255,10 +1250,10 @@ export function BulkUploadTab() {
     try {
       const params = new URLSearchParams({ max_results: String(count && count > 0 ? count : fetchCount) });
       if (cursor) params.set("next_cursor", cursor);
-      const res = await fetch(`/api/admin/cloudinary/images?${params}`);
+      const res = await fetch(`/api/admin/r2/images?${params}`);
       if (!res.ok) throw new Error((await res.json()).message || "Failed to fetch");
       const data = await res.json();
-      setCloudinaryImages(prev => cursor ? [...prev, ...data.resources] : data.resources);
+      setR2Images(prev => cursor ? [...prev, ...data.resources] : data.resources);
       setNextCursor(data.nextCursor);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -1268,18 +1263,18 @@ export function BulkUploadTab() {
   const handleFetch = () => {
     const n = parseInt(fetchCountInput) || 30;
     setFetchCount(n);
-    setCloudinaryImages([]); setSelectedImages(new Set()); setNextCursor(null);
+    setR2Images([]); setSelectedImages(new Set()); setNextCursor(null);
     setImageGroups({}); setNextGroupId(1);
     fetchImages(); setStep(2);
   };
   const toggleImage = (url: string) =>
     setSelectedImages(prev => { const n = new Set(prev); n.has(url) ? n.delete(url) : n.add(url); return n; });
-  const selectAll = () => setSelectedImages(new Set(cloudinaryImages.map(i => i.fullUrl)));
+  const selectAll = () => setSelectedImages(new Set(mediaImages.map(i => i.fullUrl)));
   const deselectAll = () => setSelectedImages(new Set());
   const selectFirstN = () => {
     const n = parseInt(selectNInput);
     if (!n || n < 1) return;
-    setSelectedImages(new Set(cloudinaryImages.slice(0, n).map(i => i.fullUrl)));
+    setSelectedImages(new Set(mediaImages.slice(0, n).map(i => i.fullUrl)));
   };
   // ── Manual grouping (admin marks photos as "same product, different colors") ──
   const selectedGroupedCount = Array.from(selectedImages).filter(u => imageGroups[u]).length;
@@ -1335,7 +1330,7 @@ export function BulkUploadTab() {
   };
   // Toggle: ADD unassigned photos to selection; click again deselects them.
   const selectUnassigned = () => {
-    const urls = cloudinaryImages.map(img => img.fullUrl).filter(u => !imageGroups[u]);
+    const urls = mediaImages.map(img => img.fullUrl).filter(u => !imageGroups[u]);
     setSelectedImages(prev => {
       const allAlreadyIn = urls.length > 0 && urls.every(u => prev.has(u));
       const n = new Set(prev);
@@ -1490,13 +1485,13 @@ export function BulkUploadTab() {
           if (!res.ok || !parsed) {
             if (parsed?.noKey) {
               toast({ title: "No AI Key",
-                description: "Add GEMINI_API_KEY in Secrets, or switch to Ollama (local).",
+                description: "Add GEMINI_API_KEY in Secrets to enable Gemini / Cloud generation.",
                 variant: "destructive" });
               urls.forEach(url => all.push(makeBlank(url))); break;
             }
             // Timeout / server error / HTML page — keep going with blanks.
             toast({ title: "AI batch skipped",
-              description: parsed?.message || "Server timed out on this batch. Try fewer images or use Ollama.",
+              description: parsed?.message || "Server timed out on this batch. Try fewer images and retry.",
               variant: "destructive" });
             batch.forEach(url => all.push(makeBlank(url)));
             tick(Math.min(urls.length, i + SERVER_BATCH));
@@ -1559,7 +1554,7 @@ export function BulkUploadTab() {
   const copyImageUrls = async () => {
     const urls = selectedImages.size
       ? Array.from(selectedImages)
-      : cloudinaryImages.map(i => i.fullUrl);
+      : mediaImages.map(i => i.fullUrl);
     if (!urls.length) {
       toast({ title: "No images", description: "Load or select images first.", variant: "destructive" });
       return;
@@ -1577,8 +1572,8 @@ export function BulkUploadTab() {
   // Builds a ZIP with renamed images + a pre-filled template.json + PROMPT.txt.
   const downloadAiKit = async () => {
     const imgs = selectedImages.size
-      ? cloudinaryImages.filter(i => selectedImages.has(i.fullUrl))
-      : cloudinaryImages;
+      ? mediaImages.filter(i => selectedImages.has(i.fullUrl))
+      : mediaImages;
     if (!imgs.length) {
       toast({ title: "No images", description: "Load or select images first.", variant: "destructive" });
       return;
@@ -1589,12 +1584,11 @@ export function BulkUploadTab() {
       const zip = new JSZip();
       const imgFolder = zip.folder("images")!;
       const products: any[] = [];
-      const base = cloudinaryBase(imgs[0].fullUrl);
       let firstFile = "";
 
       for (let idx = 0; idx < imgs.length; idx++) {
         const img = imgs[idx];
-        // File name = the real Cloudinary image ID, so the link can be rebuilt from it.
+        // File name = the real R2 image ID, so the link can be rebuilt from it.
         const id = String(img.publicId || `image_${idx + 1}`).replace(/\//g, "__");
         const extMatch = String(img.fullUrl).match(/\.(jpg|jpeg|png|webp|gif)(\?|$)/i);
         const ext = extMatch ? extMatch[1].toLowerCase() : "jpg";
@@ -1602,7 +1596,7 @@ export function BulkUploadTab() {
         if (!firstFile) firstFile = fileName;
 
         // Clean, version-free delivery link (matches the link the AI will rebuild).
-        const cleanUrl = `${base}${String(img.publicId)}.${ext}`;
+        const cleanUrl = img.fullUrl;
 
         const resp = await fetch(img.fullUrl);
         if (!resp.ok) throw new Error(`Couldn't download image ${idx + 1}`);
@@ -1625,7 +1619,7 @@ export function BulkUploadTab() {
       }
 
       zip.file("template.json", JSON.stringify({ products }, null, 2));
-      zip.file("PROMPT.txt", buildKitPrompt(base, firstFile));
+      zip.file("PROMPT.txt", buildKitPrompt(firstFile));
 
       const out = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
@@ -1823,7 +1817,7 @@ export function BulkUploadTab() {
             <CloudUpload className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="font-semibold text-base">Bulk Upload from Cloudinary</h2>
+            <h2 className="font-semibold text-base">Bulk Upload from R2</h2>
             <p className="text-xs text-muted-foreground">Import, AI-generate details, and publish many products at once</p>
           </div>
         </div>
@@ -1857,7 +1851,7 @@ export function BulkUploadTab() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-card border border-border rounded-xl p-5 space-y-4">
             <div>
-              <h3 className="font-semibold mb-0.5">Browse Cloudinary</h3>
+              <h3 className="font-semibold mb-0.5">Browse R2</h3>
               <p className="text-sm text-muted-foreground">Load recent images and select which to import.</p>
             </div>
             <div className="space-y-3">
@@ -1901,7 +1895,7 @@ export function BulkUploadTab() {
               </div>
               <Button className="w-full gap-2" onClick={handleFetch} disabled={loadingImages}>
                 {loadingImages ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                Load {fetchCount} Images from Cloudinary
+                Load {fetchCount} Images from R2
               </Button>
             </div>
           </div>
@@ -1909,7 +1903,7 @@ export function BulkUploadTab() {
             <h3 className="font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> How it works</h3>
             <div className="space-y-3">
               {[
-                { icon: ImageIcon, t:"Browse Cloudinary", d:"Load your most recent photos" },
+                { icon: ImageIcon, t:"Browse R2", d:"Load your most recent photos" },
                 { icon: CheckSquare, t:"Select images", d:"Pick individual, all, or first N" },
                 { icon: Wand2, t:"AI Auto-Fill", d:"Gemini Vision writes names, descriptions & colors" },
                 { icon: Package, t:"Review & Publish", d:"Add colors, sizes, then publish" },
@@ -1926,19 +1920,12 @@ export function BulkUploadTab() {
               ))}
             </div>
             <div className="border-t border-primary/15 pt-3 space-y-2">
-              {/* AI source toggle */}
+              {/* Gemini / Cloud is the only available AI source */}
               <div className="flex items-center gap-2">
                 <Bot className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="text-xs font-medium text-foreground">AI Source</span>
-                <div className="flex rounded-md border border-border overflow-hidden text-xs ms-auto">
-                  <button
-                    onClick={() => { setUseOllama(false); saveOllamaConfig({ enabled: false }); }}
-                    className={cn("px-2.5 py-1 transition-colors", !useOllama ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground")}
-                  >Gemini / Cloud</button>
-                  <button
-                    onClick={() => { setUseOllama(true); saveOllamaConfig({ enabled: true }); setShowOllamaSettings(true); }}
-                    className={cn("px-2.5 py-1 transition-colors", useOllama ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground")}
-                  >Ollama (Local)</button>
+                <div className="ms-auto px-3 py-1 rounded-md border border-primary/25 bg-primary text-primary-foreground text-xs font-medium">
+                  Gemini / Cloud
                 </div>
               </div>
 
@@ -2017,7 +2004,7 @@ export function BulkUploadTab() {
               ) : (
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
                   <Key className="w-3 h-3 mt-0.5 shrink-0 text-amber-500" />
-                  <span>Requires <strong>GEMINI_API_KEY</strong> in Secrets. Or switch to Ollama (no key needed).</span>
+                  <span>Requires <strong>GEMINI_API_KEY</strong> securely configured on the server.</span>
                 </div>
               )}
             </div>
@@ -2031,7 +2018,7 @@ export function BulkUploadTab() {
           <div className="bg-card border border-border rounded-xl p-3 flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="font-semibold text-sm">{cloudinaryImages.length} images</span>
+                <span className="font-semibold text-sm">{mediaImages.length} images</span>
                 {selectedImages.size > 0 && (() => {
                   const selGrouped = Array.from(selectedImages).filter(u => imageGroups[u]).length;
                   const selFree = selectedImages.size - selGrouped;
@@ -2072,13 +2059,13 @@ export function BulkUploadTab() {
                       title="How many more images to load"
                       onKeyDown={e => e.key === "Enter" && fetchImages(nextCursor, parseInt(loadMoreInput) || 50)} />
                     <Button variant="outline" size="sm" onClick={() => fetchImages(nextCursor, parseInt(loadMoreInput) || 50)} disabled={loadingImages}
-                      title="Load more images from Cloudinary and add them to the grid below">
+                      title="Load more images from R2 and add them to the grid below">
                       <RefreshCw className={cn("w-3.5 h-3.5 me-1", loadingImages && "animate-spin")} />
                       {loadingImages ? "Loading…" : "Load More"}
                     </Button>
                   </div>
                 )}
-                {!nextCursor && cloudinaryImages.length > 0 && (
+                {!nextCursor && mediaImages.length > 0 && (
                   <span className="text-[11px] text-muted-foreground px-1">No more images to load</span>
                 )}
                 <Button size="sm" variant="ghost" onClick={() => setStep(1)}><ChevronLeft className="w-3.5 h-3.5" /></Button>
@@ -2140,7 +2127,7 @@ export function BulkUploadTab() {
                   title="Add all grouped images to selection">
                   <CheckSquare className="w-3.5 h-3.5 me-1" />All groups
                 </Button>
-                {cloudinaryImages.some(img => !imageGroups[img.fullUrl]) && (
+                {mediaImages.some(img => !imageGroups[img.fullUrl]) && (
                   <Button size="sm" variant="outline" className="h-7 text-xs px-2.5" onClick={selectUnassigned}
                     title="Add all unassigned (not in any group) images to selection">
                     <Square className="w-3.5 h-3.5 me-1" />Unassigned
@@ -2156,7 +2143,7 @@ export function BulkUploadTab() {
             <div className="flex items-center gap-2 border-t border-border pt-2">
               <Hash className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <span className="text-xs text-muted-foreground whitespace-nowrap">Select first</span>
-              <Input type="number" min={1} max={cloudinaryImages.length} value={selectNInput}
+              <Input type="number" min={1} max={mediaImages.length} value={selectNInput}
                 onChange={e => setSelectNInput(e.target.value)} className="h-7 w-20 text-sm text-center" placeholder="N"
                 onKeyDown={e => e.key==="Enter" && selectFirstN()} />
               <Button size="sm" variant="outline" className="h-7 text-xs px-3" onClick={selectFirstN}>Go</Button>
@@ -2180,16 +2167,16 @@ export function BulkUploadTab() {
               </div>
             </div>
           </div>
-          {loadingImages && cloudinaryImages.length === 0
+          {loadingImages && mediaImages.length === 0
             ? <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
                 <Loader2 className="w-7 h-7 animate-spin text-primary" />
                 <p className="text-sm">Loading images…</p>
               </div>
             : <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
-                {cloudinaryImages.map((img, imgIdx) => {
+                {mediaImages.map((img, imgIdx) => {
                   const selected = selectedImages.has(img.fullUrl);
                   const gid = imageGroups[img.fullUrl];
-                  const inUse = usedImageUrls.has(img.publicId) || usedImageUrls.has(cloudinaryPublicId(img.fullUrl));
+                  const inUse = usedImageUrls.has(img.publicId) || usedImageUrls.has(mediaPublicId(img.fullUrl));
                   return (
                     <button key={img.publicId} onClick={() => toggleImage(img.fullUrl)}
                       className={cn("relative group rounded-lg overflow-hidden border-2 transition-all aspect-square",
@@ -2240,7 +2227,7 @@ export function BulkUploadTab() {
               </div>
           }
           {lightboxIndex !== null && (
-            <Lightbox images={cloudinaryImages} index={lightboxIndex}
+            <Lightbox images={mediaImages} index={lightboxIndex}
               setIndex={setLightboxIndex} onClose={() => setLightboxIndex(null)} />
           )}
         </div>
@@ -2410,7 +2397,7 @@ export function BulkUploadTab() {
               </div>
               <Button variant="ghost" size="sm" className="ms-auto" onClick={() => {
                 setStep(1); setPublishResults(null); setGeneratedProducts([]);
-                setSelectedImages(new Set()); setCloudinaryImages([]);
+                setSelectedImages(new Set()); setR2Images([]);
                 setImageGroups({}); setNextGroupId(1);
               }}>Start Over</Button>
             </div>

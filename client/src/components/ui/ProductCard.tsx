@@ -221,8 +221,8 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
       <Link href={`/product/${product.id}`} className="block">
         <div ref={nearViewportRef} className="relative aspect-[3/4] overflow-hidden bg-white mb-3 rounded-2xl ring-1 ring-black/[0.06]">
           {/* Blur-up placeholder — shows a tiny blurred preview while the real image loads.
-              For Cloudinary images: a real ~2KB blurred version fades out when the photo arrives.
-              For non-Cloudinary / missing images: fall back to animated shimmer. */}
+              For R2 images: a pre-generated tiny blur.webp fades out when the photo arrives.
+              Legacy Cloudinary remains supported for rollback; other images use the shimmer. */}
           {blurSrc ? (
             <img
               src={blurSrc}
@@ -266,7 +266,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             shouldLoadImage && (
               <img
                 src={optimizeCloudinaryUrl(displayImage, 600) || "/placeholder-product.svg"}
-                srcSet={displayImage?.includes("res.cloudinary.com")
+                srcSet={displayImage && (displayImage.includes("media.lucerne-boutique.com") || displayImage.includes("res.cloudinary.com"))
                   ? `${optimizeCloudinaryUrl(displayImage, 400)} 400w, ${optimizeCloudinaryUrl(displayImage, 800)} 800w`
                   : undefined}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"

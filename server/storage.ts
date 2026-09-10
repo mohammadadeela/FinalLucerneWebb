@@ -162,6 +162,9 @@ function dedupeUrls(values: unknown, exclude: Set<string> = new Set()): string[]
 function getVideoPosterUrl(url: unknown): string | undefined {
   const value = cleanMediaUrl(url);
   if (!value) return undefined;
+  if (value.includes("media.lucerne-boutique.com") && /\/media\/videos\/[^/]+\/video\.mp4(?:[?#].*)?$/i.test(value)) {
+    return value.replace(/\/video\.mp4(?:[?#].*)?$/i, "/video.jpg");
+  }
   if (value.includes("res.cloudinary.com")) {
     return value
       .replace(/\/upload\/[^/]+\//, "/upload/so_0,f_jpg,q_auto,w_720/")

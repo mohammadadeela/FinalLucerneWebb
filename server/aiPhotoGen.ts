@@ -5,8 +5,8 @@
 // itself must remain pixel-for-pixel the same item: same shape, same color,
 // same heel height, same hemline, same everything. This module owns the
 // prompts and the call to the Gemini image-generation endpoint; callers just
-// pass a source image URL + shot type and get back image bytes to upload
-// wherever they like (Cloudinary).
+// pass a source image URL + shot type and get back image bytes for the
+// configured media provider (Cloudflare R2 in production).
 
 const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 
