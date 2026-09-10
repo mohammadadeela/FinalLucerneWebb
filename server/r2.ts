@@ -27,7 +27,7 @@ function config() {
 }
 
 export function isR2Enabled(): boolean {
-  return String(process.env.MEDIA_STORAGE || "cloudinary").toLowerCase() === "r2";
+  return String(process.env.MEDIA_STORAGE || "r2").toLowerCase() === "r2";
 }
 
 export function isR2Url(url: string | null | undefined): boolean {

@@ -210,7 +210,8 @@ function collectProductMediaUrls(product: any): string[] {
 async function removeStoredMediaUrl(url: string): Promise<void> {
   if (!url) return;
   try {
-    if (url.includes("cloudinary.com")) {
+    if (url.includes("cloudinary.com") || url.includes("media.lucerne-boutique.com")) {
+      // deleteFromCloudinary is the compatibility facade and dispatches R2 URLs to R2.
       await deleteFromCloudinary(url);
       return;
     }
@@ -323,6 +324,9 @@ function normalizeInventoryPayload(value: unknown, field = "sizeInventory"): Rec
 
 function derivePosterFromVideoUrl(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
+  if (url.includes("media.lucerne-boutique.com") && /\/media\/videos\/[^/]+\/video\.mp4(?:[?#].*)?$/i.test(url)) {
+    return url.replace(/\/video\.mp4(?:[?#].*)?$/i, "/video.jpg");
+  }
   if (url.includes("res.cloudinary.com")) {
     return url
       .replace(/\/upload\/[^/]+\//, "/upload/so_0,f_jpg,q_auto,w_720/")
@@ -659,7 +663,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
     return successResponse(res, { url });
   });
 
-  // ── Cloudinary video upload (disk-buffered → stream to Cloudinary) ────────
+  // ── Media video upload — R2 primary, Cloudinary available for rollback ───
   app.post("/api/upload-video", (req, res, next) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return failureResponse(res, 401, "Unauthorized");
@@ -692,12 +696,13 @@ Sitemap: ${SITE_URL}/sitemap.xml
       // no second copy in RAM.
       const videoUrl = await uploadVideoToCloudinary(file.path, file.originalname);
       // Derive a poster from the Cloudinary video URL (first frame, JPEG)
-      const poster = videoUrl
+      const poster = derivePosterFromVideoUrl(videoUrl) || videoUrl
         .replace("/upload/", "/upload/so_0,f_jpg,q_auto/")
         .replace(/\.[^.?#]+(?:[?#].*)?$/, ".jpg");
-      return successResponse(res, { url: videoUrl, poster, storage: "cloudinary" }, 200, { url: videoUrl, poster, storage: "cloudinary" });
+      const storageProvider = videoUrl.includes("media.lucerne-boutique.com") ? "r2" : "cloudinary";
+      return successResponse(res, { url: videoUrl, poster, storage: storageProvider }, 200, { url: videoUrl, poster, storage: storageProvider });
     } catch (err: any) {
-      // Some deployments fail Cloudinary video uploads because of plan limits,
+      // The legacy Cloudinary rollback path can fail because of plan limits,
       // timeout, or MOV transcoding. Do not fail the admin workflow: keep a
       // local MP4 fallback under /uploads and return that URL.
       console.warn("Cloudinary video upload failed, using local fallback:", err?.message || err);
@@ -6366,16 +6371,16 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
-  // ── Cloudinary image browser ─────────────────────────────────────────────
-  app.get("/api/admin/cloudinary/images", async (req, res) => {
+  // ── R2 image browser (legacy Cloudinary path retained as rollback alias) ──
+  app.get(["/api/admin/r2/images", "/api/admin/cloudinary/images"], async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const { cloudinary: cloudinaryV2 } = await import("./cloudinary");
+      const { cloudinary: mediaProvider } = await import("./cloudinary");
       const maxResults = Math.min(parseInt(String(req.query.max_results || "30")), 100);
       const nextCursor = req.query.next_cursor as string | undefined;
-      const result: any = await cloudinaryV2.api.resources({
+      const result: any = await mediaProvider.api.resources({
         type: "upload",
         resource_type: "image",
         max_results: maxResults,
@@ -6384,8 +6389,13 @@ Sitemap: ${SITE_URL}/sitemap.xml
       res.json({
         resources: result.resources.map((r: any) => ({
           publicId: r.public_id,
-          url: r.secure_url.replace("/upload/", "/upload/f_auto,q_auto,w_400/"),
-          fullUrl: r.secure_url.replace("/upload/", "/upload/f_auto,q_auto/"),
+          // R2 stores a pre-generated 400px thumbnail beside main.webp.
+          url: r.secure_url.includes("media.lucerne-boutique.com/media/images/")
+            ? r.secure_url.replace(/\/main\.webp(?:[?#].*)?$/i, "/400.webp")
+            : r.secure_url.replace("/upload/", "/upload/f_auto,q_auto,w_400/"),
+          fullUrl: r.secure_url.includes("media.lucerne-boutique.com/media/images/")
+            ? r.secure_url
+            : r.secure_url.replace("/upload/", "/upload/f_auto,q_auto/"),
           width: r.width,
           height: r.height,
           createdAt: r.created_at,
@@ -6396,21 +6406,21 @@ Sitemap: ${SITE_URL}/sitemap.xml
         totalCount: result.total_count || null,
       });
     } catch (err: any) {
-      console.error("[cloudinary-browser]", err);
+      console.error("[r2-image-browser]", err);
       res.status(500).json({ message: err?.message || "Failed to fetch images" });
     }
   });
 
   // ── Browse uploaded VIDEOS (for attaching to products — NOT sent to AI) ────
-  app.get("/api/admin/cloudinary/videos", async (req, res) => {
+  app.get(["/api/admin/r2/videos", "/api/admin/cloudinary/videos"], async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-      const { cloudinary: cloudinaryV2 } = await import("./cloudinary");
+      const { cloudinary: mediaProvider } = await import("./cloudinary");
       const maxResults = Math.min(parseInt(String(req.query.max_results || "30")), 100);
       const nextCursor = req.query.next_cursor as string | undefined;
-      const result: any = await cloudinaryV2.api.resources({
+      const result: any = await mediaProvider.api.resources({
         type: "upload",
         resource_type: "video",
         max_results: maxResults,
@@ -6419,10 +6429,13 @@ Sitemap: ${SITE_URL}/sitemap.xml
       res.json({
         resources: result.resources.map((r: any) => ({
           publicId: r.public_id,
-          // Playable, auto-optimised video stream.
-          url: r.secure_url.replace("/upload/", "/upload/f_auto,q_auto/"),
-          // A poster frame (first frame) so we can show a thumbnail without loading the video.
-          poster: r.secure_url
+          // R2 video.mp4 is already optimized for web playback. Legacy Cloudinary
+          // URLs retain their dynamic delivery transform for emergency rollback.
+          url: r.secure_url.includes("media.lucerne-boutique.com/media/videos/")
+            ? r.secure_url
+            : r.secure_url.replace("/upload/", "/upload/f_auto,q_auto/"),
+          // R2 uploads store a real JPEG poster beside video.mp4 at /video.jpg.
+          poster: derivePosterFromVideoUrl(r.secure_url) || r.secure_url
             .replace("/upload/", "/upload/so_0,w_400/")
             .replace(/\.(mp4|mov|webm|avi|mkv|m4v)$/i, ".jpg"),
           duration: r.duration || null,
@@ -6434,7 +6447,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         totalCount: result.total_count || null,
       });
     } catch (err: any) {
-      console.error("[cloudinary-videos]", err);
+      console.error("[r2-video-browser]", err);
       res.status(500).json({ message: err?.message || "Failed to fetch videos" });
     }
   });
@@ -6612,7 +6625,7 @@ Respond ONLY with valid JSON, no markdown, no extra text.`;
             continue;
           }
           const friendly = isRateLimit
-            ? "Gemini rate limit / quota reached. Wait a minute and try fewer images, or use Ollama."
+            ? "Gemini rate limit / quota reached. Wait a minute and try fewer images."
             : msg;
           return { url, success: false, error: friendly };
         }

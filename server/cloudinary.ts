@@ -18,10 +18,11 @@ function applyConfig() {
 
 applyConfig();
 
-// Keep the existing admin media-browser routes untouched. They already call
-// cloudinary.api.resources(). When R2 is enabled, transparently return an
-// equivalent Cloudinary-shaped result from R2; when Cloudinary is enabled,
-// call the original SDK method exactly as before.
+// Media compatibility facade. R2 is the production provider. Existing call
+// sites still use the historical Cloudinary-shaped API so rollback remains
+// possible without a risky application-wide rename. When R2 is enabled,
+// listings/uploads/deletes are served by R2; MEDIA_STORAGE=cloudinary explicitly
+// activates the legacy rollback provider.
 const originalApiResources = cloudinary.api.resources.bind(cloudinary.api);
 (cloudinary.api as any).resources = async (options: any = {}) => {
   if (isR2Enabled() && (options.resource_type === "image" || options.resource_type === "video")) {

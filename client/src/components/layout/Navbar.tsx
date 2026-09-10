@@ -1209,7 +1209,7 @@ export function Navbar() {
                                 {p.mainImage ? (
                                   <img
                                     src={optimizeCloudinaryUrl(p.mainImage, 400) || p.mainImage}
-                                    srcSet={p.mainImage?.includes("res.cloudinary.com")
+                                    srcSet={p.mainImage && (p.mainImage.includes("media.lucerne-boutique.com") || p.mainImage.includes("res.cloudinary.com"))
                                       ? `${optimizeCloudinaryUrl(p.mainImage, 300)} 300w, ${optimizeCloudinaryUrl(p.mainImage, 600)} 600w`
                                       : undefined}
                                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

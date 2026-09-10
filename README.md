@@ -16,7 +16,7 @@ A production-ready, bilingual e-commerce platform for **Lucerne Boutique**, buil
 - POS with barcode support, customer management, receipts, inventory updates, and reporting
 - Optional Electron desktop POS application
 - Analytics dashboards, category reports, and Excel bulk imports
-- Cloudinary/local media, image cropping, optimization, and watermarking
+- Cloudflare R2 media with responsive WebP variants, blur placeholders, optimized video/posters, cropping, and watermarking
 - AI product-image generation and storefront chatbot
 - Email, SMS, WhatsApp notifications, and phone OTP
 - Security headers, CORS allow-listing, API rate limiting, sessions, and safe errors
@@ -31,10 +31,10 @@ A production-ready, bilingual e-commerce platform for **Lucerne Boutique**, buil
 | Backend | Node.js, Express 5, TypeScript |
 | Database | PostgreSQL, Drizzle ORM |
 | Authentication | Local sessions, Firebase, phone OTP |
-| Media | Cloudinary, Sharp, Multer |
+| Media | Cloudflare R2, Sharp, Multer (Cloudinary emergency rollback compatibility) |
 | Payments | Stripe, Lahza, cash on delivery |
 | Messaging | Nodemailer, Twilio SMS/Verify/WhatsApp |
-| AI | OpenAI, Google Gemini, optional Ollama |
+| AI | OpenAI, Google Gemini |
 | Reports/imports | Recharts, ExcelJS, JsBarcode |
 | Desktop POS | Electron |
 
@@ -167,7 +167,15 @@ VITE_FIREBASE_PROJECT_ID=xxx
 VITE_FIREBASE_APP_ID=xxx
 FIREBASE_PROJECT_ID=xxx
 
-# Cloudinary
+# Cloudflare R2 media storage (primary)
+MEDIA_STORAGE=r2
+R2_BUCKET=lucerne-media
+R2_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+R2_PUBLIC_BASE_URL=https://media.lucerne-boutique.com
+R2_ACCESS_KEY_ID=xxx
+R2_SECRET_ACCESS_KEY=xxx
+
+# Cloudinary (emergency rollback compatibility only)
 CLOUDINARY_CLOUD_NAME=xxx
 CLOUDINARY_API_KEY=xxx
 CLOUDINARY_API_SECRET=xxx
@@ -199,7 +207,6 @@ AI_INTEGRATIONS_OPENAI_BASE_URL=xxx
 GEMINI_API_KEY=xxx
 GEMINI_MODEL=xxx
 GEMINI_IMAGE_MODEL=xxx
-OLLAMA_URL=xxx
 
 # Optional database-backup executable override
 PG_DUMP_PATH=xxx
@@ -222,7 +229,7 @@ Third-party integrations are optional. Enable their related features in admin se
 
 Express serves both the API and built React app. `npm run build` now builds into a staging directory and only swaps `dist/` after both the frontend and backend succeed, so a failed build does not remove the currently working production bundle.
 
-For the production VPS, configure the real credentials only in the server `.env` file, then run:
+For the production VPS, configure the real credentials only in the server `.env` file. Production media uses `MEDIA_STORAGE=r2`; `MEDIA_STORAGE=cloudinary` is reserved for emergency rollback. Then run:
 
 ```bash
 chmod +x deploy.sh

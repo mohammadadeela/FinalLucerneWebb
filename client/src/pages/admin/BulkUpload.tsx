@@ -12,9 +12,9 @@ import {
   Package, FolderOpen, RefreshCw, AlertCircle, Check,
   X, Edit3, Eye, Trash2, Plus, ArrowUpFromLine, Key
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, optimizeCloudinaryUrl } from "@/lib/utils";
 
-interface CloudinaryImage {
+interface MediaImage {
   publicId: string;
   url: string;
   fullUrl: string;
@@ -45,7 +45,7 @@ interface GeneratedProduct {
 }
 
 const STEPS = [
-  { id: 1, label: "Browse Cloudinary", icon: ImageIcon },
+  { id: 1, label: "Browse R2", icon: ImageIcon },
   { id: 2, label: "Select Images", icon: CheckSquare },
   { id: 3, label: "AI Generate", icon: Wand2 },
   { id: 4, label: "Review & Publish", icon: Package },
@@ -57,7 +57,7 @@ export default function AdminBulkUpload() {
 
   const [step, setStep] = useState(1);
   const [fetchCount, setFetchCount] = useState(30);
-  const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryImage[]>([]);
+  const [mediaImages, setMediaImages] = useState<MediaImage[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingImages, setLoadingImages] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
@@ -82,19 +82,19 @@ export default function AdminBulkUpload() {
     (s: any) => !globalCategory || String(s.categoryId) === String(globalCategory)
   );
 
-  // ── Fetch Cloudinary images ───────────────────────────────────────────────
+  // ── Fetch R2 images ───────────────────────────────────────────────
   const fetchImages = useCallback(async (cursor?: string) => {
     setLoadingImages(true);
     try {
       const params = new URLSearchParams({ max_results: String(fetchCount) });
       if (cursor) params.set("next_cursor", cursor);
-      const res = await fetch(`/api/admin/cloudinary/images?${params}`);
+      const res = await fetch(`/api/admin/r2/images?${params}`);
       if (!res.ok) throw new Error((await res.json()).message || "Failed to fetch");
       const data = await res.json();
       if (cursor) {
-        setCloudinaryImages((prev) => [...prev, ...data.resources]);
+        setMediaImages((prev) => [...prev, ...data.resources]);
       } else {
-        setCloudinaryImages(data.resources);
+        setMediaImages(data.resources);
       }
       setNextCursor(data.nextCursor);
     } catch (err: any) {
@@ -105,7 +105,7 @@ export default function AdminBulkUpload() {
   }, [fetchCount, toast]);
 
   const handleFetch = () => {
-    setCloudinaryImages([]);
+    setMediaImages([]);
     setSelectedImages(new Set());
     setNextCursor(null);
     fetchImages();
@@ -126,7 +126,7 @@ export default function AdminBulkUpload() {
     });
   };
 
-  const selectAll = () => setSelectedImages(new Set(cloudinaryImages.map((i) => i.fullUrl)));
+  const selectAll = () => setSelectedImages(new Set(mediaImages.map((i) => i.fullUrl)));
   const deselectAll = () => setSelectedImages(new Set());
 
   // ── AI Generation ─────────────────────────────────────────────────────────
@@ -326,7 +326,7 @@ export default function AdminBulkUpload() {
               Bulk Product Upload
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Import images from Cloudinary, generate details with AI, and publish in bulk
+              Import images from R2, generate details with AI, and publish in bulk
             </p>
           </div>
         </div>
@@ -371,14 +371,14 @@ export default function AdminBulkUpload() {
         {step === 1 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-card border border-border rounded-xl p-6 space-y-6">
-              {(cloudinaryImages.length > 0 || generatedProducts.length > 0) && (
+              {(mediaImages.length > 0 || generatedProducts.length > 0) && (
                 <div className="flex items-start gap-3 bg-primary/5 border border-primary/20 rounded-lg p-3">
                   <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">
                       {generatedProducts.length > 0
                         ? `You have ${generatedProducts.length} product(s) in progress`
-                        : `${cloudinaryImages.length} image(s) already loaded (${selectedImages.size} selected)`}
+                        : `${mediaImages.length} image(s) already loaded (${selectedImages.size} selected)`}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Pick up where you left off, or fetch new images below (this clears the current progress).
@@ -396,9 +396,9 @@ export default function AdminBulkUpload() {
                 </div>
               )}
               <div>
-                <h2 className="text-lg font-semibold mb-1">Cloudinary Image Browser</h2>
+                <h2 className="text-lg font-semibold mb-1">R2 Image Browser</h2>
                 <p className="text-sm text-muted-foreground">
-                  Choose how many recent images to load from your Cloudinary account.
+                  Choose how many recent images to load from your R2 account.
                 </p>
               </div>
               <div className="space-y-4">
@@ -421,7 +421,7 @@ export default function AdminBulkUpload() {
                     ))}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Loads the most recent {fetchCount} images from Cloudinary
+                    Loads the most recent {fetchCount} images from R2
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -452,9 +452,9 @@ export default function AdminBulkUpload() {
                     </select>
                   </div>
                 )}
-                <Button className="w-full gap-2" onClick={handleFetch} disabled={loadingImages} variant={(cloudinaryImages.length > 0 || generatedProducts.length > 0) ? "outline" : "default"}>
+                <Button className="w-full gap-2" onClick={handleFetch} disabled={loadingImages} variant={(mediaImages.length > 0 || generatedProducts.length > 0) ? "outline" : "default"}>
                   {loadingImages ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                  {(cloudinaryImages.length > 0 || generatedProducts.length > 0) ? "Fetch New Images (clears current progress)" : "Browse Cloudinary Images"}
+                  {(mediaImages.length > 0 || generatedProducts.length > 0) ? "Fetch New Images (clears current progress)" : "Browse R2 Images"}
                 </Button>
               </div>
             </div>
@@ -466,7 +466,7 @@ export default function AdminBulkUpload() {
               </h2>
               <div className="space-y-3">
                 {[
-                  { icon: ImageIcon, title: "Browse Cloudinary", desc: "Pick images already in your Cloudinary account" },
+                  { icon: ImageIcon, title: "Browse R2", desc: "Pick images already in your R2 account" },
                   { icon: CheckSquare, title: "Select Images", desc: "Choose all or specific images to import" },
                   { icon: Wand2, title: "AI Auto-Fill", desc: "GPT-4o analyzes each photo and writes the name, description & colors" },
                   { icon: Package, title: "Review & Publish", desc: "Edit anything, set prices, then publish all at once" },
@@ -497,7 +497,7 @@ export default function AdminBulkUpload() {
           <div className="space-y-4">
             <div className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
-                <p className="font-semibold">{cloudinaryImages.length} images loaded</p>
+                <p className="font-semibold">{mediaImages.length} images loaded</p>
                 <p className="text-sm text-muted-foreground">{selectedImages.size} selected</p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -531,14 +531,14 @@ export default function AdminBulkUpload() {
               </div>
             </div>
 
-            {loadingImages && cloudinaryImages.length === 0 ? (
+            {loadingImages && mediaImages.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p>Loading images from Cloudinary…</p>
+                <p>Loading images from R2…</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {cloudinaryImages.map((img) => {
+                {mediaImages.map((img) => {
                   const selected = selectedImages.has(img.fullUrl);
                   return (
                     <button
@@ -617,7 +617,7 @@ export default function AdminBulkUpload() {
                     <p className="text-sm">{publishResults.errors.length} products had errors.</p>
                   )}
                 </div>
-                <Button variant="ghost" size="sm" className="ms-auto" onClick={() => { setStep(1); setPublishResults(null); setGeneratedProducts([]); setSelectedImages(new Set()); setCloudinaryImages([]); }}>
+                <Button variant="ghost" size="sm" className="ms-auto" onClick={() => { setStep(1); setPublishResults(null); setGeneratedProducts([]); setSelectedImages(new Set()); setMediaImages([]); }}>
                   Start Over
                 </Button>
               </div>
@@ -702,7 +702,7 @@ export default function AdminBulkUpload() {
                     {/* Image */}
                     <div className="relative aspect-square bg-muted">
                       <img
-                        src={product.imageUrl.replace("/upload/", "/upload/f_auto,q_auto,w_400/")}
+                        src={optimizeCloudinaryUrl(product.imageUrl, 400) || product.imageUrl}
                         alt="product"
                         className="w-full h-full object-cover"
                         loading="lazy"

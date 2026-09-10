@@ -1,6 +1,6 @@
-# R2 code-stage safety plan
+# Cloudflare R2 production media architecture
 
-This branch introduces R2 support behind `MEDIA_STORAGE=r2` while keeping Cloudinary as the default and rollback path.
+Cloudflare R2 is the primary media provider. `MEDIA_STORAGE=r2` is the production setting; Cloudinary is retained only as an explicit emergency rollback provider with `MEDIA_STORAGE=cloudinary`.
 
 Current scope:
 - dependency-free AWS Signature V4 client for Cloudflare R2
@@ -8,7 +8,7 @@ Current scope:
 - original + optimized H.264 MP4 + poster for new video uploads
 - R2-aware delete helper
 - frontend support for R2 responsive variants, blur placeholders, and video posters
-- preconnect to `media.lucerne-boutique.com`
+- primary preconnect to `media.lucerne-boutique.com`
 
 Verification completed on 2026-09-09:
 - production build passed in an isolated worktree
@@ -21,4 +21,4 @@ Verification completed on 2026-09-09:
 - WebP and JPEG posters returned HTTP 200
 - original video backup was present
 
-The live database media URLs must not be changed until the R2-compatible application code is deployed, new uploads are switched to R2, and a final database/media delta backup is completed.
+The repository includes the transactional database cutover and media-only rollback tooling used for safe migrations. Production deployments should keep Cloudinary assets for a rollback retention period rather than deleting them immediately.
