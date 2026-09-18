@@ -198,6 +198,8 @@ export const discountCodes = pgTable("discount_codes", {
   isActive: boolean("is_active").default(true),
   categoryIds: integer("category_ids").array(),
   subcategoryIds: integer("subcategory_ids").array(),
+  categoryExcludeIds: integer("category_exclude_ids").array(),
+  subcategoryExcludeIds: integer("subcategory_exclude_ids").array(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
