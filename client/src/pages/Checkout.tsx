@@ -159,7 +159,14 @@ export default function Checkout() {
   const [autoFilled, setAutoFilled] = useState(false);
 
   const [discountInput, setDiscountInput] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; discountPercent: number; categoryIds?: number[] | null; subcategoryIds?: number[] | null } | null>(null);
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    discountPercent: number;
+    categoryIds?: number[] | null;
+    subcategoryIds?: number[] | null;
+    categoryExcludeIds?: number[] | null;
+    subcategoryExcludeIds?: number[] | null;
+  } | null>(null);
   const [discountLoading, setDiscountLoading] = useState(false);
   const [discountError, setDiscountError] = useState("");
 
@@ -336,7 +343,9 @@ export default function Checkout() {
     if (!appliedDiscount) return 0;
     const hasCatFilter = appliedDiscount.categoryIds && appliedDiscount.categoryIds.length > 0;
     const hasSubCatFilter = appliedDiscount.subcategoryIds && appliedDiscount.subcategoryIds.length > 0;
-    if (!hasCatFilter && !hasSubCatFilter) return subtotal;
+    const hasCatExcludeFilter = appliedDiscount.categoryExcludeIds && appliedDiscount.categoryExcludeIds.length > 0;
+    const hasSubCatExcludeFilter = appliedDiscount.subcategoryExcludeIds && appliedDiscount.subcategoryExcludeIds.length > 0;
+    if (!hasCatFilter && !hasSubCatFilter && !hasCatExcludeFilter && !hasSubCatExcludeFilter) return subtotal;
     return items.reduce((acc, item) => {
       const catMatch = hasCatFilter && appliedDiscount.categoryIds!.includes(item.product.categoryId);
       const productSubIds: number[] = Array.isArray((item.product as any).subcategoryIds)
@@ -346,14 +355,23 @@ export default function Checkout() {
         ? Array.from(new Set([...productSubIds, item.product.subcategoryId]))
         : productSubIds;
       const subCatMatch = hasSubCatFilter && allSubIds.some((id) => appliedDiscount.subcategoryIds!.includes(id));
-      if (!catMatch && !subCatMatch) return acc;
+      const matchesInclude = hasCatFilter || hasSubCatFilter ? (catMatch || subCatMatch) : true;
+      const excludedByCategory = hasCatExcludeFilter && appliedDiscount.categoryExcludeIds!.includes(item.product.categoryId);
+      const excludedBySubcategory = hasSubCatExcludeFilter &&
+        allSubIds.some((id) => appliedDiscount.subcategoryExcludeIds!.includes(id));
+      if (!matchesInclude || excludedByCategory || excludedBySubcategory) return acc;
       const price = item.product.discountPrice ? Number(item.product.discountPrice) : Number(item.product.price);
       return acc + price * item.quantity;
     }, 0);
   })();
 
   const discountAmount = appliedDiscount ? Math.round(discountableSubtotal * (appliedDiscount.discountPercent / 100) * 100) / 100 : 0;
-  const isRestrictedDiscount = appliedDiscount && ((appliedDiscount.categoryIds && appliedDiscount.categoryIds.length > 0) || (appliedDiscount.subcategoryIds && appliedDiscount.subcategoryIds.length > 0));
+  const isRestrictedDiscount = appliedDiscount && (
+    (appliedDiscount.categoryIds && appliedDiscount.categoryIds.length > 0) ||
+    (appliedDiscount.subcategoryIds && appliedDiscount.subcategoryIds.length > 0) ||
+    (appliedDiscount.categoryExcludeIds && appliedDiscount.categoryExcludeIds.length > 0) ||
+    (appliedDiscount.subcategoryExcludeIds && appliedDiscount.subcategoryExcludeIds.length > 0)
+  );
   const maxCreditAllowed = Math.min(availableCredit, Math.max(0, subtotal - discountAmount));
   const requestedCredit = Number(creditInput) || 0;
   const creditApplied = useCreditEnabled
