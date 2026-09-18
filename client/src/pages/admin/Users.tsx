@@ -387,6 +387,7 @@ export default function AdminUsers() {
 
   return (
     <AdminLayout>
+      <div style={{ zoom: 0.8 }}>
       <AdminPageHeader
         title={t.admin.users}
         description={t.admin.manageUsers}
@@ -1270,6 +1271,7 @@ export default function AdminUsers() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </AdminLayout>
   );
 }
