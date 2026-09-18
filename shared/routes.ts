@@ -117,6 +117,10 @@ const discountCodeSelectSchema = z.object({
   usedCount: z.number().nullable(),
   expiresAt: z.string().nullable(),
   isActive: z.boolean().nullable(),
+  categoryIds: z.array(z.number()).nullable().optional(),
+  subcategoryIds: z.array(z.number()).nullable().optional(),
+  categoryExcludeIds: z.array(z.number()).nullable().optional(),
+  subcategoryExcludeIds: z.array(z.number()).nullable().optional(),
   createdAt: z.string().nullable(),
 });
 
