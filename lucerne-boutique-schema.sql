@@ -210,11 +210,15 @@ CREATE TABLE IF NOT EXISTS discount_codes (
   is_active         boolean   DEFAULT true,
   category_ids      integer[],
   subcategory_ids   integer[],
+  category_exclude_ids integer[],
+  subcategory_exclude_ids integer[],
   created_at        timestamp DEFAULT now()
 );
 
 ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS category_ids    integer[];
 ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS subcategory_ids integer[];
+ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS category_exclude_ids integer[];
+ALTER TABLE discount_codes ADD COLUMN IF NOT EXISTS subcategory_exclude_ids integer[];
 
 
 -- ─────────────────────────────────────────
