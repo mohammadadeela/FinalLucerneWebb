@@ -3317,18 +3317,32 @@ Sitemap: ${SITE_URL}/sitemap.xml
           let discountableSubtotal = subtotal;
           const hasCatFilter = discount.categoryIds && discount.categoryIds.length > 0;
           const hasSubCatFilter = discount.subcategoryIds && discount.subcategoryIds.length > 0;
-          if (hasCatFilter || hasSubCatFilter) {
+          const hasCatExcludeFilter = discount.categoryExcludeIds && discount.categoryExcludeIds.length > 0;
+          const hasSubCatExcludeFilter = discount.subcategoryExcludeIds && discount.subcategoryExcludeIds.length > 0;
+          if (hasCatFilter || hasSubCatFilter || hasCatExcludeFilter || hasSubCatExcludeFilter) {
             discountableSubtotal = 0;
             for (const item of input.items) {
               const product = await storage.getProduct(item.productId);
               if (!product) continue;
+
               const catMatch = hasCatFilter && discount.categoryIds!.includes(product.categoryId);
               const productSubIds: number[] = Array.isArray((product as any).subcategoryIds) ? (product as any).subcategoryIds : [];
               const allSubIds = product.subcategoryId != null
                 ? Array.from(new Set([...productSubIds, product.subcategoryId]))
                 : productSubIds;
               const subCatMatch = hasSubCatFilter && allSubIds.some((id) => discount.subcategoryIds!.includes(id));
-              if (catMatch || subCatMatch) {
+
+              // Preserve the existing OR behavior when include restrictions are used.
+              // With no include restrictions, every product is eligible unless excluded.
+              const matchesInclude = hasCatFilter || hasSubCatFilter
+                ? (catMatch || subCatMatch)
+                : true;
+
+              const excludedByCategory = hasCatExcludeFilter && discount.categoryExcludeIds!.includes(product.categoryId);
+              const excludedBySubcategory = hasSubCatExcludeFilter &&
+                allSubIds.some((id) => discount.subcategoryExcludeIds!.includes(id));
+
+              if (matchesInclude && !excludedByCategory && !excludedBySubcategory) {
                 const price = product.discountPrice ? Number(product.discountPrice) : Number(product.price);
                 discountableSubtotal += price * item.quantity;
               }
@@ -3974,7 +3988,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.post("/api/admin/discount-codes", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     try {
-      const { code, discountPercent, maxUses, maxUsesPerUser, expiresAt, isActive, categoryIds, subcategoryIds } = req.body;
+      const { code, discountPercent, maxUses, maxUsesPerUser, expiresAt, isActive, categoryIds, subcategoryIds, categoryExcludeIds, subcategoryExcludeIds } = req.body;
       if (!code || !discountPercent) return res.status(400).json({ message: "Code and discount percent are required" });
       if (Number(discountPercent) < 1 || Number(discountPercent) > 100) return res.status(400).json({ message: "Discount percent must be between 1 and 100" });
       if (maxUses && Number(maxUses) < 1) return res.status(400).json({ message: "Max uses must be at least 1" });
@@ -3988,6 +4002,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
         isActive: isActive !== false,
         categoryIds: Array.isArray(categoryIds) && categoryIds.length > 0 ? categoryIds.map(Number) : null,
         subcategoryIds: Array.isArray(subcategoryIds) && subcategoryIds.length > 0 ? subcategoryIds.map(Number) : null,
+        categoryExcludeIds: Array.isArray(categoryExcludeIds) && categoryExcludeIds.length > 0 ? categoryExcludeIds.map(Number) : null,
+        subcategoryExcludeIds: Array.isArray(subcategoryExcludeIds) && subcategoryExcludeIds.length > 0 ? subcategoryExcludeIds.map(Number) : null,
       });
       res.json(created);
     } catch (err: any) {
@@ -4000,7 +4016,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     try {
       const id = Number(req.params.id);
-      const { code, discountPercent, maxUses, maxUsesPerUser, expiresAt, isActive, categoryIds, subcategoryIds } = req.body;
+      const { code, discountPercent, maxUses, maxUsesPerUser, expiresAt, isActive, categoryIds, subcategoryIds, categoryExcludeIds, subcategoryExcludeIds } = req.body;
       if (discountPercent !== undefined && (Number(discountPercent) < 1 || Number(discountPercent) > 100)) return res.status(400).json({ message: "Discount percent must be between 1 and 100" });
       if (maxUses !== undefined && maxUses !== null && Number(maxUses) < 1) return res.status(400).json({ message: "Max uses must be at least 1" });
       if (maxUsesPerUser !== undefined && maxUsesPerUser !== null && Number(maxUsesPerUser) < 1) return res.status(400).json({ message: "Max uses per user must be at least 1" });
@@ -4013,6 +4029,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
       if (isActive !== undefined) updates.isActive = isActive;
       if (categoryIds !== undefined) updates.categoryIds = Array.isArray(categoryIds) && categoryIds.length > 0 ? categoryIds.map(Number) : null;
       if (subcategoryIds !== undefined) updates.subcategoryIds = Array.isArray(subcategoryIds) && subcategoryIds.length > 0 ? subcategoryIds.map(Number) : null;
+      if (categoryExcludeIds !== undefined) updates.categoryExcludeIds = Array.isArray(categoryExcludeIds) && categoryExcludeIds.length > 0 ? categoryExcludeIds.map(Number) : null;
+      if (subcategoryExcludeIds !== undefined) updates.subcategoryExcludeIds = Array.isArray(subcategoryExcludeIds) && subcategoryExcludeIds.length > 0 ? subcategoryExcludeIds.map(Number) : null;
       const updated = await storage.updateDiscountCode(id, updates);
       if (!updated) return res.status(404).json({ message: "Not found" });
       res.json(updated);
