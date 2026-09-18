@@ -401,7 +401,9 @@ async function ensureProductSchemaAndLegacyData() {
       ALTER TABLE discount_codes
         ADD COLUMN IF NOT EXISTS max_uses_per_user integer,
         ADD COLUMN IF NOT EXISTS category_ids integer[],
-        ADD COLUMN IF NOT EXISTS subcategory_ids integer[]
+        ADD COLUMN IF NOT EXISTS subcategory_ids integer[],
+        ADD COLUMN IF NOT EXISTS category_exclude_ids integer[],
+        ADD COLUMN IF NOT EXISTS subcategory_exclude_ids integer[]
     `));
   } catch (e) {
     console.error("[startup] discount_codes schema migration failed:", e);
