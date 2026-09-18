@@ -35,6 +35,8 @@ export default function DiscountCodes() {
   const [search, setSearch] = useState("");
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showSubCatPicker, setShowSubCatPicker] = useState(false);
+  const [showCatExcludePicker, setShowCatExcludePicker] = useState(false);
+  const [showSubCatExcludePicker, setShowSubCatExcludePicker] = useState(false);
 
   const [form, setForm] = useState({
     code: "",
@@ -45,6 +47,8 @@ export default function DiscountCodes() {
     isActive: true,
     categoryIds: [] as number[],
     subcategoryIds: [] as number[],
+    categoryExcludeIds: [] as number[],
+    subcategoryExcludeIds: [] as number[],
   });
 
   const { data: codes = [], isLoading } = useQuery<DiscountCode[]>({
@@ -73,6 +77,20 @@ export default function DiscountCodes() {
     setForm(prev => {
       const has = prev.subcategoryIds.includes(id);
       return { ...prev, subcategoryIds: has ? prev.subcategoryIds.filter(x => x !== id) : [...prev.subcategoryIds, id] };
+    });
+  };
+
+  const toggleCategoryExclude = (id: number) => {
+    setForm(prev => {
+      const has = prev.categoryExcludeIds.includes(id);
+      return { ...prev, categoryExcludeIds: has ? prev.categoryExcludeIds.filter(x => x !== id) : [...prev.categoryExcludeIds, id] };
+    });
+  };
+
+  const toggleSubcategoryExclude = (id: number) => {
+    setForm(prev => {
+      const has = prev.subcategoryExcludeIds.includes(id);
+      return { ...prev, subcategoryExcludeIds: has ? prev.subcategoryExcludeIds.filter(x => x !== id) : [...prev.subcategoryExcludeIds, id] };
     });
   };
 
@@ -319,11 +337,24 @@ export default function DiscountCodes() {
   };
 
   const resetForm = () => {
-    setForm({ code: "", discountPercent: "", maxUses: "", maxUsesPerUser: "", expiresAt: "", isActive: true, categoryIds: [], subcategoryIds: [] });
+    setForm({
+      code: "",
+      discountPercent: "",
+      maxUses: "",
+      maxUsesPerUser: "",
+      expiresAt: "",
+      isActive: true,
+      categoryIds: [],
+      subcategoryIds: [],
+      categoryExcludeIds: [],
+      subcategoryExcludeIds: [],
+    });
     setShowForm(false);
     setEditingId(null);
     setShowCatPicker(false);
     setShowSubCatPicker(false);
+    setShowCatExcludePicker(false);
+    setShowSubCatExcludePicker(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -337,6 +368,8 @@ export default function DiscountCodes() {
       isActive: form.isActive,
       categoryIds: form.categoryIds.length > 0 ? form.categoryIds : [],
       subcategoryIds: form.subcategoryIds.length > 0 ? form.subcategoryIds : [],
+      categoryExcludeIds: form.categoryExcludeIds.length > 0 ? form.categoryExcludeIds : [],
+      subcategoryExcludeIds: form.subcategoryExcludeIds.length > 0 ? form.subcategoryExcludeIds : [],
     };
     if (!data.code || !data.discountPercent || data.discountPercent < 1 || data.discountPercent > 100) {
       toast({ title: ar ? "يرجى إدخال بيانات صحيحة" : "Please enter valid data", variant: "destructive" });
@@ -359,11 +392,15 @@ export default function DiscountCodes() {
       isActive: code.isActive ?? true,
       categoryIds: (code as any).categoryIds || [],
       subcategoryIds: (code as any).subcategoryIds || [],
+      categoryExcludeIds: (code as any).categoryExcludeIds || [],
+      subcategoryExcludeIds: (code as any).subcategoryExcludeIds || [],
     });
     setEditingId(code.id);
     setShowForm(true);
     setShowCatPicker(false);
     setShowSubCatPicker(false);
+    setShowCatExcludePicker(false);
+    setShowSubCatExcludePicker(false);
   };
 
   const copyCode = (code: string) => {
@@ -399,10 +436,14 @@ export default function DiscountCodes() {
   const getCatLabel = (d: any) => {
     const catIds: number[] = d.categoryIds || [];
     const subIds: number[] = d.subcategoryIds || [];
-    if (catIds.length === 0 && subIds.length === 0) return null;
+    const catExcludeIds: number[] = d.categoryExcludeIds || [];
+    const subExcludeIds: number[] = d.subcategoryExcludeIds || [];
+    if (catIds.length === 0 && subIds.length === 0 && catExcludeIds.length === 0 && subExcludeIds.length === 0) return null;
     const catNames = catIds.map((id: number) => categories.find((c: any) => c.id === id)?.[ar ? "nameAr" : "name"] || `#${id}`);
     const subNames = subIds.map((id: number) => allSubcategories.find((s: any) => s.id === id)?.[ar ? "nameAr" : "name"] || `#${id}`);
-    return [...catNames, ...subNames];
+    const excludedCatNames = catExcludeIds.map((id: number) => `− ${categories.find((c: any) => c.id === id)?.[ar ? "nameAr" : "name"] || `#${id}`}`);
+    const excludedSubNames = subExcludeIds.map((id: number) => `− ${allSubcategories.find((s: any) => s.id === id)?.[ar ? "nameAr" : "name"] || `#${id}`}`);
+    return [...catNames, ...subNames, ...excludedCatNames, ...excludedSubNames];
   };
 
   return (
@@ -592,11 +633,101 @@ export default function DiscountCodes() {
             </div>
           </div>
 
-          {(form.categoryIds.length > 0 || form.subcategoryIds.length > 0) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>{ar ? "استثناء الأقسام (اختياري)" : "Exclude Categories (optional)"}</Label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setShowCatExcludePicker(p => !p); setShowCatPicker(false); setShowSubCatPicker(false); setShowSubCatExcludePicker(false); }}
+                  className="w-full border border-input bg-background px-3 py-2 text-sm rounded-none flex items-center justify-between"
+                  data-testid="button-toggle-cat-exclude-picker"
+                >
+                  <span className="truncate">
+                    {form.categoryExcludeIds.length === 0
+                      ? (ar ? "كل الأقسام مشمولة" : "All categories included")
+                      : form.categoryExcludeIds.map(id => categories.find((c: any) => c.id === id)?.[ar ? "nameAr" : "name"] || `#${id}`).join("، ")}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${showCatExcludePicker ? "rotate-180" : ""}`} />
+                </button>
+                {showCatExcludePicker && (
+                  <div className="absolute z-50 top-full start-0 end-0 border border-input bg-background shadow-md max-h-52 overflow-y-auto">
+                    <label className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer border-b border-border text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={form.categoryExcludeIds.length === 0}
+                        onChange={() => setForm(prev => ({ ...prev, categoryExcludeIds: [] }))}
+                        className="w-3.5 h-3.5"
+                      />
+                      {ar ? "كل الأقسام مشمولة" : "Include all categories"}
+                    </label>
+                    {categories.map((c: any) => (
+                      <label key={c.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.categoryExcludeIds.includes(c.id)}
+                          onChange={() => toggleCategoryExclude(c.id)}
+                          className="w-3.5 h-3.5"
+                        />
+                        <span className="text-sm">{ar ? c.nameAr || c.name : c.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{ar ? "استثناء الفئات الفرعية (اختياري)" : "Exclude Subcategories (optional)"}</Label>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setShowSubCatExcludePicker(p => !p); setShowCatPicker(false); setShowSubCatPicker(false); setShowCatExcludePicker(false); }}
+                  className="w-full border border-input bg-background px-3 py-2 text-sm rounded-none flex items-center justify-between"
+                  data-testid="button-toggle-subcat-exclude-picker"
+                >
+                  <span className="truncate">
+                    {form.subcategoryExcludeIds.length === 0
+                      ? (ar ? "كل الفئات الفرعية مشمولة" : "All subcategories included")
+                      : form.subcategoryExcludeIds.map(id => allSubcategories.find((s: any) => s.id === id)?.[ar ? "nameAr" : "name"] || `#${id}`).join("، ")}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 flex-shrink-0 transition-transform ${showSubCatExcludePicker ? "rotate-180" : ""}`} />
+                </button>
+                {showSubCatExcludePicker && (
+                  <div className="absolute z-50 top-full start-0 end-0 border border-input bg-background shadow-md max-h-52 overflow-y-auto">
+                    <label className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer border-b border-border text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={form.subcategoryExcludeIds.length === 0}
+                        onChange={() => setForm(prev => ({ ...prev, subcategoryExcludeIds: [] }))}
+                        className="w-3.5 h-3.5"
+                      />
+                      {ar ? "كل الفئات الفرعية مشمولة" : "Include all subcategories"}
+                    </label>
+                    {allSubcategories.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">{ar ? "لا توجد فئات فرعية" : "No subcategories"}</p>
+                    ) : allSubcategories.map((s: any) => (
+                      <label key={s.id} className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.subcategoryExcludeIds.includes(s.id)}
+                          onChange={() => toggleSubcategoryExclude(s.id)}
+                          className="w-3.5 h-3.5"
+                        />
+                        <span className="text-sm">{ar ? s.nameAr || s.name : s.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {(form.categoryIds.length > 0 || form.subcategoryIds.length > 0 || form.categoryExcludeIds.length > 0 || form.subcategoryExcludeIds.length > 0) && (
             <p className="text-xs text-muted-foreground">
               {ar
-                ? "سيُطبَّق الخصم فقط على المنتجات التي تنتمي إلى الأقسام/الفئات الفرعية المختارة"
-                : "Discount applies only to products belonging to the selected categories/subcategories"}
+                ? "سيُطبَّق الخصم على المنتجات المطابقة للتقييد، مع استثناء الأقسام والفئات الفرعية المحددة."
+                : "Discount applies to matching restrictions, excluding the selected categories and subcategories."}
             </p>
           )}
 
