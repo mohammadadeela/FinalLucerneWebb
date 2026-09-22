@@ -163,7 +163,6 @@ function PageScaleController() {
   useEffect(() => {
     const shouldScale =
       location === "/" ||
-      location.startsWith("/product/") ||
       location === "/dresses" ||
       location === "/clothes" ||
       location === "/shoes" ||

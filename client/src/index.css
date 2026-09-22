@@ -84,11 +84,9 @@
   html {
     overflow-x: hidden;
   }
-  /* Use the browser's normal page scale everywhere. Keep the previous
-     desktop scale only on the product-details route. Note: the
-     draggable chat/Instagram icons compensate for this zoom in their
-     drag math (see getPageZoom() in ChatBot.tsx / App.tsx) so dragging
-     still tracks the cursor correctly. */
+  /* A few legacy storefront routes still use the compact desktop scale.
+     Product details intentionally stays at the browser's normal 100% scale.
+     Drag math compensates for zoom on the remaining scaled routes. */
   @media (min-width: 1280px) {
     html.product-details-page {
       zoom: 0.87;

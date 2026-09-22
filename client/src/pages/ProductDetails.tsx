@@ -2150,15 +2150,15 @@ currentMedia?.url || product.mainImage,
 return (
 <div className="min-h-screen flex flex-col pt-navbar">
 <Navbar />
-<main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8">
-<div className="max-w-6xl mx-auto">
-<div className="grid grid-cols-1 lg:grid-cols-[48%_52%] gap-6 sm:gap-10 lg:gap-8">
+<main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+<div className="max-w-[1380px] mx-auto">
+<div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)] lg:gap-10 xl:grid-cols-[minmax(0,760px)_minmax(420px,1fr)] xl:gap-14">
 {/* ── Images + Video ── */}
-<div ref={galleryColRef} className="flex flex-col gap-4">
-<div className="flex gap-2 sm:gap-3 h-[62vh] min-h-[480px] max-h-[560px] sm:h-[620px] sm:max-h-none lg:h-[720px]">
+<div ref={galleryColRef} className="flex flex-col gap-4 min-w-0">
+<div className="flex gap-2.5 sm:gap-3 h-[520px] sm:h-[590px] lg:h-[620px] xl:h-[660px]">
 {/* Desktop thumbnail strip */}
 {allMedia.length > 1 && (
-<div className="hidden sm:block relative sm:w-[100px] lg:w-[120px] flex-none h-full group/thumbstrip">
+<div className="hidden sm:block relative w-[96px] lg:w-[104px] flex-none h-full group/thumbstrip">
 <div
 ref={thumbsRef}
 className="flex flex-col gap-2 overflow-y-auto h-full py-1 px-1 scrollbar-hide"
@@ -2233,7 +2233,7 @@ data-testid="button-thumb-scroll-down"
 
 {/* ── Main viewer ── */}
 <div
-className="flex-1 w-0 relative overflow-hidden rounded-2xl"
+className="flex-1 min-w-0 relative overflow-hidden rounded-2xl bg-[#f7f7f7] ring-1 ring-black/[0.05]"
 onTouchStart={handleTouchStart}
 onTouchEnd={handleTouchEnd}
 >
@@ -2267,10 +2267,7 @@ isVideoSelected
 <img
 src={mainImgBlurSrc}
 aria-hidden
-className={`absolute left-1/2 top-1/2 z-20 h-auto w-auto -translate-x-1/2 -translate-y-1/2 object-cover rounded-2xl pointer-events-none shadow-sm ring-1 ring-black/[0.06] transition-opacity duration-700
-max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)]
-sm:max-w-[calc(100%-1.5rem)] sm:max-h-[calc(100%-1.5rem)]
-lg:max-w-[calc(100%-0.5rem)] lg:max-h-[calc(100%-0.5rem)]
+className={`absolute inset-0 z-20 h-full w-full object-contain p-2 sm:p-3 lg:p-4 rounded-2xl pointer-events-none transition-opacity duration-700
 ${mainImgReady ? "opacity-0" : "opacity-100"}`}
 />
 )}
@@ -2292,10 +2289,7 @@ fetchpriority="high"
 decoding="async"
 width={800}
 height={1067}
-className={`block h-auto w-auto object-contain rounded-2xl shadow-sm ring-1 ring-black/[0.06] transition-opacity duration-150
-max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)]
-sm:max-w-[calc(100%-1.5rem)] sm:max-h-[calc(100%-1.5rem)]
-lg:max-w-[calc(100%-0.5rem)] lg:max-h-[calc(100%-0.5rem)]
+className={`block h-full w-full object-contain p-2 sm:p-3 lg:p-4 rounded-2xl transition-opacity duration-150
 ${zoomPos ? "opacity-0" : "opacity-100"}`}
 data-testid="img-product-main"
 onLoad={() => {
@@ -2395,7 +2389,7 @@ onClick={() => {
 setSelectedImageIdx(idx);
 setZoomPos(null);
 }}
-className={`group/thumb w-[80px] aspect-[3/4] bg-white overflow-hidden flex-shrink-0 snap-start transition-all duration-200 rounded-xl relative ${
+className={`group/thumb w-[88px] aspect-[3/4] bg-white overflow-hidden flex-shrink-0 snap-start transition-all duration-200 rounded-xl relative ${
 selectedImageIdx === idx
 ? "ring-2 ring-offset-1 ring-foreground"
 : "opacity-70"
@@ -2479,13 +2473,13 @@ style={{ backgroundColor: v.colorCode }}
 {/* ── Info panel ── */}
 <div
 ref={infoPanelRef}
-className="flex flex-col pt-4 sm:pt-8 lg:pt-0 lg:sticky lg:top-28 h-fit"
+className="flex min-w-0 flex-col pt-4 sm:pt-8 lg:sticky lg:top-24 lg:h-fit lg:pt-0"
 >
 <div className="text-sm text-muted-foreground uppercase tracking-widest mb-2">
 {product.brand || "Lucerne Boutique"}
 </div>
 <h1
-className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold mb-4 text-balance"
+className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] xl:text-5xl font-semibold mb-4 text-balance leading-[0.98]"
 data-testid="text-product-name"
 >
 {product.name}
@@ -2659,33 +2653,28 @@ setQuantity(1);
 }}
 disabled={isUnavailable}
 aria-pressed={isSelected}
-className={`relative min-w-[3.75rem] h-[3.75rem] px-4 flex flex-col items-center justify-center rounded-xl border-2 transition-all duration-200 ${
+className={`relative min-w-[4.25rem] h-14 px-5 flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-200 ${
 isUnavailable
-? "border-border bg-muted/40 text-muted-foreground/45 cursor-not-allowed"
+? "border-black/[0.06] bg-black/[0.025] text-black/25 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/25 cursor-not-allowed"
 : isSelected
-? "border-foreground bg-foreground text-background shadow-md ring-2 ring-foreground/10 scale-[1.03]"
+? "border-black bg-black text-white shadow-[0_8px_22px_rgba(0,0,0,0.14)] -translate-y-0.5 dark:border-white dark:bg-white dark:text-black"
 : isMySaved
-? "border-foreground bg-secondary/70 text-foreground ring-1 ring-foreground/20 shadow-sm"
-: "border-foreground/20 bg-background text-foreground shadow-sm hover:-translate-y-0.5 hover:border-foreground hover:bg-secondary/40 hover:shadow-md"
+? "border-black/45 bg-black/[0.035] text-foreground shadow-sm dark:border-white/45 dark:bg-white/[0.06]"
+: "border-black/15 bg-background text-foreground shadow-sm hover:-translate-y-0.5 hover:border-black/55 hover:shadow-md dark:border-white/20 dark:hover:border-white/60"
 }`}
 data-testid={`button-size-${size}`}
 data-size={size}
 >
-<span className={`text-base font-semibold leading-none ${isUnavailable ? "line-through decoration-1" : ""}`}>
+<span className={`text-[15px] font-semibold leading-none ${isUnavailable ? "line-through decoration-1" : ""}`}>
 {size}
 </span>
-{isSelected && (
-<span className="absolute top-1.5 end-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-background text-foreground">
-<Check className="h-2.5 w-2.5" strokeWidth={3} />
-</span>
-)}
 {isUnavailable && (
-<span className="mt-1 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+<span className="mt-1 text-[8px] font-semibold uppercase tracking-wide opacity-60">
 {isAr ? "نفد" : "out"}
 </span>
 )}
 {isMySaved && !isUnavailable && !isSelected && (
-<span className="text-[9px] leading-none mt-1 font-semibold text-muted-foreground">
+<span className="mt-1 text-[9px] leading-none font-semibold text-muted-foreground">
 {isAr ? "مقاسي" : "mine"}
 </span>
 )}
