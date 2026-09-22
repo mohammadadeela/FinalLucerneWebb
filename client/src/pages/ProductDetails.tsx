@@ -2612,11 +2612,11 @@ style={{ backgroundColor: v.colorCode }}
 {/* Sizes */}
 {hasSizes && (
 <div className="mb-6">
-<div className="flex flex-col gap-2.5 mb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+<div className="flex justify-between items-center mb-2">
 <span className="text-sm font-semibold uppercase tracking-widest">
 {t.product.size}
 </span>
-<div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+<div className="flex items-center gap-2">
 {!hideFindMySize && (
 <button
 onClick={() => setShowFindMySize(true)}
@@ -2637,16 +2637,11 @@ data-testid="button-size-guide"
 </button>
 </div>
 </div>
-<div
-className="flex flex-nowrap gap-2.5 overflow-x-auto px-1 pb-2 -mx-1 scrollbar-hide scroll-smooth snap-x snap-proximity sm:mx-0 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0"
-style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
->
+<div className="flex flex-wrap gap-3">
 {sizes.map((size) => {
 const sizeQty =
 sizeInv[size] !== undefined ? sizeInv[size] : null;
 const isOOS = sizeQty !== null && sizeQty <= 0;
-const isUnavailable = isSoldOut || isOOS;
-const isSelected = selectedSize === size && !isUnavailable;
 const isMySaved =
 savedHighlight &&
 size === savedHighlight &&
@@ -2655,33 +2650,27 @@ return (
 <button
 key={size}
 onClick={() => {
-if (!isUnavailable) {
+if (!isOOS) {
 setSelectedSize(size);
 setQuantity(1);
 }
 }}
-disabled={isUnavailable}
-aria-pressed={isSelected}
-className={`relative min-w-14 h-14 px-4 flex flex-shrink-0 snap-start flex-col items-center justify-center border transition-all duration-200 ${
-isUnavailable
-? "border-border bg-muted/20 text-muted-foreground/40 line-through cursor-not-allowed"
-: isSelected
-? "border-primary bg-primary text-primary-foreground shadow-sm"
+disabled={isOOS}
+className={`relative min-w-14 h-14 px-4 flex flex-col items-center justify-center border transition-all ${
+isOOS
+? "border-border text-muted-foreground/40 line-through cursor-not-allowed"
+: selectedSize === size
+? "border-primary bg-primary text-primary-foreground"
 : isMySaved
 ? "border-foreground bg-background text-foreground ring-2 ring-foreground/30"
-: "border-border bg-background text-foreground hover:border-primary"
+: "border-border hover:border-primary text-foreground"
 }`}
 data-testid={`button-size-${size}`}
 data-size={size}
 >
 <span className="text-base leading-none">{size}</span>
-{isUnavailable && (
-<span className="mt-1 text-[8px] font-semibold uppercase tracking-wide opacity-60">
-{isAr ? "نفد" : "out"}
-</span>
-)}
-{isMySaved && !isUnavailable && !isSelected && (
-<span className="mt-1 text-[9px] leading-none font-semibold text-muted-foreground">
+{isMySaved && (
+<span className="text-[9px] leading-none mt-0.5 font-medium opacity-70">
 {isAr ? "مقاسي" : "mine"}
 </span>
 )}
@@ -2896,7 +2885,6 @@ data-testid="text-availability"
 </div>
 </div>
 
-<div className="product-related-zoom">
 {isSoldOut && similarProducts.length > 0 && (
 <RelatedProductsSlider
 products={similarProducts}
@@ -2936,7 +2924,6 @@ accent={isAr ? "تصفحتِها من قبل" : "Your browsing history"}
 accentColor="text-amber-500"
 />
 )}
-</div>
 </div>
 </main>
 <Footer />

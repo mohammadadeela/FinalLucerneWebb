@@ -84,9 +84,11 @@
   html {
     overflow-x: hidden;
   }
-  /* Storefront and product-detail routes use the compact desktop scale.
-     Recommendation sections inside product details are reduced an additional 10%.
-     Drag math compensates for the page zoom where needed. */
+  /* Use the browser's normal page scale everywhere. Keep the previous
+     desktop scale only on the product-details route. Note: the
+     draggable chat/Instagram icons compensate for this zoom in their
+     drag math (see getPageZoom() in ChatBot.tsx / App.tsx) so dragging
+     still tracks the cursor correctly. */
   @media (min-width: 1280px) {
     html.product-details-page {
       zoom: 0.87;
@@ -174,10 +176,6 @@
 
 .pt-navbar {
   padding-top: calc(5rem + var(--news-bar-offset, 0px));
-}
-
-.product-related-zoom {
-  zoom: 0.9;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
