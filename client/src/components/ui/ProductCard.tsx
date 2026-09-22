@@ -352,8 +352,8 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             )
           )}
 
-          {/* Watermark */}
-          <ProductWatermark size="sm" />
+          {/* Keep the product photo clean when the sold-out stamp is shown. */}
+          {!isSoldOut && <ProductWatermark size="sm" />}
 
           {/* Hover dark overlay */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-400 z-10" />
