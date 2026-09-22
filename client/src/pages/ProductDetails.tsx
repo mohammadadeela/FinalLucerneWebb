@@ -2642,6 +2642,8 @@ data-testid="button-size-guide"
 const sizeQty =
 sizeInv[size] !== undefined ? sizeInv[size] : null;
 const isOOS = sizeQty !== null && sizeQty <= 0;
+const isUnavailable = isSoldOut || isOOS;
+const isSelected = selectedSize === size && !isUnavailable;
 const isMySaved =
 savedHighlight &&
 size === savedHighlight &&
@@ -2650,27 +2652,40 @@ return (
 <button
 key={size}
 onClick={() => {
-if (!isOOS) {
+if (!isUnavailable) {
 setSelectedSize(size);
 setQuantity(1);
 }
 }}
-disabled={isOOS}
-className={`relative min-w-14 h-14 px-4 flex flex-col items-center justify-center border transition-all ${
-isOOS
-? "border-border text-muted-foreground/40 line-through cursor-not-allowed"
-: selectedSize === size
-? "border-primary bg-primary text-primary-foreground"
+disabled={isUnavailable}
+aria-pressed={isSelected}
+className={`relative min-w-[3.75rem] h-[3.75rem] px-4 flex flex-col items-center justify-center rounded-xl border-2 transition-all duration-200 ${
+isUnavailable
+? "border-border bg-muted/40 text-muted-foreground/45 cursor-not-allowed"
+: isSelected
+? "border-foreground bg-foreground text-background shadow-md ring-2 ring-foreground/10 scale-[1.03]"
 : isMySaved
-? "border-foreground bg-background text-foreground ring-2 ring-foreground/30"
-: "border-border hover:border-primary text-foreground"
+? "border-foreground bg-secondary/70 text-foreground ring-1 ring-foreground/20 shadow-sm"
+: "border-foreground/20 bg-background text-foreground shadow-sm hover:-translate-y-0.5 hover:border-foreground hover:bg-secondary/40 hover:shadow-md"
 }`}
 data-testid={`button-size-${size}`}
 data-size={size}
 >
-<span className="text-base leading-none">{size}</span>
-{isMySaved && (
-<span className="text-[9px] leading-none mt-0.5 font-medium opacity-70">
+<span className={`text-base font-semibold leading-none ${isUnavailable ? "line-through decoration-1" : ""}`}>
+{size}
+</span>
+{isSelected && (
+<span className="absolute top-1.5 end-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-background text-foreground">
+<Check className="h-2.5 w-2.5" strokeWidth={3} />
+</span>
+)}
+{isUnavailable && (
+<span className="mt-1 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground/60">
+{isAr ? "نفد" : "out"}
+</span>
+)}
+{isMySaved && !isUnavailable && !isSelected && (
+<span className="text-[9px] leading-none mt-1 font-semibold text-muted-foreground">
 {isAr ? "مقاسي" : "mine"}
 </span>
 )}
