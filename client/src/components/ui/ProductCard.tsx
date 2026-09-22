@@ -45,6 +45,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
   const discountPrice = product.discountPrice
     ? parseFloat(product.discountPrice.toString()).toFixed(2)
     : null;
+  const isSoldOut = product.stockQuantity <= 0;
 
   const cv = (product as any).colorVariants as ColorVariant[] | undefined;
   const hasVariants = cv && cv.length > 0;
@@ -236,8 +237,21 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               className={`absolute inset-0 z-30 rounded-2xl bg-muted transition-opacity duration-500 pointer-events-none ${imageReady ? "opacity-0" : "animate-pulse opacity-100"}`}
             />
           )}
+          {/* Stock status takes priority over promotional badges. Keep the photo and link visible. */}
+          {isSoldOut && (
+            <div className="absolute top-3 start-3 z-40">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full bg-foreground/90 px-3 py-1.5 text-[10px] font-semibold tracking-wide text-background shadow-md backdrop-blur-sm"
+                data-testid={`badge-sold-out-${product.id}`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-background" aria-hidden="true" />
+                {t.product.soldOut}
+              </span>
+            </div>
+          )}
+
           {/* NEW badge — top start */}
-          {product.isNewArrival && (
+          {!isSoldOut && product.isNewArrival && (
             <div className="absolute top-3 start-3 z-20">
               <span
                 className="bg-foreground text-background text-[10px] font-bold uppercase tracking-[0.15em] px-2.5 py-1 leading-none"
@@ -249,7 +263,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           )}
 
           {/* SALE badge — circle, top end */}
-          {discountPrice && (
+          {!isSoldOut && discountPrice && (
             <div className="absolute top-3 end-3 z-20">
               <span
                 className="w-10 h-10 rounded-full text-white text-[10px] font-bold uppercase tracking-wide flex items-center justify-center leading-none shadow"

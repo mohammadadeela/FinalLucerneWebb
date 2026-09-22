@@ -94,6 +94,8 @@ export const en = {
     select: "Select",
     addToCart: "Add to Cart",
     outOfStock: "Out of Stock",
+    soldOut: "Sold out",
+    soldOutDescription: "This piece is currently unavailable. You can still browse its photos and details.",
     maxStockReached: "Maximum available quantity reached",
     availability: "Availability",
     inStock: "In Stock",

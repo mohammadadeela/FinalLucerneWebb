@@ -1730,6 +1730,7 @@ selectedSize && sizeInv[selectedSize] !== undefined
 ? sizeInv[selectedSize]
 : null;
 const colorName = hasMultipleColors ? activeVariant?.name : undefined;
+const isSoldOut = (product?.stockQuantity ?? 1) <= 0;
 
 const availableStock = hasSizes
 ? selectedSize
@@ -1748,9 +1749,9 @@ return sum;
 }, 0);
 
 const remainingStock = Math.max(0, availableStock - cartQtyForThis);
-const canAdd = hasSizes
+const canAdd = !isSoldOut && (hasSizes
 ? !!selectedSize && remainingStock > 0
-: remainingStock > 0;
+: remainingStock > 0);
 
 useEffect(() => {
 setSelectedSize("");
@@ -2004,8 +2005,6 @@ return recentlyViewedIds
 .map((rid) => allProducts.find((p) => p.id === rid))
 .filter(Boolean) as typeof allProducts;
 }, [allProducts, product?.id, recentlyViewedIds]);
-
-const isSoldOut = (product?.stockQuantity ?? 1) === 0;
 
 const similarProducts = useMemo(() => {
 if (!product || !allProducts || !isSoldOut) return [];
@@ -2492,6 +2491,24 @@ data-testid="text-product-name"
 {product.name}
 </h1>
 
+{isSoldOut && (
+<div
+className="mb-6 flex items-start gap-3 rounded-2xl border border-border bg-muted/50 px-4 py-4 sm:px-5"
+role="status"
+data-testid="product-sold-out-notice"
+>
+<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-background">
+<ShoppingBag className="h-4 w-4" aria-hidden="true" />
+</span>
+<div>
+<p className="text-sm font-semibold text-foreground">{t.product.soldOut}</p>
+<p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+{t.product.soldOutDescription}
+</p>
+</div>
+</div>
+)}
+
 <div className="flex items-center gap-4 mb-6 sm:mb-8 text-lg sm:text-xl">
 {discountPrice ? (
 <>
@@ -2678,7 +2695,7 @@ className="underline hover:text-foreground"
 </div>
 )}
 
-{hasSizes && !selectedSize && (
+{!isSoldOut && hasSizes && !selectedSize && (
 <div
 className="flex items-center gap-2 text-xs text-muted-foreground mb-4 ps-0.5"
 data-testid="text-select-size-prompt"
@@ -2688,7 +2705,7 @@ data-testid="text-select-size-prompt"
 </div>
 )}
 
-{selectedSize &&
+{!isSoldOut && selectedSize &&
 sizeInv[selectedSize] !== undefined &&
 sizeInv[selectedSize] >= 1 &&
 sizeInv[selectedSize] <= 2 && (
@@ -2705,6 +2722,7 @@ data-testid="text-low-stock-urgency"
 
 {/* Qty + Add to cart — min 44px touch targets */}
 <div className="flex items-center gap-2.5 mb-4">
+{!isSoldOut && (
 <div className="flex items-center border border-border rounded-full overflow-hidden bg-background shrink-0">
 <button
 onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -2731,6 +2749,7 @@ data-testid="button-qty-plus"
 <Plus className="w-3.5 h-3.5" />
 </button>
 </div>
+)}
 
 <Button
 onClick={handleAddToCart}
@@ -2738,7 +2757,9 @@ className="flex-1 h-14 rounded-full uppercase tracking-widest text-xs sm:text-sm
 disabled={!canAdd}
 data-testid="button-add-to-cart"
 >
-{canAdd ? (
+{isSoldOut ? (
+t.product.soldOut
+) : canAdd ? (
 <>
 <ShoppingBag className="w-4 h-4 shrink-0" />
 {t.product.addToCart}
@@ -2825,7 +2846,7 @@ data-testid="button-share"
 </button>
 </div>
 
-{selectedSize && availableStock > 0 && (
+{!isSoldOut && selectedSize && availableStock > 0 && (
 <p
 className="text-xs text-muted-foreground mb-4"
 data-testid="text-size-stock"
@@ -2841,12 +2862,12 @@ data-testid="text-size-stock"
 {t.product.availability}
 </span>
 <span
-className={
-availableStock > 0 ? "text-green-600" : "text-destructive"
-}
+className={isSoldOut ? "font-semibold text-foreground" : availableStock > 0 ? "text-green-600" : "text-destructive"}
 data-testid="text-availability"
 >
-{hasSizes && !selectedSize
+{isSoldOut
+? t.product.soldOut
+: hasSizes && !selectedSize
 ? t.product.selectSizeFirst
 : availableStock > 0
 ? t.product.inStock
