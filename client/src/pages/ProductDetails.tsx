@@ -2150,15 +2150,15 @@ currentMedia?.url || product.mainImage,
 return (
 <div className="min-h-screen flex flex-col pt-navbar">
 <Navbar />
-<main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-<div className="max-w-[1380px] mx-auto">
-<div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(380px,0.85fr)] lg:gap-10 xl:grid-cols-[minmax(0,760px)_minmax(420px,1fr)] xl:gap-14">
+<main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8">
+<div className="max-w-6xl mx-auto">
+<div className="grid grid-cols-1 lg:grid-cols-[48%_52%] gap-6 sm:gap-10 lg:gap-8">
 {/* ── Images + Video ── */}
-<div ref={galleryColRef} className="flex flex-col gap-4 min-w-0">
-<div className="flex gap-2.5 sm:gap-3 h-[520px] sm:h-[590px] lg:h-[620px] xl:h-[660px]">
+<div ref={galleryColRef} className="flex flex-col gap-4">
+<div className="flex gap-2 sm:gap-3 h-[62vh] min-h-[480px] max-h-[560px] sm:h-[620px] sm:max-h-none lg:h-[720px]">
 {/* Desktop thumbnail strip */}
 {allMedia.length > 1 && (
-<div className="hidden sm:block relative w-[96px] lg:w-[104px] flex-none h-full group/thumbstrip">
+<div className="hidden sm:block relative sm:w-[100px] lg:w-[120px] flex-none h-full group/thumbstrip">
 <div
 ref={thumbsRef}
 className="flex flex-col gap-2 overflow-y-auto h-full py-1 px-1 scrollbar-hide"
@@ -2233,7 +2233,7 @@ data-testid="button-thumb-scroll-down"
 
 {/* ── Main viewer ── */}
 <div
-className="flex-1 min-w-0 relative overflow-hidden rounded-2xl bg-[#f7f7f7] ring-1 ring-black/[0.05]"
+className="flex-1 w-0 relative overflow-hidden rounded-2xl"
 onTouchStart={handleTouchStart}
 onTouchEnd={handleTouchEnd}
 >
@@ -2267,7 +2267,10 @@ isVideoSelected
 <img
 src={mainImgBlurSrc}
 aria-hidden
-className={`absolute inset-0 z-20 h-full w-full object-contain p-2 sm:p-3 lg:p-4 rounded-2xl pointer-events-none transition-opacity duration-700
+className={`absolute left-1/2 top-1/2 z-20 h-auto w-auto -translate-x-1/2 -translate-y-1/2 object-cover rounded-2xl pointer-events-none shadow-sm ring-1 ring-black/[0.06] transition-opacity duration-700
+max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)]
+sm:max-w-[calc(100%-1.5rem)] sm:max-h-[calc(100%-1.5rem)]
+lg:max-w-[calc(100%-0.5rem)] lg:max-h-[calc(100%-0.5rem)]
 ${mainImgReady ? "opacity-0" : "opacity-100"}`}
 />
 )}
@@ -2289,7 +2292,10 @@ fetchpriority="high"
 decoding="async"
 width={800}
 height={1067}
-className={`block h-full w-full object-contain p-2 sm:p-3 lg:p-4 rounded-2xl transition-opacity duration-150
+className={`block h-auto w-auto object-contain rounded-2xl shadow-sm ring-1 ring-black/[0.06] transition-opacity duration-150
+max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)]
+sm:max-w-[calc(100%-1.5rem)] sm:max-h-[calc(100%-1.5rem)]
+lg:max-w-[calc(100%-0.5rem)] lg:max-h-[calc(100%-0.5rem)]
 ${zoomPos ? "opacity-0" : "opacity-100"}`}
 data-testid="img-product-main"
 onLoad={() => {
@@ -2389,7 +2395,7 @@ onClick={() => {
 setSelectedImageIdx(idx);
 setZoomPos(null);
 }}
-className={`group/thumb w-[88px] aspect-[3/4] bg-white overflow-hidden flex-shrink-0 snap-start transition-all duration-200 rounded-xl relative ${
+className={`group/thumb w-[80px] aspect-[3/4] bg-white overflow-hidden flex-shrink-0 snap-start transition-all duration-200 rounded-xl relative ${
 selectedImageIdx === idx
 ? "ring-2 ring-offset-1 ring-foreground"
 : "opacity-70"
@@ -2473,13 +2479,13 @@ style={{ backgroundColor: v.colorCode }}
 {/* ── Info panel ── */}
 <div
 ref={infoPanelRef}
-className="flex min-w-0 flex-col pt-4 sm:pt-8 lg:sticky lg:top-24 lg:h-fit lg:pt-0"
+className="flex flex-col pt-4 sm:pt-8 lg:pt-0 lg:sticky lg:top-28 h-fit"
 >
 <div className="text-sm text-muted-foreground uppercase tracking-widest mb-2">
 {product.brand || "Lucerne Boutique"}
 </div>
 <h1
-className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] xl:text-5xl font-semibold mb-4 text-balance leading-[0.98]"
+className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold mb-4 text-balance"
 data-testid="text-product-name"
 >
 {product.name}
@@ -2889,6 +2895,7 @@ data-testid="text-availability"
 </div>
 </div>
 
+<div className="product-related-zoom">
 {isSoldOut && similarProducts.length > 0 && (
 <RelatedProductsSlider
 products={similarProducts}
@@ -2928,6 +2935,7 @@ accent={isAr ? "تصفحتِها من قبل" : "Your browsing history"}
 accentColor="text-amber-500"
 />
 )}
+</div>
 </div>
 </main>
 <Footer />

@@ -239,13 +239,27 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           )}
           {/* Stock status takes priority over promotional badges. Keep the photo and link visible. */}
           {isSoldOut && (
-            <div className="absolute inset-0 z-40 flex items-center justify-center px-5 pointer-events-none">
-              <span
-                className="-rotate-6 border-[3px] border-black bg-white/75 px-5 py-3 text-center text-[clamp(18px,2vw,30px)] font-extrabold uppercase leading-none tracking-[0.14em] text-black shadow-[0_10px_30px_rgba(0,0,0,0.16)] outline outline-1 outline-black/30 outline-offset-2 backdrop-blur-[1px]"
-                data-testid={`badge-sold-out-${product.id}`}
-              >
-                {t.product.soldOut}
-              </span>
+            <div className="absolute inset-0 z-40 flex items-center justify-center px-4 pointer-events-none">
+              {language === "ar" ? (
+                <div className="relative mt-5 pt-10">
+                  <span className="absolute left-1/2 top-0 h-4 w-4 -translate-x-1/2 rounded-full border-[3px] border-[#3b313d] bg-[#ff4b50] shadow-sm" aria-hidden="true" />
+                  <span className="absolute left-1/2 top-3 h-12 w-[4px] -translate-x-[42px] rotate-[31deg] origin-top rounded-full bg-[#3b313d]" aria-hidden="true" />
+                  <span className="absolute left-1/2 top-3 h-12 w-[4px] translate-x-[38px] -rotate-[31deg] origin-top rounded-full bg-[#3b313d]" aria-hidden="true" />
+                  <span
+                    className="relative block min-w-[150px] rounded-2xl border-2 border-[#d93439] bg-[#ff4b50] px-5 py-3 text-center text-[15px] font-bold uppercase leading-none tracking-[0.18em] text-white shadow-[5px_6px_0_0_#d93439,0_12px_28px_rgba(0,0,0,0.18)] sm:min-w-[176px] sm:px-6 sm:py-3.5 sm:text-[17px]"
+                    data-testid={`badge-sold-out-${product.id}`}
+                  >
+                    SOLD OUT
+                  </span>
+                </div>
+              ) : (
+                <span
+                  className="-rotate-6 border-[3px] border-black bg-white/75 px-5 py-3 text-center text-[clamp(18px,2vw,30px)] font-extrabold uppercase leading-none tracking-[0.14em] text-black shadow-[0_10px_30px_rgba(0,0,0,0.16)] outline outline-1 outline-black/30 outline-offset-2 backdrop-blur-[1px]"
+                  data-testid={`badge-sold-out-${product.id}`}
+                >
+                  {t.product.soldOut}
+                </span>
+              )}
             </div>
           )}
 

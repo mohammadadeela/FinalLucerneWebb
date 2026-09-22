@@ -94,7 +94,7 @@ export const ar = {
     select: "اختاري",
     addToCart: "أضيفي إلى السلة",
     outOfStock: "نفذت الكمية",
-    soldOut: "بيعت كلها",
+    soldOut: "SOLD OUT",
     soldOutDescription: "هذه القطعة غير متوفرة حاليًا. يمكنكِ تصفح صورها وتفاصيلها.",
     maxStockReached: "وصلت إلى الحد الأقصى المتاح",
     availability: "التوفر",
