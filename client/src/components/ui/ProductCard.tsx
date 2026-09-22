@@ -239,10 +239,9 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           )}
           {/* Stock status takes priority over promotional badges. Keep the photo and link visible. */}
           {isSoldOut && (
-            <div className="absolute inset-0 z-40 flex items-center justify-center px-5 pointer-events-none">
+            <div className="absolute inset-0 z-40 flex items-center justify-center px-4 pointer-events-none">
               <span
-                className="-rotate-[12deg] border-[3px] border-red-600 bg-white/80 px-5 py-2.5 text-center text-[clamp(18px,2.2vw,30px)] font-black uppercase leading-none tracking-[0.08em] text-red-600 shadow-[0_8px_22px_rgba(220,38,38,0.12)] backdrop-blur-[1px] sm:border-[4px] sm:px-7 sm:py-3"
-                style={{ fontFamily: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif" }}
+                className="-rotate-[16deg] rounded-full bg-red-600 px-6 py-2.5 text-center text-[clamp(18px,2vw,30px)] font-extrabold uppercase leading-none tracking-[0.08em] text-white shadow-[0_10px_24px_rgba(220,38,38,0.28)] ring-1 ring-red-700/20"
                 data-testid={`badge-sold-out-${product.id}`}
               >
                 SOLD OUT
