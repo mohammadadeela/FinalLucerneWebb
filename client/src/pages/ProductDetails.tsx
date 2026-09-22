@@ -2612,11 +2612,11 @@ style={{ backgroundColor: v.colorCode }}
 {/* Sizes */}
 {hasSizes && (
 <div className="mb-6">
-<div className="flex justify-between items-center mb-2">
+<div className="flex flex-col gap-2.5 mb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
 <span className="text-sm font-semibold uppercase tracking-widest">
 {t.product.size}
 </span>
-<div className="flex items-center gap-2">
+<div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
 {!hideFindMySize && (
 <button
 onClick={() => setShowFindMySize(true)}
@@ -2637,7 +2637,10 @@ data-testid="button-size-guide"
 </button>
 </div>
 </div>
-<div className="flex flex-wrap gap-3">
+<div
+className="flex flex-nowrap gap-2.5 overflow-x-auto px-1 pb-2 -mx-1 scrollbar-hide scroll-smooth snap-x snap-proximity sm:mx-0 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:px-0 sm:pb-0"
+style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+>
 {sizes.map((size) => {
 const sizeQty =
 sizeInv[size] !== undefined ? sizeInv[size] : null;
@@ -2659,21 +2662,19 @@ setQuantity(1);
 }}
 disabled={isUnavailable}
 aria-pressed={isSelected}
-className={`relative min-w-[4.25rem] h-14 px-5 flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-200 ${
+className={`relative min-w-14 h-14 px-4 flex flex-shrink-0 snap-start flex-col items-center justify-center border transition-all duration-200 ${
 isUnavailable
-? "border-black/[0.06] bg-black/[0.025] text-black/25 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/25 cursor-not-allowed"
+? "border-border bg-muted/20 text-muted-foreground/40 line-through cursor-not-allowed"
 : isSelected
-? "border-black bg-black text-white shadow-[0_8px_22px_rgba(0,0,0,0.14)] -translate-y-0.5 dark:border-white dark:bg-white dark:text-black"
+? "border-primary bg-primary text-primary-foreground shadow-sm"
 : isMySaved
-? "border-black/45 bg-black/[0.035] text-foreground shadow-sm dark:border-white/45 dark:bg-white/[0.06]"
-: "border-black/15 bg-background text-foreground shadow-sm hover:-translate-y-0.5 hover:border-black/55 hover:shadow-md dark:border-white/20 dark:hover:border-white/60"
+? "border-foreground bg-background text-foreground ring-2 ring-foreground/30"
+: "border-border bg-background text-foreground hover:border-primary"
 }`}
 data-testid={`button-size-${size}`}
 data-size={size}
 >
-<span className={`text-[15px] font-semibold leading-none ${isUnavailable ? "line-through decoration-1" : ""}`}>
-{size}
-</span>
+<span className="text-base leading-none">{size}</span>
 {isUnavailable && (
 <span className="mt-1 text-[8px] font-semibold uppercase tracking-wide opacity-60">
 {isAr ? "نفد" : "out"}
