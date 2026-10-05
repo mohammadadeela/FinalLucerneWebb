@@ -723,6 +723,7 @@ export function buildCategoryDetail(ds: Dataset, categoryId: number, month: stri
       price: round2(p.price), stock: p.stock,
       sellingValue: round2(p.price * p.stock), capital: round2(p.price * p.stock * COST_RATIO),
       webUnits: s?.web.units ?? 0, posUnits: s?.pos.units ?? 0,
+      webSales: round2(s?.web.sales ?? 0), posSales: round2(s?.pos.sales ?? 0),
       soldUnits: units, sales: round2(sales), profit: round2(profit),
     };
   });
@@ -733,6 +734,7 @@ export function buildCategoryDetail(ds: Dataset, categoryId: number, month: stri
     productRows.push({
       id: pid, name: `#${pid}`, image: null, barcode: null, subcategoryId: null, price: 0, stock: 0, sellingValue: 0, capital: 0,
       webUnits: s.web.units, posUnits: s.pos.units, soldUnits: units,
+      webSales: round2(s.web.sales), posSales: round2(s.pos.sales),
       sales: round2(s.web.sales + s.pos.sales), profit: round2(s.web.profit + s.pos.profit),
     });
   });
@@ -751,6 +753,7 @@ export function buildCategoryDetail(ds: Dataset, categoryId: number, month: stri
       id: s.id, name: s.name, nameAr: s.nameAr, isActive: s.isActive,
       productCount: i.productCount, stockUnits: i.totalUnits, sellingValue: i.sellingValue, capital: i.capital,
       webSales: round2(agg.web.sales), posSales: round2(agg.pos.sales),
+      webUnits: agg.web.units, posUnits: agg.pos.units,
       units: agg.web.units + agg.pos.units,
       sales: round2(agg.web.sales + agg.pos.sales),
       profit: round2(agg.web.profit + agg.pos.profit),
@@ -810,5 +813,123 @@ export function buildCategoryDetail(ds: Dataset, categoryId: number, month: stri
       const v = weekMap.get(k)!;
       return { week: k, webCash: round2(v.cashWeb), webCard: round2(v.cardWeb), posCash: round2(v.cashPos), posCard: round2(v.cardPos) };
     }),
+  };
+}
+
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Response shapes used by the admin pages (same field names the pages have
+ * always read), filled with the corrected numbers from the engine above.
+ * Extra fields (profit, store credit, expected profit) are additions only.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+const nz = (n: number) => Math.abs(n) > 0.004;
+
+/** GET /api/admin/analytics */
+export function buildAnalyticsResponse(ds: Dataset, month: string | null) {
+  const o = buildOverview(ds, month);
+  const { web, pos } = o.totals;
+  return {
+    websiteTotal: web.sales,
+    posTotal: pos.sales,
+    websiteProfit: web.profit,
+    posProfit: pos.profit,
+    totalProfit: round2(web.profit + pos.profit),
+    storeCredit: round2(web.credit),
+    websiteMonthly: o.monthly.filter((m) => m.web.orders > 0 || nz(m.web.sales)).map((m) => ({ month: m.month, revenue: m.web.sales, order_count: m.web.orders })),
+    posMonthly: o.monthly.filter((m) => m.pos.orders > 0 || nz(m.pos.sales)).map((m) => ({ month: m.month, revenue: m.pos.sales, order_count: m.pos.orders })),
+    websiteCategoryRevenue: o.categories.filter((c) => nz(c.web.sales)).map((c) => ({ category: c.name, category_ar: c.nameAr, revenue: c.web.sales })).sort((a, b) => b.revenue - a.revenue),
+    posCategoryRevenue: o.categories.filter((c) => nz(c.pos.sales)).map((c) => ({ category: c.name, category_ar: c.nameAr, revenue: c.pos.sales })).sort((a, b) => b.revenue - a.revenue),
+    categoryProfit: o.categories.map((c) => ({ category: c.name, profit: c.all.profit, units: c.all.units })),
+    websitePaymentBreakdown: [
+      { payment_type: "cash", revenue: web.cash },
+      { payment_type: "card", revenue: web.card },
+    ],
+    posPaymentBreakdown: { cash: pos.cash, card: pos.card },
+    paymentByCategory: o.categories.filter((c) => nz(c.web.cash) || nz(c.web.card)).map((c) => ({ category: c.name, category_ar: c.nameAr, cash: c.web.cash, card: c.web.card })),
+    posCategoryPayment: o.categories.filter((c) => nz(c.pos.cash) || nz(c.pos.card)).map((c) => ({ category: c.name, category_ar: c.nameAr, cash: c.pos.cash, card: c.pos.card })),
+    ordersByRegion: o.ordersByRegion.map((r) => ({ region: r.region, order_count: r.orderCount })),
+    ordersByCity: o.ordersByCity.map((r) => ({ city: r.city, order_count: r.orderCount })),
+  };
+}
+
+/** GET /api/admin/category-inventory */
+export function buildInventoryResponse(ds: Dataset) {
+  const c = buildCapitalOverview(ds, null);
+  return c.categories
+    .filter((r) => r.id !== 0 || r.inventory.productCount > 0)
+    .map((r) => ({
+      category_id: r.id,
+      category: r.name,
+      category_ar: r.nameAr,
+      product_count: r.inventory.productCount,
+      in_stock_count: r.inventory.inStockCount,
+      out_of_stock_count: r.inventory.outOfStockCount,
+      total_units: r.inventory.totalUnits,
+      total_selling_value: r.inventory.sellingValue,
+      paid_up_capital: r.inventory.capital,
+      expected_profit: r.inventory.expectedProfit,
+      avg_price: r.inventory.avgPrice,
+    }))
+    .sort((a, b) => b.product_count - a.product_count);
+}
+
+/** GET /api/admin/category-report/:id */
+export function buildCategoryReportResponse(ds: Dataset, categoryId: number) {
+  const d = buildCategoryDetail(ds, categoryId, null);
+  if (!d) return null;
+  const { web, pos } = d.totals;
+  return {
+    category: { id: d.category.id, name: d.category.name, nameAr: d.category.nameAr, image: d.category.image },
+    capital: {
+      productCount: d.inventory.productCount,
+      inStockCount: d.inventory.inStockCount,
+      outOfStockCount: d.inventory.outOfStockCount,
+      totalUnits: d.inventory.totalUnits,
+      avgPrice: d.inventory.avgPrice,
+      sellingValue: d.inventory.sellingValue,
+      paidUpCapital: d.inventory.capital,
+      expectedProfit: d.inventory.expectedProfit,
+    },
+    website: { revenue: web.sales, units: web.units, orderCount: web.orders, cash: web.cash, card: web.card, profit: web.profit },
+    pos: { revenue: pos.sales, units: pos.units, orderCount: pos.orders, cash: pos.cash, card: pos.card, profit: pos.profit },
+    subcategories: d.subcategories.map((s) => ({
+      id: s.id ?? -1,
+      name: s.name,
+      nameAr: s.nameAr,
+      isActive: s.isActive,
+      productCount: s.productCount,
+      websiteRevenue: s.webSales,
+      websiteUnits: s.webUnits,
+      posRevenue: s.posSales,
+      posUnits: s.posUnits,
+      totalRevenue: s.sales,
+      profit: s.profit,
+    })),
+    bestSellers: d.bestSellers.slice(0, 8).map((p) => ({
+      id: p.id, name: p.name, image: p.image,
+      webUnits: p.webUnits, webRevenue: p.webSales, posUnits: p.posUnits, posRevenue: p.posSales,
+      totalUnits: p.soldUnits, totalRevenue: p.sales, profit: p.profit,
+    })),
+    monthly: {
+      website: d.monthly.filter((m) => nz(m.web)).map((m) => ({ month: m.month, revenue: m.web })),
+      pos: d.monthly.filter((m) => nz(m.pos)).map((m) => ({ month: m.month, revenue: m.pos })),
+    },
+    daily: {
+      website: d.daily.filter((x) => nz(x.web)).map((x) => ({ day: x.day, revenue: x.web })),
+      pos: d.daily.filter((x) => nz(x.pos)).map((x) => ({ day: x.day, revenue: x.pos })),
+    },
+    monthlyPayment: {
+      websiteCash: d.monthly.filter((m) => nz(m.webCash)).map((m) => ({ period: m.month, revenue: m.webCash })),
+      websiteCard: d.monthly.filter((m) => nz(m.webCard)).map((m) => ({ period: m.month, revenue: m.webCard })),
+      posCash: d.monthly.filter((m) => nz(m.posCash)).map((m) => ({ period: m.month, revenue: m.posCash })),
+      posCard: d.monthly.filter((m) => nz(m.posCard)).map((m) => ({ period: m.month, revenue: m.posCard })),
+    },
+    weeklyPayment: {
+      websiteCash: d.weeklyPayment.filter((w) => nz(w.webCash)).map((w) => ({ period: w.week, revenue: w.webCash })),
+      websiteCard: d.weeklyPayment.filter((w) => nz(w.webCard)).map((w) => ({ period: w.week, revenue: w.webCard })),
+      posCash: d.weeklyPayment.filter((w) => nz(w.posCash)).map((w) => ({ period: w.week, revenue: w.posCash })),
+      posCard: d.weeklyPayment.filter((w) => nz(w.posCard)).map((w) => ({ period: w.week, revenue: w.posCard })),
+    },
   };
 }

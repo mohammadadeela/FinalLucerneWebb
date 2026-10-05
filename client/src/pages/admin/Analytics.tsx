@@ -1,39 +1,136 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
-import {
-  BarChart2, Wallet, RefreshCw, TrendingUp, Banknote, CreditCard, ShoppingBag, Package, Globe, Monitor,
-  Percent, ExternalLink, MapPin, Building2, Trophy, Tag,
-} from "lucide-react";
-import {
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart,
-} from "recharts";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import {
-  type OverviewData, StatCard, Panel, RulesBox, MonthSelect, ChannelTable, ChartTooltipBox,
-  SortTh, useSort, sortRows, fmtMoney, fmtInt, fmtPct, pctOf, monthLabel, dayLabel, C,
-} from "@/components/admin/reports";
+import { BarChart2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/i18n";
+import { format, subMonths, startOfMonth } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
+import { useState, useEffect, useRef } from "react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell,
+} from "recharts";
+import { TrendingUp, Globe, Monitor, RefreshCw, Calendar, ShoppingBag, CreditCard, Banknote, MapPin, Building2, Package, Warehouse, BarChart3, AlertTriangle, CheckCircle2, Wallet, ExternalLink } from "lucide-react";
 import { useSiteSettings, getShippingZones } from "@/hooks/use-site-settings";
+import { useCategories } from "@/hooks/use-categories";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
-// Admin tabs are often left open all day — refresh every 2 minutes, and only while visible.
+// Admin tabs are often left open all day. 30s polling on heavy aggregate
+// queries was a primary contributor to VPS CPU exhaustion. Slow to 2 minutes
+// and only when the tab is actually visible.
 const REFRESH_INTERVAL_MS = 120_000;
 
-type CatSortKey = "name" | "web" | "pos" | "sales" | "profit" | "units" | "cash" | "card" | "share";
+interface AnalyticsData {
+  websiteTotal: number;
+  posTotal: number;
+  websiteMonthly: { month: string; revenue: string; order_count: number }[];
+  posMonthly: { month: string; revenue: string; order_count: number }[];
+  websiteCategoryRevenue: { category: string; category_ar: string; revenue: string }[];
+  posCategoryRevenue: { category: string; category_ar: string; revenue: string }[];
+  websitePaymentBreakdown: { payment_type: string; revenue: string }[];
+  posPaymentBreakdown: { cash: number; card: number };
+  paymentByCategory: { category: string; category_ar: string; cash: number; card: number }[];
+  posCategoryPayment: { category: string; category_ar: string; cash: number; card: number }[];
+  ordersByRegion: { region: string; order_count: number }[];
+  ordersByCity: { city: string; order_count: number }[];
+  websiteProfit?: number;
+  posProfit?: number;
+  totalProfit?: number;
+  storeCredit?: number;
+  categoryProfit?: { category: string; profit: number; units: number }[];
+}
+
+// Refined boutique color palette
+const WEBSITE_COLOR = "#7C6EFA";
+const POS_COLOR     = "#F06292";
+const CASH_COLOR    = "#26A69A";
+const CARD_COLOR    = "#FFA726";
+const COLORS = [
+  "#7C6EFA", "#F06292", "#26A69A", "#FFA726",
+  "#AB8CF7", "#81C784", "#FF8A65", "#4FC3F7",
+];
+
+function getLast12Months(): string[] {
+  const months: string[] = [];
+  for (let i = 0; i < 12; i++) {
+    months.push(format(subMonths(startOfMonth(new Date()), i), "yyyy-MM"));
+  }
+  return months;
+}
+
+function buildMonthlyTimeline(
+  websiteMonthly: AnalyticsData["websiteMonthly"],
+  posMonthly: AnalyticsData["posMonthly"],
+  language: string,
+  selectedMonth: string
+) {
+  const months: string[] = [];
+  for (let i = 11; i >= 0; i--) {
+    months.push(format(subMonths(startOfMonth(new Date()), i), "yyyy-MM"));
+  }
+  const websiteMap = Object.fromEntries(websiteMonthly.map((r) => [r.month, Number(r.revenue)]));
+  const posMap = Object.fromEntries(posMonthly.map((r) => [r.month, Number(r.revenue)]));
+  const all = months.map((m) => {
+    const label = format(new Date(m + "-01"), "MMM yy", { locale: language === "ar" ? ar : enUS });
+    return { month: label, monthKey: m, website: websiteMap[m] ?? 0, pos: posMap[m] ?? 0 };
+  });
+  if (selectedMonth && /^\d{4}-\d{2}$/.test(selectedMonth)) {
+    return all.filter((d) => d.monthKey === selectedMonth);
+  }
+  return all;
+}
+
+function mergeCategoryRevenue(
+  website: AnalyticsData["websiteCategoryRevenue"],
+  pos: AnalyticsData["posCategoryRevenue"],
+  language: string
+) {
+  const map: Record<string, { key: string; name: string; website: number; pos: number }> = {};
+  for (const r of website) {
+    const key = r.category;
+    if (!map[key]) map[key] = { key, name: language === "ar" ? r.category_ar : r.category, website: 0, pos: 0 };
+    map[key].website += Number(r.revenue);
+  }
+  for (const r of pos) {
+    const key = r.category;
+    if (!map[key]) map[key] = { key, name: language === "ar" ? r.category_ar : r.category, website: 0, pos: 0 };
+    map[key].pos += Number(r.revenue);
+  }
+  return Object.values(map)
+    .map((v) => ({ ...v, total: v.website + v.pos }))
+    .sort((a, b) => b.total - a.total);
+}
 
 export default function Analytics() {
   const { language } = useLanguage();
   const isAr = language === "ar";
   const { data: siteSettings } = useSiteSettings();
-  const [month, setMonth] = useState<string>("");
+  const { data: categoriesList } = useCategories();
+  const categoryIdByName = new Map((categoriesList ?? []).map((c: any) => [c.name, c.id]));
 
-  const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery<OverviewData>({
-    queryKey: ["/api/admin/analytics", month],
+  const last12 = getLast12Months();
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<"sales" | "inventory">("sales");
+
+  const { data: inventoryData, isLoading: inventoryLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/category-inventory"],
     queryFn: async () => {
-      const url = month ? `/api/admin/analytics?month=${month}` : "/api/admin/analytics";
+      const res = await fetch("/api/admin/category-inventory", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load inventory data");
+      return res.json();
+    },
+    staleTime: 30_000,
+    refetchInterval: REFRESH_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+  });
+
+  const { data, isLoading, isFetching, error, refetch, dataUpdatedAt } = useQuery<AnalyticsData>({
+    queryKey: ["/api/admin/analytics", selectedMonth],
+    queryFn: async () => {
+      const url = selectedMonth
+        ? `/api/admin/analytics?month=${selectedMonth}`
+        : "/api/admin/analytics";
       const res = await fetch(url, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load analytics");
       return res.json();
@@ -43,32 +140,115 @@ export default function Analytics() {
     refetchIntervalInBackground: false,
   });
 
-  const catSort = useSort<CatSortKey>("sales");
+  const [countdown, setCountdown] = useState(REFRESH_INTERVAL_MS / 1000);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    setCountdown(REFRESH_INTERVAL_MS / 1000);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) return REFRESH_INTERVAL_MS / 1000;
+        return prev - 1;
+      });
+    }, 1000);
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
+  }, [dataUpdatedAt]);
 
   const reportsPageEnabled = siteSettings?.reports_page_enabled !== "false";
 
-  const zoneNameMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    getShippingZones(siteSettings).forEach((z) => { m[z.id] = isAr ? (z.nameAr || z.nameEn) : z.nameEn; });
-    return m;
-  }, [siteSettings, isAr]);
+  const lastUpdatedLabel = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString(isAr ? "ar" : "en", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : null;
 
-  const categoryRows = useMemo(() => {
-    if (!data) return [];
-    const rows = data.categories.map((c) => ({
-      id: c.id,
-      name: isAr ? c.nameAr : c.name,
-      web: c.web.sales,
-      pos: c.pos.sales,
-      sales: c.all.sales,
-      profit: c.all.profit,
-      units: c.all.units,
-      cash: c.all.cash,
-      card: c.all.card,
-      share: c.sharePct,
-    }));
-    return sortRows(rows, (r) => r[catSort.key], catSort.dir);
-  }, [data, isAr, catSort.key, catSort.dir]);
+  const fmt = (n: number) => `₪${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const monthlyData = data ? buildMonthlyTimeline(data.websiteMonthly, data.posMonthly, language, selectedMonth) : [];
+  const profitByCategory = new Map((data?.categoryProfit ?? []).map((r) => [r.category, r.profit]));
+  const categoryData = data ? mergeCategoryRevenue(data.websiteCategoryRevenue, data.posCategoryRevenue, language) : [];
+
+  const websiteTotal = data?.websiteTotal ?? 0;
+  const posTotal = data?.posTotal ?? 0;
+  const combined = websiteTotal + posTotal;
+
+  // Payment totals
+  const websitePaymentMap = Object.fromEntries((data?.websitePaymentBreakdown ?? []).map((r) => [r.payment_type, Number(r.revenue)]));
+  const websiteCash = websitePaymentMap["cash"] ?? 0;
+  const websiteCard = websitePaymentMap["card"] ?? 0;
+  const posCash = data?.posPaymentBreakdown?.cash ?? 0;
+  const posCard = data?.posPaymentBreakdown?.card ?? 0;
+  const totalCash = websiteCash + posCash;
+  const totalCard = websiteCard + posCard;
+
+  const paymentPieData = [
+    { name: isAr ? "الدفع عند التسليم" : "Cash on Delivery", value: totalCash },
+    { name: isAr ? "الدفع الإلكتروني" : "Online Payment", value: totalCard },
+  ].filter((d) => d.value > 0);
+
+  // Merge website + POS cash/card per category
+  const combinedPaymentByCategory = (() => {
+    const map: Record<string, { category: string; category_ar: string; webCash: number; webCard: number; posCash: number; posCard: number }> = {};
+    for (const r of (data?.paymentByCategory ?? [])) {
+      if (!map[r.category]) map[r.category] = { category: r.category, category_ar: r.category_ar, webCash: 0, webCard: 0, posCash: 0, posCard: 0 };
+      map[r.category].webCash += r.cash;
+      map[r.category].webCard += r.card;
+    }
+    for (const r of (data?.posCategoryPayment ?? [])) {
+      if (!map[r.category]) map[r.category] = { category: r.category, category_ar: r.category_ar, webCash: 0, webCard: 0, posCash: 0, posCard: 0 };
+      map[r.category].posCash += r.cash;
+      map[r.category].posCard += r.card;
+    }
+    return Object.values(map).sort((a, b) =>
+      (b.webCash + b.webCard + b.posCash + b.posCard) - (a.webCash + a.webCard + a.posCash + a.posCard)
+    );
+  })();
+
+  const paymentCategoryData = combinedPaymentByCategory.map((r) => ({
+    name: isAr ? r.category_ar : r.category,
+    cash: r.webCash + r.posCash,
+    card: r.webCard + r.posCard,
+  }));
+
+  // Region name lookup from shipping zones settings
+  const shippingZones = getShippingZones(siteSettings);
+  const zoneNameMap: Record<string, string> = {};
+  shippingZones.forEach(z => {
+    zoneNameMap[z.id] = isAr ? (z.nameAr || z.nameEn) : z.nameEn;
+  });
+
+  const regionData = (data?.ordersByRegion ?? []).map(r => ({
+    name: zoneNameMap[r.region] || r.region,
+    value: r.order_count,
+  }));
+
+  const cityData = (data?.ordersByCity ?? []).map(r => ({
+    name: r.city,
+    orders: r.order_count,
+  }));
+
+  const selectedLabel = selectedMonth
+    ? format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: isAr ? ar : enUS })
+    : (isAr ? "كل الأشهر" : "All months");
+
+  const summaryCards = [
+    { label: isAr ? "إجمالي الموقع" : "Website Revenue", value: fmt(websiteTotal), icon: Globe, color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/30" },
+    { label: isAr ? "إجمالي نقطة البيع" : "POS Revenue", value: fmt(posTotal), icon: Monitor, color: "text-pink-600", bg: "bg-pink-50 dark:bg-pink-950/30" },
+    { label: isAr ? "الإجمالي الكلي" : "Combined Total", value: fmt(combined), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+  ];
+
+  const profitCards = [
+    { label: isAr ? "أرباح الموقع" : "Website Profit", value: fmt(data?.websiteProfit ?? 0), icon: Globe, color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/30" },
+    { label: isAr ? "أرباح نقطة البيع" : "POS Profit", value: fmt(data?.posProfit ?? 0), icon: Monitor, color: "text-pink-600", bg: "bg-pink-50 dark:bg-pink-950/30" },
+    { label: isAr ? "إجمالي الأرباح (50% من سعر المنتج)" : "Total Profit (50% of product price)", value: fmt(data?.totalProfit ?? 0), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+  ];
+
+  const paymentCards = [
+    { label: isAr ? "الدفع عند التسليم" : "Cash on Delivery", value: fmt(totalCash), icon: Banknote, color: "text-teal-600", bg: "bg-teal-50 dark:bg-teal-950/30", sub: isAr ? `موقع: ${fmt(websiteCash)} · نقطة بيع: ${fmt(posCash)}` : `Website: ${fmt(websiteCash)} · POS: ${fmt(posCash)}` },
+    { label: isAr ? "الدفع الإلكتروني" : "Online Payment (Card)", value: fmt(totalCard), icon: CreditCard, color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30", sub: isAr ? `موقع: ${fmt(websiteCard)} · نقطة بيع: ${fmt(posCard)}` : `Website: ${fmt(websiteCard)} · POS: ${fmt(posCard)}` },
+  ];
+  if ((data?.storeCredit ?? 0) > 0.004) {
+    paymentCards.push({ label: isAr ? "رصيد المتجر" : "Store Credit", value: fmt(data?.storeCredit ?? 0), icon: Wallet, color: "text-slate-600", bg: "bg-slate-50 dark:bg-slate-900/30", sub: isAr ? "طلبات الموقع المدفوعة من رصيد الزبون" : "Website orders paid from customer credit" });
+  }
 
   if (!reportsPageEnabled) {
     return (
@@ -79,400 +259,684 @@ export default function Analytics() {
             {isAr ? "صفحة التقارير معطّلة حالياً" : "The reports page is currently disabled"}
           </p>
           <p className="text-xs text-muted-foreground/70">
-            {isAr ? "يمكن تفعيلها من صفحة محتوى الموقع" : "It can be re-enabled from the Site Content page"}
+            {isAr
+              ? "يمكن تفعيلها من صفحة محتوى الموقع"
+              : "It can be re-enabled from the Site Content page"}
           </p>
         </div>
       </AdminLayout>
     );
   }
 
-  const header = (
-    <AdminPageHeader
-      title={isAr ? "تقرير المبيعات والأرباح" : "Sales & Profit Report"}
-      description={isAr ? "المبيعات والأرباح للموقع ونقطة البيع، حسب الشهر والفئة وطريقة الدفع" : "Sales and profit for the website and POS, by month, category and payment method"}
-      icon={BarChart2}
-      iconGradient="from-violet-500 to-purple-600"
-      testId="text-analytics-title"
-      actions={
-        <>
-          <Link href="/admin/reports/categories" data-testid="link-category-manager">
-            <Button variant="outline" size="sm" className="gap-1.5 h-9">
-              <Wallet className="w-4 h-4" />
-              {isAr ? "رأس المال" : "Capital"}
-            </Button>
-          </Link>
-          <MonthSelect
-            value={month}
-            onChange={setMonth}
-            months={data?.availableMonths ?? []}
-            isAr={isAr}
-            testId="select-analytics-month"
-            allLabel={isAr ? "كل الأشهر" : "All months"}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 gap-1.5"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            data-testid="button-manual-refresh-analytics"
-          >
-            <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
-            {isAr ? "تحديث" : "Refresh"}
-          </Button>
-        </>
-      }
-    />
-  );
-
   if (isLoading) {
     return (
       <AdminLayout>
-        {header}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-xl" />)}
+        <div className="space-y-6">
+          <div className="h-8 w-56 bg-muted animate-pulse rounded" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-xl" />)}
+          </div>
+          <div className="h-80 bg-muted animate-pulse rounded-xl" />
+          <div className="h-80 bg-muted animate-pulse rounded-xl" />
         </div>
-        <div className="h-80 bg-muted animate-pulse rounded-xl mb-6" />
-        <div className="h-80 bg-muted animate-pulse rounded-xl" />
       </AdminLayout>
     );
   }
 
-  if (error || !data) {
+  if (error) {
     return (
       <AdminLayout>
-        {header}
         <div className="text-destructive p-6">{isAr ? "فشل تحميل البيانات" : "Failed to load analytics data."}</div>
       </AdminLayout>
     );
   }
 
-  const { totals } = data;
-  const { web, pos, all } = totals;
-  const periodLabel = month ? monthLabel(month, isAr) : (isAr ? "كل الأشهر" : "All months");
-  const lastUpdated = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString(isAr ? "ar" : "en", { hour: "2-digit", minute: "2-digit" })
-    : null;
-
-  const monthlyData = data.monthly.map((m) => ({
-    key: m.month,
-    label: monthLabel(m.month, isAr, "MMM yy"),
-    web: m.web.sales,
-    pos: m.pos.sales,
-    profit: Math.round((m.web.profit + m.pos.profit) * 100) / 100,
-  }));
-  const dailyData = data.daily.map((d) => ({ ...d, label: dayLabel(d.day, isAr) }));
-  const hasDaily = dailyData.some((d) => d.web > 0 || d.pos > 0);
-
-  const paymentPie = [
-    { name: isAr ? "نقدي / عند التسليم" : "Cash / on delivery", value: all.cash, color: C.cash },
-    { name: isAr ? "بطاقة" : "Card", value: all.card, color: C.card },
-    { name: isAr ? "رصيد المتجر" : "Store credit", value: all.credit, color: C.credit },
-  ].filter((d) => d.value > 0.004);
-
-  const channelPie = [
-    { name: isAr ? "الموقع" : "Website", value: web.sales, color: C.web },
-    { name: isAr ? "نقطة البيع" : "POS", value: pos.sales, color: C.pos },
-  ].filter((d) => d.value > 0.004);
-
-  const categoryPie = data.categories
-    .filter((c) => c.all.sales > 0)
-    .map((c) => ({ name: isAr ? c.nameAr : c.name, value: c.all.sales }));
-
-  const regionData = data.ordersByRegion.map((r) => ({ name: zoneNameMap[r.region] || r.region, value: r.orderCount }));
-  const cityData = data.ordersByCity.map((r) => ({ name: r.city, orders: r.orderCount }));
-
-  const tableTotals = categoryRows.reduce(
-    (s, r) => ({ web: s.web + r.web, pos: s.pos + r.pos, sales: s.sales + r.sales, profit: s.profit + r.profit, units: s.units + r.units, cash: s.cash + r.cash, card: s.card + r.card }),
-    { web: 0, pos: 0, sales: 0, profit: 0, units: 0, cash: 0, card: 0 },
-  );
-
-  const pieLabel = ({ percent }: any) => `${(percent * 100).toFixed(0)}%`;
-
   return (
     <AdminLayout>
-      {header}
-
-      <div className="flex items-center justify-between gap-3 mb-4 text-xs text-muted-foreground flex-wrap">
-        <span className="inline-flex items-center gap-1.5 bg-muted px-3 py-1 rounded-full font-medium text-foreground">
-          {periodLabel}
-          {month && (
-            <button onClick={() => setMonth("")} className="underline underline-offset-2 text-muted-foreground hover:text-foreground ms-2" data-testid="button-clear-month-filter">
-              {isAr ? "عرض الكل" : "Show all"}
-            </button>
-          )}
-        </span>
-        {lastUpdated && <span>{isAr ? `آخر تحديث: ${lastUpdated}` : `Last updated: ${lastUpdated}`}</span>}
-      </div>
-
-      <RulesBox isAr={isAr} costRatio={data.costRatio} show={["sales", "profit"]} />
-
-      {/* ── Headline numbers ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
-        <StatCard big tone="blue" icon={TrendingUp} label={isAr ? "صافي المبيعات" : "Net sales"} value={fmtMoney(all.sales)}
-          sub={isAr ? `موقع ${fmtMoney(web.sales)} · نقطة بيع ${fmtMoney(pos.sales)}` : `Website ${fmtMoney(web.sales)} · POS ${fmtMoney(pos.sales)}`} testId="card-total-sales" />
-        <StatCard big tone="emerald" icon={Banknote} label={isAr ? "الأرباح" : "Profit"} value={fmtMoney(all.profit)}
-          sub={isAr ? `موقع ${fmtMoney(web.profit)} · نقطة بيع ${fmtMoney(pos.profit)}` : `Website ${fmtMoney(web.profit)} · POS ${fmtMoney(pos.profit)}`} testId="card-total-profit" />
-        <StatCard tone="violet" icon={ShoppingBag} label={isAr ? "الطلبات / الفواتير" : "Orders / invoices"} value={fmtInt(all.orders)}
-          sub={isAr ? `متوسط الطلب ${fmtMoney(all.orders > 0 ? all.sales / all.orders : 0)}` : `Average ${fmtMoney(all.orders > 0 ? all.sales / all.orders : 0)}`} />
-        <StatCard tone="sky" icon={Package} label={isAr ? "القطع المباعة" : "Units sold"} value={fmtInt(all.units)}
-          sub={all.discounts > 0 ? (isAr ? `خصومات ${fmtMoney(all.discounts)}` : `Discounts ${fmtMoney(all.discounts)}`) : undefined} />
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <StatCard tone="teal" icon={Banknote} label={isAr ? "نقدي / عند التسليم" : "Cash / on delivery"} value={fmtMoney(all.cash)}
-          sub={isAr ? `موقع ${fmtMoney(web.cash)} · نقطة بيع ${fmtMoney(pos.cash)}` : `Website ${fmtMoney(web.cash)} · POS ${fmtMoney(pos.cash)}`} />
-        <StatCard tone="amber" icon={CreditCard} label={isAr ? "بطاقة" : "Card"} value={fmtMoney(all.card)}
-          sub={isAr ? `موقع ${fmtMoney(web.card)} · نقطة بيع ${fmtMoney(pos.card)}` : `Website ${fmtMoney(web.card)} · POS ${fmtMoney(pos.card)}`} />
-        <StatCard tone="slate" icon={Percent} label={isAr ? "نسبة الربح من المبيعات" : "Profit / sales"} value={fmtPct(pctOf(all.profit, all.sales))} />
-        <StatCard tone="rose" icon={Tag} label={isAr ? "الخصومات" : "Discounts"} value={fmtMoney(all.discounts)}
-          sub={all.credit > 0 ? (isAr ? `رصيد متجر مستخدم ${fmtMoney(all.credit)}` : `Store credit used ${fmtMoney(all.credit)}`) : undefined} />
-      </div>
-
-      {/* ── Website vs POS ── */}
-      <Panel icon={BarChart2} title={isAr ? "الموقع مقابل نقطة البيع" : "Website vs POS"} subtitle={periodLabel}>
-        <ChannelTable totals={totals} isAr={isAr} />
-      </Panel>
-
-      {/* ── Monthly ── */}
-      <Panel
-        icon={TrendingUp}
-        title={isAr ? "المبيعات والأرباح الشهرية" : "Monthly sales & profit"}
-        subtitle={isAr ? "آخر ١٢ شهراً — الأعمدة للمبيعات والخط للأرباح" : "Last 12 months — bars are sales, the line is profit"}
-      >
-        <div dir="ltr">
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={monthlyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `₪${v}`} width={64} />
-              <Tooltip content={<ChartTooltipBox isAr={isAr} />} />
-              <Legend />
-              <Bar dataKey="web" stackId="s" fill={C.web} name={isAr ? "مبيعات الموقع" : "Website sales"} radius={[0, 0, 0, 0]}>
-                {monthlyData.map((m) => <Cell key={m.key} fill={C.web} fillOpacity={!month || month === m.key ? 1 : 0.3} />)}
-              </Bar>
-              <Bar dataKey="pos" stackId="s" fill={C.pos} name={isAr ? "مبيعات نقطة البيع" : "POS sales"} radius={[4, 4, 0, 0]}>
-                {monthlyData.map((m) => <Cell key={m.key} fill={C.pos} fillOpacity={!month || month === m.key ? 1 : 0.3} />)}
-              </Bar>
-              <Line type="monotone" dataKey="profit" stroke={C.profit} strokeWidth={2.5} dot={{ r: 3 }} name={isAr ? "الأرباح" : "Profit"} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </Panel>
-
-      {/* ── Daily ── */}
-      <Panel
+      <AdminPageHeader
+        title={isAr ? "تقرير المبيعات" : "Sales Analytics"}
+        description={isAr ? "مقارنة مبيعات وأرباح الموقع ونقطة البيع حسب الشهر والفئة وطريقة الدفع" : "Compare website and POS revenue by month, category, and payment method"}
         icon={BarChart2}
-        title={isAr ? "المبيعات اليومية" : "Daily sales"}
-        subtitle={month ? monthLabel(month, isAr) : (isAr ? "آخر ٣٠ يوماً" : "Last 30 days")}
-      >
-        {!hasDaily ? (
-          <div className="text-center text-muted-foreground py-10 text-sm">{isAr ? "لا توجد مبيعات في هذه الفترة" : "No sales in this period"}</div>
-        ) : (
-          <div dir="ltr">
-            <ResponsiveContainer width="100%" height={260}>
-              <ComposedChart data={dailyData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval="preserveStartEnd" minTickGap={18} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `₪${v}`} width={64} />
-                <Tooltip content={<ChartTooltipBox isAr={isAr} />} />
-                <Legend />
-                <Bar dataKey="web" stackId="d" fill={C.web} name={isAr ? "الموقع" : "Website"} />
-                <Bar dataKey="pos" stackId="d" fill={C.pos} name={isAr ? "نقطة البيع" : "POS"} radius={[3, 3, 0, 0]} />
-                <Line type="monotone" dataKey="profit" stroke={C.profit} strokeWidth={2} dot={false} name={isAr ? "الأرباح" : "Profit"} />
-              </ComposedChart>
-            </ResponsiveContainer>
+        iconGradient="from-violet-500 to-purple-600"
+        testId="text-analytics-title"
+        actions={
+          <div className="flex items-center gap-2">
+            <Link href="/admin/reports/categories" data-testid="link-category-manager">
+              <Button variant="outline" size="sm" className="gap-1.5 h-9">
+                <Wallet className="w-4 h-4" />
+                {isAr ? "رأس مال الفئات" : "Category Manager"}
+              </Button>
+            </Link>
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <select
+              data-testid="select-analytics-month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="h-9 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[160px]"
+              dir={isAr ? "rtl" : "ltr"}
+            >
+              <option value="">{isAr ? "كل الأشهر" : "All months"}</option>
+              {last12.map((m) => {
+                const label = format(new Date(m + "-01"), "MMMM yyyy", { locale: isAr ? ar : enUS });
+                return <option key={m} value={m}>{label}</option>;
+              })}
+            </select>
           </div>
-        )}
-      </Panel>
+        }
+      />
 
-      {/* ── Categories ── */}
-      <Panel
-        icon={ShoppingBag}
-        title={isAr ? "تفصيل الفئات" : "Category breakdown"}
-        subtitle={isAr ? "اضغط على اسم الفئة لعرض رأس مالها ومنتجاتها بالتفصيل — اضغط على العنوان للترتيب" : "Click a category to see its capital and products — click a heading to sort"}
-      >
-        {categoryRows.length === 0 ? (
-          <div className="text-center text-muted-foreground py-10 text-sm">{isAr ? "لا توجد مبيعات في هذه الفترة" : "No sales in this period"}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <SortTh label={isAr ? "الفئة" : "Category"} k="name" sort={catSort} align="start" />
-                  <SortTh label={isAr ? "الموقع" : "Website"} k="web" sort={catSort} />
-                  <SortTh label={isAr ? "نقطة البيع" : "POS"} k="pos" sort={catSort} />
-                  <SortTh label={isAr ? "صافي المبيعات" : "Net sales"} k="sales" sort={catSort} />
-                  <SortTh label={isAr ? "الأرباح" : "Profit"} k="profit" sort={catSort} />
-                  <SortTh label={isAr ? "القطع" : "Units"} k="units" sort={catSort} />
-                  <SortTh label={isAr ? "نقدي" : "Cash"} k="cash" sort={catSort} />
-                  <SortTh label={isAr ? "بطاقة" : "Card"} k="card" sort={catSort} />
-                  <SortTh label={isAr ? "الحصة" : "Share"} k="share" sort={catSort} />
-                </tr>
-              </thead>
-              <tbody>
-                {categoryRows.map((r, i) => (
-                  <tr key={r.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors" data-testid={`row-category-${i}`}>
-                    <td className="py-3 px-3 font-medium">
-                      {r.id > 0 ? (
-                        <Link href={`/admin/reports/categories/${r.id}`} className="inline-flex items-center gap-1.5 hover:text-amber-600 hover:underline" data-testid={`link-category-detail-${r.id}`}>
-                          {r.name}
-                          <ExternalLink className="w-3 h-3 opacity-60" />
-                        </Link>
-                      ) : r.name}
-                    </td>
-                    <td className="py-3 px-3 text-end tabular-nums text-violet-600 dark:text-violet-400" dir="ltr">{fmtMoney(r.web)}</td>
-                    <td className="py-3 px-3 text-end tabular-nums text-pink-600 dark:text-pink-400" dir="ltr">{fmtMoney(r.pos)}</td>
-                    <td className="py-3 px-3 text-end tabular-nums font-semibold" dir="ltr">{fmtMoney(r.sales)}</td>
-                    <td className="py-3 px-3 text-end tabular-nums font-semibold text-emerald-600 dark:text-emerald-400" dir="ltr">{fmtMoney(r.profit)}</td>
-                    <td className="py-3 px-3 text-end tabular-nums" dir="ltr">{fmtInt(r.units)}</td>
-                    <td className="py-3 px-3 text-end tabular-nums text-teal-600 dark:text-teal-400" dir="ltr">{fmtMoney(r.cash)}</td>
-                    <td className="py-3 px-3 text-end tabular-nums text-amber-600 dark:text-amber-400" dir="ltr">{fmtMoney(r.card)}</td>
-                    <td className="py-3 px-3 text-end min-w-[110px]">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-14 h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(100, r.share)}%`, background: C.sales }} /></div>
-                        <span className="text-xs tabular-nums w-11 text-end" dir="ltr">{fmtPct(r.share)}</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                <tr className="bg-muted/40 font-bold border-t-2 border-border">
-                  <td className="py-3 px-3">{isAr ? "المجموع" : "Total"}</td>
-                  <td className="py-3 px-3 text-end tabular-nums" dir="ltr">{fmtMoney(tableTotals.web)}</td>
-                  <td className="py-3 px-3 text-end tabular-nums" dir="ltr">{fmtMoney(tableTotals.pos)}</td>
-                  <td className="py-3 px-3 text-end tabular-nums" dir="ltr">{fmtMoney(tableTotals.sales)}</td>
-                  <td className="py-3 px-3 text-end tabular-nums text-emerald-600 dark:text-emerald-400" dir="ltr">{fmtMoney(tableTotals.profit)}</td>
-                  <td className="py-3 px-3 text-end tabular-nums" dir="ltr">{fmtInt(tableTotals.units)}</td>
-                  <td className="py-3 px-3 text-end tabular-nums" dir="ltr">{fmtMoney(tableTotals.cash)}</td>
-                  <td className="py-3 px-3 text-end tabular-nums" dir="ltr">{fmtMoney(tableTotals.card)}</td>
-                  <td className="py-3 px-3"></td>
-                </tr>
-              </tbody>
-            </table>
+      {/* Auto-refresh status bar */}
+      <div className="flex items-center justify-between gap-3 mb-6 px-4 py-2.5 rounded-lg border border-border bg-muted/40 text-sm" data-testid="analytics-refresh-bar">
+        <div className="flex items-center gap-2.5 text-muted-foreground">
+          {isFetching ? (
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-violet-500" />
+          ) : (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+          )}
+          <span>
+            {isFetching
+              ? (isAr ? "جارٍ التحديث..." : "Refreshing...")
+              : lastUpdatedLabel
+                ? (isAr ? `آخر تحديث: ${lastUpdatedLabel}` : `Last updated: ${lastUpdatedLabel}`)
+                : (isAr ? "تحديث تلقائي مفعّل" : "Auto-refresh active")}
+          </span>
+          {!isFetching && (
+            <span className="text-xs text-muted-foreground/60">
+              {isAr ? `· التحديث التالي خلال ${countdown}ث` : `· next in ${countdown}s`}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={() => { refetch(); setCountdown(REFRESH_INTERVAL_MS / 1000); }}
+          disabled={isFetching}
+          className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-800 disabled:opacity-40 transition-colors"
+          data-testid="button-manual-refresh-analytics"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} />
+          {isAr ? "تحديث الآن" : "Refresh now"}
+        </button>
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 mb-6 p-1 bg-muted rounded-xl w-fit">
+        <button
+          onClick={() => setActiveTab("sales")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "sales" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          {isAr ? "تقرير المبيعات" : "Sales Report"}
+        </button>
+        <button
+          onClick={() => setActiveTab("inventory")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "inventory" ? "bg-background shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Warehouse className="w-4 h-4" />
+          {isAr ? "المخزون والرأسمال" : "Inventory & Capital"}
+        </button>
+      </div>
+
+      {activeTab === "sales" && <>
+      {/* Active filter badge */}
+      {selectedMonth && (
+        <div className="mb-6 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 border border-violet-200 text-sm font-medium px-3 py-1 rounded-full">
+            <Calendar className="w-3.5 h-3.5" />
+            {selectedLabel}
+          </span>
+          <button
+            data-testid="button-clear-month-filter"
+            onClick={() => setSelectedMonth("")}
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            {isAr ? "عرض الكل" : "Show all"}
+          </button>
+        </div>
+      )}
+
+      {/* Revenue Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {summaryCards.map((card) => (
+          <div key={card.label} className="bg-card border border-border rounded-xl p-6 flex items-center gap-4" data-testid={`card-analytics-${card.label}`}>
+            <div className={`w-12 h-12 rounded-full ${card.bg} flex items-center justify-center flex-shrink-0`}>
+              <card.icon className={`w-6 h-6 ${card.color}`} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">{card.label}</p>
+              <p className="text-xl font-semibold mt-0.5" data-testid={`value-analytics-${card.label}`}>{card.value}</p>
+            </div>
           </div>
-        )}
-      </Panel>
-
-      {/* ── Pies ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {[
-          { title: isAr ? "المبيعات حسب القناة" : "Sales by channel", icon: Globe, data: channelPie, perItemColor: true },
-          { title: isAr ? "المبيعات حسب طريقة الدفع" : "Sales by payment method", icon: CreditCard, data: paymentPie, perItemColor: true },
-          { title: isAr ? "المبيعات حسب الفئة" : "Sales by category", icon: Monitor, data: categoryPie, perItemColor: false },
-        ].map((p) => (
-          <section key={p.title} className="bg-card border border-border rounded-xl p-4 sm:p-6">
-            <h2 className="text-base font-semibold mb-3 flex items-center gap-2"><p.icon className="w-4 h-4 text-muted-foreground" />{p.title}</h2>
-            {p.data.length === 0 ? (
-              <div className="text-center text-muted-foreground py-10 text-sm">{isAr ? "لا توجد بيانات" : "No data"}</div>
-            ) : (
-              <div dir="ltr">
-                <ResponsiveContainer width="100%" height={270}>
-                  <PieChart>
-                    <Pie data={p.data} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={80} label={pieLabel} labelLine={false}>
-                      {p.data.map((d: any, i: number) => <Cell key={i} fill={p.perItemColor ? d.color : C.palette[i % C.palette.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(v: number, n: string) => [fmtMoney(Number(v)), n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                    <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 11 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </section>
         ))}
       </div>
 
-      {/* ── Top products ── */}
-      <Panel icon={Trophy} title={isAr ? "الأكثر مبيعاً" : "Best-selling products"} subtitle={periodLabel}>
-        {data.topProducts.length === 0 ? (
-          <div className="text-center text-muted-foreground py-10 text-sm">{isAr ? "لا توجد مبيعات في هذه الفترة" : "No sales in this period"}</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-start py-2 px-3 font-medium w-8">#</th>
-                  <th className="text-start py-2 px-3 font-medium">{isAr ? "المنتج" : "Product"}</th>
-                  <th className="text-start py-2 px-3 font-medium">{isAr ? "الفئة" : "Category"}</th>
-                  <th className="text-end py-2 px-3 font-medium">{isAr ? "القطع" : "Units"}</th>
-                  <th className="text-end py-2 px-3 font-medium">{isAr ? "المبيعات" : "Sales"}</th>
-                  <th className="text-end py-2 px-3 font-medium">{isAr ? "الأرباح" : "Profit"}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.topProducts.map((p, i) => (
-                  <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30">
-                    <td className="py-2.5 px-3 text-muted-foreground">{i + 1}</td>
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-9 h-9 rounded-md bg-muted overflow-hidden shrink-0">
-                          {p.image && <img src={p.image} alt="" className="w-full h-full object-cover" loading="lazy" />}
-                        </div>
-                        <span className="font-medium truncate max-w-[240px]">{p.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-3 text-muted-foreground">{isAr ? p.categoryAr : p.category}</td>
-                    <td className="py-2.5 px-3 text-end tabular-nums" dir="ltr">{fmtInt(p.units)}</td>
-                    <td className="py-2.5 px-3 text-end tabular-nums" dir="ltr">{fmtMoney(p.sales)}</td>
-                    <td className="py-2.5 px-3 text-end tabular-nums font-semibold text-emerald-600 dark:text-emerald-400" dir="ltr">{fmtMoney(p.profit)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Profit Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {profitCards.map((card) => (
+          <div key={card.label} className="bg-card border border-border rounded-xl p-6 flex items-center gap-4" data-testid={`card-profit-${card.label}`}>
+            <div className={`w-12 h-12 rounded-full ${card.bg} flex items-center justify-center flex-shrink-0`}>
+              <card.icon className={`w-6 h-6 ${card.color}`} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">{card.label}</p>
+              <p className="text-xl font-semibold mt-0.5">{card.value}</p>
+            </div>
           </div>
-        )}
-      </Panel>
+        ))}
+      </div>
 
-      {/* ── Where website orders go ── */}
+      {/* Payment Method Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {paymentCards.map((card) => (
+          <div key={card.label} className="bg-card border border-border rounded-xl p-6 flex items-center gap-4" data-testid={`card-payment-${card.label}`}>
+            <div className={`w-12 h-12 rounded-full ${card.bg} flex items-center justify-center flex-shrink-0`}>
+              <card.icon className={`w-6 h-6 ${card.color}`} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">{card.label}</p>
+              <p className="text-xl font-semibold mt-0.5" data-testid={`value-payment-${card.label}`}>{card.value}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{card.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Monthly Revenue Chart */}
+      <div className="bg-card border border-border rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-1">
+          {isAr ? "المبيعات الشهرية" : "Monthly Revenue"}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          {selectedMonth
+            ? (isAr ? `بيانات شهر ${selectedLabel}` : `Data for ${selectedLabel}`)
+            : (isAr ? "آخر ١٢ شهراً — الموقع مقابل نقطة البيع" : "Last 12 months — Website vs POS")}
+        </p>
+        {monthlyData.length === 0 ? (
+          <div className="text-center text-muted-foreground py-12 text-sm">
+            {isAr ? "لا توجد بيانات لهذا الشهر" : "No data for this month"}
+          </div>
+        ) : (
+          <div dir="ltr"><ResponsiveContainer width="100%" height={300}>
+            <BarChart data={monthlyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `₪${v}`} width={70} />
+              <Tooltip
+                formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")]}
+                contentStyle={{ borderRadius: 8, fontSize: 13, border: "1px solid hsl(var(--border))" }}
+              />
+              <Legend formatter={(val) => val === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")} />
+              <Bar dataKey="website" fill={WEBSITE_COLOR} radius={[4, 4, 0, 0]} name="website" />
+              <Bar dataKey="pos" fill={POS_COLOR} radius={[4, 4, 0, 0]} name="pos" />
+            </BarChart>
+          </ResponsiveContainer></div>
+        )}
+      </div>
+
+      {/* Category Revenue Chart */}
+      <div className="bg-card border border-border rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-1">
+          {isAr ? "المبيعات حسب الفئة" : "Revenue by Category"}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          {selectedMonth
+            ? (isAr ? `الموقع ونقطة البيع — ${selectedLabel}` : `Website + POS — ${selectedLabel}`)
+            : (isAr ? "إجمالي الموقع ونقطة البيع لكل فئة" : "Website + POS combined per category")}
+        </p>
+        {categoryData.length === 0 ? (
+          <div className="text-center text-muted-foreground py-12">
+            {isAr ? "لا توجد بيانات بعد" : "No category data yet"}
+          </div>
+        ) : (
+          <div dir="ltr"><ResponsiveContainer width="100%" height={Math.max(280, categoryData.length * 60)}>
+            <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 20, left: 8, bottom: 0 }} barGap={4}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `₪${v}`} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: "hsl(var(--foreground))" }} width={isAr ? 100 : 90} />
+              <Tooltip
+                formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")]}
+                contentStyle={{ borderRadius: 8, fontSize: 13, border: "1px solid hsl(var(--border))" }}
+              />
+              <Legend formatter={(val) => val === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")} />
+              <Bar dataKey="website" fill={WEBSITE_COLOR} radius={[0, 4, 4, 0]} name="website" />
+              <Bar dataKey="pos" fill={POS_COLOR} radius={[0, 4, 4, 0]} name="pos" />
+            </BarChart>
+          </ResponsiveContainer></div>
+        )}
+      </div>
+
+      {/* Payment Method Section */}
+      <div className="bg-card border border-border rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
+          <CreditCard className="w-5 h-5" />
+          {isAr ? "طريقة الدفع" : "Payment Method"}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          {isAr ? "توزيع المبيعات حسب طريقة الدفع (موقع + نقطة بيع)" : "Sales split by payment method — Website + POS combined"}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Payment Pie */}
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-4 text-center">
+              {isAr ? "التوزيع الإجمالي" : "Overall split"}
+            </h3>
+            {paymentPieData.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد بيانات بعد" : "No data yet"}</div>
+            ) : (
+              <div dir="ltr"><ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie
+                    data={paymentPieData}
+                    cx="50%" cy="45%" outerRadius={90}
+                    dataKey="value"
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: "#9ca3af", strokeWidth: 1 }}
+                  >
+                    <Cell fill={CASH_COLOR} />
+                    <Cell fill={CARD_COLOR} />
+                  </Pie>
+                  <Tooltip formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name]} contentStyle={{ borderRadius: 8, fontSize: 13 }} />
+                  <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                </PieChart>
+              </ResponsiveContainer></div>
+            )}
+          </div>
+
+          {/* Payment by Category (website + POS combined) */}
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-4 text-center">
+              {isAr ? "حسب الفئة (موقع + نقطة بيع)" : "By category (Website + POS)"}
+            </h3>
+            {paymentCategoryData.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد بيانات بعد" : "No data yet"}</div>
+            ) : (
+              <div dir="ltr"><ResponsiveContainer width="100%" height={Math.max(260, paymentCategoryData.length * 55)}>
+                <BarChart data={paymentCategoryData} layout="vertical" margin={{ top: 0, right: 20, left: 8, bottom: 0 }} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `₪${v}`} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 12, fill: "hsl(var(--foreground))" }} width={isAr ? 100 : 90} />
+                  <Tooltip
+                    formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name === "cash" ? (isAr ? "الدفع عند التسليم" : "Cash on Delivery") : (isAr ? "الدفع الإلكتروني" : "Online Payment")]}
+                    contentStyle={{ borderRadius: 8, fontSize: 13, border: "1px solid hsl(var(--border))" }}
+                  />
+                  <Legend formatter={(val) => val === "cash" ? (isAr ? "الدفع عند التسليم" : "Cash on Delivery") : (isAr ? "الدفع الإلكتروني" : "Online Payment")} />
+                  <Bar dataKey="cash" fill={CASH_COLOR} radius={[0, 4, 4, 0]} name="cash" />
+                  <Bar dataKey="card" fill={CARD_COLOR} radius={[0, 4, 4, 0]} name="card" />
+                </BarChart>
+              </ResponsiveContainer></div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Category Pie Breakdown */}
+      {categoryData.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          {/* Website Pie */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              {isAr ? "الموقع — حسب الفئة" : "Website — by Category"}
+            </h2>
+            {(data?.websiteCategoryRevenue?.length ?? 0) === 0 ? (
+              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد مبيعات موقع بعد" : "No website sales yet"}</div>
+            ) : (
+              <div dir="ltr"><ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={(data?.websiteCategoryRevenue ?? []).map((r) => ({
+                      name: isAr ? r.category_ar : r.category,
+                      value: Number(r.revenue),
+                    }))}
+                    cx="50%" cy="45%" outerRadius={90}
+                    dataKey="value"
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: "#9ca3af", strokeWidth: 1 }}
+                  >
+                    {(data?.websiteCategoryRevenue ?? []).map((_, idx) => (
+                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name]} contentStyle={{ borderRadius: 8, fontSize: 13 }} />
+                  <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                </PieChart>
+              </ResponsiveContainer></div>
+            )}
+          </div>
+
+          {/* POS Pie */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+              <Monitor className="w-4 h-4" />
+              {isAr ? "نقطة البيع — حسب الفئة" : "POS — by Category"}
+            </h2>
+            {(data?.posCategoryRevenue?.length ?? 0) === 0 ? (
+              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد مبيعات نقطة بيع بعد" : "No POS sales yet"}</div>
+            ) : (
+              <div dir="ltr"><ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={(data?.posCategoryRevenue ?? []).map((r) => ({
+                      name: isAr ? r.category_ar : r.category,
+                      value: Number(r.revenue),
+                    }))}
+                    cx="50%" cy="45%" outerRadius={90}
+                    dataKey="value"
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={{ stroke: "#9ca3af", strokeWidth: 1 }}
+                  >
+                    {(data?.posCategoryRevenue ?? []).map((_, idx) => (
+                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name]} contentStyle={{ borderRadius: 8, fontSize: 13 }} />
+                  <Legend iconType="circle" iconSize={10} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                </PieChart>
+              </ResponsiveContainer></div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Orders by Region & City */}
       {(regionData.length > 0 || cityData.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <section className="bg-card border border-border rounded-xl p-4 sm:p-6">
-            <h2 className="text-base font-semibold mb-1 flex items-center gap-2"><MapPin className="w-4 h-4 text-rose-500" />{isAr ? "طلبات الموقع حسب منطقة التوصيل" : "Website orders by region"}</h2>
-            <p className="text-xs text-muted-foreground mb-3">{isAr ? "كل الطلبات غير الملغاة" : "All non-cancelled orders"}</p>
+
+          {/* Region Pie Chart */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-rose-500" />
+              {isAr ? "الطلبات حسب منطقة التوصيل" : "Orders by Shipping Region"}
+              {selectedMonth && <span className="ms-2 text-xs font-normal text-muted-foreground">— {selectedLabel}</span>}
+            </h2>
             {regionData.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد بيانات" : "No data"}</div>
+              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد بيانات بعد" : "No data yet"}</div>
             ) : (
               <>
-                <div dir="ltr">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie data={regionData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85} label={pieLabel} labelLine={false}>
-                        {regionData.map((_, i) => <Cell key={i} fill={C.palette[i % C.palette.length]} />)}
-                      </Pie>
-                      <Tooltip formatter={(v: number, n: string) => [`${v} ${isAr ? "طلب" : "orders"}`, n]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-2 space-y-1.5">
-                  {regionData.map((r, i) => (
-                    <div key={r.name} className="flex items-center justify-between text-sm px-1">
-                      <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full" style={{ background: C.palette[i % C.palette.length] }} />{r.name}</span>
-                      <span className="text-muted-foreground tabular-nums">{r.value} {isAr ? "طلب" : "orders"}</span>
+                <div dir="ltr"><ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={regionData}
+                      cx="50%" cy="50%" outerRadius={90}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={{ stroke: "#9ca3af", strokeWidth: 1 }}
+                    >
+                      {regionData.map((_, idx) => (
+                        <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(val: number, name: string) => [
+                        `${val} ${isAr ? "طلب" : "orders"}`,
+                        name,
+                      ]}
+                      contentStyle={{ borderRadius: 8, fontSize: 13 }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer></div>
+                <div className="mt-3 space-y-1.5">
+                  {regionData.map((r, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-sm px-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full flex-none" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                        <span className="font-medium">{r.name}</span>
+                      </div>
+                      <span className="text-muted-foreground">{r.value} {isAr ? "طلب" : "orders"}</span>
                     </div>
                   ))}
                 </div>
               </>
             )}
-          </section>
-          <section className="bg-card border border-border rounded-xl p-4 sm:p-6">
-            <h2 className="text-base font-semibold mb-1 flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-500" />{isAr ? "طلبات الموقع حسب المدينة" : "Website orders by city"}</h2>
-            <p className="text-xs text-muted-foreground mb-3">{isAr ? "أعلى ١٥ مدينة" : "Top 15 cities"}</p>
+          </div>
+
+          {/* City Bar Chart */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-blue-500" />
+              {isAr ? "الطلبات حسب المدينة" : "Orders by City"}
+              {selectedMonth && <span className="ms-2 text-xs font-normal text-muted-foreground">— {selectedLabel}</span>}
+            </h2>
             {cityData.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد بيانات" : "No data"}</div>
+              <div className="text-center text-muted-foreground py-8 text-sm">{isAr ? "لا توجد بيانات بعد" : "No data yet"}</div>
             ) : (
-              <div dir="ltr">
-                <ResponsiveContainer width="100%" height={Math.max(240, cityData.length * 30)}>
-                  <BarChart data={cityData} layout="vertical" margin={{ top: 0, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
-                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
-                    <Tooltip formatter={(v: number) => [`${v} ${isAr ? "طلب" : "orders"}`]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-                    <Bar dataKey="orders" fill="#60a5fa" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <div dir="ltr"><ResponsiveContainer width="100%" height={Math.max(240, cityData.length * 36)}>
+                <BarChart data={cityData} layout="vertical" margin={{ top: 0, right: 20, left: 8, bottom: 0 }} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-border/40" />
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    className="text-muted-foreground"
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={110}
+                    tick={{ fontSize: 11, fill: "currentColor" }}
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip
+                    formatter={(val: number) => [`${val} ${isAr ? "طلب" : "orders"}`]}
+                    contentStyle={{ borderRadius: 8, fontSize: 13 }}
+                  />
+                  <Bar dataKey="orders" fill="#60a5fa" radius={[0, 4, 4, 0]} name={isAr ? "الطلبات" : "Orders"} />
+                </BarChart>
+              </ResponsiveContainer></div>
             )}
-          </section>
+          </div>
+
         </div>
       )}
+
+      {/* Category breakdown table */}
+      {categoryData.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-6">
+          <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4" />
+            {isAr ? "تفصيل الفئات" : "Category Breakdown"}
+            {selectedMonth && (
+              <span className="ms-2 text-xs font-normal text-muted-foreground">— {selectedLabel}</span>
+            )}
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-start py-2 px-3 font-medium text-muted-foreground">{isAr ? "الفئة" : "Category"}</th>
+                  <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "الموقع" : "Website"}</th>
+                  <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "نقطة البيع" : "POS"}</th>
+                  <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "دفع عند التسليم" : "Cash on Delivery"}</th>
+                  <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "بطاقة / إلكتروني" : "Card / Online"}</th>
+                  <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "الإجمالي" : "Total"}</th>
+                  <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "الأرباح" : "Profit"}</th>
+                  <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "رأس المال" : "Capital"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categoryData.map((row, i) => {
+                  const payment = combinedPaymentByCategory.find((p) => p.category === row.key);
+                  const cash = payment ? payment.webCash + payment.posCash : 0;
+                  const card = payment ? payment.webCard + payment.posCard : 0;
+                  const catId = categoryIdByName.get(row.key);
+                  return (
+                    <tr key={i} className="border-b border-border/50 hover:bg-muted/30 transition-colors" data-testid={`row-category-${i}`}>
+                      <td className="py-3 px-3 font-medium">
+                        {catId ? (
+                          <Link
+                            href={`/admin/reports/categories/${catId}`}
+                            className="inline-flex items-center gap-1.5 hover:text-amber-600 dark:hover:text-amber-400 hover:underline transition-colors"
+                            data-testid={`link-category-detail-${catId}`}
+                          >
+                            {row.name}
+                            <ExternalLink className="w-3 h-3 opacity-60" />
+                          </Link>
+                        ) : row.name}
+                      </td>
+                      <td className="py-3 px-3 text-end text-violet-600 dark:text-violet-400">{fmt(row.website)}</td>
+                      <td className="py-3 px-3 text-end text-pink-600 dark:text-pink-400">{fmt(row.pos)}</td>
+                      <td className="py-3 px-3 text-end text-amber-600 dark:text-amber-400">{fmt(cash)}</td>
+                      <td className="py-3 px-3 text-end text-sky-600 dark:text-sky-400">{fmt(card)}</td>
+                      <td className="py-3 px-3 text-end font-semibold">{fmt(row.total)}</td>
+                      <td className="py-3 px-3 text-end font-semibold text-emerald-600 dark:text-emerald-400">{fmt(profitByCategory.get(row.key) ?? 0)}</td>
+                      <td className="py-3 px-3 text-end">
+                        {catId && (
+                          <Link href={`/admin/reports/categories/${catId}`} data-testid={`button-view-capital-${catId}`}>
+                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1">
+                              <Wallet className="w-3.5 h-3.5" />
+                              {isAr ? "عرض" : "View"}
+                            </Button>
+                          </Link>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="bg-muted/40">
+                  <td className="py-3 px-3 font-bold">{isAr ? "المجموع" : "Total"}</td>
+                  <td className="py-3 px-3 text-end font-bold text-violet-600 dark:text-violet-400">{fmt(websiteTotal)}</td>
+                  <td className="py-3 px-3 text-end font-bold text-pink-600 dark:text-pink-400">{fmt(posTotal)}</td>
+                  <td className="py-3 px-3 text-end font-bold text-amber-600 dark:text-amber-400">
+                    {fmt(combinedPaymentByCategory.reduce((s, r) => s + r.webCash + r.posCash, 0))}
+                  </td>
+                  <td className="py-3 px-3 text-end font-bold text-sky-600 dark:text-sky-400">
+                    {fmt(combinedPaymentByCategory.reduce((s, r) => s + r.webCard + r.posCard, 0))}
+                  </td>
+                  <td className="py-3 px-3 text-end font-bold">{fmt(combined)}</td>
+                  <td className="py-3 px-3 text-end font-bold text-emerald-600 dark:text-emerald-400">{fmt(data?.totalProfit ?? 0)}</td>
+                  <td className="py-3 px-3 text-end"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      </>}
+
+      {/* ── INVENTORY TAB ─────────────────────────────────────────────── */}
+      {activeTab === "inventory" && (
+        <InventoryTab inventoryData={inventoryData ?? []} inventoryLoading={inventoryLoading} isAr={isAr} fmt={fmt} />
+      )}
+
     </AdminLayout>
+  );
+}
+
+function InventoryTab({ inventoryData, inventoryLoading, isAr, fmt }: {
+  inventoryData: any[];
+  inventoryLoading: boolean;
+  isAr: boolean;
+  fmt: (n: number) => string;
+}) {
+  const rows = inventoryData;
+  const totalProducts = rows.reduce((s, r) => s + Number(r.product_count), 0);
+  const totalUnits    = rows.reduce((s, r) => s + Number(r.total_units), 0);
+  const totalValue    = rows.reduce((s, r) => s + Number(r.total_selling_value), 0);
+  const totalCapital  = totalValue * 0.5;
+  const totalInStock  = rows.reduce((s, r) => s + Number(r.in_stock_count), 0);
+  const totalOOS      = rows.reduce((s, r) => s + Number(r.out_of_stock_count), 0);
+
+  const summaryInv = [
+    { label: isAr ? "إجمالي المنتجات" : "Total Products",           value: totalProducts.toLocaleString(), icon: Package,      color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/30" },
+    { label: isAr ? "إجمالي الوحدات في المخزن" : "Total Stock Units", value: totalUnits.toLocaleString(),   icon: Warehouse,    color: "text-sky-600",    bg: "bg-sky-50 dark:bg-sky-950/30" },
+    { label: isAr ? "قيمة المخزون (سعر البيع)" : "Inventory Value",   value: fmt(totalValue),                icon: ShoppingBag,  color: "text-emerald-600",bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+    { label: isAr ? "رأس المال المدفوع (50%)" : "Paid-up Capital (50%)", value: fmt(totalCapital),           icon: Banknote,     color: "text-amber-600",  bg: "bg-amber-50 dark:bg-amber-950/30" },
+    { label: isAr ? "منتجات متوفرة" : "In-Stock Products",            value: totalInStock.toLocaleString(), icon: CheckCircle2, color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-950/30" },
+    { label: isAr ? "منتجات نفذت" : "Out-of-Stock Products",          value: totalOOS.toLocaleString(),     icon: AlertTriangle,color: "text-rose-600",   bg: "bg-rose-50 dark:bg-rose-950/30" },
+  ];
+
+  if (inventoryLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        {[1,2,3,4,5,6].map(i => <div key={i} className="h-24 bg-muted animate-pulse rounded-xl" />)}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        {summaryInv.map((card) => (
+          <div key={card.label} className="bg-card border border-border rounded-xl p-5 flex items-center gap-4">
+            <div className={`w-11 h-11 rounded-full ${card.bg} flex items-center justify-center flex-shrink-0`}>
+              <card.icon className={`w-5 h-5 ${card.color}`} />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground leading-tight">{card.label}</p>
+              <p className="text-lg font-semibold mt-0.5">{card.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-card border border-border rounded-xl p-6">
+        <h2 className="text-base font-semibold mb-1 flex items-center gap-2">
+          <Warehouse className="w-4 h-4 text-sky-500" />
+          {isAr ? "تفصيل المخزون حسب الفئة" : "Inventory by Category"}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-5">
+          {isAr
+            ? "رأس المال المدفوع = 50% من إجمالي قيمة البيع للمخزون الحالي"
+            : "Paid-up capital = 50% of total selling value of current stock"}
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-start py-2 px-3 font-medium text-muted-foreground">{isAr ? "الفئة" : "Category"}</th>
+                <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "عدد المنتجات" : "Products"}</th>
+                <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "متوفر" : "In Stock"}</th>
+                <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "نفذ" : "Out of Stock"}</th>
+                <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "إجمالي الوحدات" : "Total Units"}</th>
+                <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "متوسط السعر" : "Avg Price"}</th>
+                <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "قيمة البيع" : "Selling Value"}</th>
+                <th className="text-end py-2 px-3 font-medium text-muted-foreground">{isAr ? "رأس المال (50%)" : "Capital (50%)"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row: any, i: number) => {
+                const sellingValue = Number(row.total_selling_value);
+                const capital = sellingValue * 0.5;
+                const inStockPct = row.product_count > 0
+                  ? Math.round((row.in_stock_count / row.product_count) * 100)
+                  : 0;
+                return (
+                  <tr key={i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                    <td className="py-3 px-3 font-medium">{isAr ? row.category_ar : row.category}</td>
+                    <td className="py-3 px-3 text-end">{row.product_count}</td>
+                    <td className="py-3 px-3 text-end">
+                      <span className="inline-flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium">
+                        {row.in_stock_count}
+                        <span className="text-xs text-muted-foreground font-normal">({inStockPct}%)</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-end">
+                      {row.out_of_stock_count > 0
+                        ? <span className="text-rose-600 dark:text-rose-400 font-medium">{row.out_of_stock_count}</span>
+                        : <span className="text-muted-foreground">0</span>}
+                    </td>
+                    <td className="py-3 px-3 text-end text-sky-600 dark:text-sky-400">{Number(row.total_units).toLocaleString()}</td>
+                    <td className="py-3 px-3 text-end text-muted-foreground">{fmt(Number(row.avg_price))}</td>
+                    <td className="py-3 px-3 text-end text-emerald-600 dark:text-emerald-400 font-medium">{fmt(sellingValue)}</td>
+                    <td className="py-3 px-3 text-end text-amber-600 dark:text-amber-400 font-semibold">{fmt(capital)}</td>
+                  </tr>
+                );
+              })}
+              <tr className="bg-muted/40 font-bold border-t-2 border-border">
+                <td className="py-3 px-3">{isAr ? "المجموع" : "Total"}</td>
+                <td className="py-3 px-3 text-end">{totalProducts}</td>
+                <td className="py-3 px-3 text-end text-teal-600 dark:text-teal-400">{totalInStock}</td>
+                <td className="py-3 px-3 text-end text-rose-600 dark:text-rose-400">{totalOOS}</td>
+                <td className="py-3 px-3 text-end text-sky-600 dark:text-sky-400">{totalUnits.toLocaleString()}</td>
+                <td className="py-3 px-3 text-end text-muted-foreground">—</td>
+                <td className="py-3 px-3 text-end text-emerald-600 dark:text-emerald-400">{fmt(totalValue)}</td>
+                <td className="py-3 px-3 text-end text-amber-600 dark:text-amber-400">{fmt(totalCapital)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }

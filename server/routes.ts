@@ -25,7 +25,7 @@ import { extractEntities } from "./chatbot/entityExtractor";
 import { buildResponse, orderStatusReply } from "./chatbot/responses";
 import { registerOllamaRoutes } from "./ollama";
 import { SITE_URL } from "./seo";
-import { getDataset, buildOverview, buildCapitalOverview, buildCategoryDetail, parseMonthParam } from "./reports";
+import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCategoryReportResponse, parseMonthParam } from "./reports";
 
 // Rate limiters for auth endpoints
 const loginLimiter = rateLimit({
@@ -4961,7 +4961,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
     if (!req.isAuthenticated() || req.user.role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     try {
       const ds = await getDataset(req.query.refresh === "1");
-      res.json(buildOverview(ds, parseMonthParam(req.query.month)));
+      res.json(buildAnalyticsResponse(ds, parseMonthParam(req.query.month)));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -4972,7 +4972,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
     if (!req.isAuthenticated() || req.user.role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     try {
       const ds = await getDataset(req.query.refresh === "1");
-      res.json(buildCapitalOverview(ds, parseMonthParam(req.query.month)));
+      res.json(buildInventoryResponse(ds));
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
@@ -4985,7 +4985,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const categoryId = parseInt(req.params.id);
       if (Number.isNaN(categoryId) || categoryId < 0) return res.status(400).json({ message: "Invalid category id" });
       const ds = await getDataset(req.query.refresh === "1");
-      const detail = buildCategoryDetail(ds, categoryId, parseMonthParam(req.query.month));
+      const detail = buildCategoryReportResponse(ds, categoryId);
       if (!detail) return res.status(404).json({ message: "Category not found" });
       res.json(detail);
     } catch (err: any) {
