@@ -2813,14 +2813,18 @@ export default function POS() {
   );
 
   /* ── Cart computed ─────────────────────────────────────────────────── */
-  const cartSubtotal = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  // Money is kept to whole agorot (2 decimals) everywhere. Without this a
+  // percentage discount produced totals like 84.9915 that the cashier could
+  // never match exactly ("Insufficient amount" when paying the 84.99 shown).
+  const roundMoney = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+  const cartSubtotal = roundMoney(cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0));
   const discountAmount = useMemo(() => {
-    const v = parseFloat(discountValue) || 0;
+    const v = Math.max(0, parseFloat(discountValue) || 0);
     if (discountType === "percent")
-      return Math.min(cartSubtotal * (v / 100), cartSubtotal);
-    return Math.min(v, cartSubtotal);
+      return roundMoney(Math.min(cartSubtotal * (v / 100), cartSubtotal));
+    return roundMoney(Math.min(v, cartSubtotal));
   }, [cartSubtotal, discountType, discountValue]);
-  const cartTotal = Math.max(0, cartSubtotal - discountAmount);
+  const cartTotal = roundMoney(Math.max(0, cartSubtotal - discountAmount));
   const cashAmt = parseFloat(cashReceived) || 0;
   const cardAmt = parseFloat(cardReceived) || 0;
   const splitTotal = cashAmt + cardAmt;
