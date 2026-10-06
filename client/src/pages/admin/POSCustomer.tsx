@@ -485,8 +485,8 @@ function ShowcaseHeader() {
   return (
     <div className="sc-header">
       <div className="relative brand-float shrink-0">
-        {/* Soft pulsing glow in the brand colours around the logo */}
-        <div className="sc-halo" aria-hidden="true" />
+        {/* Same soft pastel halo + white badge the logo always had on the welcome screen */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#97d5d4]/20 via-[#f4d3dc]/20 to-[#f06ee8]/20 blur-2xl scale-125" aria-hidden="true" />
         <div className="sc-logo">
           <BrandMark className="w-full h-full" />
         </div>
@@ -800,37 +800,21 @@ export default function POSCustomer() {
         /* ── Product showcase ── */
         .sc-wrap { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
         .sc-header {
-          position: relative; display: flex; align-items: center; justify-content: center;
-          gap: clamp(16px, 3vh, 38px);
-          padding: clamp(14px, 3vh, 38px) 16px clamp(16px, 3vh, 36px);
+          display: flex; align-items: center; justify-content: center;
+          gap: clamp(14px, 2.6vh, 32px);
+          padding: clamp(10px, 2vh, 24px) 16px clamp(14px, 2.4vh, 30px);
         }
-        /* thin pastel divider between the brand and the photos */
-        .sc-header::after {
-          content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
-          width: min(46%, 520px); height: 1px;
-          background: linear-gradient(to right, transparent, #97d5d4, #f4d3dc, transparent);
-        }
-        /* Larger logo with a glowing brand-colour halo so it is easy to recognise from a distance */
+        /* The original logo badge: white circle, thin border, soft shadow */
         .sc-logo {
-          position: relative; z-index: 1; flex-shrink: 0; width: clamp(64px, 13vh, 150px); height: clamp(64px, 13vh, 150px);
-          padding: clamp(8px, 1.7vh, 18px); border-radius: 9999px; background: #fff;
-          border: 1px solid #efefef;
-          box-shadow: 0 10px 28px -10px rgba(0,0,0,0.28);
-        }
-        .sc-halo {
-          position: absolute; inset: -22%; border-radius: 9999px; pointer-events: none;
-          background: conic-gradient(from 20deg, #97d5d4, #f4d3dc, #f06ee8, #f4d3dc, #97d5d4);
-          filter: blur(clamp(12px, 2.8vh, 30px)); opacity: 0.7;
-          animation: scGlow 3.8s ease-in-out infinite;
-        }
-        @keyframes scGlow {
-          0%, 100% { opacity: 0.5; transform: scale(0.96); }
-          50% { opacity: 0.95; transform: scale(1.1); }
+          position: relative; z-index: 1; flex-shrink: 0;
+          width: clamp(64px, 12vh, 140px); height: clamp(64px, 12vh, 140px);
+          padding: 15%; border-radius: 9999px; background: #fff; border: 1px solid #f5f5f5;
+          box-shadow: 0 25px 50px -12px #e5e5e5;
         }
         .sc-grid {
           flex: 1 1 0; min-height: 0; display: grid;
-          gap: clamp(14px, 2.4vh, 32px);
-          padding: clamp(14px, 2.6vh, 34px) clamp(24px, 4.5vh, 64px) clamp(22px, 4vh, 52px);
+          gap: clamp(10px, 1.6vh, 20px);
+          padding: clamp(8px, 1.6vh, 20px) clamp(12px, 2.2vh, 28px) clamp(12px, 2.2vh, 28px);
         }
         /* Each grid cell is a size container; the photo frame inside takes the largest
            size that fits the cell while keeping the photo's exact shape. */
@@ -865,7 +849,7 @@ export default function POSCustomer() {
         .sc-leaving { animation: scOut 1s ease-in 0.15s both; }
         @keyframes scOut { from { opacity: 1; } to { opacity: 0; } }
         @media (prefers-reduced-motion: reduce) {
-          .sc-layer, .sc-frame, .sc-ph::after, .sc-halo { animation: none !important; }
+          .sc-layer, .sc-frame, .sc-ph::after { animation: none !important; }
         }
       `}</style>
 
