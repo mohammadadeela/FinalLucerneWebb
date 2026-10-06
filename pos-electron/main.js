@@ -17,6 +17,9 @@ let CUSTOMER_URL = (config.url || "").replace(/\/$/, "") + "/admin/pos-customer"
 let mainWindow = null;
 let customerWindow = null;
 
+// Lucerne logo icon — used by every window so the taskbar/window icon is always the logo
+const APP_ICON = path.join(__dirname, "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
+
 // ── Customer-facing display window (2nd monitor) ────────────────────────────
 // The web page tries to open /admin/pos-customer itself via window.open() and
 // the browser Window Management API, but that API isn't available inside a
@@ -57,6 +60,7 @@ function openCustomerWindow(targetUrl) {
     frame: false,
     autoHideMenuBar: true,
     backgroundColor: "#0f0f0f",
+    icon: APP_ICON,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -143,7 +147,7 @@ function createWindow() {
       contextIsolation: true,
       session: require("electron").session.defaultSession,
     },
-    icon: path.join(__dirname, "assets", process.platform === "win32" ? "icon.ico" : "icon.png"),
+    icon: APP_ICON,
     show: false,
   });
 
@@ -263,6 +267,7 @@ function openSettings() {
     modal: true,
     parent: mainWindow,
     resizable: false,
+    icon: APP_ICON,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
@@ -404,6 +409,10 @@ ipcMain.handle("get-printers", async () => {
 });
 
 // ── App lifecycle ────────────────────────────────────────────────────────────
+// Windows groups the taskbar button by this id and shows the app's own icon
+// (the Lucerne logo) instead of the default Electron icon.
+app.setAppUserModelId("com.lucerneboutique.pos");
+
 app.whenReady().then(() => {
   createWindow();
   // Safe to touch the `screen` module only from here on.
