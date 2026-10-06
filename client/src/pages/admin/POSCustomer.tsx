@@ -1,5 +1,8 @@
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useRef, useMemo, memo, type CSSProperties } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ShoppingBag, Check } from "lucide-react";
+import { optimizeCloudinaryUrl } from "@/lib/utils";
+import { unwrapApiResponse } from "@/lib/queryClient";
 
 interface CartItem {
   productName: string;
@@ -263,9 +266,384 @@ function ButterflyBurst() {
   );
 }
 
+
+/* ── Product showcase (idle screen) ───────────────────────────────────
+   While the cart is empty the customer screen becomes a living gallery of
+   real product photos around the brand card. Rules:
+   • Every tile starts at a random moment and keeps changing on its own
+     random timer (≈4.5–9.5s), so the wall never repeats the same rhythm.
+   • Photos are drawn evenly across ALL categories and subcategories (a
+     random category first, then a random subcategory, then a random
+     product), so small categories get as much screen time as big ones.
+   • A product is never shown twice at once and isn't repeated until most
+     of the catalogue has been shown.
+   • As soon as the cashier adds an item the gallery unmounts (the cart
+     view takes over); when the cart is empty again it mounts fresh and
+     starts from a new random picture set. */
+interface ShowcaseEntry {
+  id: number;
+  name: string;
+  label: string;
+  images: string[];
+}
+interface ShowcasePool {
+  groups: { catKey: string; subs: ShowcaseEntry[][] }[];
+  all: ShowcaseEntry[];
+}
+interface ShowcaseSlot {
+  key: string;
+  productId: number;
+  name: string;
+  label: string;
+  raw: string;
+  src: string;
+  variant: number;
+  origin: string;
+}
+
+const SHOWCASE_TILES = 10;
+const VIDEO_RE = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
+
+const randBetween = (a: number, b: number) => a + Math.random() * (b - a);
+const rnd = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+function sumInventory(o: unknown): number {
+  return Object.values((o as Record<string, unknown>) || {}).reduce<number>(
+    (t, v) => t + (Number(v) || 0),
+    0,
+  );
+}
+
+function isShowcaseAvailable(p: any): boolean {
+  if (Number(p.stockQuantity) > 0) return true;
+  if (sumInventory(p.sizeInventory) > 0) return true;
+  return (p.colorVariants || []).some((cv: any) => sumInventory(cv?.sizeInventory) > 0);
+}
+
+function collectShowcaseImages(p: any): string[] {
+  const urls = [p.mainImage, ...(p.colorVariants || []).map((cv: any) => cv?.mainImage)]
+    .filter((u): u is string => typeof u === "string" && u.trim().length > 0 && !VIDEO_RE.test(u));
+  return Array.from(new Set(urls));
+}
+
+function buildShowcasePool(products: any[], categories: any[], subcategories: any[]): ShowcasePool | null {
+  const catName = new Map<number, string>();
+  for (const c of categories) catName.set(Number(c.id), c.nameAr || c.name || "");
+  const subName = new Map<number, string>();
+  for (const s of subcategories) subName.set(Number(s.id), s.nameAr || s.name || "");
+
+  const withImages = products.filter((p) => collectShowcaseImages(p).length > 0);
+  const inStock = withImages.filter(isShowcaseAvailable);
+  // Only show what can actually be bought — unless that would leave the wall nearly empty.
+  const source = inStock.length >= 4 ? inStock : withImages;
+
+  const tree = new Map<string, Map<string, ShowcaseEntry[]>>();
+  const all: ShowcaseEntry[] = [];
+
+  for (const p of source) {
+    const catId = p.categoryId != null ? Number(p.categoryId) : null;
+    const subIds = Array.from(
+      new Set([p.subcategoryId, ...(p.subcategoryIds || [])].filter((x) => x != null).map(Number)),
+    );
+    const label =
+      (subIds.length ? subName.get(subIds[0]) : "") || (catId != null ? catName.get(catId) : "") || "";
+    const entry: ShowcaseEntry = {
+      id: Number(p.id),
+      name: String(p.name || ""),
+      label: label || "",
+      images: collectShowcaseImages(p),
+    };
+    all.push(entry);
+
+    const catKey = catId != null ? `c${catId}` : "c0";
+    let subMap = tree.get(catKey);
+    if (!subMap) {
+      subMap = new Map();
+      tree.set(catKey, subMap);
+    }
+    for (const k of subIds.length ? subIds.map((i) => `s${i}`) : ["s0"]) {
+      const arr = subMap.get(k) ?? [];
+      arr.push(entry);
+      subMap.set(k, arr);
+    }
+  }
+
+  if (!all.length) return null;
+  const groups = Array.from(tree, ([catKey, subMap]) => ({ catKey, subs: Array.from(subMap.values()) }));
+  return { groups, all };
+}
+
+function pickShowcase(
+  pool: ShowcasePool,
+  recent: number[],
+  taken: Set<number>,
+  lastCat: { current: string | null },
+  banned: Set<string>,
+): ShowcaseSlot | null {
+  const recentSet = new Set(recent);
+  const usable = (e: ShowcaseEntry) => e.images.some((u) => !banned.has(u));
+  const strict = (e: ShowcaseEntry) => !taken.has(e.id) && !recentSet.has(e.id) && usable(e);
+
+  let entry: ShowcaseEntry | undefined;
+  let catKey: string | null = null;
+
+  // Random category → random subcategory → random product (even coverage of the catalogue)
+  for (let a = 0; a < 14 && !entry; a++) {
+    const g = rnd(pool.groups);
+    if (pool.groups.length > 1 && g.catKey === lastCat.current && a < 8) continue;
+    const cands = rnd(g.subs).filter(strict);
+    if (cands.length) {
+      entry = rnd(cands);
+      catKey = g.catKey;
+    }
+  }
+  // Fallbacks when the catalogue is small: relax the rules step by step
+  if (!entry) {
+    const tiers = [
+      pool.all.filter(strict),
+      pool.all.filter((e) => !taken.has(e.id) && usable(e)),
+      pool.all.filter(usable),
+    ];
+    for (const t of tiers) {
+      if (t.length) {
+        entry = rnd(t);
+        break;
+      }
+    }
+  }
+  if (!entry) return null;
+
+  const raw = rnd(entry.images.filter((u) => !banned.has(u)));
+  lastCat.current = catKey ?? lastCat.current;
+  recent.push(entry.id);
+  const memory = Math.min(60, Math.floor(pool.all.length * 0.7));
+  while (recent.length > memory) recent.shift();
+
+  return {
+    key: `${entry.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    productId: entry.id,
+    name: entry.name,
+    label: entry.label,
+    raw,
+    src: optimizeCloudinaryUrl(raw, 800) || raw,
+    variant: Math.floor(Math.random() * 4),
+    origin: `${Math.round(randBetween(20, 80))}% ${Math.round(randBetween(15, 70))}%`,
+  };
+}
+
+function preloadShowcaseImage(src: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const timer = setTimeout(() => resolve(false), 9000);
+    img.onload = () => {
+      clearTimeout(timer);
+      resolve(true);
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      resolve(false);
+    };
+    img.src = src;
+  });
+}
+
+async function fetchShowcaseList(url: string): Promise<any[]> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+  const data = unwrapApiResponse<any>(await res.json());
+  return Array.isArray(data) ? data : [];
+}
+
+/* Kept at the top level of the page so data stays loaded while the cart is
+   in use — the gallery is then instant when the cart empties again. */
+function useShowcasePool(): ShowcasePool | null {
+  const common = {
+    staleTime: 4 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000, // pick up new products / sold-out items on a long-running display
+    refetchOnWindowFocus: false,
+    retry: 2,
+  } as const;
+  const products = useQuery({ queryKey: ["pos-customer-showcase", "products"], queryFn: () => fetchShowcaseList("/api/products"), ...common });
+  const cats = useQuery({ queryKey: ["pos-customer-showcase", "categories"], queryFn: () => fetchShowcaseList("/api/categories"), ...common });
+  const subs = useQuery({ queryKey: ["pos-customer-showcase", "subcategories"], queryFn: () => fetchShowcaseList("/api/subcategories"), ...common });
+
+  return useMemo(
+    () => (products.data ? buildShowcasePool(products.data, cats.data ?? [], subs.data ?? []) : null),
+    [products.data, cats.data, subs.data],
+  );
+}
+
+/* Brand card — sits in the middle of the wall so the identity is always visible */
+function ShowcaseBrandCard() {
+  return (
+    <div
+      className="sc-brand-card relative overflow-hidden flex items-center justify-center gap-[3vh] px-[3vh]"
+      style={{ gridArea: "brand" }}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#97d5d4]/25 via-white to-[#f4d3dc]/40" />
+      <div className="relative brand-float shrink-0">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#97d5d4]/40 via-[#f4d3dc]/40 to-[#f06ee8]/30 blur-2xl scale-125" />
+        <div
+          className="relative rounded-full bg-white border border-neutral-100 shadow-xl flex items-center justify-center"
+          style={{ width: "clamp(72px,15vh,170px)", height: "clamp(72px,15vh,170px)", padding: "clamp(10px,2.2vh,24px)" }}
+        >
+          <BrandMark className="w-full h-full" />
+        </div>
+      </div>
+      <div className="relative text-center min-w-0">
+        <h2
+          className="font-bold text-neutral-900 leading-none"
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em", fontSize: "clamp(24px,5.2vh,60px)" }}
+        >
+          LUCERNE
+        </h2>
+        <p
+          className="text-neutral-400 uppercase mt-[1vh]"
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.35em", fontSize: "clamp(11px,2.2vh,24px)" }}
+        >
+          Boutique
+        </p>
+        <div className="mx-auto my-[1.2vh] h-px w-2/3 bg-gradient-to-r from-transparent via-neutral-300 to-transparent" />
+        <p className="text-neutral-500" style={{ fontSize: "clamp(11px,1.8vh,18px)" }}>
+          في انتظار إضافة المنتجات...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ShowcaseLayer({ slot, leaving }: { slot: ShowcaseSlot; leaving?: boolean }) {
+  return (
+    <div className={`sc-layer sc-in-${slot.variant}${leaving ? " sc-leaving" : ""}`}>
+      <img src={slot.src} alt={slot.name} draggable={false} className="sc-img" style={{ transformOrigin: slot.origin }} />
+      <div className="sc-shade" />
+      <div className="sc-cap">
+        {slot.label && <span className="sc-chip">{slot.label}</span>}
+        {slot.name && <p className="sc-name">{slot.name}</p>}
+      </div>
+    </div>
+  );
+}
+
+interface ShowcaseTileState {
+  cur: ShowcaseSlot | null;
+  prev: ShowcaseSlot | null;
+}
+
+const ShowcaseTile = memo(function ShowcaseTile({ tile, index }: { tile: ShowcaseTileState; index: number }) {
+  // One keyed list (never conditional slots) so the outgoing photo isn't remounted mid-transition
+  const layers = [tile.prev, tile.cur].filter((x): x is ShowcaseSlot => !!x);
+  return (
+    <div className={`sc-tile sc-t${index + 1}${tile.cur ? "" : " sc-ph"}`} style={{ gridArea: `t${index + 1}` }}>
+      {layers.map((slot) => (
+        <ShowcaseLayer key={slot.key} slot={slot} leaving={slot === tile.prev} />
+      ))}
+    </div>
+  );
+});
+
+const ProductShowcase = memo(function ProductShowcase({ pool }: { pool: ShowcasePool }) {
+  const [tiles, setTiles] = useState<ShowcaseTileState[]>(() =>
+    Array.from({ length: SHOWCASE_TILES }, () => ({ cur: null, prev: null })),
+  );
+  const poolRef = useRef(pool);
+  poolRef.current = pool;
+  const shownRef = useRef<(ShowcaseSlot | null)[]>(Array(SHOWCASE_TILES).fill(null));
+  const reservedRef = useRef<Set<number>>(new Set());
+  const recentRef = useRef<number[]>([]);
+  const lastCatRef = useRef<string | null>(null);
+  const bannedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    let dead = false;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const later = (fn: () => void, ms: number) => {
+      const id = setTimeout(() => {
+        timers.delete(id);
+        fn();
+      }, ms);
+      timers.add(id);
+    };
+
+    const change = async (i: number) => {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const taken = new Set<number>(reservedRef.current);
+        for (const s of shownRef.current) if (s) taken.add(s.productId);
+        const slot = pickShowcase(poolRef.current, recentRef.current, taken, lastCatRef, bannedRef.current);
+        if (!slot) break;
+
+        reservedRef.current.add(slot.productId);
+        const ok = await preloadShowcaseImage(slot.src); // swap only once the photo is fully ready
+        reservedRef.current.delete(slot.productId);
+        if (dead) return;
+        if (!ok) {
+          bannedRef.current.add(slot.raw);
+          continue;
+        }
+
+        shownRef.current[i] = slot;
+        setTiles((prev) => prev.map((t, idx) => (idx === i ? { cur: slot, prev: t.cur } : t)));
+        later(() => setTiles((prev) => prev.map((t, idx) => (idx === i && t.cur === slot ? { ...t, prev: null } : t))), 1800);
+        later(() => void change(i), randBetween(4500, 9500)); // every tile keeps its own random rhythm
+        return;
+      }
+      later(() => void change(i), randBetween(3000, 6000));
+    };
+
+    // Random start: tiles fill in at random moments, in random order
+    for (let i = 0; i < SHOWCASE_TILES; i++) later(() => void change(i), randBetween(150, 2800));
+
+    return () => {
+      dead = true;
+      timers.forEach(clearTimeout);
+    };
+  }, []);
+
+  return (
+    <div className="sc-grid brand-enter">
+      {tiles.map((t, i) => (
+        <ShowcaseTile key={i} tile={t} index={i} />
+      ))}
+      <ShowcaseBrandCard />
+    </div>
+  );
+});
+
+/* Original welcome layout — used while the photos are still loading or if the catalogue has no photos */
+function WelcomeHero() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-8 px-8 brand-enter">
+      <div className="relative brand-float">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#97d5d4]/20 via-[#f4d3dc]/20 to-[#f06ee8]/20 blur-2xl scale-125" />
+        <div className="relative w-52 h-52 md:w-64 md:h-64 rounded-full bg-white border border-neutral-100 shadow-2xl shadow-neutral-200 flex items-center justify-center p-8">
+          <BrandMark className="w-full h-full" />
+        </div>
+      </div>
+      <div className="text-center space-y-4">
+        <h2
+          className="text-5xl md:text-6xl font-bold text-neutral-900"
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em" }}
+        >
+          LUCERNE
+        </h2>
+        <p
+          className="text-neutral-400 text-xl md:text-2xl uppercase"
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.35em" }}
+        >
+          Boutique
+        </p>
+        <p className="text-neutral-400 text-sm mt-4">في انتظار إضافة المنتجات...</p>
+      </div>
+      {/* Decorative line */}
+      <div className="w-40 h-px bg-gradient-to-r from-transparent via-neutral-300 to-transparent" />
+    </div>
+  );
+}
+
 export default function POSCustomer() {
   const [cart, setCart] = useState<CartState>(EMPTY_STATE);
   const [flash, setFlash] = useState(false);
+  const showcasePool = useShowcasePool();
 
   /* ── Kiosk-style fullscreen ────────────────────────────────────────
      Hides the browser's own chrome (address bar, tabs, close button)
@@ -383,6 +761,74 @@ export default function POSCustomer() {
           to { transform: rotateY(-14deg); }
         }
         @media (prefers-reduced-motion: reduce) { .bfly-layer { display: none; } }
+
+        /* ── Product showcase ── */
+        .sc-grid {
+          flex: 1 1 0; min-height: 0; display: grid;
+          gap: clamp(10px, 1.6vh, 20px); padding: clamp(12px, 2.2vh, 28px);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-rows: repeat(3, minmax(0, 1fr));
+          grid-template-areas: "t1 t2 t3 t4" "t5 brand brand t6" "t7 t8 t9 t10";
+        }
+        @media (orientation: portrait) {
+          .sc-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-rows: repeat(5, minmax(0, 1fr));
+            grid-template-areas: "t1 t2" "t3 t4" "brand brand" "t5 t6" "t7 t8";
+          }
+          .sc-t9, .sc-t10 { display: none; }
+        }
+        .sc-tile, .sc-brand-card {
+          position: relative; overflow: hidden; isolation: isolate;
+          border-radius: clamp(16px, 2.4vh, 32px);
+          box-shadow: 0 14px 34px -16px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04);
+        }
+        .sc-tile { background: linear-gradient(135deg, #f6f1f3, #eaf5f5); }
+        .sc-brand-card { background: #fff; }
+        .sc-ph::after {
+          content: ""; position: absolute; inset: 0;
+          background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.7) 50%, transparent 70%);
+          background-size: 220% 100%; animation: scShimmer 1.8s linear infinite;
+        }
+        @keyframes scShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+        .sc-layer { position: absolute; inset: 0; }
+        .sc-img {
+          width: 100%; height: 100%; object-fit: cover; object-position: center 25%;
+          user-select: none; will-change: transform; animation: scKb 20s ease-out both;
+        }
+        @keyframes scKb { from { transform: scale(1.02); } to { transform: scale(1.15); } }
+        .sc-in-0 { animation: scIn0 1.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .sc-in-1 { animation: scIn1 1.1s cubic-bezier(0.65, 0, 0.35, 1) both; }
+        .sc-in-2 { animation: scIn2 1.1s cubic-bezier(0.16, 1, 0.3, 1) both; }
+        .sc-in-3 { animation: scIn3 1.3s ease-out both; }
+        @keyframes scIn0 { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+        @keyframes scIn1 { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
+        @keyframes scIn2 { from { opacity: 0; transform: translateY(8%); } to { opacity: 1; transform: none; } }
+        @keyframes scIn3 { from { opacity: 0; filter: blur(18px); } to { opacity: 1; filter: blur(0); } }
+        .sc-shade {
+          position: absolute; inset: auto 0 0 0; height: 48%; pointer-events: none;
+          background: linear-gradient(to top, rgba(0,0,0,0.58), transparent);
+        }
+        .sc-cap {
+          position: absolute; inset: auto 0 0 0; display: flex; flex-direction: column;
+          align-items: flex-start; gap: 6px; padding: clamp(10px, 1.7vh, 22px);
+          animation: scCap 0.7s ease-out 0.55s both;
+        }
+        @keyframes scCap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .sc-leaving .sc-cap { animation: none; opacity: 0; transition: opacity 0.3s; }
+        .sc-chip {
+          font-size: clamp(10px, 1.4vh, 14px); letter-spacing: 0.06em; color: #fff;
+          padding: 3px 10px; border-radius: 9999px; background: rgba(255,255,255,0.22);
+          border: 1px solid rgba(255,255,255,0.38); backdrop-filter: blur(8px);
+        }
+        .sc-name {
+          color: #fff; font-weight: 600; font-size: clamp(13px, 2vh, 22px); line-height: 1.25;
+          text-shadow: 0 1px 8px rgba(0,0,0,0.45);
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .sc-layer, .sc-img, .sc-cap, .sc-ph::after { animation: none !important; }
+        }
       `}</style>
 
       {/* Ambient background glow, echoing the logo's pastel palette */}
@@ -410,7 +856,7 @@ export default function POSCustomer() {
             </div>
             <div className="bg-neutral-50 border border-neutral-200 rounded-2xl px-10 py-6 text-center mt-4">
               <p className="text-neutral-500 text-sm mb-1">المبلغ الإجمالي</p>
-              <p className="text-5xl font-bold text-white">{fmt(cart.total)}</p>
+              <p className="text-5xl font-bold text-neutral-900">{fmt(cart.total)}</p>
             </div>
             <div className="flex items-center gap-2 mt-2 opacity-40">
               <BrandMark className="w-8 h-8" />
@@ -420,32 +866,8 @@ export default function POSCustomer() {
             </div>
           </div>
         ) : isEmpty ? (
-          /* ── Empty / Welcome state ────────────────────────────── */
-          <div className="flex-1 flex flex-col items-center justify-center gap-8 px-8 brand-enter">
-            <div className="relative brand-float">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#97d5d4]/20 via-[#f4d3dc]/20 to-[#f06ee8]/20 blur-2xl scale-125" />
-              <div className="relative w-52 h-52 md:w-64 md:h-64 rounded-full bg-white border border-neutral-100 shadow-2xl shadow-neutral-200 flex items-center justify-center p-8">
-                <BrandMark className="w-full h-full" />
-              </div>
-            </div>
-            <div className="text-center space-y-4">
-              <h2
-                className="text-5xl md:text-6xl font-bold text-neutral-900"
-                style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em" }}
-              >
-                LUCERNE
-              </h2>
-              <p
-                className="text-neutral-400 text-xl md:text-2xl uppercase"
-                style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.35em" }}
-              >
-                Boutique
-              </p>
-              <p className="text-neutral-400 text-sm mt-4">في انتظار إضافة المنتجات...</p>
-            </div>
-            {/* Decorative line */}
-            <div className="w-40 h-px bg-gradient-to-r from-transparent via-neutral-300 to-transparent" />
-          </div>
+          /* ── Empty / Welcome state: random product photo wall + brand card ── */
+          showcasePool ? <ProductShowcase pool={showcasePool} /> : <WelcomeHero />
         ) : (
           /* ── Cart items ────────────────────────────────────────── */
           <div className="flex-1 flex gap-0 overflow-hidden min-h-0">
