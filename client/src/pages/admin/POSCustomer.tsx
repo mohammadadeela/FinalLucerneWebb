@@ -116,7 +116,21 @@ const FLYERS: FlyerCfg[] = [
 
 const SPARK_COLORS = ["#97d5d4", "#f4d3dc", "#f06ee8"];
 
-function FlyingButterflies() {
+/* Butterflies for the product photo wall. The layer sits BEHIND the photos, so a
+   butterfly can never cover a product: it drifts across the header and through
+   the open space around and between the photo frames, and slips behind a photo
+   whenever it passes one. Slightly larger and fully opaque so they're easy to spot. */
+const SHOWCASE_FLYERS: FlyerCfg[] = [
+  // Header band — one on each side of the brand name, never crossing it
+  { size: 50, speed: 0.9,  opacity: 1,    cx: 20, cy: 7,  ax1: 15, ax2: 4,  ay1: 3.2, ay2: 1.4, f: [0.083, 0.211, 0.127, 0.253], ph: [0.9, 3.8, 1.5, 4.4], sparkEvery: 200 },
+  { size: 42, speed: 1.15, opacity: 1,    cx: 80, cy: 8,  ax1: 15, ax2: 4,  ay1: 2.6, ay2: 1.2, f: [0.097, 0.187, 0.139, 0.229], ph: [4.1, 1.2, 3.3, 0.7], sparkEvery: 260 },
+  // Free roamers through the gaps and open space around the photos
+  { size: 46, speed: 0.95, opacity: 1,    cx: 50, cy: 52, ax1: 44, ax2: 6,  ay1: 36, ay2: 6, f: [0.073, 0.201, 0.113, 0.247], ph: [2.3, 5.1, 0.4, 2.9], sparkEvery: 230 },
+  { size: 38, speed: 1.3,  opacity: 1,    cx: 50, cy: 50, ax1: 46, ax2: 5,  ay1: 34, ay2: 8, f: [0.101, 0.223, 0.091, 0.239], ph: [5.2, 0.6, 3.9, 1.8], sparkEvery: 300 },
+  { size: 34, speed: 1.5,  opacity: 0.95, cx: 50, cy: 90, ax1: 42, ax2: 7,  ay1: 3.5, ay2: 1.5, f: [0.089, 0.217, 0.131, 0.261], ph: [1.7, 4.9, 2.2, 5.5], sparkEvery: 340 },
+];
+
+function FlyingButterflies({ flyers = FLYERS, z = "z-30" }: { flyers?: FlyerCfg[]; z?: string }) {
   const wrapRefs = useRef<(HTMLDivElement | null)[]>([]);
   const midRefs = useRef<(HTMLDivElement | null)[]>([]);
   const flapRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -128,8 +142,8 @@ function FlyingButterflies() {
     let raf = 0;
     let last = performance.now();
     const t0 = last;
-    const flapPhase = FLYERS.map((_, i) => i * 1.7); // desynchronized wingbeats
-    const lastSpark = FLYERS.map(() => 0);
+    const flapPhase = flyers.map((_, i) => i * 1.7); // desynchronized wingbeats
+    const lastSpark = flyers.map(() => 0);
 
     const posAt = (c: FlyerCfg, t: number) => ({
       x: c.cx + c.ax1 * Math.sin(t * c.f[0] + c.ph[0]) + c.ax2 * Math.sin(t * c.f[1] + c.ph[1]),
@@ -141,8 +155,8 @@ function FlyingButterflies() {
       last = now;
       const trail = trailRef.current;
 
-      for (let i = 0; i < FLYERS.length; i++) {
-        const c = FLYERS[i];
+      for (let i = 0; i < flyers.length; i++) {
+        const c = flyers[i];
         const t = ((now - t0) / 1000) * c.speed;
 
         const p = posAt(c, t);
@@ -191,12 +205,12 @@ function FlyingButterflies() {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [flyers]);
 
   return (
-    <div className="bfly-layer pointer-events-none fixed inset-0 z-30 overflow-hidden" aria-hidden="true">
+    <div className={`bfly-layer pointer-events-none fixed inset-0 ${z} overflow-hidden`} aria-hidden="true">
       <div ref={trailRef} className="absolute inset-0" />
-      {FLYERS.map((c, i) => (
+      {flyers.map((c, i) => (
         <div
           key={i}
           ref={(el) => { wrapRefs.current[i] = el; }}
@@ -853,8 +867,13 @@ export default function POSCustomer() {
         <div className="brand-glow absolute -bottom-40 -left-24 w-[480px] h-[480px] rounded-full bg-[#f06ee8]/10 blur-3xl" style={{ animationDelay: "1.5s" }} />
       </div>
 
-      {/* Soft flying brand butterflies (only on the plain welcome screen — never over product photos) + celebration on completed sale */}
-      {isEmpty && !isCompleted && !showcasePool && <FlyingButterflies />}
+      {/* Flying brand butterflies while the cart is empty (behind the product photos on the photo wall, so they never cover a product) + celebration on completed sale */}
+      {isEmpty && !isCompleted &&
+        (showcasePool ? (
+          <FlyingButterflies key="wall" flyers={SHOWCASE_FLYERS} z="z-[5]" />
+        ) : (
+          <FlyingButterflies key="welcome" />
+        ))}
       {isCompleted && <ButterflyBurst />}
 
       {/* Main content */}
