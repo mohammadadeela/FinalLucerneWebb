@@ -490,13 +490,13 @@ function ShowcaseHeader() {
       <div className="text-center">
         <h2
           className="font-bold text-neutral-900 leading-none"
-          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em", fontSize: "clamp(22px,4.6vh,52px)" }}
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em", fontSize: "clamp(26px,6vh,68px)" }}
         >
           LUCERNE
         </h2>
         <p
-          className="text-neutral-400 uppercase mt-[0.8vh] leading-none"
-          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.35em", fontSize: "clamp(10px,1.9vh,20px)" }}
+          className="text-neutral-400 uppercase mt-[1.2vh] leading-none"
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.35em", fontSize: "clamp(11px,2.3vh,25px)" }}
         >
           Boutique
         </p>
@@ -796,19 +796,27 @@ export default function POSCustomer() {
         /* ── Product showcase ── */
         .sc-wrap { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
         .sc-header {
-          display: flex; align-items: center; justify-content: center;
-          gap: clamp(12px, 2.4vh, 28px);
-          padding: clamp(10px, 2vh, 24px) 16px clamp(8px, 1.4vh, 16px);
+          position: relative; display: flex; align-items: center; justify-content: center;
+          gap: clamp(16px, 3vh, 38px);
+          padding: clamp(14px, 3vh, 38px) 16px clamp(16px, 3vh, 36px);
         }
+        /* thin pastel divider between the brand and the photos */
+        .sc-header::after {
+          content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+          width: min(46%, 520px); height: 1px;
+          background: linear-gradient(to right, transparent, #97d5d4, #f4d3dc, transparent);
+        }
+        /* Larger logo with a soft pastel ring so it is easy to recognise from a distance */
         .sc-logo {
-          flex-shrink: 0; width: clamp(48px, 9vh, 96px); height: clamp(48px, 9vh, 96px);
-          padding: clamp(6px, 1.2vh, 12px); border-radius: 9999px; background: #fff;
-          border: 1px solid #f0f0f0; box-shadow: 0 8px 24px -10px rgba(0,0,0,0.25);
+          flex-shrink: 0; width: clamp(64px, 13vh, 150px); height: clamp(64px, 13vh, 150px);
+          padding: clamp(8px, 1.7vh, 18px); border-radius: 9999px; background: #fff;
+          border: 1px solid #efefef;
+          box-shadow: 0 0 0 clamp(3px, 0.7vh, 7px) rgba(151,213,212,0.22), 0 10px 28px -10px rgba(0,0,0,0.28);
         }
         .sc-grid {
           flex: 1 1 0; min-height: 0; display: grid;
-          gap: clamp(10px, 1.6vh, 20px);
-          padding: 0 clamp(12px, 2.2vh, 28px) clamp(12px, 2.2vh, 28px);
+          gap: clamp(14px, 2.4vh, 32px);
+          padding: clamp(14px, 2.6vh, 34px) clamp(24px, 4.5vh, 64px) clamp(22px, 4vh, 52px);
         }
         /* Each grid cell is a size container; the photo frame inside takes the largest
            size that fits the cell while keeping the photo's exact shape. */
