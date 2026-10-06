@@ -270,8 +270,9 @@ function ButterflyBurst() {
 /* ── Product showcase (idle screen) ───────────────────────────────────
    While the cart is empty the customer screen shows the brand at the top
    and, under it, a few large product photos. Rules:
-   • Photos are shown WHOLE (never cropped) on a soft blurred backdrop of the
-     same picture, so the customer sees every detail of the product.
+   • Photos are shown WHOLE (never cropped) and each photo's frame takes the
+     photo's own shape (portrait, square or landscape), so there are no bars,
+     borders or blurred fill — the customer sees every detail of the product.
    • No text or overlays on the photos — just the product.
    • The number of photos adapts to the screen (usually 3 on a landscape
      monitor, 4 on a portrait one) so each photo gets a near-perfect frame.
@@ -297,7 +298,7 @@ interface ShowcaseSlot {
   name: string;
   raw: string;
   src: string;
-  bg: string;
+  ratio: number; // width / height of the real photo (set once it has loaded)
   variant: number;
 }
 
@@ -417,22 +418,22 @@ function pickShowcase(
     name: entry.name,
     raw,
     src: optimizeCloudinaryUrl(raw, 1200) || raw,
-    bg: optimizeCloudinaryUrl(raw, 400) || raw,
+    ratio: 0.75,
     variant: Math.floor(Math.random() * 4),
   };
 }
 
-function preloadShowcaseImage(src: string): Promise<boolean> {
+function preloadShowcaseImage(src: string): Promise<number | null> {
   return new Promise((resolve) => {
     const img = new Image();
-    const timer = setTimeout(() => resolve(false), 9000);
+    const timer = setTimeout(() => resolve(null), 9000);
     img.onload = () => {
       clearTimeout(timer);
-      resolve(true);
+      resolve(img.naturalWidth > 0 && img.naturalHeight > 0 ? img.naturalWidth / img.naturalHeight : null);
     };
     img.onerror = () => {
       clearTimeout(timer);
-      resolve(false);
+      resolve(null);
     };
     img.src = src;
   });
@@ -506,9 +507,11 @@ function ShowcaseHeader() {
 
 function ShowcaseLayer({ slot, leaving }: { slot: ShowcaseSlot; leaving?: boolean }) {
   return (
-    <div className={`sc-layer sc-in-${slot.variant}${leaving ? " sc-leaving" : ""}`}>
-      <img src={slot.bg} alt="" aria-hidden="true" draggable={false} className="sc-bg" />
-      <img src={slot.src} alt={slot.name} draggable={false} className="sc-img" />
+    <div className={`sc-layer${leaving ? " sc-leaving" : ""}`}>
+      {/* The frame is sized to the photo's own aspect ratio, so it always fits exactly */}
+      <div className={`sc-frame sc-in-${slot.variant}`} style={{ "--r": slot.ratio } as CSSProperties}>
+        <img src={slot.src} alt={slot.name} draggable={false} className="sc-img" />
+      </div>
     </div>
   );
 }
@@ -591,13 +594,14 @@ const ProductShowcase = memo(function ProductShowcase({ pool }: { pool: Showcase
         if (!slot) break;
 
         reservedRef.current.add(slot.productId);
-        const ok = await preloadShowcaseImage(slot.src); // swap only once the photo is fully ready
+        const ratio = await preloadShowcaseImage(slot.src); // swap only once the photo is fully ready
         reservedRef.current.delete(slot.productId);
         if (dead) return;
-        if (!ok) {
+        if (!ratio) {
           bannedRef.current.add(slot.raw);
           continue;
         }
+        slot.ratio = Math.min(2.5, Math.max(0.4, ratio));
 
         shownRef.current[i] = slot;
         setTiles((prev) => prev.map((t, idx) => (idx === i ? { cur: slot, prev: t.cur } : t)));
@@ -806,10 +810,11 @@ export default function POSCustomer() {
           gap: clamp(10px, 1.6vh, 20px);
           padding: 0 clamp(12px, 2.2vh, 28px) clamp(12px, 2.2vh, 28px);
         }
-        .sc-tile {
-          position: relative; overflow: hidden; isolation: isolate;
-          border-radius: clamp(16px, 2.4vh, 30px); background: #f4efef;
-          box-shadow: 0 14px 34px -16px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04);
+        /* Each grid cell is a size container; the photo frame inside takes the largest
+           size that fits the cell while keeping the photo's exact shape. */
+        .sc-tile { position: relative; container-type: size; }
+        .sc-ph {
+          overflow: hidden; border-radius: clamp(16px, 2.4vh, 30px); background: #f4efef;
         }
         .sc-ph::after {
           content: ""; position: absolute; inset: 0;
@@ -817,17 +822,15 @@ export default function POSCustomer() {
           background-size: 220% 100%; animation: scShimmer 1.8s linear infinite;
         }
         @keyframes scShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
-        .sc-layer { position: absolute; inset: 0; }
-        /* Soft blurred copy of the same photo fills any space around the full picture */
-        .sc-bg {
-          position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-          transform: scale(1.25); filter: blur(26px) saturate(1.1); opacity: 0.75;
+        .sc-layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+        .sc-frame {
+          width: min(100cqw, calc(100cqh * var(--r, 0.75)));
+          aspect-ratio: var(--r, 0.75);
+          overflow: hidden; border-radius: clamp(14px, 2.2vh, 28px); background: #f6f2f2;
+          box-shadow: 0 14px 34px -14px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.04);
         }
-        /* The product photo itself — shown whole, never cropped */
-        .sc-img {
-          position: absolute; inset: 0; width: 100%; height: 100%;
-          object-fit: contain; user-select: none;
-        }
+        /* The product photo itself — its frame matches its shape, so nothing is cropped */
+        .sc-img { display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; }
         .sc-in-0 { animation: scIn0 1.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .sc-in-1 { animation: scIn1 1.1s cubic-bezier(0.65, 0, 0.35, 1) both; }
         .sc-in-2 { animation: scIn2 1.1s cubic-bezier(0.16, 1, 0.3, 1) both; }
@@ -836,8 +839,11 @@ export default function POSCustomer() {
         @keyframes scIn1 { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
         @keyframes scIn2 { from { opacity: 0; transform: translateY(8%); } to { opacity: 1; transform: none; } }
         @keyframes scIn3 { from { opacity: 0; filter: blur(18px); } to { opacity: 1; filter: blur(0); } }
+        /* Outgoing photo fades away while the new one arrives, so no leftover edges linger */
+        .sc-leaving { animation: scOut 1s ease-in 0.15s both; }
+        @keyframes scOut { from { opacity: 1; } to { opacity: 0; } }
         @media (prefers-reduced-motion: reduce) {
-          .sc-layer, .sc-ph::after { animation: none !important; }
+          .sc-layer, .sc-frame, .sc-ph::after { animation: none !important; }
         }
       `}</style>
 
