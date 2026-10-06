@@ -484,10 +484,14 @@ function bestShowcaseLayout(w: number, h: number, gap: number): { cols: number; 
 function ShowcaseHeader() {
   return (
     <div className="sc-header">
-      <div className="sc-logo">
-        <BrandMark className="w-full h-full" />
+      <div className="relative brand-float shrink-0">
+        {/* Soft pulsing glow in the brand colours around the logo */}
+        <div className="sc-halo" aria-hidden="true" />
+        <div className="sc-logo">
+          <BrandMark className="w-full h-full" />
+        </div>
       </div>
-      <div className="text-center">
+      <div className="relative z-[1] text-center">
         <h2
           className="font-bold text-neutral-900 leading-none"
           style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em", fontSize: "clamp(26px,6vh,68px)" }}
@@ -806,12 +810,22 @@ export default function POSCustomer() {
           width: min(46%, 520px); height: 1px;
           background: linear-gradient(to right, transparent, #97d5d4, #f4d3dc, transparent);
         }
-        /* Larger logo with a soft pastel ring so it is easy to recognise from a distance */
+        /* Larger logo with a glowing brand-colour halo so it is easy to recognise from a distance */
         .sc-logo {
-          flex-shrink: 0; width: clamp(64px, 13vh, 150px); height: clamp(64px, 13vh, 150px);
+          position: relative; z-index: 1; flex-shrink: 0; width: clamp(64px, 13vh, 150px); height: clamp(64px, 13vh, 150px);
           padding: clamp(8px, 1.7vh, 18px); border-radius: 9999px; background: #fff;
           border: 1px solid #efefef;
-          box-shadow: 0 0 0 clamp(3px, 0.7vh, 7px) rgba(151,213,212,0.22), 0 10px 28px -10px rgba(0,0,0,0.28);
+          box-shadow: 0 10px 28px -10px rgba(0,0,0,0.28);
+        }
+        .sc-halo {
+          position: absolute; inset: -22%; border-radius: 9999px; pointer-events: none;
+          background: conic-gradient(from 20deg, #97d5d4, #f4d3dc, #f06ee8, #f4d3dc, #97d5d4);
+          filter: blur(clamp(12px, 2.8vh, 30px)); opacity: 0.7;
+          animation: scGlow 3.8s ease-in-out infinite;
+        }
+        @keyframes scGlow {
+          0%, 100% { opacity: 0.5; transform: scale(0.96); }
+          50% { opacity: 0.95; transform: scale(1.1); }
         }
         .sc-grid {
           flex: 1 1 0; min-height: 0; display: grid;
@@ -851,7 +865,7 @@ export default function POSCustomer() {
         .sc-leaving { animation: scOut 1s ease-in 0.15s both; }
         @keyframes scOut { from { opacity: 1; } to { opacity: 0; } }
         @media (prefers-reduced-motion: reduce) {
-          .sc-layer, .sc-frame, .sc-ph::after { animation: none !important; }
+          .sc-layer, .sc-frame, .sc-ph::after, .sc-halo { animation: none !important; }
         }
       `}</style>
 
