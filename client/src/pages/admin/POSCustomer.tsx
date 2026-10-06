@@ -268,22 +268,23 @@ function ButterflyBurst() {
 
 
 /* ── Product showcase (idle screen) ───────────────────────────────────
-   While the cart is empty the customer screen becomes a living gallery of
-   real product photos around the brand card. Rules:
-   • Every tile starts at a random moment and keeps changing on its own
-     random timer (≈4.5–9.5s), so the wall never repeats the same rhythm.
-   • Photos are drawn evenly across ALL categories and subcategories (a
-     random category first, then a random subcategory, then a random
-     product), so small categories get as much screen time as big ones.
-   • A product is never shown twice at once and isn't repeated until most
-     of the catalogue has been shown.
-   • As soon as the cashier adds an item the gallery unmounts (the cart
-     view takes over); when the cart is empty again it mounts fresh and
-     starts from a new random picture set. */
+   While the cart is empty the customer screen shows the brand at the top
+   and, under it, a few large product photos. Rules:
+   • Photos are shown WHOLE (never cropped) on a soft blurred backdrop of the
+     same picture, so the customer sees every detail of the product.
+   • No text or overlays on the photos — just the product.
+   • The number of photos adapts to the screen (usually 3 on a landscape
+     monitor, 4 on a portrait one) so each photo gets a near-perfect frame.
+   • Every tile starts at a random moment and changes on its own random
+     timer (≈4.5–9.5s). Pictures are drawn evenly across ALL categories and
+     subcategories, never twice at once, and not repeated until most of the
+     catalogue has been shown.
+   • As soon as the cashier adds an item the gallery unmounts (the cart view
+     takes over); when the cart is empty again it mounts fresh with a new
+     random set. */
 interface ShowcaseEntry {
   id: number;
   name: string;
-  label: string;
   images: string[];
 }
 interface ShowcasePool {
@@ -294,14 +295,13 @@ interface ShowcaseSlot {
   key: string;
   productId: number;
   name: string;
-  label: string;
   raw: string;
   src: string;
+  bg: string;
   variant: number;
-  origin: string;
 }
 
-const SHOWCASE_TILES = 10;
+const SHOWCASE_MAX = 6;
 const VIDEO_RE = /\.(mp4|webm|mov|m4v)(\?|#|$)/i;
 
 const randBetween = (a: number, b: number) => a + Math.random() * (b - a);
@@ -326,12 +326,7 @@ function collectShowcaseImages(p: any): string[] {
   return Array.from(new Set(urls));
 }
 
-function buildShowcasePool(products: any[], categories: any[], subcategories: any[]): ShowcasePool | null {
-  const catName = new Map<number, string>();
-  for (const c of categories) catName.set(Number(c.id), c.nameAr || c.name || "");
-  const subName = new Map<number, string>();
-  for (const s of subcategories) subName.set(Number(s.id), s.nameAr || s.name || "");
-
+function buildShowcasePool(products: any[]): ShowcasePool | null {
   const withImages = products.filter((p) => collectShowcaseImages(p).length > 0);
   const inStock = withImages.filter(isShowcaseAvailable);
   // Only show what can actually be bought — unless that would leave the wall nearly empty.
@@ -345,12 +340,9 @@ function buildShowcasePool(products: any[], categories: any[], subcategories: an
     const subIds = Array.from(
       new Set([p.subcategoryId, ...(p.subcategoryIds || [])].filter((x) => x != null).map(Number)),
     );
-    const label =
-      (subIds.length ? subName.get(subIds[0]) : "") || (catId != null ? catName.get(catId) : "") || "";
     const entry: ShowcaseEntry = {
       id: Number(p.id),
       name: String(p.name || ""),
-      label: label || "",
       images: collectShowcaseImages(p),
     };
     all.push(entry);
@@ -423,11 +415,10 @@ function pickShowcase(
     key: `${entry.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     productId: entry.id,
     name: entry.name,
-    label: entry.label,
     raw,
-    src: optimizeCloudinaryUrl(raw, 800) || raw,
+    src: optimizeCloudinaryUrl(raw, 1200) || raw,
+    bg: optimizeCloudinaryUrl(raw, 400) || raw,
     variant: Math.floor(Math.random() * 4),
-    origin: `${Math.round(randBetween(20, 80))}% ${Math.round(randBetween(15, 70))}%`,
   };
 }
 
@@ -447,9 +438,9 @@ function preloadShowcaseImage(src: string): Promise<boolean> {
   });
 }
 
-async function fetchShowcaseList(url: string): Promise<any[]> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+async function fetchShowcaseProducts(): Promise<any[]> {
+  const res = await fetch("/api/products");
+  if (!res.ok) throw new Error("Failed to fetch products");
   const data = unwrapApiResponse<any>(await res.json());
   return Array.isArray(data) ? data : [];
 }
@@ -457,55 +448,56 @@ async function fetchShowcaseList(url: string): Promise<any[]> {
 /* Kept at the top level of the page so data stays loaded while the cart is
    in use — the gallery is then instant when the cart empties again. */
 function useShowcasePool(): ShowcasePool | null {
-  const common = {
+  const products = useQuery({
+    queryKey: ["pos-customer-showcase", "products"],
+    queryFn: fetchShowcaseProducts,
     staleTime: 4 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000, // pick up new products / sold-out items on a long-running display
     refetchOnWindowFocus: false,
     retry: 2,
-  } as const;
-  const products = useQuery({ queryKey: ["pos-customer-showcase", "products"], queryFn: () => fetchShowcaseList("/api/products"), ...common });
-  const cats = useQuery({ queryKey: ["pos-customer-showcase", "categories"], queryFn: () => fetchShowcaseList("/api/categories"), ...common });
-  const subs = useQuery({ queryKey: ["pos-customer-showcase", "subcategories"], queryFn: () => fetchShowcaseList("/api/subcategories"), ...common });
-
-  return useMemo(
-    () => (products.data ? buildShowcasePool(products.data, cats.data ?? [], subs.data ?? []) : null),
-    [products.data, cats.data, subs.data],
-  );
+  });
+  return useMemo(() => (products.data ? buildShowcasePool(products.data) : null), [products.data]);
 }
 
-/* Brand card — sits in the middle of the wall so the identity is always visible */
-function ShowcaseBrandCard() {
+/* Picks the grid (columns × rows) whose tiles are closest to a 3:4 portrait
+   photo, with a small penalty per extra tile so it never gets crowded. */
+function bestShowcaseLayout(w: number, h: number, gap: number): { cols: number; rows: number } {
+  if (w <= 0 || h <= 0) return { cols: 3, rows: 1 };
+  const candidates: [number, number][] = [[2, 1], [3, 1], [4, 1], [5, 1], [1, 2], [2, 2], [3, 2], [2, 3]];
+  let best = { cols: 3, rows: 1 };
+  let bestScore = Infinity;
+  for (const [cols, rows] of candidates) {
+    const tw = (w - gap * (cols - 1)) / cols;
+    const th = (h - gap * (rows - 1)) / rows;
+    if (tw <= 0 || th <= 0) continue;
+    const score = Math.abs(Math.log(tw / th / 0.75)) + 0.07 * cols * rows;
+    if (score < bestScore) {
+      bestScore = score;
+      best = { cols, rows };
+    }
+  }
+  return best;
+}
+
+/* Logo + name across the top of the screen */
+function ShowcaseHeader() {
   return (
-    <div
-      className="sc-brand-card relative overflow-hidden flex items-center justify-center gap-[3vh] px-[3vh]"
-      style={{ gridArea: "brand" }}
-    >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#97d5d4]/25 via-white to-[#f4d3dc]/40" />
-      <div className="relative brand-float shrink-0">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#97d5d4]/40 via-[#f4d3dc]/40 to-[#f06ee8]/30 blur-2xl scale-125" />
-        <div
-          className="relative rounded-full bg-white border border-neutral-100 shadow-xl flex items-center justify-center"
-          style={{ width: "clamp(72px,15vh,170px)", height: "clamp(72px,15vh,170px)", padding: "clamp(10px,2.2vh,24px)" }}
-        >
-          <BrandMark className="w-full h-full" />
-        </div>
+    <div className="sc-header">
+      <div className="sc-logo">
+        <BrandMark className="w-full h-full" />
       </div>
-      <div className="relative text-center min-w-0">
+      <div className="text-center">
         <h2
           className="font-bold text-neutral-900 leading-none"
-          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em", fontSize: "clamp(24px,5.2vh,60px)" }}
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.12em", fontSize: "clamp(22px,4.6vh,52px)" }}
         >
           LUCERNE
         </h2>
         <p
-          className="text-neutral-400 uppercase mt-[1vh]"
-          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.35em", fontSize: "clamp(11px,2.2vh,24px)" }}
+          className="text-neutral-400 uppercase mt-[0.8vh] leading-none"
+          style={{ fontFamily: "Georgia, 'Times New Roman', serif", letterSpacing: "0.35em", fontSize: "clamp(10px,1.9vh,20px)" }}
         >
           Boutique
-        </p>
-        <div className="mx-auto my-[1.2vh] h-px w-2/3 bg-gradient-to-r from-transparent via-neutral-300 to-transparent" />
-        <p className="text-neutral-500" style={{ fontSize: "clamp(11px,1.8vh,18px)" }}>
-          في انتظار إضافة المنتجات...
         </p>
       </div>
     </div>
@@ -515,12 +507,8 @@ function ShowcaseBrandCard() {
 function ShowcaseLayer({ slot, leaving }: { slot: ShowcaseSlot; leaving?: boolean }) {
   return (
     <div className={`sc-layer sc-in-${slot.variant}${leaving ? " sc-leaving" : ""}`}>
-      <img src={slot.src} alt={slot.name} draggable={false} className="sc-img" style={{ transformOrigin: slot.origin }} />
-      <div className="sc-shade" />
-      <div className="sc-cap">
-        {slot.label && <span className="sc-chip">{slot.label}</span>}
-        {slot.name && <p className="sc-name">{slot.name}</p>}
-      </div>
+      <img src={slot.bg} alt="" aria-hidden="true" draggable={false} className="sc-bg" />
+      <img src={slot.src} alt={slot.name} draggable={false} className="sc-img" />
     </div>
   );
 }
@@ -530,11 +518,11 @@ interface ShowcaseTileState {
   prev: ShowcaseSlot | null;
 }
 
-const ShowcaseTile = memo(function ShowcaseTile({ tile, index }: { tile: ShowcaseTileState; index: number }) {
+const ShowcaseTile = memo(function ShowcaseTile({ tile }: { tile: ShowcaseTileState }) {
   // One keyed list (never conditional slots) so the outgoing photo isn't remounted mid-transition
   const layers = [tile.prev, tile.cur].filter((x): x is ShowcaseSlot => !!x);
   return (
-    <div className={`sc-tile sc-t${index + 1}${tile.cur ? "" : " sc-ph"}`} style={{ gridArea: `t${index + 1}` }}>
+    <div className={`sc-tile${tile.cur ? "" : " sc-ph"}`}>
       {layers.map((slot) => (
         <ShowcaseLayer key={slot.key} slot={slot} leaving={slot === tile.prev} />
       ))}
@@ -544,15 +532,37 @@ const ShowcaseTile = memo(function ShowcaseTile({ tile, index }: { tile: Showcas
 
 const ProductShowcase = memo(function ProductShowcase({ pool }: { pool: ShowcasePool }) {
   const [tiles, setTiles] = useState<ShowcaseTileState[]>(() =>
-    Array.from({ length: SHOWCASE_TILES }, () => ({ cur: null, prev: null })),
+    Array.from({ length: SHOWCASE_MAX }, () => ({ cur: null, prev: null })),
   );
+  const [layout, setLayout] = useState({ cols: 3, rows: 1 });
+  const gridRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef(layout.cols * layout.rows);
+  activeRef.current = layout.cols * layout.rows;
+
   const poolRef = useRef(pool);
   poolRef.current = pool;
-  const shownRef = useRef<(ShowcaseSlot | null)[]>(Array(SHOWCASE_TILES).fill(null));
+  const shownRef = useRef<(ShowcaseSlot | null)[]>(Array(SHOWCASE_MAX).fill(null));
   const reservedRef = useRef<Set<number>>(new Set());
   const recentRef = useRef<number[]>([]);
   const lastCatRef = useRef<string | null>(null);
   const bannedRef = useRef<Set<string>>(new Set());
+
+  /* Work out how many photos fit this screen */
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const measure = () => {
+      const cs = getComputedStyle(el);
+      const w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const h = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      const next = bestShowcaseLayout(w, h, parseFloat(cs.columnGap) || 12);
+      setLayout((prev) => (prev.cols === next.cols && prev.rows === next.rows ? prev : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     let dead = false;
@@ -566,6 +576,14 @@ const ProductShowcase = memo(function ProductShowcase({ pool }: { pool: Showcase
     };
 
     const change = async (i: number) => {
+      // Tile not on screen for this layout: keep it empty and check again later
+      if (i >= activeRef.current) {
+        shownRef.current[i] = null;
+        setTiles((prev) => (prev[i].cur || prev[i].prev ? prev.map((t, idx) => (idx === i ? { cur: null, prev: null } : t)) : prev));
+        later(() => void change(i), 1500);
+        return;
+      }
+
       for (let attempt = 0; attempt < 4; attempt++) {
         const taken = new Set<number>(reservedRef.current);
         for (const s of shownRef.current) if (s) taken.add(s.productId);
@@ -591,7 +609,7 @@ const ProductShowcase = memo(function ProductShowcase({ pool }: { pool: Showcase
     };
 
     // Random start: tiles fill in at random moments, in random order
-    for (let i = 0; i < SHOWCASE_TILES; i++) later(() => void change(i), randBetween(150, 2800));
+    for (let i = 0; i < SHOWCASE_MAX; i++) later(() => void change(i), randBetween(150, 2800));
 
     return () => {
       dead = true;
@@ -600,11 +618,20 @@ const ProductShowcase = memo(function ProductShowcase({ pool }: { pool: Showcase
   }, []);
 
   return (
-    <div className="sc-grid brand-enter">
-      {tiles.map((t, i) => (
-        <ShowcaseTile key={i} tile={t} index={i} />
-      ))}
-      <ShowcaseBrandCard />
+    <div className="sc-wrap brand-enter">
+      <ShowcaseHeader />
+      <div
+        ref={gridRef}
+        className="sc-grid"
+        style={{
+          gridTemplateColumns: `repeat(${layout.cols}, minmax(0, 1fr))`,
+          gridTemplateRows: `repeat(${layout.rows}, minmax(0, 1fr))`,
+        }}
+      >
+        {tiles.slice(0, layout.cols * layout.rows).map((t, i) => (
+          <ShowcaseTile key={i} tile={t} />
+        ))}
+      </div>
     </div>
   );
 });
@@ -763,28 +790,27 @@ export default function POSCustomer() {
         @media (prefers-reduced-motion: reduce) { .bfly-layer { display: none; } }
 
         /* ── Product showcase ── */
+        .sc-wrap { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+        .sc-header {
+          display: flex; align-items: center; justify-content: center;
+          gap: clamp(12px, 2.4vh, 28px);
+          padding: clamp(10px, 2vh, 24px) 16px clamp(8px, 1.4vh, 16px);
+        }
+        .sc-logo {
+          flex-shrink: 0; width: clamp(48px, 9vh, 96px); height: clamp(48px, 9vh, 96px);
+          padding: clamp(6px, 1.2vh, 12px); border-radius: 9999px; background: #fff;
+          border: 1px solid #f0f0f0; box-shadow: 0 8px 24px -10px rgba(0,0,0,0.25);
+        }
         .sc-grid {
           flex: 1 1 0; min-height: 0; display: grid;
-          gap: clamp(10px, 1.6vh, 20px); padding: clamp(12px, 2.2vh, 28px);
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          grid-template-rows: repeat(3, minmax(0, 1fr));
-          grid-template-areas: "t1 t2 t3 t4" "t5 brand brand t6" "t7 t8 t9 t10";
+          gap: clamp(10px, 1.6vh, 20px);
+          padding: 0 clamp(12px, 2.2vh, 28px) clamp(12px, 2.2vh, 28px);
         }
-        @media (orientation: portrait) {
-          .sc-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            grid-template-rows: repeat(5, minmax(0, 1fr));
-            grid-template-areas: "t1 t2" "t3 t4" "brand brand" "t5 t6" "t7 t8";
-          }
-          .sc-t9, .sc-t10 { display: none; }
-        }
-        .sc-tile, .sc-brand-card {
+        .sc-tile {
           position: relative; overflow: hidden; isolation: isolate;
-          border-radius: clamp(16px, 2.4vh, 32px);
+          border-radius: clamp(16px, 2.4vh, 30px); background: #f4efef;
           box-shadow: 0 14px 34px -16px rgba(0,0,0,0.28), 0 0 0 1px rgba(0,0,0,0.04);
         }
-        .sc-tile { background: linear-gradient(135deg, #f6f1f3, #eaf5f5); }
-        .sc-brand-card { background: #fff; }
         .sc-ph::after {
           content: ""; position: absolute; inset: 0;
           background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.7) 50%, transparent 70%);
@@ -792,42 +818,26 @@ export default function POSCustomer() {
         }
         @keyframes scShimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
         .sc-layer { position: absolute; inset: 0; }
-        .sc-img {
-          width: 100%; height: 100%; object-fit: cover; object-position: center 25%;
-          user-select: none; will-change: transform; animation: scKb 20s ease-out both;
+        /* Soft blurred copy of the same photo fills any space around the full picture */
+        .sc-bg {
+          position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+          transform: scale(1.25); filter: blur(26px) saturate(1.1); opacity: 0.75;
         }
-        @keyframes scKb { from { transform: scale(1.02); } to { transform: scale(1.15); } }
+        /* The product photo itself — shown whole, never cropped */
+        .sc-img {
+          position: absolute; inset: 0; width: 100%; height: 100%;
+          object-fit: contain; user-select: none;
+        }
         .sc-in-0 { animation: scIn0 1.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .sc-in-1 { animation: scIn1 1.1s cubic-bezier(0.65, 0, 0.35, 1) both; }
         .sc-in-2 { animation: scIn2 1.1s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .sc-in-3 { animation: scIn3 1.3s ease-out both; }
-        @keyframes scIn0 { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+        @keyframes scIn0 { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: scale(1); } }
         @keyframes scIn1 { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
         @keyframes scIn2 { from { opacity: 0; transform: translateY(8%); } to { opacity: 1; transform: none; } }
         @keyframes scIn3 { from { opacity: 0; filter: blur(18px); } to { opacity: 1; filter: blur(0); } }
-        .sc-shade {
-          position: absolute; inset: auto 0 0 0; height: 48%; pointer-events: none;
-          background: linear-gradient(to top, rgba(0,0,0,0.58), transparent);
-        }
-        .sc-cap {
-          position: absolute; inset: auto 0 0 0; display: flex; flex-direction: column;
-          align-items: flex-start; gap: 6px; padding: clamp(10px, 1.7vh, 22px);
-          animation: scCap 0.7s ease-out 0.55s both;
-        }
-        @keyframes scCap { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-        .sc-leaving .sc-cap { animation: none; opacity: 0; transition: opacity 0.3s; }
-        .sc-chip {
-          font-size: clamp(10px, 1.4vh, 14px); letter-spacing: 0.06em; color: #fff;
-          padding: 3px 10px; border-radius: 9999px; background: rgba(255,255,255,0.22);
-          border: 1px solid rgba(255,255,255,0.38); backdrop-filter: blur(8px);
-        }
-        .sc-name {
-          color: #fff; font-weight: 600; font-size: clamp(13px, 2vh, 22px); line-height: 1.25;
-          text-shadow: 0 1px 8px rgba(0,0,0,0.45);
-          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-        }
         @media (prefers-reduced-motion: reduce) {
-          .sc-layer, .sc-img, .sc-cap, .sc-ph::after { animation: none !important; }
+          .sc-layer, .sc-ph::after { animation: none !important; }
         }
       `}</style>
 
@@ -837,8 +847,8 @@ export default function POSCustomer() {
         <div className="brand-glow absolute -bottom-40 -left-24 w-[480px] h-[480px] rounded-full bg-[#f06ee8]/10 blur-3xl" style={{ animationDelay: "1.5s" }} />
       </div>
 
-      {/* Soft flying brand butterflies (only while the cart is empty) + celebration on completed sale */}
-      {isEmpty && !isCompleted && <FlyingButterflies />}
+      {/* Soft flying brand butterflies (only on the plain welcome screen — never over product photos) + celebration on completed sale */}
+      {isEmpty && !isCompleted && !showcasePool && <FlyingButterflies />}
       {isCompleted && <ButterflyBurst />}
 
       {/* Main content */}
