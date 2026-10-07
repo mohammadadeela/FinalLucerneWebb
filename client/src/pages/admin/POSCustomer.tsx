@@ -276,6 +276,8 @@ function ButterflyBurst() {
    • No text or overlays on the photos — just the product.
    • The number of photos adapts to the screen (usually 3 on a landscape
      monitor, 4 on a portrait one) so each photo gets a near-perfect frame.
+   • Only the newest products are shown: the latest additions of each
+     category (by date added), so the wall is always the current collection.
    • Every tile starts at a random moment and changes on its own random
      timer (≈4.5–9.5s). Pictures are drawn evenly across ALL categories and
      subcategories, never twice at once, and not repeated until most of the
@@ -327,11 +329,48 @@ function collectShowcaseImages(p: any): string[] {
   return Array.from(new Set(urls));
 }
 
+/* Newest-collection selection: the idle wall only shows the most recently
+   added products — the latest SHOWCASE_NEW_PER_CATEGORY from every category
+   (by creation date, newest first) — so customers always see the current
+   collection rather than the whole catalogue. Not tied to the "new arrival"
+   flag: it is purely what was added last. */
+const SHOWCASE_NEW_PER_CATEGORY = 25;
+
+function showcaseAddedAt(p: any): number {
+  const t = p?.createdAt ? new Date(p.createdAt).getTime() : NaN;
+  return Number.isFinite(t) ? t : 0;
+}
+
+/* Newest first; ties (same timestamp or missing date) fall back to the id,
+   which also only ever grows as products are added. */
+function compareNewestFirst(a: any, b: any): number {
+  const dt = showcaseAddedAt(b) - showcaseAddedAt(a);
+  return dt !== 0 ? dt : Number(b.id) - Number(a.id);
+}
+
+function keepNewestPerCategory(products: any[], perCategory: number): any[] {
+  const byCat = new Map<string, any[]>();
+  for (const p of products) {
+    const key = p.categoryId != null ? `c${Number(p.categoryId)}` : "c0";
+    const arr = byCat.get(key) ?? [];
+    arr.push(p);
+    byCat.set(key, arr);
+  }
+  const kept: any[] = [];
+  for (const arr of byCat.values()) {
+    arr.sort(compareNewestFirst);
+    kept.push(...arr.slice(0, perCategory));
+  }
+  return kept;
+}
+
 function buildShowcasePool(products: any[]): ShowcasePool | null {
   const withImages = products.filter((p) => collectShowcaseImages(p).length > 0);
   const inStock = withImages.filter(isShowcaseAvailable);
   // Only show what can actually be bought — unless that would leave the wall nearly empty.
-  const source = inStock.length >= 4 ? inStock : withImages;
+  const sellable = inStock.length >= 4 ? inStock : withImages;
+  // Then keep only the newest additions of each category (the current collection).
+  const source = keepNewestPerCategory(sellable, SHOWCASE_NEW_PER_CATEGORY);
 
   const tree = new Map<string, Map<string, ShowcaseEntry[]>>();
   const all: ShowcaseEntry[] = [];
