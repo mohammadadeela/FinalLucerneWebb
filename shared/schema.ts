@@ -293,6 +293,11 @@ export const posOrders = pgTable("pos_orders", {
     override?: boolean;
     byRole?: string;
   }>>().default([]),
+  // Who rang up the sale (admin or employee). Name is snapshotted so the
+  // invoice keeps showing it even if the account is renamed or deleted.
+  sellerId: integer("seller_id"),
+  sellerName: text("seller_name"),
+  sellerRole: text("seller_role"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

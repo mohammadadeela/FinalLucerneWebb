@@ -247,6 +247,9 @@ CREATE TABLE IF NOT EXISTS pos_orders (
 
 ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS cash_amount numeric;
 ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS card_amount numeric;
+ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS seller_id integer;
+ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS seller_name text;
+ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS seller_role text;
 
 
 -- ─────────────────────────────────────────

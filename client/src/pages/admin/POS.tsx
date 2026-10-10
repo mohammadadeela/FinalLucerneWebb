@@ -30,6 +30,7 @@ import {
   Printer,
   X,
   Receipt,
+  UserRound,
   Banknote,
   CreditCard,
   Star,
@@ -236,6 +237,18 @@ interface CompletedOrder {
   change: number;
   paymentMethod: "cash" | "card" | "split";
   note: string;
+  sellerName?: string;
+  sellerRole?: string;
+}
+
+/* ── Helpers ───────────────────────────────────────────────────────────── */
+// Name of the staff member who rang up a stored POS order (snake/camel case
+// both accepted since reports read raw rows from the API).
+function getPosOrderSellerName(order: any): string {
+  return String(order?.seller_name ?? order?.sellerName ?? "").trim();
+}
+function getPosOrderSellerRole(order: any): string {
+  return String(order?.seller_role ?? order?.sellerRole ?? "").trim();
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
@@ -1623,6 +1636,16 @@ function PosInvoicesColumn({
                         .map((it: any) => it.name)
                         .join("، ")}${items.length > 2 ? "..." : ""}`}
                   </p>
+                  {getPosOrderSellerName(order) && (
+                    <span
+                      className="inline-flex items-center gap-1 mt-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground/80 max-w-full"
+                      title={ar ? "البائع" : "Seller"}
+                      data-testid={`badge-seller-${testIdPrefix}-${order.id}`}
+                    >
+                      <UserRound className="w-2.5 h-2.5 shrink-0" />
+                      <span className="truncate">{getPosOrderSellerName(order)}</span>
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <div className="text-end">
@@ -2328,6 +2351,8 @@ export default function POS() {
           : 0,
       paymentMethod,
       note: order.note || "",
+      sellerName: getPosOrderSellerName(order) || undefined,
+      sellerRole: getPosOrderSellerRole(order) || undefined,
     });
   };
 
@@ -3498,6 +3523,9 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
       )
       .join("");
     const isExchangeInvoice = isExchangeOrder(order.note);
+    const sellerHtml = order.sellerName
+      ? `<div class="seller"><span class="seller-lbl">${order.sellerRole === "admin" ? "البائع · المدير" : "البائع"}</span><span class="seller-name">${escHtml(order.sellerName)}</span></div>`
+      : "";
     const noteHtml = order.note
       ? `<div class="${isExchangeInvoice ? "order-note exchange-note" : "order-note"}">${escHtml(order.note).replace(/\n/g, "<br>")}</div>`
       : "";
@@ -3517,6 +3545,8 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
   .hdr-bar-bottom{height:1px;background:linear-gradient(90deg,transparent,#ccc,transparent);margin-top:14px}
   .meta{display:flex;justify-content:space-between;align-items:center;margin:14px 0;padding:10px 12px;background:#f7f5f2;border-radius:6px}
   .meta-inv{font-size:13px;font-weight:700;color:#111}.meta-date{font-size:11px;color:#666}.meta-time{font-size:10px;color:#aaa}
+  .seller{display:flex;justify-content:space-between;align-items:center;margin:-8px 0 14px;padding:7px 12px;border:1px dashed #cfc9c0;border-radius:6px;font-size:11px}
+  .seller-lbl{color:#888;letter-spacing:1px;text-transform:uppercase;font-size:10px}.seller-name{font-weight:700;color:#111;font-size:12px}
   .exchange-badge{display:flex;align-items:center;justify-content:center;gap:6px;background:#1c3d7a;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;padding:8px 10px;border-radius:6px;margin-top:12px;text-transform:uppercase}
   .order-note{background:#fffbe6;border:1px solid #ffe58f;border-radius:5px;padding:7px 10px;margin-bottom:12px;font-size:11px;color:#7a6000;white-space:pre-wrap;line-height:1.6}
   .order-note.exchange-note{background:#eef4ff;border:1.5px solid #b6cdfb;color:#1c3d7a;font-size:11px;font-weight:600}
@@ -3556,6 +3586,8 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
       font-weight:700 !important;
       -webkit-text-stroke:0.2px #000;
     }
+    .seller-lbl,.seller-name{color:#000 !important;font-weight:700 !important;-webkit-text-stroke:0.2px #000;}
+    .seller{border-color:#000 !important;background:#fff !important;}
     .hdr-bar,.hdr-bar-bottom,thead tr,table,.totals-final,td,.change-row,.order-note{
       border-color:#000 !important;
       background:#fff !important;
@@ -3571,6 +3603,7 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
 </style></head><body>
 <div class="hdr"><div class="hdr-bar"></div><svg style="width:60px;height:46px;margin:0 auto 2px;display:block;" version="1.0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 393 297"><g transform="translate(0,297) scale(0.1,-0.1)" fill="#000" stroke="#000" stroke-width="6"><path d="M2685 2594 c-179 -27 -296 -59 -490 -136 -259 -103 -609 -284 -965 -501 -126 -77 -160 -104 -160 -124 0 -26 34 -12 158 65 434 269 823 464 1138 571 167 57 252 73 379 75 100 1 115 -1 160 -25 105 -53 147 -157 126 -310 -15 -115 -53 -252 -108 -389 -114 -287 -230 -468 -408 -638 -133 -127 -246 -199 -407 -257 -76 -27 -77 -27 -101 -9 -113 89 -164 123 -242 160 -128 61 -190 76 -342 81 -115 5 -141 3 -201 -16 -114 -34 -167 -103 -125 -159 11 -15 37 -37 59 -49 52 -30 240 -89 334 -105 102 -17 356 -17 449 1 l74 15 49 -55 c67 -75 133 -175 176 -267 33 -70 37 -85 37 -163 0 -78 -2 -89 -27 -122 -16 -20 -53 -48 -85 -64 -55 -27 -64 -28 -198 -28 -145 0 -184 8 -345 66 -194 71 -407 241 -518 414 -151 234 -171 410 -152 1340 4 223 3 256 -13 301 -37 107 -122 196 -225 235 -71 26 -176 37 -187 19 -12 -19 23 -40 64 -40 69 0 161 -41 217 -96 57 -57 104 -160 104 -227 0 -39 -17 -49 -39 -24 -6 8 -35 19 -64 26 -103 23 -199 -28 -248 -133 -59 -124 -18 -252 87 -274 60 -13 151 6 196 40 18 14 37 26 42 27 6 0 10 -131 11 -337 2 -555 40 -725 211 -949 208 -272 589 -458 899 -440 163 10 250 52 298 146 64 128 4 322 -165 534 -32 39 -58 75 -58 80 0 4 10 12 23 17 12 5 56 23 99 40 222 90 465 318 620 583 130 221 234 512 257 716 20 186 -46 322 -179 366 -48 16 -166 26 -215 19z m-1854 -495 c30 -12 55 -50 64 -99 9 -50 -36 -135 -92 -174 -34 -23 -53 -29 -102 -30 -53 -1 -64 2 -87 26 -38 37 -44 107 -14 175 45 104 128 141 231 102z m759 -1010 c92 -23 220 -84 294 -139 100 -73 76 -85 -169 -85 -189 1 -281 15 -424 66 -113 39 -145 59 -149 91 -5 38 38 61 173 92 38 9 200 -6 275 -25z"/></g></svg><div class="hdr-logo">LUCERNE</div><div class="hdr-sub">B O U T I Q U E</div><div class="hdr-city">رام الله</div><div class="hdr-bar-bottom"></div>${isExchangeInvoice ? `<div class="exchange-badge">🔄 فاتورة تبديل &nbsp;·&nbsp; EXCHANGE INVOICE</div>` : ""}</div>
 <div class="meta"><div class="meta-inv">${isExchangeInvoice ? "فاتورة تبديل" : "فاتورة"} &nbsp;<span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">#${order.id}</span></div><div style="text-align:left;"><div class="meta-date" style="direction:ltr;unicode-bidi:isolate;">${dateStr}</div><div class="meta-time" style="direction:ltr;unicode-bidi:isolate;">${timeStr}</div></div></div>
+${sellerHtml}
 ${noteHtml}
 <table><thead><tr><th>المنتج</th><th>الكمية</th><th>المجموع</th></tr></thead><tbody>${itemsHtml}</tbody></table>
 <div class="totals">
@@ -3982,6 +4015,11 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
         change: changeAmount,
         paymentMethod,
         note,
+        sellerName:
+          getPosOrderSellerName(order) ||
+          (currentUser?.fullName || "").trim() ||
+          undefined,
+        sellerRole: getPosOrderSellerRole(order) || currentUser?.role || undefined,
       };
       setCompletedOrder(finished);
       /* Broadcast completion to customer screen */
@@ -6462,6 +6500,21 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                     </span>
                   )}
                 </h3>
+                {getPosOrderSellerName(expandedOrder) && (
+                  <p
+                    className="text-xs mt-1 flex items-center gap-1.5"
+                    data-testid="text-seller-detail"
+                  >
+                    <UserRound className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">{ar ? "البائع:" : "Seller:"}</span>
+                    <span className="font-semibold">{getPosOrderSellerName(expandedOrder)}</span>
+                    {getPosOrderSellerRole(expandedOrder) === "admin" && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        {ar ? "مدير" : "Admin"}
+                      </span>
+                    )}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
                   <Clock className="w-3 h-3" />
                   {format(new Date(expandedOrder.created_at || expandedOrder.createdAt || Date.now()), "yyyy-MM-dd · hh:mm a")}

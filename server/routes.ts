@@ -4878,10 +4878,24 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  // Display name for the staff account that rang up a POS sale. Falls back
+  // to the email's local part so an account without a full name still shows
+  // something readable on the receipt.
+  const getPosSeller = (user: { id: number; role: string; fullName?: string | null; email?: string | null }) => {
+    const fromName = (user.fullName || "").trim();
+    const fromEmail = (user.email || "").split("@")[0].trim();
+    return {
+      id: user.id,
+      role: user.role,
+      name: fromName || fromEmail || (user.role === "admin" ? "Store Admin" : "Store Employee"),
+    };
+  };
+
   app.post("/api/pos/orders", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "employee"].includes(req.user.role)) return res.status(401).json({ message: "Unauthorized" });
     try {
       const { paymentMethod, items, note, cashAmount, cardAmount, totalAmount, subtotalAmount, discountAmount } = req.body;
+      const seller = getPosSeller(req.user as any);
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: "No items provided" });
       }
@@ -4928,6 +4942,11 @@ Sitemap: ${SITE_URL}/sitemap.xml
           note: note || null,
           cashAmount: cashAmount != null && cashAmount !== "" ? String(cashAmount) : null,
           cardAmount: cardAmount != null && cardAmount !== "" ? String(cardAmount) : null,
+          // Stamp the seller from the session, never from the request body,
+          // so an invoice always names whoever was actually logged in.
+          sellerId: seller.id,
+          sellerName: seller.name,
+          sellerRole: seller.role,
         },
         stockItems
       );

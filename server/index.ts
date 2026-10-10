@@ -362,6 +362,14 @@ async function ensureProductSchemaAndLegacyData() {
   // leaks through /api/site-settings.
   await withRetry(() => db.execute(sql`ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS exchange_history jsonb DEFAULT '[]'::jsonb`));
   await withRetry(() => db.execute(sql`UPDATE pos_orders SET exchange_history = '[]'::jsonb WHERE exchange_history IS NULL`));
+
+  // POS seller tracking: which admin/employee account rang up each invoice.
+  await withRetry(() => db.execute(sql`
+    ALTER TABLE pos_orders
+      ADD COLUMN IF NOT EXISTS seller_id integer,
+      ADD COLUMN IF NOT EXISTS seller_name text,
+      ADD COLUMN IF NOT EXISTS seller_role text
+  `));
 }
 
 (async () => {
