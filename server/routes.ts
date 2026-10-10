@@ -774,9 +774,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
     // redeploy, the existing account is updated to match — you don't have
     // to delete the user first. If they are not set, no admin is auto-created
     // or touched.
-    const bootstrapEmail = process.env.ADMIN_EMAIL?.trim();
+    const bootstrapEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
     const bootstrapPassword = process.env.ADMIN_PASSWORD;
-    if (bootstrapEmail && bootstrapPassword) {
+    if (bootstrapEmail && bootstrapPassword) try {
       if (bootstrapPassword.length < 10) {
         console.warn(
           "[seed] ADMIN_PASSWORD is too short (min 10 chars) — skipping admin bootstrap.",
@@ -808,6 +808,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
           }
         }
       }
+    } catch (err) {
+      console.error("[seed] Failed to bootstrap admin:", err);
     }
 
     // Employee bootstrap from env vars, same create-and-keep-in-sync pattern
@@ -818,7 +820,12 @@ Sitemap: ${SITE_URL}/sitemap.xml
     // Each password must be at least 10 chars; NAME is optional. Employees
     // can use the POS, but don't get the "cannot block/delete your own
     // account" admin-only guards.
-    for (const emp of getEnvEmployees()) {
+    const envEmployees = getEnvEmployees();
+    console.log(
+      `[seed] Employee slots found in env: ${envEmployees.length === 0 ? "none (set EMPLOYEE_EMAIL + EMPLOYEE_PASSWORD, EMPLOYEE2_EMAIL + EMPLOYEE2_PASSWORD, ...)" : envEmployees.map((e) => `${e.key}=${e.email}`).join(", ")}`,
+    );
+    for (const emp of envEmployees) {
+      try {
       if (emp.password.length < 10) {
         console.warn(
           `[seed] ${emp.key}_PASSWORD is too short (min 10 chars) — skipping employee bootstrap for ${emp.email}.`,
@@ -846,6 +853,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
           if (!passwordMatches) await destroyUserSessions(existingEmployee.id);
           console.log(`[seed] Bootstrap employee ${emp.email} synced from env (${!passwordMatches ? "password" : ""}${!passwordMatches && nameChanged ? " + " : ""}${nameChanged ? "name" : ""} updated).`);
         }
+      }
+      } catch (err) {
+        console.error(`[seed] Failed to bootstrap employee ${emp.key} (${emp.email}):`, err);
       }
     }
   }

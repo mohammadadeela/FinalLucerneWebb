@@ -24,7 +24,10 @@ export interface EnvEmployee {
 }
 
 function readSlot(prefix: string): EnvEmployee | null {
-  const email = process.env[`${prefix}_EMAIL`]?.trim();
+  // Lower-cased: user lookup is an exact match and the login form sends
+  // whatever the cashier types, so a capital letter in the env would make
+  // the account unreachable.
+  const email = process.env[`${prefix}_EMAIL`]?.trim().toLowerCase();
   const password = process.env[`${prefix}_PASSWORD`];
   if (!email || !password) return null;
   return {
