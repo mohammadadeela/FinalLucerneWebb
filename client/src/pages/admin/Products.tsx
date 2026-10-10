@@ -1913,6 +1913,87 @@ export default function Products() {
     );
   });
 
+  // Group a product list by category (in the site's category order), and
+  // inside each category by subcategory, so the table, grid and barcode
+  // dialog all list "every category below each other". Returns a flat row
+  // list: category header → subcategory header → products. Products with
+  // no subcategory go last inside their category under a "no subcategory"
+  // header; products with no category go last of all.
+  type GroupedRow =
+    | { kind: "category"; key: string; label: string; count: number }
+    | { kind: "subcategory"; key: string; label: string; count: number }
+    | { kind: "product"; key: string; product: Product };
+  const buildGroupedRows = (list: Product[]): GroupedRow[] => {
+    const cats = categories ?? [];
+    const subs = subcategoriesData ?? [];
+    const catName = (c: any) => (language === "ar" ? c.nameAr || c.name : c.name);
+    const noCatLabel = language === "ar" ? "بدون فئة" : "Uncategorized";
+    const noSubLabel = language === "ar" ? "بدون فئة فرعية" : "No subcategory";
+
+    const catOrder = new Map<number, number>(cats.map((c: any, i: number) => [c.id, i]));
+    const subOrder = new Map<number, number>(subs.map((sb: any, i: number) => [sb.id, i]));
+    const subById = new Map<number, any>(subs.map((sb: any) => [sb.id, sb]));
+
+    // Primary subcategory for grouping: the product's main subcategoryId,
+    // else the first of its extra subcategoryIds that belongs to its category.
+    const primarySub = (prod: Product): any | null => {
+      const ids = Array.from(getProductSubcategoryIds(prod));
+      const own = ids.map((id) => subById.get(id)).filter((sb) => sb && (!prod.categoryId || sb.categoryId === prod.categoryId));
+      if (own.length === 0) return null;
+      own.sort((a, b) => (subOrder.get(a.id) ?? 1e9) - (subOrder.get(b.id) ?? 1e9));
+      return own[0];
+    };
+
+    const byCat = new Map<number, Map<number, Product[]>>(); // catId(0 = none) → subId(0 = none) → products
+    for (const prod of list) {
+      const cid = prod.categoryId && catOrder.has(prod.categoryId) ? prod.categoryId : 0;
+      const sb = primarySub(prod);
+      const sid = sb ? sb.id : 0;
+      if (!byCat.has(cid)) byCat.set(cid, new Map());
+      const m = byCat.get(cid)!;
+      if (!m.has(sid)) m.set(sid, []);
+      m.get(sid)!.push(prod);
+    }
+
+    const catIds = Array.from(byCat.keys()).sort((a, b) => {
+      if (a === 0) return 1;
+      if (b === 0) return -1;
+      return (catOrder.get(a) ?? 1e9) - (catOrder.get(b) ?? 1e9);
+    });
+
+    const rows: GroupedRow[] = [];
+    for (const cid of catIds) {
+      const m = byCat.get(cid)!;
+      const catTotal = Array.from(m.values()).reduce((n, arr) => n + arr.length, 0);
+      const cat = cats.find((c: any) => c.id === cid);
+      rows.push({ kind: "category", key: `cat-${cid}`, label: cat ? catName(cat) : noCatLabel, count: catTotal });
+      const subIds = Array.from(m.keys()).sort((a, b) => {
+        if (a === 0) return 1;
+        if (b === 0) return -1;
+        return (subOrder.get(a) ?? 1e9) - (subOrder.get(b) ?? 1e9);
+      });
+      // Only show a subcategory header when the category actually has
+      // subcategories to split by — a single "no subcategory" bucket under
+      // a category with no subcategories at all would just be noise.
+      const showSubHeaders = subIds.some((id) => id !== 0) || subs.some((sb: any) => sb.categoryId === cid);
+      for (const sid of subIds) {
+        const prods = m.get(sid)!;
+        if (showSubHeaders) {
+          const sb = subById.get(sid);
+          rows.push({ kind: "subcategory", key: `sub-${cid}-${sid}`, label: sb ? catName(sb) : noSubLabel, count: prods.length });
+        }
+        for (const prod of prods) rows.push({ kind: "product", key: `p-${prod.id}`, product: prod });
+      }
+    }
+    return rows;
+  };
+
+  const groupedProductRows = useMemo(
+    () => buildGroupedRows(filteredProducts ?? []),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filteredProducts, categories, subcategoriesData, language],
+  );
+
   const allLowStockProducts = useMemo(
     () => (products ?? []).filter((p) => p.stockQuantity <= LOW_STOCK_MAX),
     [products],
@@ -6833,7 +6914,28 @@ export default function Products() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredProducts?.map((p) => {
+                groupedProductRows.map((row) => {
+                  if (row.kind === "category") {
+                    return (
+                      <TableRow key={row.key} className="hover:bg-transparent" data-testid={`group-${row.key}`}>
+                        <TableCell colSpan={9} className="bg-foreground text-background py-2 font-bold text-sm">
+                          {row.label}
+                          <span className="ms-2 text-[11px] font-normal opacity-70">({row.count})</span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  if (row.kind === "subcategory") {
+                    return (
+                      <TableRow key={row.key} className="hover:bg-transparent" data-testid={`group-${row.key}`}>
+                        <TableCell colSpan={9} className="bg-muted/70 py-1.5 ps-6 text-xs font-semibold text-foreground/80">
+                          {row.label}
+                          <span className="ms-2 text-[10px] font-normal text-muted-foreground">({row.count})</span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  const p = row.product;
                   const cv = (p as any).colorVariants as
                     | ColorVariant[]
                     | undefined;
@@ -7144,7 +7246,24 @@ export default function Products() {
               <div className="w-7 h-7 rounded-full border-2 border-foreground/20 border-t-foreground animate-spin" />
             </div>
           ) : (
-            filteredProducts?.map((p) => {
+            groupedProductRows.map((row) => {
+              if (row.kind === "category") {
+                return (
+                  <div key={row.key} className="col-span-full mt-2 first:mt-0 rounded-md bg-foreground text-background px-3 py-2 font-bold text-sm" data-testid={`group-${row.key}`}>
+                    {row.label}
+                    <span className="ms-2 text-[11px] font-normal opacity-70">({row.count})</span>
+                  </div>
+                );
+              }
+              if (row.kind === "subcategory") {
+                return (
+                  <div key={row.key} className="col-span-full rounded-md bg-muted/70 px-3 py-1.5 text-xs font-semibold text-foreground/80" data-testid={`group-${row.key}`}>
+                    {row.label}
+                    <span className="ms-2 text-[10px] font-normal text-muted-foreground">({row.count})</span>
+                  </div>
+                );
+              }
+              const p = row.product;
               const cv = (p as any).colorVariants as ColorVariant[] | undefined;
               return (
                 <div
@@ -10388,7 +10507,24 @@ export default function Products() {
               }
               return (
                 <div className="flex flex-wrap gap-3">
-                  {allWithBarcode.map((p) => {
+                  {buildGroupedRows(allWithBarcode).map((row) => {
+                    if (row.kind === "category") {
+                      return (
+                        <div key={row.key} className="w-full mt-1 first:mt-0 rounded-md bg-foreground text-background px-3 py-1.5 font-bold text-sm" data-testid={`group-barcode-${row.key}`}>
+                          {row.label}
+                          <span className="ms-2 text-[11px] font-normal opacity-70">({row.count})</span>
+                        </div>
+                      );
+                    }
+                    if (row.kind === "subcategory") {
+                      return (
+                        <div key={row.key} className="w-full rounded-md bg-muted/70 px-3 py-1 text-xs font-semibold text-foreground/80" data-testid={`group-barcode-${row.key}`}>
+                          {row.label}
+                          <span className="ms-2 text-[10px] font-normal text-muted-foreground">({row.count})</span>
+                        </div>
+                      );
+                    }
+                    const p = row.product;
                     const selected = selectedBarcodeIds.has(p.id);
                     return (
                       <div
