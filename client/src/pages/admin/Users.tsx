@@ -28,7 +28,9 @@ import {
   Receipt,
   Crown,
   MapPin,
+  BarChart3,
 } from "lucide-react";
+import { EmployeeSalesDialog } from "@/components/admin/EmployeeSalesDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -142,6 +144,7 @@ export default function AdminUsers() {
     "all" | "active" | "blocked" | "admins" | "employees" | "highCancel" | "bestCustomers"
   >("all");
   const [viewingUser, setViewingUser] = useState<AdminUser | null>(null);
+  const [salesEmployee, setSalesEmployee] = useState<AdminUser | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [showOrderDetail, setShowOrderDetail] = useState(false);
   const [orderFilter, setOrderFilter] = useState<"all" | "Pending" | "OnTheWay" | "Delivered" | "Cancelled">("all");
@@ -937,6 +940,18 @@ export default function AdminUsers() {
                             </button>
                           ))}
 
+                        {/* Employee POS sales */}
+                        {isEmployee && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSalesEmployee(user); }}
+                            title={isAr ? "مبيعات الموظف" : "Employee sales"}
+                            className="p-1.5 rounded text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
+                            data-testid={`button-employee-sales-${user.id}`}
+                          >
+                            <BarChart3 className="w-4 h-4" />
+                          </button>
+                        )}
+
                         {/* View orders */}
                         <button
                           onClick={() => { setOrderFilter("all"); setViewingUser(user); }}
@@ -965,6 +980,9 @@ export default function AdminUsers() {
           </table>
         )}
       </div>
+
+      {/* Employee POS sales dialog */}
+      <EmployeeSalesDialog user={salesEmployee} onClose={() => setSalesEmployee(null)} />
 
       {/* User Orders Dialog */}
       <Dialog
