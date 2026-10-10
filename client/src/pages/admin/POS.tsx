@@ -30,7 +30,6 @@ import {
   Printer,
   X,
   Receipt,
-  UserRound,
   Banknote,
   CreditCard,
   Star,
@@ -249,6 +248,11 @@ function getPosOrderSellerName(order: any): string {
 }
 function getPosOrderSellerRole(order: any): string {
   return String(order?.seller_role ?? order?.sellerRole ?? "").trim();
+}
+// Cashier name to display: only employee sales are labelled. Admin sales
+// deliberately show nothing (as before).
+function getPosOrderCashierName(order: any): string {
+  return getPosOrderSellerRole(order) === "employee" ? getPosOrderSellerName(order) : "";
 }
 
 /* ── Helpers ───────────────────────────────────────────────────────────── */
@@ -1636,15 +1640,14 @@ function PosInvoicesColumn({
                         .map((it: any) => it.name)
                         .join("، ")}${items.length > 2 ? "..." : ""}`}
                   </p>
-                  {getPosOrderSellerName(order) && (
-                    <span
-                      className="inline-flex items-center gap-1 mt-1 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-muted text-foreground/80 max-w-full"
-                      title={ar ? "البائع" : "Seller"}
-                      data-testid={`badge-seller-${testIdPrefix}-${order.id}`}
+                  {getPosOrderCashierName(order) && (
+                    <p
+                      className="text-[10px] text-muted-foreground mt-0.5 truncate"
+                      data-testid={`text-cashier-${testIdPrefix}-${order.id}`}
                     >
-                      <UserRound className="w-2.5 h-2.5 shrink-0" />
-                      <span className="truncate">{getPosOrderSellerName(order)}</span>
-                    </span>
+                      {ar ? "كاشير: " : "Cashier: "}
+                      <span className="font-semibold text-foreground/80">{getPosOrderCashierName(order)}</span>
+                    </p>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -3523,9 +3526,10 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
       )
       .join("");
     const isExchangeInvoice = isExchangeOrder(order.note);
-    const sellerHtml = order.sellerName
-      ? `<div class="seller"><span class="seller-lbl">${order.sellerRole === "admin" ? "البائع · المدير" : "البائع"}</span><span class="seller-name">${escHtml(order.sellerName)}</span></div>`
-      : "";
+    const sellerHtml =
+      order.sellerRole === "employee" && order.sellerName
+        ? `<div class="cashier">كاشير: <b>${escHtml(order.sellerName)}</b></div>`
+        : "";
     const noteHtml = order.note
       ? `<div class="${isExchangeInvoice ? "order-note exchange-note" : "order-note"}">${escHtml(order.note).replace(/\n/g, "<br>")}</div>`
       : "";
@@ -3545,8 +3549,7 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
   .hdr-bar-bottom{height:1px;background:linear-gradient(90deg,transparent,#ccc,transparent);margin-top:14px}
   .meta{display:flex;justify-content:space-between;align-items:center;margin:14px 0;padding:10px 12px;background:#f7f5f2;border-radius:6px}
   .meta-inv{font-size:13px;font-weight:700;color:#111}.meta-date{font-size:11px;color:#666}.meta-time{font-size:10px;color:#aaa}
-  .seller{display:flex;justify-content:space-between;align-items:center;margin:-8px 0 14px;padding:7px 12px;border:1px dashed #cfc9c0;border-radius:6px;font-size:11px}
-  .seller-lbl{color:#888;letter-spacing:1px;text-transform:uppercase;font-size:10px}.seller-name{font-weight:700;color:#111;font-size:12px}
+  .cashier{text-align:right;margin:-6px 0 12px;padding:0 12px;font-size:11px;color:#555}.cashier b{color:#111}
   .exchange-badge{display:flex;align-items:center;justify-content:center;gap:6px;background:#1c3d7a;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;padding:8px 10px;border-radius:6px;margin-top:12px;text-transform:uppercase}
   .order-note{background:#fffbe6;border:1px solid #ffe58f;border-radius:5px;padding:7px 10px;margin-bottom:12px;font-size:11px;color:#7a6000;white-space:pre-wrap;line-height:1.6}
   .order-note.exchange-note{background:#eef4ff;border:1.5px solid #b6cdfb;color:#1c3d7a;font-size:11px;font-weight:600}
@@ -3586,8 +3589,7 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
       font-weight:700 !important;
       -webkit-text-stroke:0.2px #000;
     }
-    .seller-lbl,.seller-name{color:#000 !important;font-weight:700 !important;-webkit-text-stroke:0.2px #000;}
-    .seller{border-color:#000 !important;background:#fff !important;}
+    .cashier,.cashier b{color:#000 !important;font-weight:700 !important;-webkit-text-stroke:0.2px #000;}
     .hdr-bar,.hdr-bar-bottom,thead tr,table,.totals-final,td,.change-row,.order-note{
       border-color:#000 !important;
       background:#fff !important;
@@ -6500,19 +6502,10 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                     </span>
                   )}
                 </h3>
-                {getPosOrderSellerName(expandedOrder) && (
-                  <p
-                    className="text-xs mt-1 flex items-center gap-1.5"
-                    data-testid="text-seller-detail"
-                  >
-                    <UserRound className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-muted-foreground">{ar ? "البائع:" : "Seller:"}</span>
-                    <span className="font-semibold">{getPosOrderSellerName(expandedOrder)}</span>
-                    {getPosOrderSellerRole(expandedOrder) === "admin" && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {ar ? "مدير" : "Admin"}
-                      </span>
-                    )}
+                {getPosOrderCashierName(expandedOrder) && (
+                  <p className="text-xs text-muted-foreground mt-1" data-testid="text-cashier-detail">
+                    {ar ? "كاشير: " : "Cashier: "}
+                    <span className="font-semibold text-foreground">{getPosOrderCashierName(expandedOrder)}</span>
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
