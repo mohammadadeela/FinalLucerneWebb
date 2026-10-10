@@ -3,6 +3,7 @@ import { spawn } from "child_process";
 import { existsSync } from "fs";
 import { sql } from "drizzle-orm";
 import { db, pool } from "./db";
+import { getEnvStaffEmails } from "./staff-env";
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -33,15 +34,14 @@ export function isPlaceholderEmail(email: string | null | undefined): boolean {
   return !!email && email.toLowerCase().endsWith(PLACEHOLDER_EMAIL_DOMAIN);
 }
 
-// ADMIN_EMAIL and EMPLOYEE_EMAIL are set to bootstrap the admin/employee
+// ADMIN_EMAIL and EMPLOYEE_EMAIL (plus EMPLOYEE2_EMAIL, ...) are set to bootstrap the admin/employee
 // accounts (see server/routes.ts) and are frequently just test/placeholder
 // addresses, not real inboxes. When whoever is logged in as the admin or
 // employee places an order themselves (e.g. while testing checkout), we
 // don't want to fire a customer confirmation email at those addresses.
 function getStaffEmails(): string[] {
-  return [process.env.ADMIN_EMAIL, process.env.EMPLOYEE_EMAIL]
-    .map((e) => (e || "").trim().toLowerCase())
-    .filter(Boolean);
+  // Includes every EMPLOYEE_*, EMPLOYEE2_*, EMPLOYEE3_* ... slot.
+  return getEnvStaffEmails();
 }
 export function isStaffEmail(email: string | null | undefined): boolean {
   if (!email) return false;

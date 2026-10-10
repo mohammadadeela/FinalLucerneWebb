@@ -26,6 +26,7 @@ import { buildResponse, orderStatusReply } from "./chatbot/responses";
 import { registerOllamaRoutes } from "./ollama";
 import { SITE_URL } from "./seo";
 import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCategoryReportResponse, parseMonthParam } from "./reports";
+import { getEnvEmployees } from "./staff-env";
 
 // Rate limiters for auth endpoints
 const loginLimiter = rateLimit({
@@ -810,40 +811,40 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
 
     // Employee bootstrap from env vars, same create-and-keep-in-sync pattern
-    // as the admin one above. Set EMPLOYEE_EMAIL and EMPLOYEE_PASSWORD
-    // (min 10 chars) to create/update the account on boot; EMPLOYEE_NAME is
-    // optional. Employees can use the POS, but don't get the "cannot
-    // block/delete your own account" admin-only guards.
-    const bootstrapEmployeeEmail = process.env.EMPLOYEE_EMAIL?.trim();
-    const bootstrapEmployeePassword = process.env.EMPLOYEE_PASSWORD;
-    if (bootstrapEmployeeEmail && bootstrapEmployeePassword) {
-      if (bootstrapEmployeePassword.length < 10) {
+    // as the admin one above. One or more employees can be configured:
+    //   EMPLOYEE_EMAIL / EMPLOYEE_PASSWORD / EMPLOYEE_NAME     (employee 1)
+    //   EMPLOYEE2_EMAIL / EMPLOYEE2_PASSWORD / EMPLOYEE2_NAME  (employee 2)
+    //   EMPLOYEE3_* ... (see server/staff-env.ts)
+    // Each password must be at least 10 chars; NAME is optional. Employees
+    // can use the POS, but don't get the "cannot block/delete your own
+    // account" admin-only guards.
+    for (const emp of getEnvEmployees()) {
+      if (emp.password.length < 10) {
         console.warn(
-          "[seed] EMPLOYEE_PASSWORD is too short (min 10 chars) — skipping employee bootstrap.",
+          `[seed] ${emp.key}_PASSWORD is too short (min 10 chars) — skipping employee bootstrap for ${emp.email}.`,
         );
+        continue;
+      }
+      const existingEmployee = await storage.getUserByEmail(emp.email);
+      if (!existingEmployee) {
+        await storage.createUser({
+          email: emp.email,
+          password: await hashPassword(emp.password),
+          role: "employee",
+          fullName: emp.name || "Store Employee",
+          isVerified: true,
+        });
+        console.log(`[seed] Bootstrap employee created for ${emp.email}.`);
       } else {
-        const existingEmployee = await storage.getUserByEmail(bootstrapEmployeeEmail);
-        if (!existingEmployee) {
-          await storage.createUser({
-            email: bootstrapEmployeeEmail,
-            password: await hashPassword(bootstrapEmployeePassword),
-            role: "employee",
-            fullName: process.env.EMPLOYEE_NAME?.trim() || "Store Employee",
-            isVerified: true,
-          });
-          console.log(`[seed] Bootstrap employee created for ${bootstrapEmployeeEmail}.`);
-        } else {
-          const passwordMatches = await comparePasswords(bootstrapEmployeePassword, existingEmployee.password);
-          const envName = process.env.EMPLOYEE_NAME?.trim();
-          const nameChanged = !!envName && envName !== existingEmployee.fullName;
-          if (!passwordMatches || nameChanged) {
-            const update: any = {};
-            if (!passwordMatches) update.password = await hashPassword(bootstrapEmployeePassword);
-            if (nameChanged) update.fullName = envName;
-            await storage.updateUser(existingEmployee.id, update);
-            if (!passwordMatches) await destroyUserSessions(existingEmployee.id);
-            console.log(`[seed] Bootstrap employee ${bootstrapEmployeeEmail} synced from env (${!passwordMatches ? "password" : ""}${!passwordMatches && nameChanged ? " + " : ""}${nameChanged ? "name" : ""} updated).`);
-          }
+        const passwordMatches = await comparePasswords(emp.password, existingEmployee.password);
+        const nameChanged = !!emp.name && emp.name !== existingEmployee.fullName;
+        if (!passwordMatches || nameChanged) {
+          const update: any = {};
+          if (!passwordMatches) update.password = await hashPassword(emp.password);
+          if (nameChanged) update.fullName = emp.name;
+          await storage.updateUser(existingEmployee.id, update);
+          if (!passwordMatches) await destroyUserSessions(existingEmployee.id);
+          console.log(`[seed] Bootstrap employee ${emp.email} synced from env (${!passwordMatches ? "password" : ""}${!passwordMatches && nameChanged ? " + " : ""}${nameChanged ? "name" : ""} updated).`);
         }
       }
     }
