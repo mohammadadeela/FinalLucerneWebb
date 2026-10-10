@@ -250,6 +250,7 @@ ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS card_amount numeric;
 ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS seller_id integer;
 ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS seller_name text;
 ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS seller_role text;
+ALTER TABLE pos_orders ADD COLUMN IF NOT EXISTS return_history jsonb DEFAULT '[]'::jsonb;
 
 
 -- ─────────────────────────────────────────

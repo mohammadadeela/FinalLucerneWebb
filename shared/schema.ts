@@ -298,6 +298,16 @@ export const posOrders = pgTable("pos_orders", {
   sellerId: integer("seller_id"),
   sellerName: text("seller_name"),
   sellerRole: text("seller_role"),
+  // Plain returns (ترجيع, no replacement) processed against this invoice,
+  // with who processed each one, so staff return activity can be reported.
+  returnHistory: jsonb("return_history").$type<Array<{
+    returnedAt: string;
+    items: Array<{ productId: number; name?: string; quantity: number; size?: string; color?: string; price?: string }>;
+    amount: string;
+    byUserId?: number;
+    byName?: string;
+    byRole?: string;
+  }>>().default([]),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

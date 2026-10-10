@@ -4698,6 +4698,19 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  // Display name for the staff account that rang up a POS sale. Falls back
+  // to the email's local part so an account without a full name still shows
+  // something readable on the receipt.
+  const getPosSeller = (user: { id: number; role: string; fullName?: string | null; email?: string | null }) => {
+    const fromName = (user.fullName || "").trim();
+    const fromEmail = (user.email || "").split("@")[0].trim();
+    return {
+      id: user.id,
+      role: user.role,
+      name: fromName || fromEmail || (user.role === "admin" ? "Store Admin" : "Store Employee"),
+    };
+  };
+
   app.post("/api/pos/return", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "employee"].includes(req.user.role)) return res.status(401).json({ message: "Unauthorized" });
     try {
@@ -4882,24 +4895,50 @@ Sitemap: ${SITE_URL}/sitemap.xml
         return res.json({ success: true, message: "Exchange return processed", exchangeHistory: nextHistory });
       }
 
+      // Plain return (no replacement): log it on the invoice with who did it
+      // and the value of the returned lines, so employee activity reports can
+      // show returns next to sales. Logging never blocks the restock above.
+      try {
+        const orderLines: any[] = Array.isArray((order as any).items) ? (order as any).items : [];
+        const subtotal = orderLines.reduce((s: number, l: any) => s + (parseFloat(l.price || 0) || 0) * (Number(l.quantity) || 0), 0);
+        const discount = Math.max(0, parseFloat((order as any).discountAmount ?? 0) || 0);
+        // Spread an invoice-level discount over the lines proportionally so a
+        // return refunds what the customer actually paid for that item.
+        const ratio = subtotal > 0 && discount > 0 ? Math.max(0, (subtotal - discount) / subtotal) : 1;
+        let amount = 0;
+        const loggedItems = returnItems.map((ri: any) => {
+          const line = orderLines.find((l: any) =>
+            Number(l.productId ?? l.product_id) === Number(ri.productId) &&
+            String(l.size || "") === String(ri.size || "") &&
+            String(l.color || "") === String(ri.color || ""),
+          ) || orderLines.find((l: any) => Number(l.productId ?? l.product_id) === Number(ri.productId));
+          const unit = (parseFloat(line?.price || 0) || 0) * ratio;
+          const qty = Math.max(0, Number(ri.quantity) || 0);
+          amount += unit * qty;
+          return {
+            productId: Number(ri.productId),
+            name: line?.name ? String(line.name) : undefined,
+            quantity: qty,
+            size: ri.size || undefined,
+            color: ri.color || undefined,
+            price: unit.toFixed(2),
+          };
+        });
+        const seller = getPosSeller(req.user as any);
+        const prev = Array.isArray((order as any).returnHistory) ? (order as any).returnHistory : [];
+        await storage.updatePosOrderReturnHistory((order as any).id, [
+          ...prev,
+          { returnedAt: new Date().toISOString(), items: loggedItems, amount: amount.toFixed(2), byUserId: seller.id, byName: seller.name, byRole: seller.role },
+        ]);
+      } catch (logErr) {
+        console.error("[pos] return processed but could not be logged:", logErr);
+      }
+
       res.json({ success: true, message: "Return processed" });
     } catch (err: any) {
       res.status(500).json({ message: err.message });
     }
   });
-
-  // Display name for the staff account that rang up a POS sale. Falls back
-  // to the email's local part so an account without a full name still shows
-  // something readable on the receipt.
-  const getPosSeller = (user: { id: number; role: string; fullName?: string | null; email?: string | null }) => {
-    const fromName = (user.fullName || "").trim();
-    const fromEmail = (user.email || "").split("@")[0].trim();
-    return {
-      id: user.id,
-      role: user.role,
-      name: fromName || fromEmail || (user.role === "admin" ? "Store Admin" : "Store Employee"),
-    };
-  };
 
   app.post("/api/pos/orders", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "employee"].includes(req.user.role)) return res.status(401).json({ message: "Unauthorized" });

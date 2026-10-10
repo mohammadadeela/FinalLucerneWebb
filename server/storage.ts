@@ -425,6 +425,7 @@ export interface IStorage {
   getPosOrders(): Promise<PosOrder[]>;
   getPosOrderById(id: number): Promise<PosOrder | undefined>;
   updatePosOrderExchangeHistory(id: number, history: any[]): Promise<PosOrder | undefined>;
+  updatePosOrderReturnHistory(id: number, history: any[]): Promise<PosOrder | undefined>;
   updatePosOrderPaymentMethod(
     id: number,
     method: "cash" | "card" | "split",
@@ -1549,6 +1550,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(posOrders)
       .set({ exchangeHistory: Array.isArray(history) ? history : [] } as any)
+      .where(eq(posOrders.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updatePosOrderReturnHistory(id: number, history: any[]): Promise<PosOrder | undefined> {
+    const [updated] = await db
+      .update(posOrders)
+      .set({ returnHistory: Array.isArray(history) ? history : [] } as any)
       .where(eq(posOrders.id, id))
       .returning();
     return updated;
