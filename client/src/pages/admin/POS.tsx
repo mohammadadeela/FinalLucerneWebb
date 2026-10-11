@@ -5904,6 +5904,9 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                     {ar ? "ملاحظة" : "Note"}
                     {note && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
                   </button>
+                  {/* Manual discount is admin-only. Employees still get the
+                      exchange credit applied automatically (shown in totals). */}
+                  {!isEmployee && (
                   <button
                     onClick={() => setShowDiscount((v) => !v)}
                     className={`flex-1 flex items-center justify-center gap-2 text-sm font-semibold h-11 rounded-xl border-2 transition-colors active:scale-95 ${showDiscount ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"}`}
@@ -5913,6 +5916,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                     {ar ? "خصم" : "Discount"}
                     {discountValue && <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />}
                   </button>
+                  )}
                 </div>
 
                 {/* Note expanded */}
@@ -5927,8 +5931,8 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                   />
                 )}
 
-                {/* Discount expanded */}
-                {showDiscount && (
+                {/* Discount expanded (never editable by employees) */}
+                {showDiscount && !isEmployee && (
                   <div className="flex gap-2 items-center">
                     <Input
                       value={discountValue}
