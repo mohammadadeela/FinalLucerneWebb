@@ -4719,6 +4719,11 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
   app.post("/api/pos/return", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "employee"].includes(req.user.role)) return res.status(401).json({ message: "Unauthorized" });
+    // Employees may only do exchanges; plain returns (refund/restock without
+    // a replacement) are admin-only. Enforced here as well as hidden in the UI.
+    if (req.user.role === "employee" && req.body?.mode !== "exchange") {
+      return res.status(403).json({ message: "Returns are admin-only" });
+    }
     try {
       const {
         orderId,

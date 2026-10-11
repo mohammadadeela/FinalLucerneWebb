@@ -4744,7 +4744,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
   /* ══════════════════════════════════════════════════════════════════ */
   return (
     <AdminLayout fullscreen={posFullscreen}>
-      {customerScreenBlocked && (
+      {customerScreenBlocked && !isEmployee && (
         <div
           role="button"
           onClick={openCustomerDisplay}
@@ -4808,6 +4808,9 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
               </>
             )}
           </button>
+          {/* Customer display and returns are admin-only; employees can
+              still sell and do exchanges. */}
+          {!isEmployee && (
           <button
             onClick={openCustomerDisplay}
             className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border font-medium transition-colors ${
@@ -4821,6 +4824,8 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
             <Monitor className="w-3.5 h-3.5" />
             {ar ? "شاشة العميل" : "Customer Screen"}
           </button>
+          )}
+          {!isEmployee && (
           <button
             onClick={() => setReturnMode(true)}
             className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-950/20 dark:border-orange-800 dark:hover:bg-orange-950/40 transition-colors font-medium"
@@ -4829,6 +4834,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
             <Undo2 className="w-3.5 h-3.5" />
             {ar ? "مرتجعات" : "Returns"}
           </button>
+          )}
           <button
             onClick={() => setExchangeMode(true)}
             className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/20 dark:border-blue-800 dark:hover:bg-blue-950/40 transition-colors font-medium"
