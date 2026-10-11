@@ -443,8 +443,7 @@ function printBarcodeLabels(
     price?: string | number | null;
     discountPrice?: string | number | null;
     colorVariants?: { name: string; barcode?: string }[];
-    // Printed in small text on every label so a label can be matched to
-    // its product without a photo (thermal printers can't print one).
+    // Used only for the group header lines between labels.
     category?: string | null;
     subcategory?: string | null;
   }[],
@@ -483,7 +482,6 @@ function printBarcodeLabels(
     .filter((p) => p.barcode)
     .flatMap((p) => {
       const divider = dividerFor(p);
-      const catLine = [p.category, p.subcategory].filter(Boolean).join(" › ");
       const hasDiscount = p.discountPrice && Number(p.discountPrice) > 0 && p.price;
       const displayPrice = hasDiscount
         ? Number(p.discountPrice).toFixed(0)
@@ -512,7 +510,6 @@ function printBarcodeLabels(
         });
         return `
         <div class="label" id="wrap_${p.id}_${i}">
-          ${catLine ? `<div class="cat">${escLabelHtml(catLine.slice(0, 40))}</div>` : ""}
           <div class="pname">${escLabelHtml(p.name.slice(0, 34))}</div>
           ${colorName ? `<div class="color">${escLabelHtml(colorName.slice(0, 24))}</div>` : ""}
           <div class="brand">LUCERNE BOUTIQUE</div>
@@ -550,22 +547,6 @@ function printBarcodeLabels(
     page-break-inside: avoid;
     break-inside: avoid;
     overflow: visible;
-  }
-
-  /* Category › subcategory — tiny line at the top so the label can be
-     matched to its product by eye. */
-  .cat {
-    font-size: 6pt;
-    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    font-weight: 600;
-    color: #000;
-    direction: rtl;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    margin-bottom: 1px;
   }
 
   /* Group header lines (full width, like the admin products page) */
@@ -681,7 +662,7 @@ function printBarcodeLabels(
     html, body { margin: 0; }
     .grid { gap: 0; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-    .pname, .brand, .color, .price-main, .price-original, .cat { color: #000 !important; }
+    .pname, .brand, .color, .price-main, .price-original { color: #000 !important; }
     .group-cat { background: #000 !important; color: #fff !important; }
     .group-sub { background: #e6e6e6 !important; color: #000 !important; }
   }
