@@ -509,10 +509,7 @@ function printBarcodeLabels(
         });
         return `
         <div class="label" id="wrap_${p.id}_${i}">
-          <div class="toprow">
-            <span class="cat">${escLabelHtml(catLine.slice(0, 40))}</span>
-            <span class="pnum">#${String(p.id).padStart(4, "0")}</span>
-          </div>
+          ${catLine ? `<div class="cat">${escLabelHtml(catLine.slice(0, 40))}</div>` : ""}
           <div class="pname">${escLabelHtml(p.name.slice(0, 34))}</div>
           ${colorName ? `<div class="color">${escLabelHtml(colorName.slice(0, 24))}</div>` : ""}
           <div class="brand">LUCERNE BOUTIQUE</div>
@@ -552,34 +549,20 @@ function printBarcodeLabels(
     overflow: visible;
   }
 
-  /* Top row: category › subcategory on one side, product number on the
-     other — tiny, so the label can be matched to its product by eye. */
-  .toprow {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 4px;
-    direction: rtl;
-    margin-bottom: 1px;
-  }
+  /* Category › subcategory — tiny line at the top so the label can be
+     matched to its product by eye. */
   .cat {
     font-size: 6pt;
     font-family: "Segoe UI", Tahoma, Arial, sans-serif;
     font-weight: 600;
     color: #000;
+    direction: rtl;
+    text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 78%;
-  }
-  .pnum {
-    font-size: 6pt;
-    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    font-weight: 700;
-    color: #000;
-    direction: ltr;
-    letter-spacing: 0.3px;
+    max-width: 100%;
+    margin-bottom: 1px;
   }
 
   /* Group divider label */
@@ -696,7 +679,7 @@ function printBarcodeLabels(
     html, body { margin: 0; }
     .grid { gap: 0; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-    .pname, .brand, .color, .price-main, .price-original, .cat, .pnum { color: #000 !important; }
+    .pname, .brand, .color, .price-main, .price-original, .cat { color: #000 !important; }
     .label.divider { background: #000 !important; }
     .div-cat, .div-sub, .div-mark { color: #fff !important; }
   }
