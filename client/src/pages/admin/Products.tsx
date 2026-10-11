@@ -456,24 +456,27 @@ function printBarcodeLabels(
   const escLabelHtml = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-  // Divider label: a full label printed once at the start of every
-  // category / subcategory group (products arrive already grouped in that
-  // order), so on a roll of stickers you can see where the next group
-  // starts — like a tab in a folder.
-  let lastGroupKey = "";
+  // Group headers: a full-width line at the start of every category and
+  // every subcategory (products arrive already grouped in that order) —
+  // same look as the admin products page, so the printout reads the same
+  // way: category bar, subcategory bar, then that group's labels.
+  let lastCat = "";
+  let lastSub = "";
   const dividerFor = (p: { category?: string | null; subcategory?: string | null }) => {
     if (!opts.dividers) return "";
-    const key = `${p.category || ""}|${p.subcategory || ""}`;
-    if (key === lastGroupKey) return "";
-    lastGroupKey = key;
-    if (!p.category && !p.subcategory) return "";
-    return `
-        <div class="label divider">
-          <div class="div-mark">▼ ▼ ▼</div>
-          <div class="div-cat">${escLabelHtml(p.category || "")}</div>
-          ${p.subcategory ? `<div class="div-sub">${escLabelHtml(p.subcategory)}</div>` : ""}
-          <div class="div-mark">▼ ▼ ▼</div>
-        </div>`;
+    const cat = p.category || "";
+    const sub = p.subcategory || "";
+    let out = "";
+    if (cat !== lastCat) {
+      lastCat = cat;
+      lastSub = "";
+      if (cat) out += `<div class="group-cat">${escLabelHtml(cat)}</div>`;
+    }
+    if (sub !== lastSub) {
+      lastSub = sub;
+      if (sub) out += `<div class="group-sub">${escLabelHtml(sub)}</div>`;
+    }
+    return out;
   };
 
   const labels = products
@@ -565,31 +568,30 @@ function printBarcodeLabels(
     margin-bottom: 1px;
   }
 
-  /* Group divider label */
-  .label.divider {
+  /* Group header lines (full width, like the admin products page) */
+  .group-cat, .group-sub {
+    width: 100%;
+    direction: rtl;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  .group-cat {
     background: #000;
     color: #fff;
-    border: 0.5px dashed #ccc;
-    gap: 2px;
-  }
-  .div-cat {
-    font-size: 13pt;
-    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    font-weight: 800;
-    color: #fff;
-    direction: rtl;
-    text-align: center;
-    line-height: 1.1;
-  }
-  .div-sub {
     font-size: 10pt;
-    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-    font-weight: 600;
-    color: #fff;
-    direction: rtl;
-    text-align: center;
+    font-weight: 800;
+    padding: 3px 8px;
+    margin-top: 4px;
   }
-  .div-mark { font-size: 7pt; color: #fff; letter-spacing: 2px; }
+  .group-sub {
+    background: #e6e6e6;
+    color: #000;
+    font-size: 8.5pt;
+    font-weight: 700;
+    padding: 2px 14px;
+    border-bottom: 1px solid #000;
+  }
 
   /* Product name — centered above the brand in print/PDF.
      Safe font stack that covers Arabic glyphs (Tahoma/Segoe UI), and
@@ -680,8 +682,8 @@ function printBarcodeLabels(
     .grid { gap: 0; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     .pname, .brand, .color, .price-main, .price-original, .cat { color: #000 !important; }
-    .label.divider { background: #000 !important; }
-    .div-cat, .div-sub, .div-mark { color: #fff !important; }
+    .group-cat { background: #000 !important; color: #fff !important; }
+    .group-sub { background: #e6e6e6 !important; color: #000 !important; }
   }
 </style>
 </head>
@@ -10784,7 +10786,7 @@ export default function Products() {
                   className="accent-primary"
                   data-testid="checkbox-print-dividers"
                 />
-                {language === "ar" ? "طباعة ملصق فاصل لكل فئة" : "Print a divider label per group"}
+                {language === "ar" ? "طباعة عناوين الفئات" : "Print category headers"}
               </label>
               <Button
                 size="sm"
