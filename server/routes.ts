@@ -27,6 +27,7 @@ import { registerOllamaRoutes } from "./ollama";
 import { SITE_URL } from "./seo";
 import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCategoryReportResponse, parseMonthParam } from "./reports";
 import { getEnvEmployees } from "./staff-env";
+import { auditMiddleware, registerAuditRoutes } from "./audit";
 
 // Rate limiters for auth endpoints
 const loginLimiter = rateLimit({
@@ -556,6 +557,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+
+  // Audit trail: every staff action on a mutating /api route is recorded
+  // (see server/audit.ts). Registered before the routes so it sees them all.
+  app.use(auditMiddleware);
+  registerAuditRoutes(app);
 
   // ── SEO: sitemap.xml + robots.txt ────────────────────────────────────────
   // Dynamically generated so new products/categories are picked up

@@ -5,6 +5,7 @@ import compression from "compression";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
+import { ensureAuditTable } from "./audit";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { WebhookHandlers } from "./webhookHandlers";
@@ -371,6 +372,9 @@ async function ensureProductSchemaAndLegacyData() {
       ADD COLUMN IF NOT EXISTS seller_role text,
       ADD COLUMN IF NOT EXISTS return_history jsonb DEFAULT '[]'::jsonb
   `));
+
+  // Staff activity log table (see server/audit.ts).
+  await withRetry(() => ensureAuditTable());
 }
 
 (async () => {

@@ -443,7 +443,12 @@ function printBarcodeLabels(
     price?: string | number | null;
     discountPrice?: string | number | null;
     colorVariants?: { name: string; barcode?: string }[];
+    // Printed in small text on every label so a label can be matched to
+    // its product without a photo (thermal printers can't print one).
+    category?: string | null;
+    subcategory?: string | null;
   }[],
+  opts: { dividers?: boolean } = {},
 ) {
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) return;
@@ -451,9 +456,31 @@ function printBarcodeLabels(
   const escLabelHtml = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+  // Divider label: a full label printed once at the start of every
+  // category / subcategory group (products arrive already grouped in that
+  // order), so on a roll of stickers you can see where the next group
+  // starts — like a tab in a folder.
+  let lastGroupKey = "";
+  const dividerFor = (p: { category?: string | null; subcategory?: string | null }) => {
+    if (!opts.dividers) return "";
+    const key = `${p.category || ""}|${p.subcategory || ""}`;
+    if (key === lastGroupKey) return "";
+    lastGroupKey = key;
+    if (!p.category && !p.subcategory) return "";
+    return `
+        <div class="label divider">
+          <div class="div-mark">▼ ▼ ▼</div>
+          <div class="div-cat">${escLabelHtml(p.category || "")}</div>
+          ${p.subcategory ? `<div class="div-sub">${escLabelHtml(p.subcategory)}</div>` : ""}
+          <div class="div-mark">▼ ▼ ▼</div>
+        </div>`;
+  };
+
   const labels = products
     .filter((p) => p.barcode)
     .flatMap((p) => {
+      const divider = dividerFor(p);
+      const catLine = [p.category, p.subcategory].filter(Boolean).join(" › ");
       const hasDiscount = p.discountPrice && Number(p.discountPrice) > 0 && p.price;
       const displayPrice = hasDiscount
         ? Number(p.discountPrice).toFixed(0)
@@ -474,14 +501,18 @@ function printBarcodeLabels(
           ? uniqueColors.map((c) => ({ colorName: c.name, barcode: c.barcode || (p.barcode as string) }))
           : [{ colorName: null, barcode: p.barcode as string }];
 
-      return copies.map(({ colorName, barcode }, i) => {
+      return divider + copies.map(({ colorName, barcode }, i) => {
         const barcodeSvg = renderLabelBarcodeSvg(barcode, {
-          height: 34,
-          width: 1.6,
-          fontSize: 11,
+          height: 28,
+          width: 1.4,
+          fontSize: 10,
         });
         return `
         <div class="label" id="wrap_${p.id}_${i}">
+          <div class="toprow">
+            <span class="cat">${escLabelHtml(catLine.slice(0, 40))}</span>
+            <span class="pnum">#${String(p.id).padStart(4, "0")}</span>
+          </div>
           <div class="pname">${escLabelHtml(p.name.slice(0, 34))}</div>
           ${colorName ? `<div class="color">${escLabelHtml(colorName.slice(0, 24))}</div>` : ""}
           <div class="brand">LUCERNE BOUTIQUE</div>
@@ -492,7 +523,7 @@ function printBarcodeLabels(
             <span class="price-main">₪${displayPrice}</span>
           </div>` : ""}
         </div>`;
-      });
+      }).join("");
     })
     .join("");
 
@@ -520,6 +551,62 @@ function printBarcodeLabels(
     break-inside: avoid;
     overflow: visible;
   }
+
+  /* Top row: category › subcategory on one side, product number on the
+     other — tiny, so the label can be matched to its product by eye. */
+  .toprow {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    direction: rtl;
+    margin-bottom: 1px;
+  }
+  .cat {
+    font-size: 6pt;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 600;
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 78%;
+  }
+  .pnum {
+    font-size: 6pt;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 700;
+    color: #000;
+    direction: ltr;
+    letter-spacing: 0.3px;
+  }
+
+  /* Group divider label */
+  .label.divider {
+    background: #000;
+    color: #fff;
+    border: 0.5px dashed #ccc;
+    gap: 2px;
+  }
+  .div-cat {
+    font-size: 13pt;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 800;
+    color: #fff;
+    direction: rtl;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .div-sub {
+    font-size: 10pt;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 600;
+    color: #fff;
+    direction: rtl;
+    text-align: center;
+  }
+  .div-mark { font-size: 7pt; color: #fff; letter-spacing: 2px; }
 
   /* Product name — centered above the brand in print/PDF.
      Safe font stack that covers Arabic glyphs (Tahoma/Segoe UI), and
@@ -578,9 +665,9 @@ function printBarcodeLabels(
     justify-content: center;
   }
   .bc-wrap svg {
-    width: 100%;
-    max-width: 100%;
-    max-height: 1.8cm;
+    width: 90%;
+    max-width: 90%;
+    max-height: 1.5cm;
   }
 
   /* Price row */
@@ -609,7 +696,9 @@ function printBarcodeLabels(
     html, body { margin: 0; }
     .grid { gap: 0; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-    .pname, .brand, .color, .price-main, .price-original { color: #000 !important; }
+    .pname, .brand, .color, .price-main, .price-original, .cat, .pnum { color: #000 !important; }
+    .label.divider { background: #000 !important; }
+    .div-cat, .div-sub, .div-mark { color: #fff !important; }
   }
 </style>
 </head>
@@ -1434,6 +1523,8 @@ export default function Products() {
   const [barcodeSearch, setBarcodeSearch] = useState("");
   const [barcodeCategoryFilter, setBarcodeCategoryFilter] = useState<number | "">("");
   const [barcodeSubcategoryFilter, setBarcodeSubcategoryFilter] = useState<number | "">("");
+  // Print a black "group" label at the start of each category/subcategory.
+  const [printBarcodeDividers, setPrintBarcodeDividers] = useState(true);
   const [selectedBarcodeIds, setSelectedBarcodeIds] = useState<Set<number>>(
     new Set(),
   );
@@ -10689,7 +10780,7 @@ export default function Products() {
                   ? "اختر باركودات للطباعة"
                   : "Select barcodes to print"}
             </span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -10702,14 +10793,33 @@ export default function Products() {
               >
                 {language === "ar" ? "إغلاق" : "Close"}
               </Button>
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={printBarcodeDividers}
+                  onChange={(e) => setPrintBarcodeDividers(e.target.checked)}
+                  className="accent-primary"
+                  data-testid="checkbox-print-dividers"
+                />
+                {language === "ar" ? "طباعة ملصق فاصل لكل فئة" : "Print a divider label per group"}
+              </label>
               <Button
                 size="sm"
                 className="rounded gap-2"
                 disabled={selectedBarcodeIds.size === 0}
                 onClick={() => {
-                  const toPrint = (products ?? [])
-                    .filter((p) => selectedBarcodeIds.has(p.id))
-                    .map((p) => ({
+                  // Walk the grouped rows so labels come out in category →
+                  // subcategory order, and each one knows its group names.
+                  const catName = (c: any) => (c ? (language === "ar" ? c.nameAr || c.name : c.name) : null);
+                  let curCat: string | null = null;
+                  let curSub: string | null = null;
+                  const toPrint: Parameters<typeof printBarcodeLabels>[0] = [];
+                  const selected = (products ?? []).filter((p) => selectedBarcodeIds.has(p.id));
+                  for (const row of buildGroupedRows(selected)) {
+                    if (row.kind === "category") { curCat = row.label; curSub = null; continue; }
+                    if (row.kind === "subcategory") { curSub = row.label; continue; }
+                    const p = row.product;
+                    toPrint.push({
                       id: p.id,
                       name: p.name,
                       barcode: (p as any).barcode ?? null,
@@ -10718,8 +10828,11 @@ export default function Products() {
                       colorVariants: (
                         ((p as any).colorVariants || []) as { name: string; barcode?: string }[]
                       ).map((v) => ({ name: v.name, barcode: v.barcode })),
-                    }));
-                  printBarcodeLabels(toPrint);
+                      category: curCat ?? catName((categories ?? []).find((c: any) => c.id === p.categoryId)),
+                      subcategory: curSub,
+                    });
+                  }
+                  printBarcodeLabels(toPrint, { dividers: printBarcodeDividers });
                 }}
                 data-testid="button-print-barcodes-confirm"
               >

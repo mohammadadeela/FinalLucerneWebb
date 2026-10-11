@@ -60,7 +60,7 @@ export function AdminLayout({
   const reportsPageEnabled = siteSettings?.reports_page_enabled !== "false";
 
   const adminNavItems = [
-    { label: t.admin.dashboard, href: "/admin", icon: LayoutDashboard },
+    { label: language === "ar" ? "سجل النشاط" : "Activity", href: "/admin", icon: LayoutDashboard },
     { label: t.admin.products, href: "/admin/products", icon: Package },
     ...(reportsPageEnabled
       ? [{ label: t.admin.orders, href: "/admin/orders", icon: ShoppingCart }]
