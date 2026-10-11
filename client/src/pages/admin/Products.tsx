@@ -447,8 +447,9 @@ function printBarcodeLabels(
     category?: string | null;
     subcategory?: string | null;
   }[],
-  opts: { dividers?: boolean } = {},
+  opts: { dividers?: boolean; showPrice?: boolean } = {},
 ) {
+  const showPrice = opts.showPrice !== false;
   const win = window.open("", "_blank", "width=900,height=700");
   if (!win) return;
 
@@ -514,7 +515,7 @@ function printBarcodeLabels(
           ${colorName ? `<div class="color">${escLabelHtml(colorName.slice(0, 24))}</div>` : ""}
           <div class="brand">LUCERNE BOUTIQUE</div>
           <div class="bc-wrap">${barcodeSvg}</div>
-          ${displayPrice ? `
+          ${showPrice && displayPrice ? `
           <div class="price-row">
             ${hasDiscount ? `<span class="price-original">₪${Number(p.price).toFixed(0)}</span>` : ""}
             <span class="price-main">₪${displayPrice}</span>
@@ -1491,6 +1492,8 @@ export default function Products() {
   const [barcodeSubcategoryFilter, setBarcodeSubcategoryFilter] = useState<number | "">("");
   // Print a black "group" label at the start of each category/subcategory.
   const [printBarcodeDividers, setPrintBarcodeDividers] = useState(true);
+  // Print labels with or without the price (name + brand + barcode only).
+  const [printBarcodePrice, setPrintBarcodePrice] = useState(true);
   const [selectedBarcodeIds, setSelectedBarcodeIds] = useState<Set<number>>(
     new Set(),
   );
@@ -10769,6 +10772,16 @@ export default function Products() {
                 />
                 {language === "ar" ? "طباعة عناوين الفئات" : "Print category headers"}
               </label>
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={printBarcodePrice}
+                  onChange={(e) => setPrintBarcodePrice(e.target.checked)}
+                  className="accent-primary"
+                  data-testid="checkbox-print-price"
+                />
+                {language === "ar" ? "طباعة السعر" : "Print price"}
+              </label>
               <Button
                 size="sm"
                 className="rounded gap-2"
@@ -10798,7 +10811,7 @@ export default function Products() {
                       subcategory: curSub,
                     });
                   }
-                  printBarcodeLabels(toPrint, { dividers: printBarcodeDividers });
+                  printBarcodeLabels(toPrint, { dividers: printBarcodeDividers, showPrice: printBarcodePrice });
                 }}
                 data-testid="button-print-barcodes-confirm"
               >
