@@ -1811,8 +1811,11 @@ type QuickToggle = {
   hiddenNoteAr: string;
   /** When true the toggle is OFF unless the setting is explicitly "true". */
   defaultOff?: boolean;
-  /** Only has an effect while this other switch is on (shown dimmed otherwise). */
+  /** Only has an effect while this other switch is on. */
   dependsOn?: string;
+  /** Name of that other switch, and the label of the one-click fix, for the explanation shown when it is off. */
+  dependsOnLabelAr?: string;
+  dependsFixAr?: string;
 };
 
 const TOGGLE_GROUPS: { id: QuickToggle["group"]; labelAr: string; labelEn: string }[] = [
@@ -1841,6 +1844,8 @@ const QUICK_TOGGLES: QuickToggle[] = [
     descAr: "يتحقق الضيف برمز SMS عبر Twilio، أو بالبريد الإلكتروني (رسالتان بحد أقصى، 60 ثانية بينهما)",
     hiddenNoteAr: "سيتحقق الضيوف بالبريد الإلكتروني فقط",
     dependsOn: "guest_checkout_enabled",
+    dependsOnLabelAr: "الطلب كضيف",
+    dependsFixAr: "تفعيل الطلب كضيف",
   },
   {
     key: "online_pickup_enabled",
@@ -1850,6 +1855,10 @@ const QUICK_TOGGLES: QuickToggle[] = [
     titleEn: "Online Store Pickup",
     descAr: "السماح باختيار الاستلام من المتجر في صفحة الدفع، بالدفع أونلاين فقط",
     hiddenNoteAr: "سيُخفى خيار الاستلام من المتجر من صفحة الدفع، ويبقى التوصيل كما هو",
+    // Pickup is online-payment only, so it can't appear while card payment is off.
+    dependsOn: "card_payment_enabled",
+    dependsOnLabelAr: "الدفع بالبطاقة",
+    dependsFixAr: "تفعيل الدفع بالبطاقة",
   },
   {
     key: "card_payment_enabled",
@@ -1991,9 +2000,11 @@ function QuickTogglesCard({
             {rows.map((toggle) => {
               const enabled = isToggleOn(toggle, values);
               const parentOff = toggle.dependsOn ? values[toggle.dependsOn] === "false" : false;
+              // Switched on, but it can't show to customers because the switch it depends on is off.
+              const blocked = parentOff && enabled;
               const Icon = toggle.icon;
               return (
-                <div key={toggle.key} className={`flex items-center justify-between gap-4 px-5 py-3.5 ${parentOff ? "opacity-55" : ""}`} data-testid={`row-${toggle.key}`}>
+                <div key={toggle.key} className={`flex items-center justify-between gap-4 px-5 py-3.5 ${parentOff && !enabled ? "opacity-55" : ""}`} data-testid={`row-${toggle.key}`} data-blocked={blocked ? "true" : undefined}>
                   <div className="flex items-center gap-3 min-w-0">
                     <button
                       type="button"
@@ -2006,8 +2017,8 @@ function QuickTogglesCard({
                     >
                       <span className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-background shadow-sm transition-transform duration-200 ${enabled ? "left-[3px] translate-x-[20px]" : "left-[3px] translate-x-0"}`} />
                     </button>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${enabled ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
-                      {enabled ? "مفعّل" : "معطّل"}
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${blocked ? "bg-amber-100 text-amber-800" : enabled ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`} data-testid={`status-${toggle.key}`}>
+                      {blocked ? "لا يظهر الآن" : enabled ? "مفعّل" : "معطّل"}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 min-w-0 flex-1 justify-end text-right">
@@ -2015,9 +2026,23 @@ function QuickTogglesCard({
                       <p className="font-semibold text-sm cursor-pointer select-none" onClick={() => onChange(toggle.key, enabled ? "false" : "true")}>
                         {toggle.titleAr}
                       </p>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        {parentOff ? "يعمل فقط عند تفعيل «الطلب كضيف»" : enabled ? toggle.descAr : toggle.hiddenNoteAr}
-                      </p>
+                      {blocked ? (
+                        <p className="text-[11px] text-amber-800 leading-relaxed" data-testid={`blocked-${toggle.key}`}>
+                          مفعّل، لكنه لا يظهر للزبائن لأنه يعمل فقط عند تفعيل «{toggle.dependsOnLabelAr}».{" "}
+                          <button
+                            type="button"
+                            onClick={() => onChange(toggle.dependsOn!, "true")}
+                            className="font-bold underline underline-offset-2 hover:no-underline"
+                            data-testid={`button-fix-${toggle.key}`}
+                          >
+                            {toggle.dependsFixAr}
+                          </button>
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                          {parentOff ? `يعمل فقط عند تفعيل «${toggle.dependsOnLabelAr}»` : enabled ? toggle.descAr : toggle.hiddenNoteAr}
+                        </p>
+                      )}
                     </div>
                     <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${enabled ? "bg-foreground text-background" : "bg-muted/60 text-muted-foreground"}`}>
                       <Icon className="w-3.5 h-3.5" />
@@ -2085,11 +2110,17 @@ function sectionMatches(q: string, labelAr: string, labelEn: string) {
 function SiteContentSummary({ values }: { values: Record<string, string> }) {
   const on = QUICK_TOGGLES.filter((t) => isToggleOn(t, values)).length;
   const season = getActiveTheme(values);
+  // Store pickup only shows to customers while card payment is on too, so say so instead of a misleading green "on".
+  function pickupChip(v: Record<string, string>): { label: string; value: string; tone: "good" | "muted" | "warn" } {
+    const pickupOn = v["online_pickup_enabled"] !== "false";
+    const cardOn = v["card_payment_enabled"] !== "false";
+    return { label: "الاستلام من المتجر", value: !pickupOn ? "معطّل" : cardOn ? "مفعّل" : "مفعّل · لا يظهر", tone: pickupOn && cardOn ? "good" : "warn" };
+  }
   const chips: { label: string; value: string; tone: "good" | "muted" | "warn" }[] = [
     { label: "المفاتيح المفعّلة", value: `${on} / ${QUICK_TOGGLES.length}`, tone: "good" },
     { label: "الموسم", value: season ? SEASONS[season].nameAr : "لا يوجد", tone: season ? "good" : "muted" },
     { label: "الطلب كضيف", value: values["guest_checkout_enabled"] !== "false" ? "مفعّل" : "معطّل", tone: values["guest_checkout_enabled"] !== "false" ? "good" : "warn" },
-    { label: "الاستلام من المتجر", value: values["online_pickup_enabled"] !== "false" ? "مفعّل" : "معطّل", tone: values["online_pickup_enabled"] !== "false" ? "good" : "warn" },
+    pickupChip(values),
   ];
   const tone = { good: "text-emerald-700 bg-emerald-50 border-emerald-200", muted: "text-muted-foreground bg-muted/50 border-border", warn: "text-amber-800 bg-amber-50 border-amber-200" };
   return (

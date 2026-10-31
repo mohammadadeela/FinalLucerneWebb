@@ -148,7 +148,7 @@ export default function Checkout() {
   };
   const { data: user, isLoading: authLoading } = useAuth();
   const queryClient = useQueryClient();
-  const { data: siteSettings } = useSiteSettings();
+  const { data: siteSettings, refetch: refetchSiteSettings } = useSiteSettings();
   const shippingZones = getShippingZones(siteSettings);
   const cardPaymentEnabled = siteSettings?.card_payment_enabled !== "false";
   const guestCheckoutEnabled = siteSettings?.guest_checkout_enabled !== "false";
@@ -255,6 +255,16 @@ export default function Checkout() {
       else if (paymentMethod !== "card") setPaymentMethod("card");
     }
   }, [deliveryMethod, pickupAvailable, paymentMethod]);
+
+  // The admin can switch store pickup / card payment on or off at any moment. The shop caches its switches for 5 minutes,
+  // so while checkout is open (and whenever the customer comes back to this tab) fetch them fresh.
+  useEffect(() => {
+    const refresh = () => { void refetchSiteSettings(); };
+    refresh();
+    const id = window.setInterval(refresh, 60_000);
+    window.addEventListener("focus", refresh);
+    return () => { window.clearInterval(id); window.removeEventListener("focus", refresh); };
+  }, [refetchSiteSettings]);
 
   /* Guests: remember what they typed on this device so a repeat order is quick. */
   useEffect(() => {
@@ -645,6 +655,21 @@ export default function Checkout() {
     };
   });
 
+  // The admin switched store pickup off after the customer chose it: say so kindly and put them back on delivery.
+  const handlePickupError = (err: any): boolean => {
+    const m = String(err?.message || "");
+    if (m !== "pickup_unavailable" && m !== "pickup_requires_online_payment") return false;
+    setDeliveryMethod("delivery");
+    setStripeLoading(false);
+    void refetchSiteSettings();
+    toast({
+      title: language === "ar" ? "الاستلام من المتجر غير متاح الآن" : "Store pickup isn't available right now",
+      description: language === "ar" ? "حوّلنا طلبك إلى التوصيل. راجعي التفاصيل وأكملي الطلب." : "We switched your order to delivery. Please review and continue.",
+      variant: "destructive",
+    });
+    return true;
+  };
+
   // The server refused the guest's verification (expired, or contact changed): ask them to verify again.
   const handleGuestVerifyError = (err: any): boolean => {
   const m = String(err?.message || "");
@@ -828,7 +853,7 @@ export default function Checkout() {
         window.location.href = url;
         }
       } catch (err: any) {
-      if (handleGuestVerifyError(err)) return;
+      if (handleGuestVerifyError(err) || handlePickupError(err)) return;
       if (err.message === "already_used_by_user") {
       toast({
       title: language === "ar" ? "لا يمكن استخدام الكود" : "Code can't be used",
@@ -874,7 +899,7 @@ export default function Checkout() {
       const guestToken = (order as any).guestToken as string | undefined;
       setLocation(guestToken ? `/order-confirmation/${order.id}?t=${guestToken}` : `/order-confirmation/${order.id}`);
     } catch (err: any) {
-    if (handleGuestVerifyError(err)) return;
+    if (handleGuestVerifyError(err) || handlePickupError(err)) return;
     if (err.code === "OUT_OF_STOCK" && err.outOfStock?.length > 0) {
         const trulySoldOut = err.outOfStock.filter((oos: any) => oos.reason === "sold_out" || !oos.available || oos.available <= 0);
         const insufficientStock = err.outOfStock.filter((oos: any) => oos.reason === "insufficient_stock" && oos.available > 0);
