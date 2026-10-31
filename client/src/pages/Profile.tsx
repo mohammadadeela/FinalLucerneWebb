@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocation, Link, useSearch } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import OrderTracker from "@/components/orders/OrderTracker";
 import { useAuth, useLogout } from "@/hooks/use-auth";
 import { useMyOrders, useOrder } from "@/hooks/use-orders";
 import { useProducts } from "@/hooks/use-products";
@@ -242,52 +243,6 @@ export default function Profile() {
         <Icon className="w-3.5 h-3.5" />
         {(t.orderStatus as any)?.[status] || status}
       </span>
-    );
-  };
-
-  const PROGRESS_STEPS = ["Pending", "OnTheWay", "Delivered"] as const;
-  const PICKUP_STEPS = ["Pending", "ReadyForPickup", "Delivered"] as const;
-  const getProgressTracker = (status: string, order?: any) => {
-  const isPickup = order?.deliveryMethod === "pickup";
-  const STEPS: readonly string[] = isPickup ? PICKUP_STEPS : PROGRESS_STEPS;
-    if (status === "Cancelled") {
-      return (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
-          <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-red-700">{(t.orderStatus as any)?.["Cancelled"] || "Cancelled"}</p>
-            <p className="text-xs text-red-500 mt-0.5">{"تم إلغاء هذا الطلب"}</p>
-          </div>
-        </div>
-      );
-    }
-    const currentIdx = STEPS.indexOf(status as any);
-    return (
-      <div className="relative flex items-center justify-between px-0.5 sm:px-2">
-        {STEPS.map((step, i) => {
-          const done = i <= currentIdx;
-          const active = i === currentIdx;
-          const cfg = statusConfig[step];
-          const Icon = cfg.icon;
-          return (
-            <div key={step} className="flex-1 flex flex-col items-center relative">
-              {i < STEPS.length - 1 && (
-                <div className={`absolute top-3.5 sm:top-4 start-1/2 w-full h-0.5 transition-colors ${i < currentIdx ? "bg-green-400" : "bg-border"}`} />
-              )}
-              <div className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-2 transition-all ${
-                active ? `${cfg.dot} border-transparent shadow-md scale-110` :
-                done   ? "bg-green-500 border-transparent" :
-                         "bg-background border-border"
-              }`}>
-                <Icon className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${done || active ? "text-white" : "text-muted-foreground"}`} />
-              </div>
-              <p className={`mt-1.5 sm:mt-2 text-[8px] sm:text-[10px] font-semibold text-center leading-tight ${active ? cfg.text : done ? "text-green-600" : "text-muted-foreground"}`}>
-                {(t.orderStatus as any)?.[step] || step}
-              </p>
-            </div>
-          );
-        })}
-      </div>
     );
   };
 
@@ -954,7 +909,7 @@ export default function Profile() {
               </div>
 
               <div className="pt-1 pb-2">
-                {getProgressTracker(orderDetails.order.status, orderDetails.order)}
+                <div data-testid="profile-order-tracker"><OrderTracker order={orderDetails.order as any} /></div>
                 {(orderDetails.order as any).deliveryMethod === "pickup" && (orderDetails.order as any).pickupCode && (
                 <div className="mt-4 rounded-xl border border-violet-300 bg-violet-50 p-4 text-center" data-testid="profile-pickup-code">
                 <p className="text-xs text-violet-800 font-semibold mb-1">🛍️ {language === "ar" ? "رمز الاستلام من المتجر" : "Store pickup code"}</p>

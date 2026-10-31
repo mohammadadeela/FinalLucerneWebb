@@ -8,10 +8,11 @@ import { useLanguage } from "@/i18n";
 import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
 import {
   Check, Copy, Package, PackageCheck, ShoppingBag, Store, Truck, ClipboardCheck, UserRound, Gift,
-  MessageCircle, ShieldCheck, Sparkles, MapPin, Clock,
+  MessageCircle, ShieldCheck, Shirt, MapPin, Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getOrderItemImage } from "@/lib/utils";
+import OrderTracker from "@/components/orders/OrderTracker";
 
 /* The page a customer lands on after ordering. It should feel like a big shopping app: a clear celebration,
    a receipt they can screenshot, where their order is right now, when to expect it, and what happens next. */
@@ -72,17 +73,6 @@ function AnimatedCheck() {
   );
 }
 
-/** The store is closed on Fridays (open Saturday–Thursday), so deliveries skip Fridays. */
-function addBusinessDays(from: Date, days: number): Date {
-  const d = new Date(from);
-  let left = days;
-  while (left > 0) {
-    d.setDate(d.getDate() + 1);
-    if (d.getDay() !== 5) left--;
-  }
-  return d;
-}
-
 const fadeUp = (i: number, reduce: boolean | null) => ({
   initial: reduce ? false : { opacity: 0, y: 18 },
   animate: { opacity: 1, y: 0 },
@@ -123,23 +113,6 @@ export default function OrderConfirmation() {
   const locale = ar ? "ar-u-nu-latn" : "en-GB";
   const placedAt = order?.createdAt ? new Date(order.createdAt) : new Date();
 
-  const steps = useMemo(() => isPickup
-    ? [
-        { ar: "تم استلام الطلب", en: "Order received", icon: ClipboardCheck },
-        { ar: "قيد التجهيز", en: "Preparing", icon: Package },
-        { ar: "جاهز للاستلام", en: "Ready for pickup", icon: Store },
-        { ar: "تم الاستلام", en: "Collected", icon: PackageCheck },
-      ]
-    : [
-        { ar: "تم استلام الطلب", en: "Order received", icon: ClipboardCheck },
-        { ar: "قيد التجهيز", en: "Preparing", icon: Package },
-        { ar: "في الطريق إليك", en: "On the way", icon: Truck },
-        { ar: "تم التسليم", en: "Delivered", icon: PackageCheck },
-      ], [isPickup]);
-  const reached = status === "Delivered" ? 3 : status === "OnTheWay" || status === "ReadyForPickup" ? 2 : 0;
-  const cancelled = status === "Cancelled";
-
-  const eta = !isPickup && order ? addBusinessDays(placedAt, 2) : null;
   const statusLabel = (t.orderStatus as any)?.[status] || status;
   const statusTone: Record<string, string> = {
     Pending: "bg-amber-100 text-amber-800",
@@ -176,7 +149,7 @@ export default function OrderConfirmation() {
     : [
         { icon: Package, ar: "نجهّز طلبك", en: "We prepare your order", dAr: "نراجع قطعك ونغلّفها بعناية.", dEn: "We check your pieces and wrap them with care." },
         { icon: Truck, ar: "نرسله إلى بابك", en: "It's on its way", dAr: "التوصيل خلال يومين من أيام العمل.", dEn: "Delivery within 2 business days." },
-        { icon: Sparkles, ar: "استمتعي بإطلالتك", en: "Enjoy your look", dAr: "ونحب أن نرى رأيك!", dEn: "We'd love to hear what you think!" },
+        { icon: Shirt, ar: "استمتعي بإطلالتك", en: "Enjoy your look", dAr: "ونحب أن نرى رأيك!", dEn: "We'd love to hear what you think!" },
       ];
 
   return (
@@ -201,7 +174,7 @@ export default function OrderConfirmation() {
                 <h1 className="font-display text-3xl sm:text-5xl mt-6 mb-3" data-testid="text-confirmation-title">{t.orderConfirmation.title}</h1>
                 {firstName && (
                   <p className="text-base sm:text-lg font-semibold" data-testid="text-confirmation-thanks">
-                    {ar ? `شكراً ${firstName}! طلبك وصلنا وبدأنا نجهّزه 💛` : `Thank you, ${firstName}! We've got your order and we're on it 💛`}
+                    {ar ? `شكراً ${firstName}! طلبك وصلنا وبدأنا نجهّزه ❤️` : `Thank you, ${firstName}! We've got your order and we're on it ❤️`}
                   </p>
                 )}
                 <p className="text-muted-foreground mt-2 text-sm" data-testid="text-confirmation-notice">
@@ -213,50 +186,7 @@ export default function OrderConfirmation() {
 
               {/* Tracker */}
               <motion.section {...fadeUp(1, reduce)} className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm" data-testid="order-tracker" aria-label={ar ? "حالة الطلب" : "Order progress"}>
-                {cancelled ? (
-                  <p className="text-center text-sm font-semibold text-red-700">{ar ? "تم إلغاء هذا الطلب" : "This order was cancelled"}</p>
-                ) : (
-                  <>
-                    <ol className="relative flex items-start justify-between">
-                      {steps.map((s, i) => {
-                        const Icon = s.icon;
-                        const done = i <= reached;
-                        const inProgress = !done && i === reached + 1 && reached < 3;
-                        return (
-                          <li key={i} className="relative flex-1 flex flex-col items-center text-center" data-testid={`tracker-step-${i}`} data-state={done ? "done" : inProgress ? "active" : "todo"}>
-                            {i < steps.length - 1 && (
-                              <span className="absolute top-5 start-1/2 w-full h-0.5 bg-border" aria-hidden>
-                                <motion.span
-                                  className="absolute inset-y-0 start-0 bg-emerald-500"
-                                  initial={reduce ? false : { width: 0 }}
-                                  animate={{ width: i < reached ? "100%" : "0%" }}
-                                  transition={{ delay: 0.6 + i * 0.2, duration: 0.6 }}
-                                />
-                              </span>
-                            )}
-                            <span className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
-                              done ? "bg-emerald-500 border-emerald-500 text-white" : inProgress ? "bg-background border-amber-400 text-amber-600" : "bg-background border-border text-muted-foreground"
-                            }`}>
-                              {inProgress && !reduce && <span className="absolute inset-0 rounded-full border-2 border-amber-400 animate-ping opacity-60" aria-hidden />}
-                              {done && i < reached ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
-                            </span>
-                            <span className={`mt-2 text-[10px] sm:text-xs font-semibold leading-tight px-0.5 ${done ? "text-emerald-700 dark:text-emerald-400" : inProgress ? "text-amber-700" : "text-muted-foreground"}`}>
-                              {ar ? s.ar : s.en}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ol>
-                    <div className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-muted/60 px-4 py-2.5 text-xs sm:text-sm" data-testid="text-eta">
-                      {isPickup ? <Store className="w-4 h-4 text-violet-600" /> : <Clock className="w-4 h-4 text-emerald-600" />}
-                      <span className="font-semibold">
-                        {isPickup
-                          ? (ar ? "سنخبرك فور جهوزية طلبك للاستلام" : "We'll tell you the moment it's ready to collect")
-                          : eta && (ar ? `التوصيل المتوقع: ${eta.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}` : `Estimated delivery: ${eta.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" })}`)}
-                      </span>
-                    </div>
-                  </>
-                )}
+                <OrderTracker order={order} />
               </motion.section>
 
               {/* Pickup code */}

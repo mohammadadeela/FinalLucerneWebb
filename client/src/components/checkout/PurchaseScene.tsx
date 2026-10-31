@@ -227,7 +227,7 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
     { icon: Package, ar: "نغلّف طلبك بحب", en: "Wrapping it with love" },
   ];
   const headline = [
-    ar ? "أهلاً بكِ في لوسيرن 💛" : "Welcome to Lucerne 💛",
+    ar ? "أهلاً بكِ في لوسيرن ❤️" : "Welcome to Lucerne ❤️",
     ar ? "الكاشير تمسح قطعك…" : "Our cashier is scanning your pieces…",
     method === "cod" ? (ar ? "نسجّل طلبك الآن…" : "Recording your order…") : (ar ? "نتأكد من الدفع بأمان…" : "Checking your payment securely…"),
     ar ? "نغلّف طلبك بعناية 🎁" : "Wrapping your order with care 🎁",
