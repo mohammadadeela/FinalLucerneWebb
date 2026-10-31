@@ -20,6 +20,7 @@ import { useSiteSettings, getShippingZones, getSetting } from "@/hooks/use-site-
 import { rememberPostLoginTarget } from "@/lib/post-login";
 import PurchaseScene from "@/components/checkout/PurchaseScene";
 import GuestVerifyCard, { isGuestContactVerified, type GuestVerified } from "@/components/checkout/GuestVerifyCard";
+import { clearGuestCheckoutMemory, loadDraft, loadVerified, saveDraft, saveVerified } from "@/lib/guest-checkout-memory";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Guests have no account, so their details are only remembered on this device.
@@ -163,7 +164,9 @@ export default function Checkout() {
   const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
   const [guestEmail, setGuestEmail] = useState("");
   // Guests must confirm a phone (SMS) or email with a one-time code before they can order.
-  const [guestVerified, setGuestVerified] = useState<GuestVerified | null>(null);
+  const [guestVerified, setGuestVerified] = useState<GuestVerified | null>(() => loadVerified());
+  // The code step is only drawn once what the guest typed has been restored (so it never flashes the wrong state).
+  const [guestHydrated, setGuestHydrated] = useState(false);
   const [verifyShake, setVerifyShake] = useState(0);
   const [unlockPulse, setUnlockPulse] = useState(false);
   const verifyCardRef = useRef<HTMLDivElement>(null);
@@ -274,6 +277,30 @@ export default function Checkout() {
       if (parsed.shippingRegion) setShippingRegion(parsed.shippingRegion);
     } catch {}
   }, [authLoading, user?.id]);
+
+  /* A page refresh must not wipe a guest's half-filled checkout (or the code they already asked for).
+     The draft lives in this tab's sessionStorage and is erased when the order is placed. */
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      const d = loadDraft();
+      if (d) {
+        setFormData(prev => ({ ...prev, ...d.form }));
+        if (d.phonePrefix) setPhonePrefix(d.phonePrefix);
+        if (d.phone2Prefix) setPhone2Prefix(d.phone2Prefix);
+        if (d.guestEmail != null) setGuestEmail(d.guestEmail);
+        if (d.shippingRegion) setShippingRegion(d.shippingRegion);
+        if (d.deliveryMethod) setDeliveryMethod(d.deliveryMethod);
+        if (d.paymentMethod) setPaymentMethod(d.paymentMethod);
+      }
+    }
+    setGuestHydrated(true);
+  }, [authLoading, user?.id]);
+  useEffect(() => {
+    if (authLoading || user || !guestHydrated) return;
+    saveDraft({ form: formData, phonePrefix, phone2Prefix, guestEmail, shippingRegion, deliveryMethod, paymentMethod });
+  }, [authLoading, user, guestHydrated, formData, phonePrefix, phone2Prefix, guestEmail, shippingRegion, deliveryMethod, paymentMethod]);
+  useEffect(() => { saveVerified(guestVerified); }, [guestVerified]);
 
   /* Load saved info from user-specific localStorage (keyed by userId) once user is available.
      Using a user-specific key ensures different accounts on the same browser never share
@@ -841,6 +868,7 @@ export default function Checkout() {
 
       await holdScene();
       clearCart();
+      clearGuestCheckoutMemory();
       setSoldOutItems([]);
       // A guest has no account to look the order up in, so the link carries a signed token.
       const guestToken = (order as any).guestToken as string | undefined;
@@ -1748,7 +1776,7 @@ export default function Checkout() {
 
               {/* Guests confirm with a one-time code first. The card sits right above the button, which stays locked
                   until it's done; then the card folds away. */}
-              {!user && guestCheckoutEnabled && (
+              {!user && guestCheckoutEnabled && guestHydrated && (
               <div ref={verifyCardRef}>
                 <GuestVerifyCard
                   phoneFull={guestPhoneFull}

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getOrderItemImage } from "@/lib/utils";
 import OrderTracker from "@/components/orders/OrderTracker";
+import { clearGuestCheckoutMemory } from "@/lib/guest-checkout-memory";
 
 /* The page a customer lands on after ordering. It should feel like a big shopping app: a clear celebration,
    a receipt they can screenshot, where their order is right now, when to expect it, and what happens next. */
@@ -91,6 +92,8 @@ export default function OrderConfirmation() {
   const ar = language === "ar";
   const [copied, setCopied] = useState(false);
 
+  // The order is placed: forget the guest's checkout draft, code and verification (also covers returning from online payment)
+  useEffect(() => { clearGuestCheckoutMemory(); }, []);
   // Always show the confirmation page from the top (checkout leaves the page scrolled down)
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
