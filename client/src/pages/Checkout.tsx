@@ -173,7 +173,7 @@ export default function Checkout() {
   const [stripeLoading, setStripeLoading] = useState(false);
   // The "real purchase" scene plays while the order is being placed. It stays up for a minimum time so it never
   // flashes by, goes away at once if the order fails, and plays its "leaving the shop" ending before we navigate.
-  const SCENE_MIN_MS = 4800;
+  const SCENE_MIN_MS = 6300;
   const [sceneHold, setSceneHold] = useState(false);
   const [sceneDone, setSceneDone] = useState(false);
   const sceneStartRef = useRef(0);
