@@ -91,6 +91,8 @@ export const defaultSettings: Record<string, string> = {
 
   // Guest checkout and store pickup (both on until the admin turns them off)
   guest_checkout_enabled: "true",
+  // Guests may verify by SMS (Twilio). Email verification is always available. Off = email only.
+  guest_sms_enabled: "true",
   online_pickup_enabled: "true",
 
   // Seasonal themes: "none" | "christmas" | "eid_fitr" | "eid_adha" (only one can be active)

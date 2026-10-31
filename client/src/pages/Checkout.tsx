@@ -18,6 +18,7 @@ import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
 import { useSiteSettings, getShippingZones, getSetting } from "@/hooks/use-site-settings";
 import { rememberPostLoginTarget } from "@/lib/post-login";
+import GuestVerifyCard, { isGuestContactVerified, type GuestVerified } from "@/components/checkout/GuestVerifyCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Guests have no account, so their details are only remembered on this device.
@@ -160,6 +161,10 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
   const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
   const [guestEmail, setGuestEmail] = useState("");
+  // Guests must confirm a phone (SMS) or email with a one-time code before they can order.
+  const [guestVerified, setGuestVerified] = useState<GuestVerified | null>(null);
+  const [verifyShake, setVerifyShake] = useState(0);
+  const verifyCardRef = useRef<HTMLDivElement>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
   const [shippingRegion, setShippingRegion] = useState<string>("");
   const shippingRegionRef = useRef<HTMLDivElement>(null);
@@ -594,6 +599,22 @@ export default function Checkout() {
     };
   });
 
+  // The server refused the guest's verification (expired, or contact changed): ask them to verify again.
+  const handleGuestVerifyError = (err: any): boolean => {
+  const m = String(err?.message || "");
+  if (!m.startsWith("guest_verification")) return false;
+  setGuestVerified(null);
+  setVerifyShake((v) => v + 1);
+  setStripeLoading(false);
+  verifyCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  toast({
+  title: language === "ar" ? "يلزم التحقق مرة أخرى" : "Please verify again",
+  description: language === "ar" ? "انتهت صلاحية التحقق أو تغيّرت بياناتك." : "Your verification expired or your details changed.",
+  variant: "destructive",
+  });
+  return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -669,8 +690,19 @@ export default function Checkout() {
       return;
     }
 
+    if (!user && !isGuestContactVerified(guestVerified, fullPhone, guestEmail)) {
+    setVerifyShake((v) => v + 1);
+    verifyCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    toast({
+    title: language === "ar" ? "أكّدي رقمك أو بريدك أولاً" : "Please verify first",
+    description: language === "ar" ? "اختاري رسالة SMS أو البريد الإلكتروني لاستلام رمز التحقق." : "Choose SMS or email to get your one-time code.",
+    variant: "destructive",
+    });
+    return;
+    }
+
     const orderItems = items.map(item => ({
-      productId: item.product.id,
+    productId: item.product.id,
       quantity: item.quantity,
       price: (item.product.discountPrice || item.product.price).toString(),
       size: item.size || null,
@@ -693,14 +725,15 @@ export default function Checkout() {
               city: formData.city,
               notes: formData.notes,
               deliveryMethod,
-              guestEmail: !user ? (guestEmail.trim() || null) : null,
+              guestEmail: !user ? (guestVerified?.channel === "email" ? guestVerified.target : (guestEmail.trim() || null)) : null,
               // Pickup has no region/shipping; the server also enforces this.
               ...(deliveryMethod === "pickup" ? {} : { shippingRegion, shippingCost: shippingCost.toString() }),
               discountCode: !user ? null : (appliedDiscount?.code || null),
             },
             items: orderItems,
             useCredit: !user ? 0 : creditApplied,
-          }),
+            ...(!user && guestVerified ? { guestProof: guestVerified.proof } : {}),
+            }),
         });
         if (!res.ok) {
           const data = await res.json();
@@ -748,15 +781,16 @@ export default function Checkout() {
           window.location.href = url;
         }
       } catch (err: any) {
-        if (err.message === "already_used_by_user") {
-          toast({
-            title: language === "ar" ? "لا يمكن استخدام الكود" : "Code can't be used",
-            description: language === "ar" ? "لقد استخدمتِ هذا الكود من قبل" : "You've already used this code",
-            variant: "destructive",
-          });
-          setStripeLoading(false);
-          return;
-        }
+      if (handleGuestVerifyError(err)) return;
+      if (err.message === "already_used_by_user") {
+      toast({
+      title: language === "ar" ? "لا يمكن استخدام الكود" : "Code can't be used",
+      description: language === "ar" ? "لقد استخدمتِ هذا الكود من قبل" : "You've already used this code",
+      variant: "destructive",
+      });
+      setStripeLoading(false);
+      return;
+      }
         toast({ title: t.checkout.checkoutFailed, description: err.message, variant: "destructive" });
         setStripeLoading(false);
       }
@@ -777,12 +811,13 @@ export default function Checkout() {
           paymentMethod: "Cash on delivery",
           shippingRegion,
           shippingCost: shippingCost.toString(),
-          guestEmail: !user ? (guestEmail.trim() || null) : null,
+          guestEmail: !user ? (guestVerified?.channel === "email" ? guestVerified.target : (guestEmail.trim() || null)) : null,
           discountCode: !user ? null : (appliedDiscount?.code || null),
-        } as any,
-        items: orderItems,
-        useCredit: !user ? 0 : creditApplied,
-      });
+          } as any,
+          items: orderItems,
+          useCredit: !user ? 0 : creditApplied,
+          ...(!user && guestVerified ? { guestProof: guestVerified.proof } : {}),
+          } as any);
 
       clearCart();
       setSoldOutItems([]);
@@ -790,7 +825,8 @@ export default function Checkout() {
       const guestToken = (order as any).guestToken as string | undefined;
       setLocation(guestToken ? `/order-confirmation/${order.id}?t=${guestToken}` : `/order-confirmation/${order.id}`);
     } catch (err: any) {
-      if (err.code === "OUT_OF_STOCK" && err.outOfStock?.length > 0) {
+    if (handleGuestVerifyError(err)) return;
+    if (err.code === "OUT_OF_STOCK" && err.outOfStock?.length > 0) {
         const trulySoldOut = err.outOfStock.filter((oos: any) => oos.reason === "sold_out" || !oos.available || oos.available <= 0);
         const insufficientStock = err.outOfStock.filter((oos: any) => oos.reason === "insufficient_stock" && oos.available > 0);
         if (trulySoldOut.length > 0) {
@@ -1074,8 +1110,8 @@ export default function Checkout() {
                 <Input id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-name" />
               </div>
               <div className="space-y-2">
-                {whatsappNotificationsEnabled && (
-                  <p className="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5" data-testid="text-whatsapp-confirmation-notice">
+                {whatsappNotificationsEnabled && !!user && (
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5" data-testid="text-whatsapp-confirmation-notice">
                     <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5 shrink-0">
                       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                     </svg>
@@ -1211,11 +1247,19 @@ export default function Checkout() {
                   </p>
                 )}
               </div>
-              {!user && (
-                <div className="space-y-2">
-                  <Label htmlFor="guestEmail">{language === "ar" ? "البريد الإلكتروني (اختياري)" : "Email (optional)"}</Label>
-                  <Input id="guestEmail" type="email" inputMode="email" autoComplete="email" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} placeholder={language === "ar" ? "لإرسال تأكيد الطلب" : "To receive your order confirmation"} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-guest-email" />
-                </div>
+              {!user && guestCheckoutEnabled && (
+              <div ref={verifyCardRef}>
+              <GuestVerifyCard
+              phoneFull={`${phonePrefix}${formData.phone.replace(/\D/g, "")}`}
+              phoneValid={formData.phone.replace(/\D/g, "").length === 9}
+              email={guestEmail}
+              setEmail={setGuestEmail}
+              value={guestVerified}
+              onVerified={setGuestVerified}
+              onReset={() => setGuestVerified(null)}
+              shakeKey={verifyShake}
+              />
+              </div>
               )}
               {deliveryMethod === "delivery" && (<>
               <div className="space-y-2">

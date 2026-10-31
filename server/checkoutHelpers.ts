@@ -95,3 +95,71 @@ export function validateGuestInfo(
   if (rawEmail && !cleanGuestEmail(rawEmail)) return "guest_email_invalid";
   return null;
 }
+
+/* ── Guest verification ─────────────────────────────────────────────────────
+   A guest proves they control a phone (SMS code) or an email (emailed code) before ordering.
+   The proof is a signed, short-lived token (stateless — it survives a server restart) tied to
+   exactly that phone/email, and the order must be placed with the same contact. */
+
+/** Admin switch for the SMS option. Email stays available. On unless set to "false". */
+export async function isGuestSmsEnabled(): Promise<boolean> {
+  try {
+    return (await storage.getSiteSetting("guest_sms_enabled")) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export type GuestChannel = "sms" | "email";
+const PROOF_TTL_MS = 30 * 60 * 1000;
+
+/** Canonical form of a contact: "+9705…" for phones, lower-case address for emails; null if unusable. */
+export function normalizeGuestTarget(channel: GuestChannel, raw: unknown): string | null {
+  const v = typeof raw === "string" ? raw.trim() : "";
+  if (channel === "sms") {
+    const digits = v.replace(/\D/g, "");
+    return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+  }
+  const email = cleanGuestEmail(v);
+  return email ? email.toLowerCase() : null;
+}
+
+function b64url(buf: Buffer | string): string {
+  return Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export function signGuestProof(channel: GuestChannel, target: string): string {
+  const payload = b64url(JSON.stringify({ c: channel, t: target, e: Date.now() + PROOF_TTL_MS }));
+  const sig = createHmac("sha256", tokenSecret()).update(`guest-proof:${payload}`).digest("hex").slice(0, 40);
+  return `gv1.${payload}.${sig}`;
+}
+
+export function verifyGuestProof(proof: unknown): { channel: GuestChannel; target: string } | null {
+  if (typeof proof !== "string") return null;
+  const parts = proof.split(".");
+  if (parts.length !== 3 || parts[0] !== "gv1") return null;
+  const expected = createHmac("sha256", tokenSecret()).update(`guest-proof:${parts[1]}`).digest("hex").slice(0, 40);
+  const a = Buffer.from(expected), b = Buffer.from(parts[2]);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  try {
+    const data = JSON.parse(Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+    if ((data.c !== "sms" && data.c !== "email") || typeof data.t !== "string" || typeof data.e !== "number") return null;
+    if (Date.now() > data.e) return null;
+    return { channel: data.c, target: data.t };
+  } catch {
+    return null;
+  }
+}
+
+/** The verified contact must be the one on the order — otherwise one verified phone could be reused for any order. */
+export function guestProofMatchesOrder(
+  proof: { channel: GuestChannel; target: string },
+  order: { phone?: unknown; guestEmail?: unknown },
+): boolean {
+  if (proof.channel === "sms") {
+    const orderDigits = typeof order.phone === "string" ? order.phone.replace(/\D/g, "") : "";
+    return orderDigits.length > 0 && `+${orderDigits}` === proof.target;
+  }
+  const orderEmail = typeof order.guestEmail === "string" ? order.guestEmail.trim().toLowerCase() : "";
+  return orderEmail === proof.target;
+}

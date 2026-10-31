@@ -2,8 +2,9 @@ import { useState, useRef, useCallback } from "react";
 import ImageCropDialog from "@/components/admin/ImageCropDialog";
 import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store } from "lucide-react";
- import SeasonalThemeCard from "@/components/admin/SeasonalThemeCard";
+import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store, LayoutDashboard, House, Shirt, Footprints, BadgePercent, CircleHelp, MessageSquareText, ListFilter } from "lucide-react";
+ import { SEASONS, getActiveTheme } from "@/lib/seasonal";
+import SeasonalThemeCard from "@/components/admin/SeasonalThemeCard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/button";
@@ -528,7 +529,7 @@ function SectionCard({
   values: Record<string, string>;
   onChange: (key: string, value: string) => void;
 }) {
-  const [open, setOpen] = useState(section.id === "home");
+  const [open, setOpen] = useState(true);
   const prefix = section.id;
 
   return (
@@ -1803,25 +1804,65 @@ function WhatsAppIcon({ className }: { className?: string }) {
 type QuickToggle = {
   key: string;
   icon: any;
+  group: "orders" | "auth" | "messages" | "account";
   titleAr: string;
   titleEn: string;
   descAr: string;
   hiddenNoteAr: string;
   /** When true the toggle is OFF unless the setting is explicitly "true". */
   defaultOff?: boolean;
+  /** Only has an effect while this other switch is on (shown dimmed otherwise). */
+  dependsOn?: string;
 };
+
+const TOGGLE_GROUPS: { id: QuickToggle["group"]; labelAr: string; labelEn: string }[] = [
+  { id: "orders", labelAr: "الطلب والدفع", labelEn: "Ordering & payment" },
+  { id: "auth", labelAr: "تسجيل الدخول والتسجيل", labelEn: "Sign-in & sign-up" },
+  { id: "messages", labelAr: "الرسائل", labelEn: "Messages" },
+  { id: "account", labelAr: "حساب العميلة", labelEn: "Customer account" },
+];
 
 const QUICK_TOGGLES: QuickToggle[] = [
   {
+    key: "guest_checkout_enabled",
+    group: "orders",
+    icon: UserRound,
+    titleAr: "الطلب كضيف (بدون تسجيل)",
+    titleEn: "Guest Checkout",
+    descAr: "السماح بإتمام الطلب دون حساب (بدون نقاط أو أكواد خصم)، مع التحقق برمز",
+    hiddenNoteAr: "سيُطلب من العميلات تسجيل الدخول لإتمام الطلب",
+  },
+  {
+    key: "guest_sms_enabled",
+    group: "orders",
+    icon: MessageSquareText,
+    titleAr: "رسائل SMS للضيوف",
+    titleEn: "Guest SMS verification",
+    descAr: "يتحقق الضيف برمز SMS عبر Twilio، أو بالبريد الإلكتروني (رسالتان بحد أقصى، 60 ثانية بينهما)",
+    hiddenNoteAr: "سيتحقق الضيوف بالبريد الإلكتروني فقط",
+    dependsOn: "guest_checkout_enabled",
+  },
+  {
+    key: "online_pickup_enabled",
+    group: "orders",
+    icon: Store,
+    titleAr: "الاستلام من المتجر (دفع أونلاين)",
+    titleEn: "Online Store Pickup",
+    descAr: "السماح باختيار الاستلام من المتجر في صفحة الدفع، بالدفع أونلاين فقط",
+    hiddenNoteAr: "سيُخفى خيار الاستلام من المتجر من صفحة الدفع، ويبقى التوصيل كما هو",
+  },
+  {
     key: "card_payment_enabled",
+    group: "orders",
     icon: CreditCard,
     titleAr: "الدفع بالبطاقة",
     titleEn: "Card Payment at Checkout",
     descAr: "السماح بالدفع عبر البطاقة في صفحة الدفع",
-    hiddenNoteAr: "سيُخفى خيار الدفع بالبطاقة من صفحة الدفع للعملاء",
+    hiddenNoteAr: "سيُخفى خيار الدفع بالبطاقة (والاستلام من المتجر لأنه يحتاج دفعاً أونلاين)",
   },
   {
     key: "loyalty_points_enabled",
+    group: "orders",
     icon: Gift,
     titleAr: "نقاطي والرصيد",
     titleEn: "Loyalty Points & Credit at Checkout",
@@ -1830,6 +1871,7 @@ const QUICK_TOGGLES: QuickToggle[] = [
   },
   {
     key: "phone_signup_enabled",
+    group: "auth",
     icon: WhatsAppIcon,
     titleAr: "التسجيل برقم الهاتف عبر واتساب",
     titleEn: "Phone Sign-up / Login (WhatsApp)",
@@ -1838,6 +1880,7 @@ const QUICK_TOGGLES: QuickToggle[] = [
   },
   {
     key: "firebase_sms_enabled",
+    group: "auth",
     icon: Smartphone,
     titleAr: "التسجيل برقم الهاتف عبر SMS (Firebase)",
     titleEn: "Phone Sign-up / Login (SMS via Firebase)",
@@ -1847,6 +1890,7 @@ const QUICK_TOGGLES: QuickToggle[] = [
   },
   {
     key: "twilio_sms_enabled",
+    group: "auth",
     icon: Smartphone,
     titleAr: "التسجيل برقم الهاتف عبر SMS (Twilio)",
     titleEn: "Phone Sign-up / Login (SMS via Twilio)",
@@ -1856,31 +1900,17 @@ const QUICK_TOGGLES: QuickToggle[] = [
   },
   {
     key: "checkout_whatsapp_enabled",
+    group: "messages",
     icon: WhatsAppIcon,
     titleAr: "رسالة واتساب بعد الطلب",
     titleEn: "Checkout WhatsApp Confirmation",
-    descAr: "إظهار تنبيه واتساب في صفحة الدفع وإرسال رسالة تأكيد بعد إنشاء الطلب",
+    descAr: "إظهار تنبيه واتساب في صفحة الدفع وإرسال رسالة تأكيد بعد إنشاء الطلب (لا تُرسل للضيوف)",
     hiddenNoteAr: "سيُخفى تنبيه واتساب من صفحة الدفع ولن تُرسل رسالة تأكيد الطلب، بدون التأثير على تسجيل الدخول عبر واتساب",
   },
   {
-  key: "guest_checkout_enabled",
-  icon: UserRound,
-  titleAr: "الطلب كضيف (بدون تسجيل)",
-  titleEn: "Guest Checkout",
-  descAr: "السماح بإتمام الطلب دون حساب (بدون نقاط أو أكواد خصم)",
-  hiddenNoteAr: "سيُطلب من العميلات تسجيل الدخول لإتمام الطلب",
-  },
-  {
-  key: "online_pickup_enabled",
-  icon: Store,
-  titleAr: "الاستلام من المتجر (دفع أونلاين)",
-  titleEn: "Online Store Pickup",
-  descAr: "السماح باختيار الاستلام من المتجر في صفحة الدفع، بالدفع أونلاين فقط",
-  hiddenNoteAr: "سيُخفى خيار الاستلام من المتجر من صفحة الدفع، ويبقى التوصيل كما هو",
-  },
-  {
-  key: "exchanges_enabled",
-  icon: Repeat,
+    key: "exchanges_enabled",
+    group: "account",
+    icon: Repeat,
     titleAr: "طلبات الاستبدال",
     titleEn: "Exchange Requests on Profile Page",
     descAr: "السماح للعميلات بطلب استبدال المنتجات (باستثناء الفساتين)",
@@ -1888,75 +1918,162 @@ const QUICK_TOGGLES: QuickToggle[] = [
   },
 ];
 
+function isToggleOn(t: QuickToggle, values: Record<string, string>) {
+  return t.defaultOff ? values[t.key] === "true" : values[t.key] !== "false";
+}
+
+type StatusFilter = "all" | "on" | "off";
+
 function QuickTogglesCard({
   values,
   onChange,
+  query,
+  status,
+  onStatus,
 }: {
   values: Record<string, string>;
   onChange: (key: string, value: string) => void;
+  query: string;
+  status: StatusFilter;
+  onStatus: (s: StatusFilter) => void;
 }) {
+  const q = query.toLowerCase().trim();
+  const onCount = QUICK_TOGGLES.filter((t) => isToggleOn(t, values)).length;
+  const matches = (t: QuickToggle) => {
+    const on = isToggleOn(t, values);
+    if (status === "on" && !on) return false;
+    if (status === "off" && on) return false;
+    if (!q) return true;
+    return `${t.titleAr} ${t.titleEn} ${t.descAr}`.toLowerCase().includes(q);
+  };
+  const chips: { id: StatusFilter; label: string; count: number }[] = [
+    { id: "all", label: "الكل", count: QUICK_TOGGLES.length },
+    { id: "on", label: "مفعّلة", count: onCount },
+    { id: "off", label: "معطّلة", count: QUICK_TOGGLES.length - onCount },
+  ];
+  const visibleGroups = TOGGLE_GROUPS.map((g) => ({ g, rows: QUICK_TOGGLES.filter((t) => t.group === g.id && matches(t)) })).filter((x) => x.rows.length > 0);
+
   return (
-    <div className="border border-border rounded-xl overflow-hidden shadow-sm divide-y divide-border/50" data-testid="section-quick-toggles">
-      {QUICK_TOGGLES.map((toggle) => {
-        const enabled = toggle.defaultOff
-          ? values[toggle.key] === "true"
-          : values[toggle.key] !== "false";
-        const Icon = toggle.icon;
-        return (
-          <div key={toggle.key} className="flex items-center justify-between gap-4 px-5 py-3.5">
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                type="button"
-                onClick={() => onChange(toggle.key, enabled ? "false" : "true")}
-                className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  enabled ? "bg-foreground" : "bg-muted-foreground/25"
-                }`}
-                data-testid={`checkbox-${toggle.key.replace(/_/g, "-")}`}
-              >
-                <span className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-background shadow-sm transition-transform duration-200 ${
-                  enabled ? "left-[3px] translate-x-[20px]" : "left-[3px] translate-x-0"
-                }`} />
-              </button>
-              {!enabled && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
-                  معطّل
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 min-w-0 flex-1 justify-end text-right">
-              <div className="min-w-0">
-                <p
-                  className="font-semibold text-sm cursor-pointer select-none truncate"
-                  onClick={() => onChange(toggle.key, enabled ? "false" : "true")}
-                >
-                  {toggle.titleAr}
-                </p>
-                <p className="text-[11px] text-muted-foreground truncate">
-                  {enabled ? toggle.descAr : toggle.hiddenNoteAr}
-                </p>
-              </div>
-              <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                enabled ? "bg-foreground text-background" : "bg-muted/60 text-muted-foreground"
-              }`}>
-                <Icon className="w-3.5 h-3.5" />
-              </div>
-            </div>
+    <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-quick-toggles">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 bg-muted/30 border-b border-border">
+        <div className="flex items-center gap-1.5" role="tablist" aria-label="تصفية المفاتيح">
+          {chips.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              role="tab"
+              aria-selected={status === c.id}
+              onClick={() => onStatus(c.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                status === c.id ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:border-foreground/40"
+              }`}
+              data-testid={`filter-toggles-${c.id}`}
+            >
+              {c.label}
+              <span className={`rounded-full px-1.5 text-[10px] ${status === c.id ? "bg-background/20" : "bg-muted"}`}>{c.count}</span>
+            </button>
+          ))}
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-sm">إعدادات سريعة</p>
+          <p className="text-xs text-muted-foreground">Quick Toggles · {onCount}/{QUICK_TOGGLES.length} مفعّلة</p>
+        </div>
+      </div>
+
+      {visibleGroups.length === 0 && (
+        <p className="px-5 py-10 text-center text-sm text-muted-foreground" data-testid="text-no-toggles">لا توجد مفاتيح مطابقة</p>
+      )}
+
+      {visibleGroups.map(({ g, rows }) => (
+        <div key={g.id} data-testid={`toggle-group-${g.id}`}>
+          <p className="px-5 pt-4 pb-1.5 text-[11px] font-bold tracking-wide text-muted-foreground text-right">{g.labelAr} · {g.labelEn}</p>
+          <div className="divide-y divide-border/50">
+            {rows.map((toggle) => {
+              const enabled = isToggleOn(toggle, values);
+              const parentOff = toggle.dependsOn ? values[toggle.dependsOn] === "false" : false;
+              const Icon = toggle.icon;
+              return (
+                <div key={toggle.key} className={`flex items-center justify-between gap-4 px-5 py-3.5 ${parentOff ? "opacity-55" : ""}`} data-testid={`row-${toggle.key}`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={enabled}
+                      aria-label={toggle.titleAr}
+                      onClick={() => onChange(toggle.key, enabled ? "false" : "true")}
+                      className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${enabled ? "bg-foreground" : "bg-muted-foreground/25"}`}
+                      data-testid={`checkbox-${toggle.key.replace(/_/g, "-")}`}
+                    >
+                      <span className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-background shadow-sm transition-transform duration-200 ${enabled ? "left-[3px] translate-x-[20px]" : "left-[3px] translate-x-0"}`} />
+                    </button>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${enabled ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground"}`}>
+                      {enabled ? "مفعّل" : "معطّل"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 min-w-0 flex-1 justify-end text-right">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm cursor-pointer select-none" onClick={() => onChange(toggle.key, enabled ? "false" : "true")}>
+                        {toggle.titleAr}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {parentOff ? "يعمل فقط عند تفعيل «الطلب كضيف»" : enabled ? toggle.descAr : toggle.hiddenNoteAr}
+                      </p>
+                    </div>
+                    <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${enabled ? "bg-foreground text-background" : "bg-muted/60 text-muted-foreground"}`}>
+                      <Icon className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </div>
+      ))}
+      <div className="h-2" />
     </div>
   );
 }
 
-const STATIC_CARDS = [
-  { id: "quick-toggles", labelAr: "إعدادات سريعة", labelEn: "Quick Toggles" },
-  { id: "support", labelAr: "صفحات الدعم", labelEn: "Support Pages" },
-  { id: "shipping", labelAr: "مناطق الشحن", labelEn: "Shipping Zones" },
-  { id: "newsbar", labelAr: "شريط الأخبار", labelEn: "News Bar" },
-  { id: "seasonal", labelAr: "المواسم والأعياد", labelEn: "Seasonal Themes Christmas Eid" },
-  { id: "bestsellers", labelAr: "الأكثر مبيعاً", labelEn: "Best Sellers" },
-  { id: "headings", labelAr: "عناوين الأقسام", labelEn: "Section Headings" },
-  { id: "editorial", labelAr: "شبكة التحرير", labelEn: "Editorial Grid" },
+/* ── Sub-pages inside the page ───────────────────────────────────────────── */
+
+type TabId = "overview" | "home" | "dresses" | "clothes" | "shoes" | "sales" | "support";
+
+const TABS: { id: TabId; labelAr: string; labelEn: string; icon: any; hintAr: string }[] = [
+  { id: "overview", labelAr: "الرئيسية", labelEn: "Overview", icon: LayoutDashboard, hintAr: "كل المفاتيح والإعدادات المهمة في مكان واحد" },
+  { id: "home", labelAr: "الصفحة الرئيسية", labelEn: "Home", icon: House, hintAr: "البانر، الأكثر مبيعاً، العناوين وشبكة التحرير" },
+  { id: "dresses", labelAr: "الفساتين", labelEn: "Dresses", icon: Shirt, hintAr: "صورة وعنوان صفحة الفساتين" },
+  { id: "clothes", labelAr: "الملابس", labelEn: "Clothes", icon: Shirt, hintAr: "صورة وعنوان صفحة الملابس" },
+  { id: "shoes", labelAr: "الأحذية", labelEn: "Shoes", icon: Footprints, hintAr: "صورة وعنوان صفحة الأحذية" },
+  { id: "sales", labelAr: "التخفيضات", labelEn: "Sales", icon: BadgePercent, hintAr: "صورة وعنوان صفحة التخفيضات" },
+  { id: "support", labelAr: "الأسئلة والدعم", labelEn: "Q&A & Support", icon: CircleHelp, hintAr: "الأسئلة الشائعة، الشحن والإرجاع، التواصل والموقع" },
+];
+
+/** Which sub-page a saved setting belongs to (for the "unsaved changes" dots). */
+function tabForKey(key: string): TabId {
+  if (key.startsWith("dresses_")) return "dresses";
+  if (key.startsWith("clothes_")) return "clothes";
+  if (key.startsWith("shoes_")) return "shoes";
+  if (key.startsWith("sales_")) return "sales";
+  if (key === "shipping_zones") return "overview";
+  if (/^(faq_|shipping_details|returns_details|shipping_note|contact_|location_)/.test(key)) return "support";
+  if (/(_enabled$|^news_bar|^seasonal_|^exchange_)/.test(key)) return "overview";
+  return "home";
+}
+
+/** Everything searchable, with the sub-page it lives on. */
+const SEARCH_INDEX: { id: string; tab: TabId; labelAr: string; labelEn: string; extra?: string }[] = [
+  { id: "seasonal", tab: "overview", labelAr: "المواسم والأعياد", labelEn: "Seasonal themes", extra: "christmas eid fitr adha كريسماس عيد الفطر الأضحى ثلج هلال فانوس" },
+  { id: "newsbar", tab: "overview", labelAr: "شريط الأخبار", labelEn: "News bar announcement", extra: "إعلان شريط" },
+  { id: "shipping", tab: "overview", labelAr: "مناطق التوصيل والأسعار", labelEn: "Shipping zones", extra: "شحن توصيل سعر الضفة القدس الداخل" },
+  { id: "bestsellers", tab: "home", labelAr: "الأكثر مبيعاً", labelEn: "Best sellers" },
+  { id: "headings", tab: "home", labelAr: "عناوين الأقسام", labelEn: "Section headings" },
+  { id: "editorial", tab: "home", labelAr: "شبكة التحرير", labelEn: "Editorial grid" },
+  { id: "page-home", tab: "home", labelAr: "بانر الصفحة الرئيسية", labelEn: "Home hero banner", extra: "صورة فيديو عنوان" },
+  { id: "page-dresses", tab: "dresses", labelAr: "صفحة الفساتين", labelEn: "Dresses page" },
+  { id: "page-clothes", tab: "clothes", labelAr: "صفحة الملابس", labelEn: "Clothes page" },
+  { id: "page-shoes", tab: "shoes", labelAr: "صفحة الأحذية", labelEn: "Shoes page", extra: "شوزات" },
+  { id: "page-sales", tab: "sales", labelAr: "صفحة التخفيضات", labelEn: "Sales page", extra: "عروض" },
+  { id: "support", tab: "support", labelAr: "الأسئلة الشائعة وصفحات الدعم", labelEn: "FAQ support shipping returns contact location QA", extra: "اتصل موقع شحن إرجاع الأسئلة" },
 ];
 
 function sectionMatches(q: string, labelAr: string, labelEn: string) {
@@ -1965,13 +2082,37 @@ function sectionMatches(q: string, labelAr: string, labelEn: string) {
   return labelAr.includes(query) || labelEn.toLowerCase().includes(query);
 }
 
+function SiteContentSummary({ values }: { values: Record<string, string> }) {
+  const on = QUICK_TOGGLES.filter((t) => isToggleOn(t, values)).length;
+  const season = getActiveTheme(values);
+  const chips: { label: string; value: string; tone: "good" | "muted" | "warn" }[] = [
+    { label: "المفاتيح المفعّلة", value: `${on} / ${QUICK_TOGGLES.length}`, tone: "good" },
+    { label: "الموسم", value: season ? SEASONS[season].nameAr : "لا يوجد", tone: season ? "good" : "muted" },
+    { label: "الطلب كضيف", value: values["guest_checkout_enabled"] !== "false" ? "مفعّل" : "معطّل", tone: values["guest_checkout_enabled"] !== "false" ? "good" : "warn" },
+    { label: "الاستلام من المتجر", value: values["online_pickup_enabled"] !== "false" ? "مفعّل" : "معطّل", tone: values["online_pickup_enabled"] !== "false" ? "good" : "warn" },
+  ];
+  const tone = { good: "text-emerald-700 bg-emerald-50 border-emerald-200", muted: "text-muted-foreground bg-muted/50 border-border", warn: "text-amber-800 bg-amber-50 border-amber-200" };
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5" data-testid="site-summary">
+      {chips.map((c) => (
+        <div key={c.label} className={`rounded-xl border px-3.5 py-2.5 text-right ${tone[c.tone]}`}>
+          <p className="text-[11px] opacity-80">{c.label}</p>
+          <p className="text-sm font-bold">{c.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function SiteContent() {
   const { toast } = useToast();
   const { data: saved, isLoading } = useQuery<Record<string, string>>({
     queryKey: ["/api/site-settings"],
   });
 
-  const [sectionSearch, setSectionSearch] = useState("");
+  const [tab, setTab] = useState<TabId>("overview");
+  const [search, setSearch] = useState("");
+  const [toggleStatus, setToggleStatus] = useState<StatusFilter>("all");
   const [local, setLocal] = useState<Record<string, string>>({});
 
   const merged: Record<string, string> = { ...defaultSettings, ...saved, ...local };
@@ -1995,118 +2136,157 @@ export default function SiteContent() {
   });
 
   const hasChanges = Object.keys(local).length > 0;
+  const changedByTab = Object.keys(local).reduce<Record<string, number>>((acc, k) => {
+    const t = tabForKey(k);
+    acc[t] = (acc[t] || 0) + 1;
+    return acc;
+  }, {});
+
+  const q = search.trim();
+  const searching = q.length > 0;
+  const hits = searching ? SEARCH_INDEX.filter((e) => sectionMatches(q, e.labelAr, `${e.labelEn} ${e.extra ?? ""}`)) : [];
+  const toggleHits = searching ? QUICK_TOGGLES.filter((t) => `${t.titleAr} ${t.titleEn} ${t.descAr}`.toLowerCase().includes(q.toLowerCase())) : [];
+  const tabLabel = (id: TabId) => TABS.find((t) => t.id === id)?.labelAr ?? id;
+
+  const pageSection = (id: string) => PAGE_SECTIONS.find((s) => s.id === id);
+  const renderCard = (id: string) => {
+    switch (id) {
+      case "seasonal": return <SeasonalThemeCard values={merged} onChange={handleChange} />;
+      case "newsbar": return <NewsBarCard values={merged} onChange={handleChange} />;
+      case "shipping": return <ShippingZonesCard values={merged} onChange={handleChange} />;
+      case "bestsellers": return <BestSellersCard values={merged} onChange={handleChange} />;
+      case "headings": return <SectionHeadingsCard values={merged} onChange={handleChange} />;
+      case "editorial": return <EditorialGridCard values={merged} onChange={handleChange} />;
+      case "support": return <SupportPagesCard values={merged} onChange={handleChange} />;
+      default: {
+        if (id.startsWith("page-")) {
+          const s = pageSection(id.slice(5));
+          return s ? <SectionCard section={s} values={merged} onChange={handleChange} /> : null;
+        }
+        return null;
+      }
+    }
+  };
+  const cardsForTab: Record<TabId, string[]> = {
+    overview: [],
+    home: ["page-home", "bestsellers", "headings", "editorial"],
+    dresses: ["page-dresses"],
+    clothes: ["page-clothes"],
+    shoes: ["page-shoes"],
+    sales: ["page-sales"],
+    support: ["support"],
+  };
 
   return (
     <AdminLayout>
       <div className="max-w-3xl mx-auto">
         <AdminPageHeader
           title="محتوى الصفحات"
-          description="تخصيص صور وعناوين الأقسام البارزة في الموقع"
+          description="كل الإعدادات المهمة في «الرئيسية» والباقي في صفحات فرعية — اضغطي على أي صفحة للتعديل"
           icon={ImageIcon}
           iconGradient="from-cyan-500 to-blue-600"
           actions={
-            <Button
-              onClick={() => saveMutation.mutate()}
-              disabled={!hasChanges || saveMutation.isPending}
-              className="gap-2"
-              data-testid="button-save-settings"
-            >
-              {saveMutation.isPending ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
+            <Button onClick={() => saveMutation.mutate()} disabled={!hasChanges || saveMutation.isPending} className="gap-2" data-testid="button-save-settings">
+              {saveMutation.isPending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
               حفظ التغييرات
             </Button>
           }
         />
 
         {hasChanges && (
-          <div className="mb-4 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm text-right flex items-center justify-between gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-amber-700 dark:text-amber-400 h-7 px-2 text-xs"
-              onClick={() => setLocal({})}
-            >
-              تراجع
-            </Button>
-            <span>لديك تغييرات غير محفوظة</span>
+          <div className="mb-4 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm text-right flex items-center justify-between gap-3" data-testid="banner-unsaved">
+            <Button size="sm" variant="ghost" className="text-amber-700 dark:text-amber-400 h-7 px-2 text-xs" onClick={() => setLocal({})}>تراجع</Button>
+            <span>لديك {Object.keys(local).length} تغيير غير محفوظ</span>
           </div>
         )}
 
-        {/* Search bar */}
-        <div className="relative mb-5">
-          <span className="absolute inset-y-0 end-3 flex items-center pointer-events-none text-muted-foreground">
-            <Search className="w-4 h-4" />
-          </span>
+        {/* Search */}
+        <div className="relative mb-4">
+          <span className="absolute inset-y-0 end-3 flex items-center pointer-events-none text-muted-foreground"><Search className="w-4 h-4" /></span>
           <input
             type="text"
-            value={sectionSearch}
-            onChange={(e) => setSectionSearch(e.target.value)}
-            placeholder="ابحث عن قسم... / Search section..."
-            className="w-full border border-border rounded-lg bg-background px-4 pe-10 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="ابحث عن مفتاح أو صفحة… (مثل: ضيف، شحن، الأحذية، عيد)"
+            className="w-full border border-border rounded-xl bg-background px-4 pe-10 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/60"
             data-testid="input-section-search"
           />
-          {sectionSearch && (
-            <button
-              type="button"
-              onClick={() => setSectionSearch("")}
-              className="absolute inset-y-0 start-3 flex items-center text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="button-clear-section-search"
-            >
+          {search && (
+            <button type="button" onClick={() => setSearch("")} className="absolute inset-y-0 start-3 flex items-center text-muted-foreground hover:text-foreground transition-colors" data-testid="button-clear-section-search">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
+        {/* Sub-page navigation */}
+        {!searching && (
+          <nav className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-1 px-1 scrollbar-hide" role="tablist" aria-label="صفحات الإعدادات" data-testid="admin-tabs">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              const dots = changedByTab[t.id] || 0;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(t.id)}
+                  className={`relative inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all ${
+                    active ? "bg-foreground text-background border-foreground shadow-sm" : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+                  }`}
+                  data-testid={`tab-${t.id}`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {t.labelAr}
+                  {dots > 0 && (
+                    <span className="absolute -top-1 -end-1 min-w-[18px] h-[18px] rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center px-1" data-testid={`dot-${t.id}`}>{dots}</span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        )}
+
         {isLoading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {sectionMatches(sectionSearch, STATIC_CARDS[0].labelAr, STATIC_CARDS[0].labelEn) && (
-              <QuickTogglesCard values={merged} onChange={handleChange} />
-            )}
-            {sectionMatches(sectionSearch, STATIC_CARDS[1].labelAr, STATIC_CARDS[1].labelEn) && (
-              <SupportPagesCard values={merged} onChange={handleChange} />
-            )}
-            {sectionMatches(sectionSearch, STATIC_CARDS[2].labelAr, STATIC_CARDS[2].labelEn) && (
-              <ShippingZonesCard values={merged} onChange={handleChange} />
-            )}
-            {sectionMatches(sectionSearch, STATIC_CARDS[3].labelAr, STATIC_CARDS[3].labelEn) && (
-            <NewsBarCard values={merged} onChange={handleChange} />
-            )}
-            {sectionMatches(sectionSearch, STATIC_CARDS[4].labelAr, STATIC_CARDS[4].labelEn) && (
-            <SeasonalThemeCard values={merged} onChange={handleChange} />
-            )}
-            {sectionMatches(sectionSearch, STATIC_CARDS[5].labelAr, STATIC_CARDS[5].labelEn) && (
-              <BestSellersCard values={merged} onChange={handleChange} />
-            )}
-            {sectionMatches(sectionSearch, STATIC_CARDS[6].labelAr, STATIC_CARDS[6].labelEn) && (
-              <SectionHeadingsCard values={merged} onChange={handleChange} />
-            )}
-            {sectionMatches(sectionSearch, STATIC_CARDS[7].labelAr, STATIC_CARDS[7].labelEn) && (
-              <EditorialGridCard values={merged} onChange={handleChange} />
-            )}
-            {PAGE_SECTIONS.filter((s) =>
-              sectionMatches(sectionSearch, s.labelAr, s.labelEn)
-            ).map((section) => (
-              <SectionCard
-                key={section.id}
-                section={section}
-                values={merged}
-                onChange={handleChange}
-              />
-            ))}
-            {sectionSearch.trim() &&
-              !STATIC_CARDS.some((c) => sectionMatches(sectionSearch, c.labelAr, c.labelEn)) &&
-              !PAGE_SECTIONS.some((s) => sectionMatches(sectionSearch, s.labelAr, s.labelEn)) && (
-              <div className="text-center py-12 text-muted-foreground text-sm" data-testid="text-no-sections-found">
-                لا توجد أقسام مطابقة · No sections found
+          <div className="flex justify-center py-20"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        ) : searching ? (
+          /* ── Search results across every sub-page ── */
+          <div className="space-y-3" data-testid="search-results">
+            <p className="text-xs text-muted-foreground text-right">{hits.length + (toggleHits.length ? 1 : 0)} نتيجة لـ «{q}»</p>
+            {toggleHits.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-[11px] font-bold text-muted-foreground text-right">في «الرئيسية» · المفاتيح</p>
+                <QuickTogglesCard values={merged} onChange={handleChange} query={q} status="all" onStatus={() => {}} />
               </div>
             )}
+            {hits.map((h) => (
+              <div key={h.id}>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <button type="button" onClick={() => { setSearch(""); setTab(h.tab); }} className="text-[11px] font-semibold text-primary underline underline-offset-2" data-testid={`goto-${h.id}`}>
+                    افتحي الصفحة ←
+                  </button>
+                  <p className="text-[11px] font-bold text-muted-foreground">في «{tabLabel(h.tab)}»</p>
+                </div>
+                {renderCard(h.id)}
+              </div>
+            ))}
+            {hits.length === 0 && toggleHits.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground text-sm" data-testid="text-no-sections-found">لا توجد نتائج مطابقة · No results</div>
+            )}
+          </div>
+        ) : tab === "overview" ? (
+          <div className="space-y-4" data-testid="page-overview">
+            <SiteContentSummary values={merged} />
+            <QuickTogglesCard values={merged} onChange={handleChange} query="" status={toggleStatus} onStatus={setToggleStatus} />
+            {renderCard("seasonal")}
+            {renderCard("newsbar")}
+            {renderCard("shipping")}
+          </div>
+        ) : (
+          <div className="space-y-4" data-testid={`page-${tab}`}>
+            <p className="text-xs text-muted-foreground text-right">{TABS.find((t) => t.id === tab)?.hintAr}</p>
+            {cardsForTab[tab].map((id) => <div key={id}>{renderCard(id)}</div>)}
           </div>
         )}
       </div>

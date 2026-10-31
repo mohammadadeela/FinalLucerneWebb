@@ -31,8 +31,9 @@ import { auditMiddleware, registerAuditRoutes } from "./audit";
 import {
   PICKUP_REGION, PICKUP_ADDRESS_PLACEHOLDER, PICKUP_CITY_PLACEHOLDER,
   isGuestCheckoutEnabled, isOnlinePickupEnabled, guestOrderToken, verifyGuestOrderToken,
-  generateUniquePickupCode, cleanGuestEmail, validateGuestInfo,
+  generateUniquePickupCode, cleanGuestEmail, validateGuestInfo, verifyGuestProof, guestProofMatchesOrder,
 } from "./checkoutHelpers";
+import { registerGuestVerifyRoutes } from "./guestVerify";
 
 // Rate limiters for auth endpoints
 const loginLimiter = rateLimit({
@@ -3325,7 +3326,13 @@ Sitemap: ${SITE_URL}/sitemap.xml
         if ((input.order as any).discountCode || Number((req.body as any)?.useCredit) > 0) {
           return res.status(400).json({ message: "guest_discount_not_allowed", code: "GUEST_NO_DISCOUNT" });
         }
-        guestEmail = cleanGuestEmail((input.order as any).guestEmail);
+        // The guest must have confirmed this phone (SMS) or email (code) first.
+        const proof = verifyGuestProof((req.body as any)?.guestProof);
+        if (!proof) return res.status(400).json({ message: "guest_verification_required", code: "GUEST_VERIFY_REQUIRED" });
+        if (!guestProofMatchesOrder(proof, { phone: (input.order as any).phone, guestEmail: (input.order as any).guestEmail })) {
+          return res.status(400).json({ message: "guest_verification_mismatch", code: "GUEST_VERIFY_MISMATCH" });
+        }
+        guestEmail = proof.channel === "email" ? proof.target : cleanGuestEmail((input.order as any).guestEmail);
       }
 
       const products = new Map<number, any>();
@@ -3506,7 +3513,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
       } catch (e) {
         console.error("[order] failed to read checkout WhatsApp setting:", e);
       }
-      if (input.order.phone && checkoutWhatsAppEnabled) {
+      // Guests confirmed by SMS/email, so they don't get the WhatsApp order-confirmation message.
+      if (input.order.phone && checkoutWhatsAppEnabled && !isGuest) {
         sendOrderConfirmationWA(input.order.phone, {
           customerName: input.order.fullName,
           orderId: order.id,
@@ -4293,7 +4301,12 @@ Sitemap: ${SITE_URL}/sitemap.xml
         if (order.discountCode || Number((req.body as any)?.useCredit) > 0) {
           return res.status(400).json({ message: "guest_discount_not_allowed", code: "GUEST_NO_DISCOUNT" });
         }
-        guestEmail = cleanGuestEmail(order.guestEmail);
+        const proof = verifyGuestProof((req.body as any)?.guestProof);
+        if (!proof) return res.status(400).json({ message: "guest_verification_required", code: "GUEST_VERIFY_REQUIRED" });
+        if (!guestProofMatchesOrder(proof, { phone: order.phone, guestEmail: order.guestEmail })) {
+          return res.status(400).json({ message: "guest_verification_mismatch", code: "GUEST_VERIFY_MISMATCH" });
+        }
+        guestEmail = proof.channel === "email" ? proof.target : cleanGuestEmail(order.guestEmail);
       }
 
       const lahzaShippingRates = await getShippingRates();
@@ -4487,7 +4500,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         items: itemDetails,
       }).catch(console.error);
 
-      if (isPickupOrder && order.pickupCode && orderData.phone) {
+      if (isPickupOrder && order.pickupCode && orderData.phone && order.userId != null) {
         const link = order.userId == null
           ? `${SITE_URL}/order-confirmation/${order.id}?t=${guestOrderToken(order.id)}`
           : `${SITE_URL}/order-confirmation/${order.id}`;
@@ -4628,6 +4641,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
       res.status(500).json({ message: "Failed to process payment confirmation" });
     }
   });
+
+  // Guest verification (SMS via Twilio, or email) — required before a guest can order.
+  registerGuestVerifyRoutes(app);
 
   // Site Settings (public read, admin write)
   app.get("/api/site-settings", async (_req, res) => {

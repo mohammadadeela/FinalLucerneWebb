@@ -145,10 +145,13 @@ function otpCodeBlock(code: string): string {
       <p style="text-align:center;font-size:12px;line-height:1.6;color:#999;margin:10px 0 0;">اضغطي على الزر لنسخ الرمز<br/>Tap the button to copy the code</p>`;
 }
 
+/** Returns true only when the email was really handed to the mail server, so callers can tell the
+ *  customer to try another method instead of waiting for a message that will never arrive. */
 export async function sendVerificationEmail(
   to: string,
   code: string,
-): Promise<void> {
+  purpose: "account" | "guest-order" = "account",
+): Promise<boolean> {
   const t = getTransporter();
 
   const html = `
@@ -157,9 +160,9 @@ export async function sendVerificationEmail(
       <p style="text-align:center;font-size:10px;letter-spacing:3px;color:#1a1a1a;font-weight:700;margin:8px 0 2px;text-transform:uppercase;">LUCERNE BOUTIQUE</p>
       <p style="text-align:center;color:#888;font-size:11px;margin:0 0 20px;">لوسيرن بوتيك</p>
       <hr style="border: none; border-top: 1px solid #ddd; margin-bottom: 30px;" />
-      <p style="font-size: 15px; color: #333;">Your verification code is:</p>
+      <p style="font-size: 15px; color: #333;">${purpose === "guest-order" ? "رمز التحقق لإتمام طلبك · Your code to place your order:" : "Your verification code is:"}</p>
       ${otpCodeBlock(code)}
-      <p style="font-size: 13px; color: #888;">This code will be used to verify your email address. If you did not request this, please ignore this email.</p>
+      <p style="font-size: 13px; color: #888;">${purpose === "guest-order" ? "الرمز صالح لمدة 10 دقائق · This code is valid for 10 minutes. If you did not request it, please ignore this email." : "This code will be used to verify your email address. If you did not request this, please ignore this email."}</p>
     </div>
   `;
 
@@ -167,22 +170,24 @@ export async function sendVerificationEmail(
     console.log(
       `[email] FALLBACK — Verification code for ${redactEmail(to)}: ${code}`,
     );
-    return;
+    return false;
   }
 
   try {
     await t.sendMail({
       from: `"Lucerne Boutique" <${getSenderEmail()}>`,
       to,
-      subject: "Verify your email - Lucerne Boutique",
+      subject: purpose === "guest-order" ? "رمز التحقق لإتمام طلبك — Lucerne Boutique" : "Verify your email - Lucerne Boutique",
       html,
     });
     console.log(`[email] Verification email sent to ${redactEmail(to)}`);
+    return true;
   } catch (err) {
     console.error("[email] Failed to send email:", err);
     console.log(
       `[email] FALLBACK — Verification code for ${redactEmail(to)}: ${code}`,
     );
+    return false;
   }
 }
 
