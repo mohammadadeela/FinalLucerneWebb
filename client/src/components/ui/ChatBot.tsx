@@ -2,8 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Bot,
   X,
-  Sparkles,
   ExternalLink,
   ArrowRight,
   MessageCircle,
@@ -265,7 +265,7 @@ function MessageBubble({
     <div className={`lb-row ${isBot ? "lb-row-bot" : "lb-row-user"}`}>
       {isBot && (
         <div className="lb-avatar">
-          <Sparkles className="lb-avatar-icon" />
+          <Bot className="lb-avatar-icon" />
         </div>
       )}
       <div className="lb-bubble-wrap">
@@ -296,7 +296,7 @@ function TypingIndicator() {
   return (
     <div className="lb-row lb-row-bot">
       <div className="lb-avatar">
-        <Sparkles className="lb-avatar-icon" />
+        <Bot className="lb-avatar-icon" />
       </div>
       <div className="lb-typing">
         {[0, 0.18, 0.36].map((delay, i) => (
@@ -495,7 +495,7 @@ function SizeWizardPanel({
             if (!wizard.footCm) { setErr(ar ? "يرجى إدخال طول القدم" : "Please enter your foot length"); return; }
             const res = swCalcShoe(+wizard.footCm, wizard.gender);
             upd({ result: `EU ${res.eu}`, resultEU: res.eu, step: "result" });
-          }}>{ar ? "اعرضي مقاسي ✨" : "Show my size ✨"}</button>
+          }}>{ar ? "اعرضي مقاسي 📏" : "Show my size 📏"}</button>
         </div>
       </div>
     );
@@ -523,7 +523,7 @@ function SizeWizardPanel({
           result = `${r.label}|EU ${r.eu}`;
         }
         upd({ result, step: "result" });
-      }}>{ar ? "اعرضي مقاسي ✨" : "Show my size ✨"}</button>
+      }}>{ar ? "اعرضي مقاسي 📏" : "Show my size 📏"}</button>
     </div>
   );
 
@@ -1397,7 +1397,7 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
             className="lb-teaser"
             style={{ direction: "rtl" }}
           >
-            مرحبا أنا هنا لمساعدتك ✨
+            مرحبا أنا هنا لمساعدتك 👋
           </div>
         )}
       </div>
@@ -1408,7 +1408,7 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
           {/* Header */}
           <div className="lb-header">
             <div className="lb-header-avatar">
-              <Sparkles className="lb-header-avatar-icon" />
+              <Bot className="lb-header-avatar-icon" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="lb-header-name">

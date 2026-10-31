@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -89,7 +89,7 @@ export default function AIGenerateImageButton({
       {loading ? (
         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
       ) : (
-        <Sparkles className="w-4 h-4" />
+        <Bot className="w-4 h-4" />
       )}
       <span className="text-xs font-medium whitespace-nowrap">
         {loading ? "جارِ التوليد..." : "توليد بالذكاء الاصطناعي"}

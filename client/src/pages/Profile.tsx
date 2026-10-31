@@ -9,7 +9,7 @@ import { useProducts } from "@/hooks/use-products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Package, User, LogOut, ExternalLink, Clock, Truck, PackageCheck, XCircle, CheckCircle2, Search, X, Eye, Sparkles, Gift, Shield, ArrowLeft, ArrowRight, Mail, Phone, Settings, ArrowLeftRight, Store } from "lucide-react";
+import { LayoutDashboard, Award, Info, Package, User, LogOut, ExternalLink, Clock, Truck, PackageCheck, XCircle, CheckCircle2, Search, X, Eye, Gift, Shield, ArrowLeft, ArrowRight, Mail, Phone, Settings, ArrowLeftRight, Store } from "lucide-react";
 import { AccountSettingsDialog } from "@/components/profile/AccountSettingsDialog";
 import { ExchangeRequestDialog, type ExchangeItemType } from "@/components/profile/ExchangeRequestDialog";
 import { MyExchangesList } from "@/components/profile/MyExchangesList";
@@ -327,7 +327,7 @@ export default function Profile() {
                       data-testid="link-admin-dashboard"
                     >
                       <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                      <Sparkles className="w-4 h-4 relative" />
+                      <LayoutDashboard className="w-4 h-4 relative" />
                       <span className="relative">{t.nav.adminDashboard}</span>
                       {language === "ar" ? (
                         <ArrowLeft className="w-4 h-4 relative ms-auto group-hover:-translate-x-1 transition-transform" />
@@ -359,7 +359,7 @@ export default function Profile() {
                       <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                            <Sparkles className="w-4 h-4" />
+                            <Award className="w-4 h-4" />
                           </div>
                           <h3 className="font-semibold text-sm tracking-wide">{ar ? "نقاطي" : "Loyalty Rewards"}</h3>
                         </div>
@@ -1276,7 +1276,7 @@ export default function Profile() {
                     </div>
                   ) : (
                     <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 p-3.5 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 shrink-0" />
+                      <Info className="w-4 h-4 shrink-0" />
                       <span>{ar ? "أدخلي 450 نقطة على الأقل لإتمام التحويل" : "Enter at least 450 points to convert"}</span>
                     </div>
                   )}

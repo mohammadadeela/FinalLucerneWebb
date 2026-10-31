@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import {
+  PackagePlus,
   X,
   Plus,
   Minus,
   Tag,
-  Sparkles,
   Percent,
   Package,
   ChevronDown,
@@ -323,7 +323,7 @@ export function FilterPanel({
                 data-testid="toggle-new-arrivals"
               >
                 <div className="flex items-center gap-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                  <Sparkles size={14} className="text-gray-400" />
+                  <PackagePlus size={14} className="text-gray-400" />
                   {t.filter.newArrivals}
                 </div>
                 <div

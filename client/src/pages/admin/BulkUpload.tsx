@@ -7,10 +7,30 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import {
-  CloudUpload, Download, Upload, Sparkles, CheckSquare, Square,
-  ChevronRight, ChevronLeft, Loader2, ImageIcon, Wand2,
-  Package, FolderOpen, RefreshCw, AlertCircle, Check,
-  X, Edit3, Eye, Trash2, Plus, ArrowUpFromLine, Key
+  Bot,
+  Info,
+  CloudUpload,
+  Download,
+  Upload,
+  CheckSquare,
+  Square,
+  ChevronRight,
+  ChevronLeft,
+  Loader2,
+  ImageIcon,
+  Wand2,
+  Package,
+  FolderOpen,
+  RefreshCw,
+  AlertCircle,
+  Check,
+  X,
+  Edit3,
+  Eye,
+  Trash2,
+  Plus,
+  ArrowUpFromLine,
+  Key,
 } from "lucide-react";
 import { cn, optimizeCloudinaryUrl } from "@/lib/utils";
 
@@ -461,7 +481,7 @@ export default function AdminBulkUpload() {
 
             <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-xl p-6 space-y-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
+                <Info className="w-5 h-5 text-primary" />
                 How it works
               </h2>
               <div className="space-y-3">
@@ -583,7 +603,7 @@ export default function AdminBulkUpload() {
           <div className="flex flex-col items-center justify-center py-24 gap-6">
             <div className="relative">
               <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-primary flex items-center justify-center shadow-xl">
-                <Sparkles className="w-10 h-10 text-white" />
+                <Bot className="w-10 h-10 text-white" />
               </div>
               <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
             </div>
@@ -710,7 +730,7 @@ export default function AdminBulkUpload() {
                       <div className="absolute top-2 left-2 flex gap-1">
                         {product.aiGenerated && (
                           <Badge className="text-[10px] bg-violet-600 hover:bg-violet-600 shadow">
-                            <Sparkles className="w-2.5 h-2.5 me-0.5" /> AI
+                            <Bot className="w-2.5 h-2.5 me-0.5" /> AI
                           </Badge>
                         )}
                         {isReady ? (

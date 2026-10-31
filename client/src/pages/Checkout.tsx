@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
-import { CreditCard, Banknote, MapPin, Truck, Sparkles, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn, Lock } from "lucide-react";
+import { UserCheck, Coins, CreditCard, Banknote, MapPin, Truck, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn, Lock } from "lucide-react";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
@@ -996,10 +996,10 @@ export default function Checkout() {
                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-pink-600 to-pink-700" />
                 <div className="absolute -top-10 -end-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
                 <div className="absolute -bottom-14 -start-8 w-44 h-44 rounded-full bg-amber-300/25 blur-2xl" />
-                <Sparkles className="absolute -bottom-4 -end-3 w-24 h-24 text-white/10" aria-hidden="true" />
+                <Gift className="absolute -bottom-4 -end-3 w-24 h-24 text-white/10" aria-hidden="true" />
                 <div className="relative flex items-start gap-4 p-5">
                   <span className="w-11 h-11 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
-                    <Sparkles className="w-5 h-5" />
+                    <Gift className="w-5 h-5" />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-bold leading-snug">{language === "ar" ? "أنتِ تتسوقين كضيفة" : "You're checking out as a guest"}</p>
@@ -1121,7 +1121,7 @@ export default function Checkout() {
             {/* Auto-filled banner — shown only to returning customers whose data was pre-loaded */}
             {autoFilled && (
               <div className="flex items-center gap-3 bg-primary/8 border border-primary/25 rounded-xl px-4 py-3 mb-2 animate-in fade-in slide-in-from-top-2 duration-500">
-                <span className="text-xl">✨</span>
+                <UserCheck className="w-5 h-5 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-primary">
                     {language === "ar" ? "ملأنا بياناتك تلقائياً!" : "We filled in your info!"}
@@ -1617,7 +1617,7 @@ export default function Checkout() {
                       </>
                     ) : (
                       <div className="relative px-4 py-3 flex items-start gap-2.5">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <Coins className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                         <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 leading-relaxed">
                           {language === "ar"
                             ? "اجمعي النقاط مع كل طلب وحوّليها إلى رصيد من صفحة حسابي."

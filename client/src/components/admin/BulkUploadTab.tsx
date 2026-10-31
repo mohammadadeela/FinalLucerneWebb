@@ -11,12 +11,40 @@ import {
   type ColorMember,
 } from "@/lib/colorFamilies";
 import {
-  CloudUpload, Download, Upload, Sparkles, CheckSquare, Square,
-  ChevronRight, ChevronLeft, Loader2, ImageIcon, Wand2,
-  Package, FolderOpen, RefreshCw, AlertCircle, Check,
-  X, Plus, ArrowUpFromLine, Key, Hash, Trash2,
-  Settings2, Wifi, WifiOff, Bot, Copy, Link2, Unlink, Layers,
-  Film, Play, Images, ZoomIn,
+  Info,
+  CloudUpload,
+  Download,
+  Upload,
+  CheckSquare,
+  Square,
+  ChevronRight,
+  ChevronLeft,
+  Loader2,
+  ImageIcon,
+  Wand2,
+  Package,
+  FolderOpen,
+  RefreshCw,
+  AlertCircle,
+  Check,
+  X,
+  Plus,
+  ArrowUpFromLine,
+  Key,
+  Hash,
+  Trash2,
+  Settings2,
+  Wifi,
+  WifiOff,
+  Bot,
+  Copy,
+  Link2,
+  Unlink,
+  Layers,
+  Film,
+  Play,
+  Images,
+  ZoomIn,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -754,7 +782,7 @@ function ProductCard({
         <div className="absolute top-2 left-2 flex gap-1">
           {product.aiGenerated && (
             <Badge className="text-[10px] bg-violet-600 hover:bg-violet-600">
-              <Sparkles className="w-2.5 h-2.5 me-0.5" /> AI
+              <Bot className="w-2.5 h-2.5 me-0.5" /> AI
             </Badge>
           )}
           {isReady
@@ -1900,7 +1928,7 @@ export function BulkUploadTab() {
             </div>
           </div>
           <div className="bg-gradient-to-br from-primary/5 to-violet-500/5 border border-primary/20 rounded-xl p-5 space-y-4">
-            <h3 className="font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> How it works</h3>
+            <h3 className="font-semibold flex items-center gap-2"><Info className="w-4 h-4 text-primary" /> How it works</h3>
             <div className="space-y-3">
               {[
                 { icon: ImageIcon, t:"Browse R2", d:"Load your most recent photos" },
@@ -2354,7 +2382,7 @@ export function BulkUploadTab() {
         <div className="flex flex-col items-center justify-center py-20 gap-5">
           <div className="relative">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-primary flex items-center justify-center shadow-xl">
-              <Sparkles className="w-8 h-8 text-white" />
+              <Bot className="w-8 h-8 text-white" />
             </div>
             <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping" />
           </div>

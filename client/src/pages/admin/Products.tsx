@@ -44,6 +44,8 @@ import {
   SelectSeparator,
 } from "@/components/ui/select";
 import {
+  PackagePlus,
+  Lightbulb,
   Plus,
   Edit2,
   Trash2,
@@ -54,7 +56,6 @@ import {
   Search,
   Save,
   Star,
-  Sparkles,
   Flame,
   Tag,
   ChevronDown,
@@ -5947,7 +5948,7 @@ export default function Products() {
                 key: "isNewArrival" as const,
                 label: "وصل حديثاً",
                 labelEn: "New Arrival",
-                Icon: Sparkles,
+                Icon: PackagePlus,
                 activeColor: "bg-blue-500",
                 activeRing: "ring-blue-400",
               },
@@ -7617,7 +7618,7 @@ export default function Products() {
                   }`}
                   title="Google Gemini"
                 >
-                  <Sparkles className="w-3 h-3" />
+                  <Bot className="w-3 h-3" />
                   Gemini
                 </button>
                 <button
@@ -7749,7 +7750,7 @@ export default function Products() {
                         return (
                           <div className="absolute z-50 top-full left-0 right-0 bg-background border border-border shadow-xl mt-px overflow-hidden rounded-md">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border bg-muted/60">
-                              <Sparkles className="w-3 h-3 text-muted-foreground" />
+                              <Lightbulb className="w-3 h-3 text-muted-foreground" />
                               <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
                                 {language === "ar" ? "اقتراحات" : "Suggestions"}
                               </span>
@@ -7884,7 +7885,7 @@ export default function Products() {
                         return (
                           <div className="absolute z-50 top-full left-0 right-0 bg-background border border-border shadow-xl mt-px overflow-hidden rounded-md">
                             <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border bg-muted/60">
-                              <Sparkles className="w-3 h-3 text-muted-foreground" />
+                              <Lightbulb className="w-3 h-3 text-muted-foreground" />
                               <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
                                 {language === "ar"
                                   ? "اقتراحات من نفس الفئة"
@@ -9468,7 +9469,7 @@ export default function Products() {
                   className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border-2 transition-all duration-200 cursor-pointer select-none rounded-md ${formData.isNewArrival ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 shadow-sm" : "border-border bg-background text-muted-foreground hover:border-emerald-300 hover:text-emerald-600"}`}
                   data-testid="checkbox-new-arrival"
                 >
-                  <Sparkles
+                  <PackagePlus
                     className={`w-4 h-4 transition-transform duration-200 ${formData.isNewArrival ? "text-emerald-500 scale-110" : ""}`}
                   />
                   {t.admin.newArrival}

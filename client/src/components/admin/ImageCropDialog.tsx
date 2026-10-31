@@ -4,7 +4,7 @@ import "react-image-crop/dist/ReactCrop.css";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
-import { Check, X, ZoomIn, RotateCcw, Sparkles } from "lucide-react";
+import { Crop as CropIcon, Check, X, ZoomIn, RotateCcw } from "lucide-react";
 
 type PreviewType = "product" | "category" | "general" | "grid";
 
@@ -162,7 +162,7 @@ export default function ImageCropDialog({ file, onConfirm, onCancel, previewType
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-background/15 flex items-center justify-center">
-                <Sparkles className="w-4 h-4" />
+                <CropIcon className="w-4 h-4" />
               </div>
               <div>
                 <p className="font-semibold text-sm leading-tight">

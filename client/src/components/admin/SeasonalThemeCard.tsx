@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { PartyPopper, ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SeasonThumb } from "@/components/seasonal/SeasonalDecor";
@@ -43,7 +43,7 @@ export default function SeasonalThemeCard({
             <p className="text-xs text-muted-foreground">Seasonal Themes</p>
           </div>
           <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${active ? "bg-foreground text-background" : "bg-muted/60 text-muted-foreground"}`}>
-            <Sparkles className="w-4 h-4" />
+            <PartyPopper className="w-4 h-4" />
           </div>
         </div>
       </button>
