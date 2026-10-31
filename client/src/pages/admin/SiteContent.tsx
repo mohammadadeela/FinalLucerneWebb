@@ -2,7 +2,8 @@ import { useState, useRef, useCallback } from "react";
 import ImageCropDialog from "@/components/admin/ImageCropDialog";
 import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone } from "lucide-react";
+import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store } from "lucide-react";
+ import SeasonalThemeCard from "@/components/admin/SeasonalThemeCard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/button";
@@ -1862,8 +1863,24 @@ const QUICK_TOGGLES: QuickToggle[] = [
     hiddenNoteAr: "سيُخفى تنبيه واتساب من صفحة الدفع ولن تُرسل رسالة تأكيد الطلب، بدون التأثير على تسجيل الدخول عبر واتساب",
   },
   {
-    key: "exchanges_enabled",
-    icon: Repeat,
+  key: "guest_checkout_enabled",
+  icon: UserRound,
+  titleAr: "الطلب كضيف (بدون تسجيل)",
+  titleEn: "Guest Checkout",
+  descAr: "السماح بإتمام الطلب دون حساب (بدون نقاط أو أكواد خصم)",
+  hiddenNoteAr: "سيُطلب من العميلات تسجيل الدخول لإتمام الطلب",
+  },
+  {
+  key: "online_pickup_enabled",
+  icon: Store,
+  titleAr: "الاستلام من المتجر (دفع أونلاين)",
+  titleEn: "Online Store Pickup",
+  descAr: "السماح باختيار الاستلام من المتجر في صفحة الدفع، بالدفع أونلاين فقط",
+  hiddenNoteAr: "سيُخفى خيار الاستلام من المتجر من صفحة الدفع، ويبقى التوصيل كما هو",
+  },
+  {
+  key: "exchanges_enabled",
+  icon: Repeat,
     titleAr: "طلبات الاستبدال",
     titleEn: "Exchange Requests on Profile Page",
     descAr: "السماح للعميلات بطلب استبدال المنتجات (باستثناء الفساتين)",
@@ -1936,6 +1953,7 @@ const STATIC_CARDS = [
   { id: "support", labelAr: "صفحات الدعم", labelEn: "Support Pages" },
   { id: "shipping", labelAr: "مناطق الشحن", labelEn: "Shipping Zones" },
   { id: "newsbar", labelAr: "شريط الأخبار", labelEn: "News Bar" },
+  { id: "seasonal", labelAr: "المواسم والأعياد", labelEn: "Seasonal Themes Christmas Eid" },
   { id: "bestsellers", labelAr: "الأكثر مبيعاً", labelEn: "Best Sellers" },
   { id: "headings", labelAr: "عناوين الأقسام", labelEn: "Section Headings" },
   { id: "editorial", labelAr: "شبكة التحرير", labelEn: "Editorial Grid" },
@@ -2058,15 +2076,18 @@ export default function SiteContent() {
               <ShippingZonesCard values={merged} onChange={handleChange} />
             )}
             {sectionMatches(sectionSearch, STATIC_CARDS[3].labelAr, STATIC_CARDS[3].labelEn) && (
-              <NewsBarCard values={merged} onChange={handleChange} />
+            <NewsBarCard values={merged} onChange={handleChange} />
             )}
             {sectionMatches(sectionSearch, STATIC_CARDS[4].labelAr, STATIC_CARDS[4].labelEn) && (
-              <BestSellersCard values={merged} onChange={handleChange} />
+            <SeasonalThemeCard values={merged} onChange={handleChange} />
             )}
             {sectionMatches(sectionSearch, STATIC_CARDS[5].labelAr, STATIC_CARDS[5].labelEn) && (
-              <SectionHeadingsCard values={merged} onChange={handleChange} />
+              <BestSellersCard values={merged} onChange={handleChange} />
             )}
             {sectionMatches(sectionSearch, STATIC_CARDS[6].labelAr, STATIC_CARDS[6].labelEn) && (
+              <SectionHeadingsCard values={merged} onChange={handleChange} />
+            )}
+            {sectionMatches(sectionSearch, STATIC_CARDS[7].labelAr, STATIC_CARDS[7].labelEn) && (
               <EditorialGridCard values={merged} onChange={handleChange} />
             )}
             {PAGE_SECTIONS.filter((s) =>

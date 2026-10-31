@@ -39,6 +39,8 @@
     .cancel { background: #333; color: #aaa; }
     .cancel:hover { background: #444; }
     .success { color: #34d399; font-size: 12px; margin-top: 8px; display: none; text-align: center; }
+    .error { color: #f87171; font-size: 12px; margin-top: 8px; display: none; text-align: center; line-height: 1.6; }
+    button:disabled { opacity: 0.6; cursor: default; }
   </style>
 </head>
 <body>
@@ -73,6 +75,7 @@
     <button class="cancel" onclick="window.close()">إلغاء</button>
   </div>
   <div class="success" id="successMsg">✓ تم الحفظ بنجاح!</div>
+  <div class="error" id="errorMsg" role="alert"></div>
 
   <script>
     let fs = true, kiosk = false;
@@ -108,14 +111,44 @@
     }
 
     async function saveSettings() {
+      const errorEl = document.getElementById("errorMsg");
+      const saveBtn = document.querySelector(".save");
+      const fail = (ar, en) => {
+        errorEl.textContent = "";
+        const a = document.createElement("div"); a.dir = "rtl"; a.textContent = ar;
+        const e = document.createElement("div"); e.dir = "ltr"; e.textContent = en;
+        errorEl.append(a, e);
+        errorEl.style.display = "block";
+      };
+      errorEl.style.display = "none";
+
       const url = document.getElementById("urlInput").value.trim();
       const posPath = document.getElementById("pathInput").value.trim() || "/admin/pos";
       const printerName = document.getElementById("printerSelect").value;
-      const paperWidthMm = parseFloat(document.getElementById("paperWidthInput").value) || 77;
-      const result = await window.electronPOS.saveConfig({ url, posPath, fullscreen: fs, kiosk, printerName, paperWidthMm });
-      if (result.ok) {
-        document.getElementById("successMsg").style.display = "block";
-        setTimeout(() => window.close(), 800);
+      const widthRaw = document.getElementById("paperWidthInput").value.trim();
+      const paperWidthMm = widthRaw === "" ? 77 : parseFloat(widthRaw);
+
+      if (!url) return fail("الرجاء إدخال رابط المتجر", "Please enter the store URL");
+      if (!Number.isFinite(paperWidthMm) || paperWidthMm < 30 || paperWidthMm > 120) {
+        return fail("عرض الطباعة يجب أن يكون بين 30 و 120 ملم", "Printable width must be between 30 and 120 mm");
+      }
+
+      saveBtn.disabled = true;
+      try {
+        const result = await window.electronPOS.saveConfig({ url, posPath, fullscreen: fs, kiosk, printerName, paperWidthMm });
+        if (result && result.ok) {
+          document.getElementById("successMsg").style.display = "block";
+          setTimeout(() => window.close(), 800);
+          return;
+        }
+        if (result && result.error === "invalid-url") fail("رابط المتجر غير صحيح. مثال: https://lucerne-boutique.com", "The store URL isn't valid. Example: https://lucerne-boutique.com");
+        else if (result && result.error === "invalid-width") fail("عرض الطباعة يجب أن يكون بين 30 و 120 ملم", "Printable width must be between 30 and 120 mm");
+        else if (result && result.error === "write-failed") fail("تعذّر حفظ الإعدادات على هذا الجهاز، لم يتغير شيء.", "Couldn't save the settings on this computer; nothing was changed.");
+        else fail("تعذّر الحفظ. حاول مرة أخرى.", "Couldn't save. Please try again.");
+      } catch (e) {
+        fail("تعذّر الحفظ. حاول مرة أخرى.", "Couldn't save. Please try again.");
+      } finally {
+        saveBtn.disabled = false;
       }
     }
   </script>

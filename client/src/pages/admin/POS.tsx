@@ -79,6 +79,9 @@ import {
 import ExcelJS from "exceljs";
 import type { Product, Category, ColorVariant, Subcategory } from "@shared/schema";
 import { optimizeCloudinaryUrl, sortSizes } from "@/lib/utils";
+import { RECEIPT_SITE_QR_SVG, RECEIPT_SITE_HOST } from "@/lib/receipt-qr";
+import { ensureOnline, isNetworkError, isTimeoutError, timeoutSignal } from "@/lib/connection";
+import { describePrintFailure } from "@/lib/print-errors";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 
 /* ── POS product image with blur-up placeholder (same pattern as home page) */
@@ -3573,6 +3576,12 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
   .ftr-policy:first-of-type{margin-top:10px}
   .ftr-policy.strong{color:#555;font-weight:700}
   .ftr-policy.exchange-lock{color:#111;font-weight:800;border:1.5px solid #111;border-radius:5px;padding:8px 6px;margin-top:8px}
+  .ftr-qr{margin-top:14px;padding-top:12px;border-top:1px dashed #e0dcd6;text-align:center}
+  .ftr-qr-title{font-size:13px;font-weight:800;color:#111}
+  .ftr-qr-sub{font-size:11px;color:#555;margin-top:2px;line-height:1.5}
+  .ftr-qr-code{display:flex;justify-content:center;margin-top:8px}
+  .ftr-qr-code svg{width:32mm;height:32mm}
+  .ftr-qr-url{font-size:11px;font-weight:700;color:#333;margin-top:4px;letter-spacing:0.5px;direction:ltr;unicode-bidi:isolate}
   .inv-barcode{display:flex;justify-content:center;width:100%;margin-top:16px}
   .inv-barcode svg{max-width:100%;height:auto}
   @media print{
@@ -3584,13 +3593,14 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
     th,.td-name,.td-qty,.td-price,.variant,
     .totals-row,.totals-row.discount,.totals-final .label,.totals-final .amount,
     .cash-row,.change-row .label,.change-row .amount,
-    .ftr-thanks,.ftr-brand,.ftr-policy,.ftr-dots{
+    .ftr-thanks,.ftr-brand,.ftr-policy,.ftr-dots,
+    .ftr-qr-title,.ftr-qr-sub,.ftr-qr-url{
       color:#000 !important;
       font-weight:700 !important;
       -webkit-text-stroke:0.2px #000;
     }
     .cashier,.cashier b{color:#000 !important;font-weight:700 !important;-webkit-text-stroke:0.2px #000;}
-    .hdr-bar,.hdr-bar-bottom,thead tr,table,.totals-final,td,.change-row,.order-note{
+    .hdr-bar,.hdr-bar-bottom,thead tr,table,.totals-final,td,.change-row,.order-note,.ftr-qr{
       border-color:#000 !important;
       background:#fff !important;
     }
@@ -3616,6 +3626,7 @@ ${noteHtml}
 </div>
 <div class="inv-barcode">${renderBarcodeSvg(String(order.id), { height: 40, width: 1.8, fontSize: 12 })}</div>
 <div class="ftr"><div class="ftr-dots">· · · · · · · · · · · ·</div><div class="ftr-thanks">شكراً لتسوقكم</div><div class="ftr-brand">LUCERNE BOUTIQUE</div>${isExchangeInvoice ? `<div class="ftr-policy exchange-lock">أي منتج في فاتورة التبديل هذه لا يمكن تبديله مرة أخرى</div>` : `<div class="ftr-policy strong">يجب إحضار هذه الفاتورة لإتمام أي عملية تبديل</div><div class="ftr-policy">مدة التبديل: يومان (٤٨ ساعة) من تاريخ الشراء فقط</div>`}<div class="ftr-policy">القطع الرسمية لا تبدل &nbsp;·&nbsp; الفساتين لا تبدل &nbsp;·&nbsp; العبايات لا تبدل &nbsp;·&nbsp; لا يوجد ترجيع لجميع القطع</div></div>
+<div class="ftr-qr"><div class="ftr-qr-title">امسح الرمز</div><div class="ftr-qr-sub">لتتسوق عبر موقعنا الإلكتروني</div><div class="ftr-qr-code">${RECEIPT_SITE_QR_SVG}</div><div class="ftr-qr-url">${RECEIPT_SITE_HOST}</div></div>
 </body></html>`;
 
     // Running inside the Lucerne POS desktop app (Electron)? Print truly
@@ -3627,19 +3638,11 @@ ${noteHtml}
         .printReceipt(receiptHtml)
         .then((res: any) => {
           if (res && res.ok === false) {
-            toast({
-              title: ar ? "تعذّرت الطباعة" : "Print failed",
-              description: res.error,
-              variant: "destructive",
-            });
+            toast({ ...describePrintFailure(res.error, ar, { invoiceSaved: true }), variant: "destructive" });
           }
         })
         .catch((err: any) => {
-          toast({
-            title: ar ? "تعذّرت الطباعة" : "Print failed",
-            description: err?.message || String(err),
-            variant: "destructive",
-          });
+          toast({ ...describePrintFailure(err, ar, { invoiceSaved: true }), variant: "destructive" });
         });
       return;
     }
@@ -3809,19 +3812,11 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
         .printReceipt(summaryHtml)
         .then((res: any) => {
           if (res && res.ok === false) {
-            toast({
-              title: ar ? "تعذّرت الطباعة" : "Print failed",
-              description: res.error,
-              variant: "destructive",
-            });
+            toast({ ...describePrintFailure(res.error, ar, { invoiceSaved: false }), variant: "destructive" });
           }
         })
         .catch((err: any) => {
-          toast({
-            title: ar ? "تعذّرت الطباعة" : "Print failed",
-            description: err?.message || String(err),
-            variant: "destructive",
-          });
+          toast({ ...describePrintFailure(err, ar, { invoiceSaved: false }), variant: "destructive" });
         });
       return;
     }
@@ -3901,10 +3896,25 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
     }
     setCompleting(true);
     try {
+      // No connection → don't send anything. Nothing was saved and the cart is
+      // left exactly as it is, so the sale can simply be completed again once
+      // the connection is back.
+      if (!(await ensureOnline())) {
+        toast({
+          title: ar ? "لا يوجد اتصال بالإنترنت" : "No internet connection",
+          description: ar
+            ? "لم يتم حفظ البيع. السلة محفوظة كما هي، أعد المحاولة عند عودة الاتصال."
+            : "The sale was not saved. Your cart is kept as it is, so try again when the connection is back.",
+          variant: "destructive",
+        });
+        return;
+      }
       const res = await fetch("/api/pos/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        // A weak connection must never leave the cashier stuck on a spinner.
+        signal: timeoutSignal(30000),
         body: JSON.stringify({
           totalAmount: cartTotal.toFixed(2),
           subtotalAmount: cartSubtotal.toFixed(2),
@@ -4064,11 +4074,24 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
       if (autoPrint) triggerPrint(finished);
       barcodeRef.current?.focus();
     } catch (err: any) {
-      toast({
-        title: ar ? "خطأ في الاتصال" : "Connection error",
-        description: err?.message,
-        variant: "destructive",
-      });
+      if (isNetworkError(err) || isTimeoutError(err)) {
+        // The request was sent but we never got an answer, so the sale may or
+        // may not have been saved. Retrying blindly could create a duplicate
+        // invoice, so tell the cashier to check the log first.
+        toast({
+          title: ar ? "انقطع الاتصال أثناء إتمام البيع" : "Connection lost while completing the sale",
+          description: ar
+            ? "لا نعرف إن كانت الفاتورة قد حُفظت. افتح سجل الفواتير وتأكد قبل إعادة المحاولة حتى لا تتكرر."
+            : "We can't tell if the invoice was saved. Check the invoice log before trying again so it isn't duplicated.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: ar ? "خطأ في الاتصال" : "Connection error",
+          description: err?.message,
+          variant: "destructive",
+        });
+      }
     } finally {
       setCompleting(false);
     }

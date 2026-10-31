@@ -11,20 +11,28 @@
       display: flex; align-items: center; justify-content: center; min-height: 100vh;
     }
     .card {
-      text-align: center; padding: 40px; max-width: 440px;
+      text-align: center; padding: 40px; max-width: 480px; width: 92%;
       background: #1a1a1a; border: 1px solid #ef4444; border-radius: 16px;
     }
     .icon { font-size: 48px; margin-bottom: 16px; }
     h2 { font-size: 20px; margin-bottom: 8px; color: #f87171; }
-    p { color: #aaa; font-size: 13px; line-height: 1.6; margin-bottom: 24px; }
+    h2.en { font-size: 15px; color: #888; margin-top: 4px; margin-bottom: 18px; }
+    .reason { background: #111; border: 1px solid #2a2a2a; border-radius: 10px; padding: 14px; margin-bottom: 18px; }
+    .reason p { color: #ddd; font-size: 14px; line-height: 1.7; margin: 0; }
+    .reason p.en { color: #888; font-size: 12px; margin-top: 6px; direction: ltr; }
+    .tips { color: #aaa; font-size: 12px; line-height: 1.8; margin-bottom: 18px; }
+    .status { min-height: 34px; font-size: 12px; line-height: 1.6; color: #a78bfa; margin-bottom: 18px; }
+    .status.bad { color: #fbbf24; }
+    .status.good { color: #34d399; }
     .actions { display: flex; gap: 10px; justify-content: center; }
     button {
-      padding: 10px 22px; border: none; border-radius: 8px;
-      font-size: 13px; font-weight: 600; cursor: pointer;
+      padding: 12px 22px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
     }
+    button:disabled { opacity: 0.6; cursor: default; }
     .retry { background: #7c3aed; color: #fff; }
-    .retry:hover { background: #6d28d9; }
-    .settings { background: #333; color: #aaa; }
+    .retry:hover:not(:disabled) { background: #6d28d9; }
+    .settings { background: #333; color: #ddd; }
     .settings:hover { background: #444; }
   </style>
 </head>
@@ -32,20 +40,95 @@
   <div class="card">
     <div class="icon">📡</div>
     <h2>لا يمكن الاتصال بالمتجر</h2>
-    <h2 style="font-size:15px; color:#888; margin-top:4px;">Cannot connect to store</h2>
-    <p>
-      تأكد من أن المتجر منشور ويعمل، وأن الرابط صحيح في الإعدادات.<br><br>
-      Make sure your store is deployed and the URL in Settings is correct.
-    </p>
+    <h2 class="en">Cannot connect to the store</h2>
+
+    <div class="reason">
+      <p id="reasonAr"></p>
+      <p class="en" id="reasonEn"></p>
+    </div>
+
+    <div class="tips">
+      <div>تحقق من اتصال الإنترنت (الكابل أو الواي فاي) ثم انتظر قليلاً — ستعود الصفحة تلقائياً.</div>
+      <div dir="ltr">Check your internet (cable or Wi-Fi) and wait a moment — the page will return by itself.</div>
+    </div>
+
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+
     <div class="actions">
-      <button class="retry" onclick="location.reload()">🔄 إعادة المحاولة / Retry</button>
-      <button class="settings" onclick="openSettings()">⚙️ إعدادات</button>
+      <button class="retry" id="retryBtn" onclick="attempt(true)">🔄 إعادة المحاولة / Retry</button>
+      <button class="settings" onclick="window.electronPOS?.openSettings()">⚙️ الإعدادات / Settings</button>
     </div>
   </div>
+
   <script>
-    function openSettings() {
-      window.electronPOS?.saveConfig({}).then(() => {});
+    // Chromium net error code -> plain-language cause. These are the ones a
+    // POS machine actually hits; anything else falls back to a generic line.
+    function reasonFor(code) {
+      if (code === -106) return {
+        ar: "لا يوجد اتصال بالإنترنت على هذا الجهاز.",
+        en: "This computer has no internet connection." };
+      if (code === -105 || code === -137) return {
+        ar: "تعذّر العثور على عنوان المتجر. تحقق من الإنترنت ومن الرابط في الإعدادات.",
+        en: "The store address could not be found. Check the internet and the URL in Settings." };
+      if (code === -7 || code === -118) return {
+        ar: "انتهت مهلة الاتصال. الشبكة بطيئة أو الخادم لا يستجيب.",
+        en: "The connection timed out. The network is slow or the server is not responding." };
+      if (code === -102 || code === -101 || code === -100 || code === -104) return {
+        ar: "تعذّر الاتصال بخادم المتجر. قد يكون متوقفاً مؤقتاً.",
+        en: "Could not reach the store's server. It may be temporarily down." };
+      if (code === -109 || code === -21) return {
+        ar: "الشبكة غير متاحة حالياً أو تغيّرت أثناء التحميل.",
+        en: "The network is unavailable or changed while loading." };
+      if (code <= -200 && code >= -299) return {
+        ar: "مشكلة في شهادة الأمان. تأكد من أن تاريخ ووقت هذا الجهاز صحيحان.",
+        en: "Security certificate problem. Make sure this computer's date and time are correct." };
+      return {
+        ar: "تعذّر تحميل المتجر. تأكد من الإنترنت ومن الرابط في الإعدادات.",
+        en: "The store could not be loaded. Check the internet and the URL in Settings." };
     }
+
+    const params = new URLSearchParams(location.search);
+    const reason = reasonFor(parseInt(params.get("code") || "0", 10));
+    document.getElementById("reasonAr").textContent = reason.ar;
+    document.getElementById("reasonEn").textContent = reason.en;
+
+    const statusEl = document.getElementById("status");
+    const retryBtn = document.getElementById("retryBtn");
+    // Arabic and English go on separate lines, each with its own direction,
+    // so mixed-direction punctuation never gets scrambled.
+    function setStatus(ar, en, cls) {
+      statusEl.textContent = "";
+      const a = document.createElement("div"); a.dir = "rtl"; a.textContent = ar;
+      const e = document.createElement("div"); e.dir = "ltr"; e.textContent = en;
+      statusEl.append(a, e);
+      statusEl.className = "status " + (cls || "");
+    }
+    setStatus("جارٍ المحاولة تلقائياً كل 5 ثوانٍ…", "Retrying automatically every 5 seconds…");
+
+    let busy = false;
+    // Checks the store is really reachable first, and only then reloads it —
+    // so a still-dead connection never flashes the page away and back.
+    async function attempt(manual) {
+      if (busy || !window.electronPOS) return;
+      busy = true;
+      if (manual) { retryBtn.disabled = true; setStatus("جارٍ التحقق من الاتصال…", "Checking the connection…"); }
+      try {
+        const r = await window.electronPOS.checkConnection();
+        if (r && r.ok) {
+          setStatus("✓ عاد الاتصال — جارٍ التحميل…", "Connected — loading…", "good");
+          await window.electronPOS.retryLoad();
+          return;
+        }
+        if (manual) setStatus("ما زال الاتصال غير متاح. سنواصل المحاولة.", "Still not connected. We'll keep trying.", "bad");
+      } catch (e) {
+        if (manual) setStatus("ما زال الاتصال غير متاح. سنواصل المحاولة.", "Still not connected. We'll keep trying.", "bad");
+      } finally {
+        busy = false;
+        retryBtn.disabled = false;
+      }
+    }
+    window.addEventListener("online", () => attempt(false));
+    setInterval(() => attempt(false), 5000);
   </script>
 </body>
 </html>

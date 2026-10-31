@@ -96,6 +96,9 @@ const orderSelectSchema = z.object({
   discountCode: z.string().nullable().optional(),
   discountAmount: z.string().nullable().optional(),
   creditUsed: z.string().nullable().optional(),
+  deliveryMethod: z.string().optional(),
+  pickupCode: z.string().nullable().optional(),
+  guestEmail: z.string().nullable().optional(),
   createdAt: z.string().nullable(),
   deliveredAt: z.string().nullable().optional(),
 });
@@ -296,7 +299,7 @@ export const api = {
       method: 'POST' as const,
       path: '/api/orders' as const,
       input: z.object({
-        order: insertOrderSchema.omit({ userId: true, totalAmount: true }),
+        order: insertOrderSchema.omit({ userId: true, totalAmount: true, pickupCode: true }),
         items: z.array(z.object({
           productId: z.number(),
           quantity: z.number().int().min(1),
@@ -307,7 +310,7 @@ export const api = {
         useCredit: z.number().nonnegative().optional(),
       }),
       responses: {
-        201: orderSelectSchema,
+        201: orderSelectSchema.extend({ guestToken: z.string().optional() }),
         400: errorSchemas.validation,
       }
     },

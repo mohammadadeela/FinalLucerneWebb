@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain, screen } = require("electron");
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, screen, net } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -16,6 +16,37 @@ let CUSTOMER_URL = (config.url || "").replace(/\/$/, "") + "/admin/pos-customer"
 
 let mainWindow = null;
 let customerWindow = null;
+let customerRetryTimer = null;
+
+// Accepts what a cashier might realistically type ("lucerne-boutique.com",
+// "https://lucerne-boutique.com/") and returns a clean https/http origin, or
+// null when it can't possibly be a store address.
+function normalizeStoreUrl(input) {
+  let raw = String(input || "").trim();
+  if (!raw) return null;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) raw = "https://" + raw;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+    if (!u.hostname) return null;
+    const pathname = u.pathname.replace(/\/+$/, "");
+    return u.origin + pathname;
+  } catch {
+    return null;
+  }
+}
+
+// (Re)loads the store in the main window. Load failures are reported through
+// the "did-fail-load" handler below, so the rejected promise is swallowed here
+// instead of surfacing as an unhandled rejection.
+function loadStore() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (!config.url || config.url.includes("YOUR-APP-URL")) {
+    mainWindow.loadFile(path.join(__dirname, "setup.html"));
+    return;
+  }
+  mainWindow.loadURL(POS_URL).catch(() => {});
+}
 
 // Lucerne logo icon — used by every window so the taskbar/window icon is always the logo
 const APP_ICON = path.join(__dirname, "assets", process.platform === "win32" ? "icon.ico" : "icon.png");
@@ -47,7 +78,7 @@ function openCustomerWindow(targetUrl) {
     customerWindow.show();
     customerWindow.focus();
     if (targetUrl && customerWindow.webContents.getURL() !== targetUrl) {
-      customerWindow.loadURL(targetUrl);
+      customerWindow.loadURL(targetUrl).catch(() => {});
     }
     return customerWindow;
   }
@@ -79,9 +110,33 @@ function openCustomerWindow(targetUrl) {
     customerWindow.show();
   });
 
-  customerWindow.loadURL(targetUrl);
+  customerWindow.loadURL(targetUrl).catch(() => {});
+
+  // The customer-facing screen must never show a technical error to shoppers.
+  // If the connection is down it simply stays on its dark background and
+  // quietly retries until the store loads again.
+  customerWindow.webContents.on("did-fail-load", (_e, code, _desc, _url, isMainFrame) => {
+    if (!isMainFrame || code === -3) return;
+    if (customerRetryTimer) return;
+    customerRetryTimer = setTimeout(() => {
+      customerRetryTimer = null;
+      if (customerWindow && !customerWindow.isDestroyed()) {
+        customerWindow.loadURL(CUSTOMER_URL).catch(() => {});
+      }
+    }, 5000);
+  });
+  customerWindow.webContents.on("render-process-gone", (_e, details) => {
+    if (details.reason === "clean-exit") return;
+    setTimeout(() => {
+      if (customerWindow && !customerWindow.isDestroyed()) {
+        customerWindow.loadURL(CUSTOMER_URL).catch(() => {});
+      }
+    }, 2000);
+  });
 
   customerWindow.on("closed", () => {
+    clearTimeout(customerRetryTimer);
+    customerRetryTimer = null;
     customerWindow = null;
   });
 
@@ -161,7 +216,7 @@ function createWindow() {
   if (!config.url || config.url.includes("YOUR-APP-URL")) {
     mainWindow.loadFile(path.join(__dirname, "setup.html"));
   } else {
-    mainWindow.loadURL(POS_URL);
+    loadStore();
     // Open the customer display and auto-enlarge the POS view every time
     // the page (re)loads — first launch, F5 reload, or after a settings
     // change — not just the very first load.
@@ -171,9 +226,43 @@ function createWindow() {
     });
   }
 
-  mainWindow.webContents.on("did-fail-load", (_e, code, desc) => {
-    mainWindow.loadFile(path.join(__dirname, "error.html"));
-    console.error("Load failed:", code, desc);
+  // Show the friendly error page only when the MAIN page itself fails to load.
+  // This event also fires for failed sub-resources/frames and for harmless
+  // aborted navigations (code -3, e.g. a redirect or a reload mid-load);
+  // replacing the POS with an error screen for those would be wrong.
+  mainWindow.webContents.on("did-fail-load", (_e, code, desc, validatedURL, isMainFrame) => {
+    if (!isMainFrame || code === -3) return;
+    if (validatedURL && validatedURL.startsWith("file:")) return; // never loop on our own pages
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    console.error("Load failed:", code, desc, validatedURL);
+    mainWindow.loadFile(path.join(__dirname, "error.html"), {
+      query: { code: String(code), desc: String(desc || "") },
+    });
+  });
+
+  // If the page's process crashes or freezes, recover instead of leaving the
+  // cashier with a blank/frozen window.
+  mainWindow.webContents.on("render-process-gone", (_e, details) => {
+    if (details.reason === "clean-exit") return;
+    console.error("Renderer gone:", details.reason);
+    setTimeout(loadStore, 1000);
+  });
+  mainWindow.on("unresponsive", () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    dialog
+      .showMessageBox(mainWindow, {
+        type: "warning",
+        title: "Lucerne POS",
+        message: "الصفحة لا تستجيب\nThe page is not responding",
+        detail: "يمكنك الانتظار قليلاً أو إعادة تحميل الصفحة.\nYou can wait a moment or reload the page.",
+        buttons: ["انتظار / Wait", "إعادة تحميل / Reload"],
+        defaultId: 0,
+        cancelId: 0,
+      })
+      .then(({ response }) => {
+        if (response === 1) mainWindow?.webContents.reload();
+      })
+      .catch(() => {});
   });
 
   // The POS web page opens the customer-facing screen itself via
@@ -283,17 +372,75 @@ ipcMain.handle("get-config", () => config);
 
 ipcMain.handle("save-config", (_e, newConfig) => {
   try {
-    config = { ...config, ...newConfig };
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    const incoming = { ...(newConfig || {}) };
+
+    // Validate what the cashier typed BEFORE touching anything, so a typo can
+    // never leave the app pointing at an address that can't load.
+    if (incoming.url !== undefined) {
+      const cleaned = normalizeStoreUrl(incoming.url);
+      if (!cleaned) return { ok: false, error: "invalid-url" };
+      incoming.url = cleaned;
+    }
+    if (incoming.posPath !== undefined) {
+      const p = String(incoming.posPath || "").trim();
+      incoming.posPath = p ? (p.startsWith("/") ? p : "/" + p) : "/admin/pos";
+    }
+    if (incoming.paperWidthMm !== undefined) {
+      const w = Number(incoming.paperWidthMm);
+      if (!Number.isFinite(w) || w < 30 || w > 120) return { ok: false, error: "invalid-width" };
+      incoming.paperWidthMm = w;
+    }
+
+    // Write first; only apply and reload if the file was really saved, so the
+    // screen never claims success for a setting that is lost on restart.
+    const next = { ...config, ...incoming };
+    try {
+      fs.writeFileSync(configPath, JSON.stringify(next, null, 2));
+    } catch (err) {
+      console.error("Could not write config.json:", err.message);
+      return { ok: false, error: "write-failed" };
+    }
+    config = next;
     POS_URL = (config.url || "").replace(/\/$/, "") + (config.posPath || "/admin/pos");
     CUSTOMER_URL = (config.url || "").replace(/\/$/, "") + "/admin/pos-customer";
-    mainWindow?.loadURL(POS_URL);
+    loadStore();
     if (customerWindow && !customerWindow.isDestroyed()) {
-      customerWindow.loadURL(CUSTOMER_URL);
+      customerWindow.loadURL(CUSTOMER_URL).catch(() => {});
     }
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err.message };
+  }
+});
+
+// ── Connection-error screen helpers ─────────────────────────────────────────
+// The error page uses these to actually retry (its old "Retry" button only
+// reloaded the error page itself) and to open Settings.
+ipcMain.handle("retry-load", () => {
+  loadStore();
+  return { ok: true };
+});
+
+ipcMain.handle("open-settings", () => {
+  openSettings();
+  return { ok: true };
+});
+
+// Real reachability check against the store's own health endpoint — more
+// trustworthy than "is a network adapter up?", which says nothing about
+// whether the store can actually be reached.
+ipcMain.handle("check-connection", async () => {
+  const base = (config.url || "").replace(/\/$/, "");
+  if (!base) return { ok: false };
+  try {
+    const doFetch = typeof net.fetch === "function" ? net.fetch.bind(net) : fetch;
+    const res = await doFetch(base + "/api/health", {
+      cache: "no-store",
+      signal: AbortSignal.timeout(6000),
+    });
+    return { ok: res.ok };
+  } catch {
+    return { ok: false };
   }
 });
 
@@ -303,8 +450,40 @@ ipcMain.handle("save-config", (_e, newConfig) => {
 // the configured (or system default) printer with NO print dialog and NO
 // click required — this is the piece a normal browser can never do, since
 // window.print() in a browser always shows the native dialog.
+// Tells the cashier something useful BEFORE trying to print, instead of a
+// cryptic driver error afterwards. Returns an error code, or null when fine.
+async function checkPrinterReady() {
+  if (!mainWindow || mainWindow.isDestroyed()) return null;
+  let printers;
+  try {
+    printers = await mainWindow.webContents.getPrintersAsync();
+  } catch {
+    return null; // can't list printers — just attempt the print
+  }
+  if (!printers || printers.length === 0) return "no-printer";
+  if (config.printerName && !printers.some((p) => p.name === config.printerName)) {
+    return "printer-not-found";
+  }
+  return null;
+}
+
+const PRINT_HANG_TIMEOUT_MS = 60000;
+
 ipcMain.handle("print-receipt", async (_e, html) => {
-  return new Promise((resolve) => {
+  if (typeof html !== "string" || !html.trim()) return { ok: false, error: "empty-receipt" };
+  const notReady = await checkPrinterReady();
+  if (notReady) return { ok: false, error: notReady };
+  return new Promise((resolveRaw) => {
+    // Settle exactly once, and never hang forever: if the printer/spooler
+    // stops answering, the cashier gets a clear failure instead of silence.
+    let finished = false;
+    let hangTimer = null;
+    const resolve = (result) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(hangTimer);
+      resolveRaw(result);
+    };
     // The window must render at the SAME width the paper actually is —
     // otherwise text wraps differently between what gets measured and what
     // gets printed (a wider on-screen window wraps to fewer, taller lines
@@ -342,6 +521,10 @@ ipcMain.handle("print-receipt", async (_e, html) => {
     const cleanup = () => {
       if (!printWin.isDestroyed()) printWin.close();
     };
+    hangTimer = setTimeout(() => {
+      cleanup();
+      resolve({ ok: false, error: "print-timeout" });
+    }, PRINT_HANG_TIMEOUT_MS);
     const doPrint = () => {
       if (settled) return;
       settled = true;
@@ -407,6 +590,13 @@ ipcMain.handle("get-printers", async () => {
     return [];
   }
 });
+
+// ── Safety nets ─────────────────────────────────────────────────────────────
+// Without these, an unexpected error in the main process pops up Electron's
+// raw "A JavaScript error occurred in the main process" dialog in front of
+// the cashier. Log it instead and keep the POS running.
+process.on("uncaughtException", (err) => console.error("[main] uncaughtException:", err));
+process.on("unhandledRejection", (reason) => console.error("[main] unhandledRejection:", reason));
 
 // ── App lifecycle ────────────────────────────────────────────────────────────
 // Windows groups the taskbar button by this id and shows the app's own icon

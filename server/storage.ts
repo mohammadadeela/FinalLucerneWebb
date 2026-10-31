@@ -424,6 +424,8 @@ export interface IStorage {
   createPosOrderAtomic(order: InsertPosOrder, items: Array<{ productId: number; color?: string; size?: string; quantity: number; newSize?: boolean }>): Promise<PosOrder>;
   getPosOrders(): Promise<PosOrder[]>;
   getPosOrderById(id: number): Promise<PosOrder | undefined>;
+  getPosOrderByClientRef(ref: string): Promise<PosOrder | undefined>;
+  getPosOrderByOfflineNumber(offlineNumber: string): Promise<PosOrder | undefined>;
   updatePosOrderExchangeHistory(id: number, history: any[]): Promise<PosOrder | undefined>;
   updatePosOrderReturnHistory(id: number, history: any[]): Promise<PosOrder | undefined>;
   updatePosOrderPaymentMethod(
@@ -1425,7 +1427,11 @@ export class DatabaseStorage implements IStorage {
 
   async createPosOrderAtomic(
     order: InsertPosOrder,
-    items: Array<{ productId: number; color?: string; size?: string; quantity: number; newSize?: boolean }>
+    items: Array<{ productId: number; color?: string; size?: string; quantity: number; newSize?: boolean }>,
+    // Offline sales already physically happened, so they must be recorded even if online stock has
+    // since run out (e.g. a website order took the last piece). With allowOversell, stock clamps at 0
+    // instead of rejecting the sale.
+    opts?: { allowOversell?: boolean }
   ): Promise<PosOrder> {
     return await db.transaction(async (tx) => {
       for (const item of items) {
@@ -1456,14 +1462,14 @@ export class DatabaseStorage implements IStorage {
               inv[item.size] = Math.max(0, avail - item.quantity);
               if (!cvSizes.includes(item.size)) cvSizes.push(item.size);
             } else {
-              if (avail < item.quantity) {
+              if (avail < item.quantity && !opts?.allowOversell) {
                 throw new Error(`STOCK_ERROR:${product.name} (${item.color} / ${item.size}) — only ${avail} left`);
               }
-              inv[item.size] = avail - item.quantity;
+              inv[item.size] = Math.max(0, avail - item.quantity);
             }
           } else {
             const total = Object.values(inv).reduce((s: number, q: any) => s + (q as number), 0) as number;
-            if (total < item.quantity) {
+            if (total < item.quantity && !opts?.allowOversell) {
               throw new Error(`STOCK_ERROR:${product.name} (${item.color}) — only ${total} left`);
             }
           }
@@ -1492,10 +1498,10 @@ export class DatabaseStorage implements IStorage {
               sizeInv[item.size] = Math.max(0, avail - item.quantity);
               if (!prodSizes.includes(item.size)) prodSizes.push(item.size);
             } else {
-              if (avail < item.quantity) {
+              if (avail < item.quantity && !opts?.allowOversell) {
                 throw new Error(`STOCK_ERROR:${product.name} (${item.size}) — only ${avail} left`);
               }
-              sizeInv[item.size] = avail - item.quantity;
+              sizeInv[item.size] = Math.max(0, avail - item.quantity);
             }
             const newStock = Object.values(sizeInv).reduce((s: number, q: any) => s + (q as number), 0) as number;
             await tx.update(products)
@@ -1503,10 +1509,10 @@ export class DatabaseStorage implements IStorage {
               .where(eq(products.id, item.productId));
           } else {
             const avail = product.stock_quantity as number ?? 0;
-            if (avail < item.quantity) {
+            if (avail < item.quantity && !opts?.allowOversell) {
               throw new Error(`STOCK_ERROR:${product.name} — only ${avail} left`);
             }
-            const newStock = avail - item.quantity;
+            const newStock = Math.max(0, avail - item.quantity);
             if (newStock === 0) {
               await tx.update(products).set({ stockQuantity: 0 }).where(eq(products.id, item.productId));
             } else {
@@ -1537,6 +1543,18 @@ export class DatabaseStorage implements IStorage {
       ...order,
       transferred: transferredIds.has(order.id),
     })) as any;
+  }
+
+  async getPosOrderByClientRef(ref: string): Promise<PosOrder | undefined> {
+    const [row] = await db.select().from(posOrders).where(eq(posOrders.clientRef, ref)).limit(1);
+    return row;
+  }
+
+  async getPosOrderByOfflineNumber(offlineNumber: string): Promise<PosOrder | undefined> {
+    const [row] = await db.select().from(posOrders).where(eq(posOrders.offlineNumber, offlineNumber)).limit(1);
+    if (!row) return undefined;
+    // Same enriched view as getPosOrderById (exchange history may be inferred from other invoices).
+    return this.getPosOrderById(row.id);
   }
 
   async getPosOrderById(id: number): Promise<PosOrder | undefined> {

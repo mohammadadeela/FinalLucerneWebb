@@ -12,13 +12,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
-import { CreditCard, Banknote, MapPin, Truck, Sparkles, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { CreditCard, Banknote, MapPin, Truck, Sparkles, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, UserRound } from "lucide-react";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
-import { useSiteSettings, getShippingZones } from "@/hooks/use-site-settings";
+import { useSiteSettings, getShippingZones, getSetting } from "@/hooks/use-site-settings";
+import { rememberPostLoginTarget } from "@/lib/post-login";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+// Guests have no account, so their details are only remembered on this device.
+const GUEST_INFO_KEY = "lucerne_guest_checkout_info_v1";
 const SAVED_INFO_KEY_PREFIX = "lucerne_checkout_info_";
 function savedInfoKey(userId: number) {
   return `${SAVED_INFO_KEY_PREFIX}${userId}`;
@@ -145,6 +148,9 @@ export default function Checkout() {
   const { data: siteSettings } = useSiteSettings();
   const shippingZones = getShippingZones(siteSettings);
   const cardPaymentEnabled = siteSettings?.card_payment_enabled !== "false";
+  const guestCheckoutEnabled = siteSettings?.guest_checkout_enabled !== "false";
+  // Pickup is paid online only, so it needs both its own switch and online payment to be on.
+  const pickupAvailable = siteSettings?.online_pickup_enabled !== "false" && cardPaymentEnabled;
   const loyaltyPointsEnabled = siteSettings?.loyalty_points_enabled !== "false";
   const whatsappNotificationsEnabled = siteSettings?.checkout_whatsapp_enabled !== "false";
   const createOrder = useCreateOrder();
@@ -152,6 +158,8 @@ export default function Checkout() {
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const [paymentMethod, setPaymentMethod] = useState<"cod" | "card">("cod");
+  const [deliveryMethod, setDeliveryMethod] = useState<"delivery" | "pickup">("delivery");
+  const [guestEmail, setGuestEmail] = useState("");
   const [stripeLoading, setStripeLoading] = useState(false);
   const [shippingRegion, setShippingRegion] = useState<string>("");
   const shippingRegionRef = useRef<HTMLDivElement>(null);
@@ -208,10 +216,40 @@ export default function Checkout() {
   }, [cardPaymentEnabled, paymentMethod]);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && !guestCheckoutEnabled) {
       setLocation("/auth");
     }
-  }, [authLoading, user, setLocation]);
+  }, [authLoading, user, guestCheckoutEnabled, setLocation]);
+
+  // Pickup is online-payment only; and it disappears if the admin switches it off mid-session.
+  useEffect(() => {
+    if (deliveryMethod === "pickup") {
+      if (!pickupAvailable) setDeliveryMethod("delivery");
+      else if (paymentMethod !== "card") setPaymentMethod("card");
+    }
+  }, [deliveryMethod, pickupAvailable, paymentMethod]);
+
+  /* Guests: remember what they typed on this device so a repeat order is quick. */
+  useEffect(() => {
+    if (authLoading || user) return;
+    try {
+      const saved = localStorage.getItem(GUEST_INFO_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      const p1 = splitStoredPhone(parsed.phone || "");
+      setFormData(prev => ({
+        fullName: parsed.fullName || prev.fullName,
+        phone: parsed.phoneDigits || p1.digits || prev.phone,
+        phone2: parsed.phone2 || prev.phone2,
+        address: parsed.address || prev.address,
+        city: parsed.city || prev.city,
+        notes: prev.notes,
+      }));
+      if (parsed.phonePrefix) setPhonePrefix(parsed.phonePrefix);
+      if (parsed.guestEmail) setGuestEmail(parsed.guestEmail);
+      if (parsed.shippingRegion) setShippingRegion(parsed.shippingRegion);
+    } catch {}
+  }, [authLoading, user?.id]);
 
   /* Load saved info from user-specific localStorage (keyed by userId) once user is available.
      Using a user-specific key ensures different accounts on the same browser never share
@@ -264,11 +302,13 @@ export default function Checkout() {
     // Never redirect while the server cart is still loading — items is
     // temporarily [] during that window and we'd bounce the customer out
     // of checkout for no reason with no explanation.
-    if (cartLoading) return;
-    if (items.length === 0 && user && soldOutItems.length === 0) {
-      setLocation("/shop");
+    // Also wait until we know whether the visitor is signed in: until then a signed-in customer
+    // looks like a guest with an (empty) local cart and would be bounced out of checkout.
+    if (cartLoading || authLoading) return;
+    if (items.length === 0 && (user || guestCheckoutEnabled) && soldOutItems.length === 0) {
+    setLocation("/shop");
     }
-  }, [cartLoading, items.length, user, setLocation, soldOutItems.length]);
+    }, [cartLoading, authLoading, items.length, user, guestCheckoutEnabled, setLocation, soldOutItems.length]);
 
   const stockValidatedRef = useRef(false);
   useEffect(() => {
@@ -336,7 +376,7 @@ export default function Checkout() {
   const shippingRates: Record<string, number> = {};
   shippingZones.forEach(z => { shippingRates[z.id] = z.price; });
 
-  const shippingCost = shippingRegion ? (shippingRates[shippingRegion] || 0) : 0;
+  const shippingCost = deliveryMethod === "pickup" ? 0 : (shippingRegion ? (shippingRates[shippingRegion] || 0) : 0);
   const subtotal = cartTotal();
 
   const discountableSubtotal = (() => {
@@ -446,7 +486,7 @@ export default function Checkout() {
     );
   }
 
-  if (!user) return null;
+  if (!user && !guestCheckoutEnabled) return null;
 
   if (cartLoading) {
     return (
@@ -565,7 +605,16 @@ export default function Checkout() {
 
     /* Always persist info for faster future checkout, keyed by userId so different
        accounts on the same browser never overwrite each other's saved details. */
-    localStorage.setItem(savedInfoKey(user.id), JSON.stringify({ ...formData, shippingRegion, phonePrefix, phone2Prefix }));
+    if (user) {
+      localStorage.setItem(savedInfoKey(user.id), JSON.stringify({ ...formData, shippingRegion, phonePrefix, phone2Prefix }));
+    } else {
+      try {
+        localStorage.setItem(GUEST_INFO_KEY, JSON.stringify({
+          fullName: formData.fullName, phoneDigits: formData.phone, phone2: formData.phone2,
+          address: formData.address, city: formData.city, phonePrefix, guestEmail, shippingRegion,
+        }));
+      } catch {}
+    }
     // Also save to user account so it shows in Profile → Account Settings
     if (user) {
       try {
@@ -586,7 +635,7 @@ export default function Checkout() {
       }
     }
 
-    if (!shippingRegion) {
+    if (deliveryMethod === "delivery" && !shippingRegion) {
       toast({ title: t.checkout.regionRequired, variant: "destructive" });
       shippingRegionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -628,7 +677,7 @@ export default function Checkout() {
       color: item.color || null,
     }));
 
-    if (paymentMethod === "card") {
+    if (paymentMethod === "card" || deliveryMethod === "pickup") {
       setStripeLoading(true);
       try {
         const res = await fetch("/api/lahza/create-checkout", {
@@ -643,12 +692,14 @@ export default function Checkout() {
               address: formData.address,
               city: formData.city,
               notes: formData.notes,
-              shippingRegion,
-              shippingCost: shippingCost.toString(),
-              discountCode: appliedDiscount?.code || null,
+              deliveryMethod,
+              guestEmail: !user ? (guestEmail.trim() || null) : null,
+              // Pickup has no region/shipping; the server also enforces this.
+              ...(deliveryMethod === "pickup" ? {} : { shippingRegion, shippingCost: shippingCost.toString() }),
+              discountCode: !user ? null : (appliedDiscount?.code || null),
             },
             items: orderItems,
-            useCredit: creditApplied,
+            useCredit: !user ? 0 : creditApplied,
           }),
         });
         if (!res.ok) {
@@ -726,15 +777,18 @@ export default function Checkout() {
           paymentMethod: "Cash on delivery",
           shippingRegion,
           shippingCost: shippingCost.toString(),
-          discountCode: appliedDiscount?.code || null,
-        },
+          guestEmail: !user ? (guestEmail.trim() || null) : null,
+          discountCode: !user ? null : (appliedDiscount?.code || null),
+        } as any,
         items: orderItems,
-        useCredit: creditApplied,
+        useCredit: !user ? 0 : creditApplied,
       });
 
       clearCart();
       setSoldOutItems([]);
-      setLocation(`/order-confirmation/${order.id}`);
+      // A guest has no account to look the order up in, so the link carries a signed token.
+      const guestToken = (order as any).guestToken as string | undefined;
+      setLocation(guestToken ? `/order-confirmation/${order.id}?t=${guestToken}` : `/order-confirmation/${order.id}`);
     } catch (err: any) {
       if (err.code === "OUT_OF_STOCK" && err.outOfStock?.length > 0) {
         const trulySoldOut = err.outOfStock.filter((oos: any) => oos.reason === "sold_out" || !oos.available || oos.available <= 0);
@@ -868,6 +922,87 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-16">
           <div>
+            {/* Guest notice: they can order, but points and discount codes belong to accounts */}
+            {!user && guestCheckoutEnabled && (
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 mb-6" data-testid="banner-guest-checkout">
+                <span className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                  <UserRound className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+                </span>
+                <div className="flex-1 min-w-0 leading-snug">
+                  <p className="text-sm font-bold">{language === "ar" ? "أنتِ تتسوقين كضيفة" : "You're checking out as a guest"}</p>
+                  <p className="text-xs text-muted-foreground mt-1" data-testid="text-guest-points-hint">
+                    {loyaltyPointsEnabled && Math.floor(subtotal / 2) > 0
+                      ? (language === "ar"
+                          ? `سجّلي الدخول لتكسبي ${Math.floor(subtotal / 2)} نقطة على هذا الطلب. الضيوف لا يحصلون على نقاط أو أكواد خصم.`
+                          : `Sign in to earn ${Math.floor(subtotal / 2)} points on this order. Guests can't earn points or use discount codes.`)
+                      : (language === "ar"
+                          ? "الضيوف لا يحصلون على نقاط أو أكواد خصم. سجّلي الدخول للاستفادة منها."
+                          : "Guests can't earn points or use discount codes. Sign in to enjoy them.")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => { rememberPostLoginTarget("/checkout"); setLocation("/auth"); }}
+                    className="mt-2 text-xs font-semibold text-amber-800 dark:text-amber-300 underline underline-offset-2 hover:no-underline"
+                    data-testid="button-guest-signin"
+                  >
+                    {language === "ar" ? "تسجيل الدخول" : "Sign in"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Delivery or store pickup */}
+            {pickupAvailable && (
+              <div className="mb-8" data-testid="section-delivery-method">
+                <h2 className="text-xl font-semibold uppercase tracking-widest mb-4">{language === "ar" ? "طريقة الاستلام" : "How do you want it?"}</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  {([
+                    { id: "delivery", icon: Truck, title: language === "ar" ? "توصيل" : "Delivery", sub: language === "ar" ? "إلى باب منزلك" : "To your door" },
+                    { id: "pickup", icon: Store, title: language === "ar" ? "استلام من المتجر" : "Store pickup", sub: language === "ar" ? "مجاني · الدفع أونلاين فقط" : "Free · online payment only" },
+                  ] as const).map((opt) => {
+                    const selected = deliveryMethod === opt.id;
+                    const Icon = opt.icon;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setDeliveryMethod(opt.id)}
+                        aria-pressed={selected}
+                        className={`relative flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 text-sm transition-all duration-200 ${
+                          selected
+                            ? "border-foreground bg-foreground text-background shadow-md"
+                            : "border-border text-muted-foreground hover:border-foreground/40 hover:bg-muted/50"
+                        }`}
+                        data-testid={`button-delivery-${opt.id}`}
+                      >
+                        {selected && <CheckCircle2 className="absolute top-2 end-2 w-4 h-4" />}
+                        <Icon className={`w-5 h-5 ${selected ? "" : "text-primary"}`} />
+                        <span className="font-semibold">{opt.title}</span>
+                        <span className={`text-[11px] ${selected ? "text-background/80" : "text-muted-foreground"}`}>{opt.sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {deliveryMethod === "pickup" && (
+              <div className="rounded-2xl border border-primary/25 bg-primary/5 p-5 mb-8" data-testid="box-pickup-info">
+                <div className="flex items-center gap-2 mb-2">
+                  <Store className="w-4 h-4 text-primary" />
+                  <p className="text-sm font-bold">{language === "ar" ? "استلام من متجر لوسيرن" : "Pick up at Lucerne Boutique"}</p>
+                </div>
+                <p className="text-sm">{language === "ar" ? getSetting(siteSettings, "location_address_ar") : getSetting(siteSettings, "location_address_en")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{language === "ar" ? getSetting(siteSettings, "location_hours_ar") : getSetting(siteSettings, "location_hours_en")}</p>
+                <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                  {language === "ar"
+                    ? "ادفعي الآن أونلاين وسنجهّز طلبك ونخبرك عندما يصبح جاهزاً. ستحصلين على رمز استلام تعرضينه عند الوصول."
+                    : "Pay online now and we'll prepare your order and tell you when it's ready. You'll get a pickup code to show when you arrive."}
+                </p>
+              </div>
+            )}
+
+            {deliveryMethod === "delivery" && (<>
             <div ref={shippingRegionRef} className="flex items-baseline justify-between mb-4">
               <h2 className="text-xl font-semibold uppercase tracking-widest">{t.checkout.shippingRegion}</h2>
               {!shippingRegion && (
@@ -903,6 +1038,8 @@ export default function Checkout() {
                 );
               })}
             </div>
+
+            </>)}
 
             <h2 className="text-xl font-semibold mb-6 uppercase tracking-widest">{t.checkout.deliveryDetails}</h2>
 
@@ -1074,6 +1211,13 @@ export default function Checkout() {
                   </p>
                 )}
               </div>
+              {!user && (
+                <div className="space-y-2">
+                  <Label htmlFor="guestEmail">{language === "ar" ? "البريد الإلكتروني (اختياري)" : "Email (optional)"}</Label>
+                  <Input id="guestEmail" type="email" inputMode="email" autoComplete="email" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} placeholder={language === "ar" ? "لإرسال تأكيد الطلب" : "To receive your order confirmation"} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-guest-email" />
+                </div>
+              )}
+              {deliveryMethod === "delivery" && (<>
               <div className="space-y-2">
                 <Label htmlFor="city" className="flex items-center gap-1">{t.checkout.city}<span className="text-red-500 text-base leading-none">*</span></Label>
                 <Input id="city" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-city" />
@@ -1082,6 +1226,7 @@ export default function Checkout() {
                 <Label htmlFor="address" className="flex items-center gap-1">{t.checkout.address}<span className="text-red-500 text-base leading-none">*</span></Label>
                 <Input id="address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-address" />
               </div>
+              </>)}
               <div className="space-y-2">
                 <Label htmlFor="notes">{t.checkout.notes}</Label>
                 <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="rounded-md border-border focus-visible:ring-primary resize-none" rows={4} data-testid="textarea-checkout-notes" />
@@ -1158,14 +1303,19 @@ export default function Checkout() {
                   <span className="flex items-center gap-1.5">
                     <Truck className="w-3.5 h-3.5" />
                     {t.checkout.shipping}
-                    {shippingRegion && <span className="text-xs">({regionLabels[shippingRegion]?.name})</span>}
+                    {deliveryMethod === "delivery" && shippingRegion && <span className="text-xs">({regionLabels[shippingRegion]?.name})</span>}
                   </span>
                   <span className={`ltr-num ${shippingRegion ? "font-medium text-foreground" : ""}`}>
-                    {shippingRegion ? `₪${shippingCost.toFixed(2)}` : t.checkout.selectRegion}
+                    {deliveryMethod === "pickup" ? (language === "ar" ? "مجاني" : "Free") : shippingRegion ? `₪${shippingCost.toFixed(2)}` : t.checkout.selectRegion}
                   </span>
                 </div>
 
-                {appliedDiscount ? (
+                {!user ? (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1" data-testid="text-guest-no-discount">
+                    <Tag className="w-3.5 h-3.5 shrink-0" />
+                    {language === "ar" ? "أكواد الخصم متاحة للمسجّلات فقط" : "Discount codes are for signed-in customers only"}
+                  </p>
+                ) : appliedDiscount ? (
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center text-green-600 dark:text-green-400">
                       <span className="flex items-center gap-1.5">
@@ -1397,8 +1547,9 @@ export default function Checkout() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod("cod")}
-                    className={`flex items-center justify-center gap-2 p-3.5 border-2 rounded-md text-sm font-semibold transition-all ${
+                    disabled={deliveryMethod === "pickup"}
+                    onClick={() => deliveryMethod !== "pickup" && setPaymentMethod("cod")}
+                    className={`flex items-center justify-center gap-2 p-3.5 border-2 rounded-md text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === "cod"
                         ? "border-primary bg-primary text-primary-foreground shadow-sm"
                         : "border-border bg-card text-foreground hover:border-primary/60 hover:bg-accent/40"
@@ -1434,6 +1585,12 @@ export default function Checkout() {
                 </div>
               </div>
 
+              {deliveryMethod === "pickup" && (
+                <p className="-mt-3 mb-4 text-xs text-muted-foreground" data-testid="text-pickup-online-only">
+                  {language === "ar" ? "الاستلام من المتجر يتطلب الدفع أونلاين." : "Store pickup requires online payment."}
+                </p>
+              )}
+
               <div className="border-t border-border pt-4 mb-4 flex justify-between items-center text-xl font-semibold">
                 <span>{t.checkout.total}</span>
                 <span data-testid="text-checkout-total" className="ltr-num">₪{total.toFixed(2)}</span>
@@ -1455,9 +1612,13 @@ export default function Checkout() {
                       </div>
                       <div className="flex-1 leading-snug">
                         <p className="text-sm font-bold">
-                          {language === "ar"
-                            ? `ستحصلين على ${pointsToEarn} نقطة إضافية عند تسليم طلبك!`
-                            : `You'll earn ${pointsToEarn} extra points when your order is delivered!`}
+                          {!user
+                            ? (language === "ar"
+                                ? `سجّلي الدخول لتكسبي ${pointsToEarn} نقطة على هذا الطلب!`
+                                : `Sign in to earn ${pointsToEarn} points on this order!`)
+                            : (language === "ar"
+                                ? `ستحصلين على ${pointsToEarn} نقطة إضافية عند تسليم طلبك!`
+                                : `You'll earn ${pointsToEarn} extra points when your order is delivered!`)}
                         </p>
                       </div>
                     </div>
@@ -1466,6 +1627,7 @@ export default function Checkout() {
               })()}
 
               {/* Delivery promise */}
+              {deliveryMethod === "delivery" ? (
               <div className="mb-4 flex items-center gap-3 p-3 border border-green-500/25 bg-green-500/5 rounded-md" data-testid="banner-delivery-checkout">
                 <div className="relative flex-shrink-0">
                   <div className="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -1488,6 +1650,14 @@ export default function Checkout() {
                   </span>
                 </div>
               </div>
+              ) : (
+              <div className="mb-4 flex items-center gap-3 p-3 border border-primary/25 bg-primary/5 rounded-md" data-testid="banner-pickup-checkout">
+                <Store className="w-4 h-4 text-primary shrink-0" />
+                <p className="text-xs font-semibold">
+                  {language === "ar" ? "نخبرك على واتساب عندما يصبح طلبك جاهزاً للاستلام" : "We'll message you on WhatsApp when your order is ready for pickup"}
+                </p>
+              </div>
+              )}
 
               <Button
                 type="submit"

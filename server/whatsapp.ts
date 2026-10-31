@@ -256,11 +256,16 @@ export async function sendOrderStatusWA(
     customerName: string;
     orderId: number;
     status: string;
+    pickupCode?: string | null;
   }
 ) {
   if (!phone) return;
   const orderRef = `#${String(details.orderId).padStart(6, "0")}`;
   const statusMessages: Record<string, string> = {
+    ReadyForPickup:
+      `🛍️ طلبك ${orderRef} جاهز للاستلام من المتجر!` +
+      (details.pickupCode ? `\nرمز الاستلام: *${details.pickupCode}*` : "") +
+      `\nأحضري هذا الرمز عند الاستلام.`,
     Processing: `⚙️ طلبك ${orderRef} قيد المعالجة الآن.`,
     Shipped:    `🚚 طلبك ${orderRef} في الطريق إليك! سيصل قريباً.`,
     Delivered:  `✅ تم تسليم طلبك ${orderRef} بنجاح. نأمل أن ينال إعجابك!`,
@@ -274,6 +279,36 @@ export async function sendOrderStatusWA(
     await sendSmart(phone, msg);
   } catch (err: any) {
     console.error(`[wa] Order status failed for ${toWhatsAppE164(phone)}:`, err.message);
+  }
+}
+
+/** Sent once an online-paid pickup order is confirmed: the pickup code + a link to reopen it. */
+export async function sendPickupConfirmationWA(
+  phone: string,
+  details: {
+    customerName: string;
+    orderId: number;
+    totalAmount: string;
+    pickupCode: string;
+    link: string;
+  }
+) {
+  if (!phone) return;
+  const orderRef = `#${String(details.orderId).padStart(6, "0")}`;
+  const msg =
+    `مرحباً ${details.customerName} 👋\n\n` +
+    `✅ تم استلام طلبك ${orderRef} ودفعه بنجاح.\n` +
+    `طريقة الاستلام: من المتجر 🛍️\n\n` +
+    `رمز الاستلام: *${details.pickupCode}*\n` +
+    `سنخبرك عندما يصبح طلبك جاهزاً.\n\n` +
+    `المجموع المدفوع: ${details.totalAmount} ₪\n` +
+    `تفاصيل الطلب: ${details.link}\n\n` +
+    `شكراً لتسوقك معنا في Lucerne Boutique 🌿`;
+  try {
+    assertConfigured();
+    await sendSmart(phone, msg);
+  } catch (err: any) {
+    console.error(`[wa] Pickup confirmation failed for ${toWhatsAppE164(phone)}:`, err.message);
   }
 }
 

@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { SeasonalHeroOverlay } from "@/components/seasonal/SeasonalDecor";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { ProductWatermark } from "@/components/ui/ProductWatermark";
 import { AutoplayVideo } from "@/components/ui/AutoplayVideo";
@@ -550,6 +551,9 @@ export default function Home() {
               }}
             />
           </div>
+
+          {/* Seasonal decorations (Christmas / Eid) — renders nothing unless the admin turned a season on */}
+          <SeasonalHeroOverlay />
 
           {/* 3D floating text content */}
           <motion.div

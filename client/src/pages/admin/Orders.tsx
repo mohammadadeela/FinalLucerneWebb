@@ -71,12 +71,44 @@ import { useSiteSettings, getShippingZones } from "@/hooks/use-site-settings";
 const STATUSES = [
   "All",
   "Pending",
+  "ReadyForPickup",
   "OnTheWay",
   "Delivered",
   "Cancelled",
 ] as const;
 type StatusFilter = (typeof STATUSES)[number];
-const ACTION_STATUSES = ["Pending", "OnTheWay", "Delivered", "Cancelled"];
+const ACTION_STATUSES = ["Pending", "ReadyForPickup", "OnTheWay", "Delivered", "Cancelled"];
+
+/** Status choices that make sense for one order: pickup orders are never "on the way", delivery orders are
+ *  never "ready for pickup". The order's current status always stays selectable so the box never goes blank. */
+function statusOptionsFor(order: { status?: string; deliveryMethod?: string } | undefined | null): string[] {
+  const isPickup = order?.deliveryMethod === "pickup";
+  return ACTION_STATUSES.filter(
+    (s) => s === order?.status || (isPickup ? s !== "OnTheWay" : s !== "ReadyForPickup"),
+  );
+}
+
+/** Small tags that tell staff at a glance how an order is being fulfilled and who placed it. */
+function OrderTags({ order }: { order: { deliveryMethod?: string; pickupCode?: string | null; userId?: number | null } }) {
+  const isPickup = order.deliveryMethod === "pickup";
+  const isGuest = order.userId == null;
+  if (!isPickup && !isGuest) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1 mt-1">
+      {isPickup && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 text-violet-800 px-2 py-0.5 text-[10px] font-semibold" data-testid="tag-pickup">
+          🛍️ استلام من المتجر{order.pickupCode ? <span className="font-mono tracking-wider ltr-num">· {order.pickupCode}</span> : null}
+        </span>
+      )}
+      {isGuest && (
+        <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-[10px] font-semibold" data-testid="tag-guest">
+          ضيف · Guest
+        </span>
+      )}
+    </div>
+  );
+}
+
 
 function SelectBox({
   checked,
@@ -273,9 +305,10 @@ export default function Orders() {
         OnTheWay: isAr ? "في الطريق" : "On The Way",
         Delivered: isAr ? "تم التسليم" : "Delivered",
         Cancelled: isAr ? "ملغي" : "Cancelled",
-      };
-
-      const statusColors: Record<string, string> = {
+        ReadyForPickup: isAr ? "جاهز للاستلام" : "Ready for pickup",
+        };
+        const statusColors: Record<string, string> = {
+        ReadyForPickup: "#7c3aed",
         Pending: "#d97706",
         OnTheWay: "#2563eb",
         Delivered: "#16a34a",
@@ -606,11 +639,13 @@ export default function Orders() {
         );
       }
       return (
-        (o.fullName || "").toLowerCase().includes(q) ||
-        (o.city || "").toLowerCase().includes(q)
+      (o.fullName || "").toLowerCase().includes(q) ||
+      (o.city || "").toLowerCase().includes(q) ||
+      // Staff type the pickup code a customer shows at the counter.
+      (o.pickupCode || "").toLowerCase() === q
       );
-    });
-  }, [orders, search, statusFilter, dateFilter]);
+      });
+      }, [orders, search, statusFilter, dateFilter]);
 
   const filteredIds = filteredOrders?.map((o) => o.id) || [];
   const allFilteredSelected =
@@ -678,10 +713,12 @@ export default function Orders() {
       status === "Delivered"
         ? "bg-green-100 text-green-800"
         : status === "Cancelled"
-          ? "bg-red-100 text-red-800"
-          : status === "OnTheWay"
-            ? "bg-blue-100 text-blue-800"
-            : "bg-amber-100 text-amber-800";
+ ? "bg-red-100 text-red-800"
+ : status === "OnTheWay"
+ ? "bg-blue-100 text-blue-800"
+ : status === "ReadyForPickup"
+ ? "bg-violet-100 text-violet-800"
+ : "bg-amber-100 text-amber-800";
     return (
       <span
         className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${cls}`}
@@ -700,9 +737,13 @@ export default function Orders() {
       return statusFilter === s
         ? "bg-red-600 text-white border-red-600"
         : "border-border text-muted-foreground hover:border-red-400 hover:text-red-700";
+    if (s === "ReadyForPickup")
+    return statusFilter === s
+    ? "bg-violet-600 text-white border-violet-600"
+    : "border-border text-muted-foreground hover:border-violet-400 hover:text-violet-700";
     if (s === "OnTheWay")
-      return statusFilter === s
-        ? "bg-blue-600 text-white border-blue-600"
+    return statusFilter === s
+    ? "bg-blue-600 text-white border-blue-600"
         : "border-border text-muted-foreground hover:border-blue-400 hover:text-blue-700";
     if (s === "Pending")
       return statusFilter === s
@@ -716,11 +757,11 @@ export default function Orders() {
   const statusLabelAr: Record<string, string> = {
     Pending: "قيد الانتظار",
     OnTheWay: "في الطريق",
+    ReadyForPickup: "جاهز للاستلام",
     Delivered: "تم التسليم",
     Cancelled: "ملغي",
-  };
-
-  // Collect all product images in current order for lightbox navigation —
+    };
+    // Collect all product images in current order for lightbox navigation —
   // the color-specific image for each item, not the generic main image.
   const orderImages = useMemo(() => {
     if (!orderDetails) return [];
@@ -812,8 +853,10 @@ export default function Orders() {
         {STATUSES.map((s) => {
           const dotColor =
             s === "Pending"
-              ? "bg-amber-400"
-              : s === "OnTheWay"
+            ? "bg-amber-400"
+            : s === "ReadyForPickup"
+            ? "bg-violet-500"
+            : s === "OnTheWay"
                 ? "bg-blue-500"
                 : s === "Delivered"
                   ? "bg-emerald-500"
@@ -1230,8 +1273,9 @@ export default function Orders() {
                     </TableCell>
                     <TableCell>
                       <p className="text-sm font-medium">{o.fullName}</p>
-                      <p className="text-xs text-muted-foreground">{o.city}</p>
-                    </TableCell>
+                      <p className="text-xs text-muted-foreground">{o.deliveryMethod === "pickup" ? "استلام من المتجر" : o.city}</p>
+                      <OrderTags order={o} />
+                      </TableCell>
                     <TableCell className="font-semibold">
                       <span className="ltr-num">₪{parseFloat(o.totalAmount).toFixed(2)}</span>
                     </TableCell>
@@ -1249,14 +1293,14 @@ export default function Orders() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ACTION_STATUSES.map((s) => (
-                            <SelectItem key={s} value={s} className="text-xs">
-                              {(t.orderStatus as any)?.[s] || s}
-                            </SelectItem>
-                          ))}
+                        {statusOptionsFor(o).map((s) => (
+                        <SelectItem key={s} value={s} className="text-xs">
+                        {(t.orderStatus as any)?.[s] || s}
+                        </SelectItem>
+                        ))}
                         </SelectContent>
-                      </Select>
-                    </TableCell>
+                        </Select>
+                        </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="ghost"
@@ -1351,9 +1395,10 @@ export default function Orders() {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-sm font-medium">{o.fullName}</p>
-                    <p className="text-xs text-muted-foreground">{o.city}</p>
-                  </div>
-                  <p className="font-bold text-base">
+                    <p className="text-xs text-muted-foreground">{o.deliveryMethod === "pickup" ? "استلام من المتجر" : o.city}</p>
+                    <OrderTags order={o} />
+                    </div>
+                    <p className="font-bold text-base">
                     <span className="ltr-num">₪{parseFloat(o.totalAmount).toFixed(2)}</span>
                   </p>
                 </div>
@@ -1369,11 +1414,11 @@ export default function Orders() {
                     <SelectTrigger
                       className="h-9 flex-1 text-xs"
                       data-testid={`select-order-status-mobile-${o.id}`}
-                    >
+                      >
                       <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ACTION_STATUSES.map((s) => (
+                      </SelectTrigger>
+                      <SelectContent>
+                      {statusOptionsFor(o).map((s) => (
                         <SelectItem key={s} value={s} className="text-xs">
                           {(t.orderStatus as any)?.[s] || s}
                         </SelectItem>
@@ -1413,6 +1458,10 @@ export default function Orders() {
                     {t.admin.customerName}
                   </p>
                   <p className="font-medium">{orderDetails.order.fullName}</p>
+                  <OrderTags order={orderDetails.order as any} />
+                  {orderDetails.order.userId == null && (orderDetails.order as any).guestEmail && (
+                  <p className="mt-1 text-xs text-muted-foreground ltr-num">{(orderDetails.order as any).guestEmail}</p>
+                  )}
                   {orderDetails.linkedUserId && orderDetails.customerEmail && (
                       <Link
                         href={`/admin/users?user=${orderDetails.linkedUserId}`}
@@ -1444,7 +1493,9 @@ export default function Orders() {
                     {t.admin.deliveryAddress}
                   </p>
                   <p className="font-medium">
-                    {orderDetails.order.address}, {orderDetails.order.city}
+                  {(orderDetails.order as any).deliveryMethod === "pickup"
+                  ? `🛍️ استلام من المتجر${(orderDetails.order as any).pickupCode ? ` — رمز الاستلام: ${(orderDetails.order as any).pickupCode}` : ""}`
+                  : `${orderDetails.order.address}, ${orderDetails.order.city}`}
                   </p>
                 </div>
                 {orderDetails.order.shippingRegion && (
@@ -1742,11 +1793,11 @@ export default function Orders() {
                   <SelectTrigger
                     className="w-full mt-2"
                     data-testid="select-order-status-detail"
-                  >
+                    >
                     <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACTION_STATUSES.map((s) => (
+                    </SelectTrigger>
+                    <SelectContent>
+                    {statusOptionsFor(orderDetails?.order).map((s) => (
                       <SelectItem key={s} value={s}>
                         {(t.orderStatus as any)?.[s] || s}
                       </SelectItem>

@@ -63,9 +63,25 @@
     async function save() {
       const url = document.getElementById("urlInput").value.trim();
       const err = document.getElementById("errMsg");
-      if (!url.startsWith("http")) { err.style.display = "block"; return; }
+      const fail = (ar, en) => {
+        err.textContent = "";
+        const a = document.createElement("div"); a.dir = "rtl"; a.textContent = ar;
+        const e = document.createElement("div"); e.dir = "ltr"; e.textContent = en;
+        err.append(a, e);
+        err.style.display = "block";
+      };
+      if (!url) return fail("الرجاء إدخال رابط المتجر", "Please enter the store URL");
       err.style.display = "none";
-      await window.electronPOS.saveConfig({ url });
+      try {
+        const result = await window.electronPOS.saveConfig({ url });
+        if (result && result.ok === false) {
+          if (result.error === "invalid-url") fail("الرابط غير صحيح. مثال: https://lucerne-boutique.com", "That address isn't valid. Example: https://lucerne-boutique.com");
+          else if (result.error === "write-failed") fail("تعذّر حفظ الإعدادات على هذا الجهاز.", "Couldn't save the settings on this computer.");
+          else fail("تعذّر الحفظ. حاول مرة أخرى.", "Couldn't save. Please try again.");
+        }
+      } catch (e) {
+        fail("تعذّر الحفظ. حاول مرة أخرى.", "Couldn't save. Please try again.");
+      }
     }
   </script>
 </body>

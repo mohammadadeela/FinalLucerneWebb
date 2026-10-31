@@ -33,11 +33,13 @@ export function useMyOrders() {
   });
 }
 
-export function useOrder(id: number) {
-  return useQuery({
-    queryKey: [api.orders.get.path, id],
-    queryFn: async () => {
-      const url = buildUrl(api.orders.get.path, { id });
+/** `guestToken` is the signed link token a guest (no account) receives when ordering. */
+export function useOrder(id: number, guestToken?: string | null) {
+return useQuery({
+queryKey: [api.orders.get.path, id, guestToken ?? null],
+queryFn: async () => {
+const base = buildUrl(api.orders.get.path, { id });
+const url = guestToken ? `${base}?t=${encodeURIComponent(guestToken)}` : base;
       const res = await fetch(url, { credentials: "include" });
       if (res.status === 404) return null;
       if (!res.ok) throw new Error("Failed to fetch order details");

@@ -13,7 +13,7 @@ import { subcategories } from "@shared/schema";
 import { db, pool } from "./db";
 import { uploadToCloudinary, deleteFromCloudinary, uploadVideoToCloudinary, warmCloudinaryCache } from "./cloudinary";
 import { sendPasswordResetCode, sendSignupVerificationCode, sendOrderNotification, sendOrderConfirmationToCustomer, sendExchangeStatusEmail, sendExchangeAdminNotification, sendAbandonedCartEmail, sendSaleDiscountEmail, sendDiscountCodeEmail, isPlaceholderEmail } from "./email";
-import { sendOrderConfirmationWA, sendDiscountCodeWA, sendTextMessage, sendOtpWhatsApp, isWhatsAppConfigured } from "./whatsapp";
+import { sendOrderConfirmationWA, sendDiscountCodeWA, sendTextMessage, sendOtpWhatsApp, isWhatsAppConfigured, sendOrderStatusWA, sendPickupConfirmationWA } from "./whatsapp";
 import { sendTwilioSmsVerification, checkTwilioSmsVerification, isTwilioSmsConfigured, usesTwilioVerifyService } from "./twilioVerify";
 import ExcelJS from "exceljs";
 import rateLimit from "express-rate-limit";
@@ -28,6 +28,11 @@ import { SITE_URL } from "./seo";
 import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCategoryReportResponse, parseMonthParam } from "./reports";
 import { getEnvEmployees } from "./staff-env";
 import { auditMiddleware, registerAuditRoutes } from "./audit";
+import {
+  PICKUP_REGION, PICKUP_ADDRESS_PLACEHOLDER, PICKUP_CITY_PLACEHOLDER,
+  isGuestCheckoutEnabled, isOnlinePickupEnabled, guestOrderToken, verifyGuestOrderToken,
+  generateUniquePickupCode, cleanGuestEmail, validateGuestInfo,
+} from "./checkoutHelpers";
 
 // Rate limiters for auth endpoints
 const loginLimiter = rateLimit({
@@ -54,6 +59,17 @@ const passwordResetLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: "Too many password reset requests. Please try again in an hour." },
 });
+
+// Guest orders: no account to hold accountable, so cap how many one IP can place.
+const guestOrderLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 12,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many orders from this connection. Please try again later." },
+});
+const guestAwareOrderLimiter: import("express").RequestHandler = (req, res, next) =>
+  req.isAuthenticated() ? next() : guestOrderLimiter(req, res, next);
 
 // Chatbot: 30 messages/minute per IP — prevents DB flooding (each call runs 3 queries)
 const chatLimiter = rateLimit({
@@ -606,6 +622,7 @@ Disallow: /admin
 Disallow: /profile
 Disallow: /cart
 Disallow: /checkout
+Disallow: /copy-code
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `);
@@ -3140,11 +3157,16 @@ Sitemap: ${SITE_URL}/sitemap.xml
   });
 
   app.get(api.orders.get.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     const orderData = await storage.getOrder(Number(req.params.id));
-    
+
+    // A guest order (no account) is readable with its signed link token instead of a login.
+    if (orderData && orderData.order.userId == null && verifyGuestOrderToken(orderData.order.id, req.query.t)) {
+      return res.json(orderData);
+    }
+
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
     if (!orderData) return res.status(404).json({ message: "Not found" });
-    
+
     const user = req.user as any;
     if (user.role !== 'admin' && orderData.order.userId !== user.id) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -3282,11 +3304,29 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
-  app.post(api.orders.create.path, async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "يجب تسجيل الدخول لإتمام الطلب" });
+  app.post(api.orders.create.path, guestAwareOrderLimiter, async (req, res) => {
+    const isGuest = !req.isAuthenticated();
+    if (isGuest && !(await isGuestCheckoutEnabled())) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول لإتمام الطلب" });
+    }
     try {
       const input = api.orders.create.input.parse(req.body);
-      const userId = (req.user as any).id;
+      const userId: number | null = isGuest ? null : (req.user as any).id;
+
+      // Pickup is online-payment only, so it never goes through this cash-on-delivery route.
+      if ((input.order as any).deliveryMethod === "pickup") {
+        return res.status(400).json({ message: "pickup_requires_online_payment", code: "PICKUP_ONLINE_ONLY" });
+      }
+      let guestEmail: string | null = null;
+      if (isGuest) {
+        const guestError = validateGuestInfo({ ...(input.order as any) }, "delivery");
+        if (guestError) return res.status(400).json({ message: guestError, code: "GUEST_INFO_INVALID" });
+        // Guests get no discount codes and no loyalty credit — those belong to accounts.
+        if ((input.order as any).discountCode || Number((req.body as any)?.useCredit) > 0) {
+          return res.status(400).json({ message: "guest_discount_not_allowed", code: "GUEST_NO_DISCOUNT" });
+        }
+        guestEmail = cleanGuestEmail((input.order as any).guestEmail);
+      }
 
       const products = new Map<number, any>();
       for (const item of input.items) {
@@ -3322,11 +3362,11 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
       let discountAmount = 0;
       let appliedDiscountCode: string | null = null;
-      const clientDiscountCode = (input.order as any).discountCode as string | undefined;
+      const clientDiscountCode = isGuest ? undefined : ((input.order as any).discountCode as string | undefined);
       if (clientDiscountCode) {
         const discount = await storage.validateDiscountCode(clientDiscountCode);
         if (discount && discount.maxUsesPerUser) {
-          const userUses = await storage.getUserDiscountCodeUseCount(userId, discount.code);
+          const userUses = await storage.getUserDiscountCodeUseCount(userId as number, discount.code);
           if (userUses >= discount.maxUsesPerUser) {
             return res.status(400).json({ message: "already_used_by_user" });
           }
@@ -3373,10 +3413,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
       }
 
       // Loyalty credit usage (optional)
-      const requestedCredit = Math.max(0, Number((req.body as any)?.useCredit) || 0);
+      const requestedCredit = isGuest ? 0 : Math.max(0, Number((req.body as any)?.useCredit) || 0);
       let creditUsed = 0;
       if (requestedCredit > 0) {
-        const userRecord = await storage.getUser(userId);
+        const userRecord = await storage.getUser(userId as number);
         const availableCredit = Number((userRecord as any)?.credit || 0);
         const maxApplicable = Math.max(0, subtotal - discountAmount);
         creditUsed = Math.min(requestedCredit, availableCredit, maxApplicable);
@@ -3392,12 +3432,14 @@ Sitemap: ${SITE_URL}/sitemap.xml
         shippingCost: serverShippingCost.toString(),
         shippingRegion: region,
         status: "Pending",
+        deliveryMethod: "delivery",
+        guestEmail,
         discountCode: appliedDiscountCode,
         discountAmount: discountAmount > 0 ? discountAmount.toString() : null,
         creditUsed: creditUsed > 0 ? creditUsed.toString() : null,
       }, verifiedItems);
 
-      if (creditUsed > 0) {
+      if (creditUsed > 0 && userId) {
         await storage.deductUserCredit(userId, creditUsed);
       }
 
@@ -3442,9 +3484,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
         items: itemDetails,
       }).catch(console.error);
 
-      const customerUser = await storage.getUser(userId);
-      if (customerUser?.email && !isPlaceholderEmail(customerUser.email)) {
-        sendOrderConfirmationToCustomer(customerUser.email, {
+      const customerUser = userId ? await storage.getUser(userId) : undefined;
+      const confirmationEmail = customerUser?.email || guestEmail || "";
+      if (confirmationEmail && !isPlaceholderEmail(confirmationEmail)) {
+        sendOrderConfirmationToCustomer(confirmationEmail, {
           orderId: order.id,
           customerName: input.order.fullName,
           phone: input.order.phone,
@@ -3472,7 +3515,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }).catch(console.error);
       }
       
-      res.status(201).json(order);
+      res.status(201).json(isGuest ? { ...order, guestToken: guestOrderToken(order.id) } : order);
     } catch (err: any) {
       console.error("[POST /api/orders] error:", err);
       const msg: string = err?.message || "";
@@ -3494,6 +3537,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       Shipped:    ["طلبك في الطريق إليك 🚚", "Your order is on the way 🚚"],
       Delivered:  ["تم تسليم طلبك بنجاح ✓", "Your order has been delivered ✓"],
       Cancelled:  ["تم إلغاء طلبك", "Your order has been cancelled"],
+      ReadyForPickup: ["طلبك جاهز للاستلام من المتجر 🛍️", "Your order is ready for pickup at the store 🛍️"],
     };
     const msgs = notifyStatuses[status];
     if (!msgs) return;
@@ -3516,6 +3560,15 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const order = await storage.updateOrderStatus(Number(req.params.id), input.status);
       if (!order) return res.status(404).json({ message: "Not found" });
       await notifyOrderStatus(order, input.status);
+      // Pickup customers (incl. guests with no account) are told on WhatsApp the moment it's ready.
+      if (input.status === "ReadyForPickup" && order.phone) {
+        sendOrderStatusWA(order.phone, {
+          customerName: order.fullName,
+          orderId: order.id,
+          status: input.status,
+          pickupCode: order.pickupCode,
+        }).catch(console.error);
+      }
       res.json(order);
     } catch (err) {
       res.status(400).json({ message: "Validation error" });
@@ -3598,6 +3651,13 @@ Sitemap: ${SITE_URL}/sitemap.xml
         ids.map(id => storage.updateOrderStatus(id, status))
       );
       await Promise.all(results.filter(Boolean).map(order => notifyOrderStatus(order, status)));
+      if (status === "ReadyForPickup") {
+        results.filter(Boolean).forEach((order: any) => {
+          if (order.phone && order.deliveryMethod === "pickup") {
+            sendOrderStatusWA(order.phone, { customerName: order.fullName, orderId: order.id, status, pickupCode: order.pickupCode }).catch(console.error);
+          }
+        });
+      }
       res.json({ updated: results.filter(Boolean).length });
     } catch (err) {
       res.status(400).json({ message: "Failed to update orders" });
@@ -4206,19 +4266,38 @@ Sitemap: ${SITE_URL}/sitemap.xml
   // --- Lahza Payment Routes ---
   const pendingLahzaOrders = new Map<string, any>();
 
-  app.post("/api/lahza/create-checkout", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "يجب تسجيل الدخول لإتمام الطلب" });
+  app.post("/api/lahza/create-checkout", guestAwareOrderLimiter, async (req, res) => {
+    const isGuest = !req.isAuthenticated();
+    if (isGuest && !(await isGuestCheckoutEnabled())) {
+      return res.status(401).json({ message: "يجب تسجيل الدخول لإتمام الطلب" });
+    }
     try {
       const { order, items } = req.body;
       if (!order || !items || !Array.isArray(items)) {
         return res.status(400).json({ message: "Invalid request" });
       }
 
-      const userId = (req.user as any).id;
-      const userObj = await storage.getUser(userId);
+      const userId: number | null = isGuest ? null : (req.user as any).id;
+      const userObj = userId ? await storage.getUser(userId) : undefined;
+
+      // Delivery vs. store pickup. Pickup can be switched off by the admin.
+      const deliveryMethod: "delivery" | "pickup" = order.deliveryMethod === "pickup" ? "pickup" : "delivery";
+      if (deliveryMethod === "pickup" && !(await isOnlinePickupEnabled())) {
+        return res.status(400).json({ message: "pickup_unavailable", code: "PICKUP_DISABLED" });
+      }
+
+      let guestEmail: string | null = null;
+      if (isGuest) {
+        const guestError = validateGuestInfo(order, deliveryMethod);
+        if (guestError) return res.status(400).json({ message: guestError, code: "GUEST_INFO_INVALID" });
+        if (order.discountCode || Number((req.body as any)?.useCredit) > 0) {
+          return res.status(400).json({ message: "guest_discount_not_allowed", code: "GUEST_NO_DISCOUNT" });
+        }
+        guestEmail = cleanGuestEmail(order.guestEmail);
+      }
 
       const lahzaShippingRates = await getShippingRates();
-      if (!order.shippingRegion || lahzaShippingRates[order.shippingRegion] === undefined) {
+      if (deliveryMethod === "delivery" && (!order.shippingRegion || lahzaShippingRates[order.shippingRegion] === undefined)) {
         return res.status(400).json({ message: "Invalid or missing shipping region" });
       }
 
@@ -4245,10 +4324,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
       let lahzaDiscountAmount = 0;
       let lahzaAppliedCode: string | null = null;
-      if (order.discountCode) {
+      if (order.discountCode && !isGuest) {
         const dsc = await storage.validateDiscountCode(order.discountCode);
         if (dsc && dsc.maxUsesPerUser) {
-          const userUses = await storage.getUserDiscountCodeUseCount(userId, dsc.code);
+          const userUses = await storage.getUserDiscountCodeUseCount(userId as number, dsc.code);
           if (userUses >= dsc.maxUsesPerUser) {
             return res.status(400).json({ message: "already_used_by_user" });
           }
@@ -4260,7 +4339,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       }
 
       // Loyalty credit usage (optional)
-      const lahzaRequestedCredit = Math.max(0, Number((req.body as any)?.useCredit) || 0);
+      const lahzaRequestedCredit = isGuest ? 0 : Math.max(0, Number((req.body as any)?.useCredit) || 0);
       let lahzaCreditUsed = 0;
       if (lahzaRequestedCredit > 0) {
         const availableCredit = Number((userObj as any)?.credit || 0);
@@ -4269,24 +4348,40 @@ Sitemap: ${SITE_URL}/sitemap.xml
         lahzaCreditUsed = Math.round(lahzaCreditUsed * 100) / 100;
       }
 
-      const shippingCost = lahzaShippingRates[order.shippingRegion];
+      // Pickup orders have no shipping charge. The server decides this — never the client.
+      const shippingCost = deliveryMethod === "pickup" ? 0 : lahzaShippingRates[order.shippingRegion];
       const totalAmount = subtotal - lahzaDiscountAmount - lahzaCreditUsed + shippingCost;
-      const reference = `LUC-${Date.now()}-${userId}`;
+      const reference = isGuest
+        ? `LUC-${Date.now()}-g${randomUUID().replace(/-/g, "").slice(0, 10)}`
+        : `LUC-${Date.now()}-${userId}`;
       const baseUrl = `https://${req.headers.host}`;
 
       const lahzaResult = await initializeLahzaTransaction({
-        email: userObj?.email || `user${userId}@lucerneboutique.com`,
+        email: userObj?.email || guestEmail || (isGuest ? `guest-${reference.slice(-10)}@lucerneboutique.com` : `user${userId}@lucerneboutique.com`),
         amount: totalAmount,
         reference,
         callback_url: `${baseUrl}/checkout/success?reference=${reference}`,
       });
 
       pendingLahzaOrders.set(reference, {
-        orderData: { ...order, userId, paymentMethod: "Card (Lahza)", discountCode: lahzaAppliedCode, discountAmount: lahzaDiscountAmount > 0 ? lahzaDiscountAmount : null, creditUsed: lahzaCreditUsed > 0 ? lahzaCreditUsed : null },
+        orderData: {
+          ...order,
+          userId,
+          paymentMethod: "Card (Lahza)",
+          deliveryMethod,
+          guestEmail,
+          // Pickup orders store store-pickup placeholders because address/city are required columns.
+          shippingRegion: deliveryMethod === "pickup" ? PICKUP_REGION : order.shippingRegion,
+          address: deliveryMethod === "pickup" ? PICKUP_ADDRESS_PLACEHOLDER : order.address,
+          city: deliveryMethod === "pickup" ? PICKUP_CITY_PLACEHOLDER : order.city,
+          discountCode: lahzaAppliedCode,
+          discountAmount: lahzaDiscountAmount > 0 ? lahzaDiscountAmount : null,
+          creditUsed: lahzaCreditUsed > 0 ? lahzaCreditUsed : null,
+        },
         items: verifiedItems,
         shippingCost,
         totalAmount,
-        userEmail: userObj?.email || "",
+        userEmail: userObj?.email || guestEmail || "",
         creditUsed: lahzaCreditUsed,
       });
 
@@ -4297,10 +4392,21 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  // Remember finished payments so reloading the success page returns the same order
+  // instead of "not found" (important for guests, who have no account to look it up in).
+  const processedLahzaRefs = new Map<string, { order: any; guestToken?: string; at: number }>();
+  setInterval(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    processedLahzaRefs.forEach((v, k) => { if (v.at < cutoff) processedLahzaRefs.delete(k); });
+  }, 60 * 60 * 1000).unref?.();
+
   app.get("/api/lahza/verify", async (req, res) => {
     try {
       const reference = req.query.reference as string;
       if (!reference) return res.status(400).json({ message: "Missing reference" });
+
+      const done = processedLahzaRefs.get(reference);
+      if (done) return res.json({ order: done.order, ...(done.guestToken ? { guestToken: done.guestToken } : {}) });
 
       const pending = pendingLahzaOrders.get(reference);
       if (!pending) return res.status(404).json({ message: "Order not found or already processed" });
@@ -4329,6 +4435,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
         shippingRegion: orderData.shippingRegion || null,
         status: "Pending",
         paymentMethod: "Card (Lahza)",
+        deliveryMethod: orderData.deliveryMethod === "pickup" ? "pickup" : "delivery",
+        pickupCode: orderData.deliveryMethod === "pickup" ? await generateUniquePickupCode() : null,
+        guestEmail: orderData.guestEmail || null,
         discountCode: orderData.discountCode || null,
         discountAmount: orderData.discountAmount ? orderData.discountAmount.toString() : null,
       }, items);
@@ -4364,6 +4473,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
         };
       }));
 
+      const isPickupOrder = order.deliveryMethod === "pickup";
       sendOrderNotification({
         orderId: order.id,
         customerName: orderData.fullName,
@@ -4371,9 +4481,24 @@ Sitemap: ${SITE_URL}/sitemap.xml
         address: orderData.address,
         city: orderData.city,
         totalAmount: totalAmount.toFixed(2),
-        paymentMethod: "Card (Lahza)",
+        paymentMethod: isPickupOrder
+          ? `Card (Lahza) — استلام من المتجر / PICKUP · ${order.pickupCode}`
+          : "Card (Lahza)",
         items: itemDetails,
       }).catch(console.error);
+
+      if (isPickupOrder && order.pickupCode && orderData.phone) {
+        const link = order.userId == null
+          ? `${SITE_URL}/order-confirmation/${order.id}?t=${guestOrderToken(order.id)}`
+          : `${SITE_URL}/order-confirmation/${order.id}`;
+        sendPickupConfirmationWA(orderData.phone, {
+          customerName: orderData.fullName,
+          orderId: order.id,
+          totalAmount: totalAmount.toFixed(2),
+          pickupCode: order.pickupCode,
+          link,
+        }).catch(console.error);
+      }
 
       if (userEmail && !isPlaceholderEmail(userEmail)) {
         sendOrderConfirmationToCustomer(userEmail, {
@@ -4390,7 +4515,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }).catch(console.error);
       }
 
-      res.json({ order });
+      const guestToken = order.userId == null ? guestOrderToken(order.id) : undefined;
+      processedLahzaRefs.set(reference, { order, guestToken, at: Date.now() });
+      res.json({ order, ...(guestToken ? { guestToken } : {}) });
     } catch (err: any) {
       console.error("Lahza verify error:", err);
       res.status(500).json({ message: err.message || "Failed to process payment confirmation" });
@@ -4515,6 +4642,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
   });
 
   app.post("/api/site-settings", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     try {
       const { key, value } = req.body;
       if (!key || value === undefined) return res.status(400).json({ message: "key and value are required" });
@@ -4526,6 +4654,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
   });
 
   app.post("/api/site-settings/bulk", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") return res.status(401).json({ message: "Unauthorized" });
     try {
       const updates: Record<string, string> = req.body;
       const results = await Promise.all(
@@ -4624,7 +4753,11 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.get("/api/pos/orders/:id", async (req, res) => {
     if (!req.isAuthenticated() || !["admin", "employee"].includes(req.user.role)) return res.status(401).json({ message: "Unauthorized" });
     try {
-      const order = await storage.getPosOrderById(parseInt(req.params.id));
+      // A temporary offline invoice number (OFF-…) is looked up by that number once it has synced.
+      const rawId = String(req.params.id || "").trim();
+      const order = /^OFF-/i.test(rawId)
+        ? await storage.getPosOrderByOfflineNumber(rawId.toUpperCase())
+        : await storage.getPosOrderById(parseInt(req.params.id));
       if (!order) return res.status(404).json({ message: "Order not found" });
       res.json(order);
     } catch (err: any) {
@@ -4955,9 +5088,41 @@ Sitemap: ${SITE_URL}/sitemap.xml
     if (!req.isAuthenticated() || !["admin", "employee"].includes(req.user.role)) return res.status(401).json({ message: "Unauthorized" });
     try {
       const { paymentMethod, items, note, cashAmount, cardAmount, totalAmount, subtotalAmount, discountAmount } = req.body;
-      const seller = getPosSeller(req.user as any);
+      let seller = getPosSeller(req.user as any);
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ message: "No items provided" });
+      }
+
+      // ── Offline POS: sales rung up with no connection and uploaded later ──────────────
+      // clientRef is generated on the cashier's device, once per sale. If the same sale is
+      // uploaded twice (retry after a dropped response, two syncs racing) the second call just
+      // returns the invoice that already exists — never a duplicate.
+      const rawRef = (req.body as any).clientRef;
+      const clientRef = typeof rawRef === "string" && /^[A-Za-z0-9._:-]{8,80}$/.test(rawRef) ? rawRef : null;
+      if (clientRef) {
+        const existing = await storage.getPosOrderByClientRef(clientRef);
+        if (existing) return res.json({ ...existing, duplicate: true });
+      }
+      const isOfflineSale = (req.body as any).offlineSale === true && !!clientRef;
+      let soldAt: Date | null = null;
+      let offlineNumber: string | null = null;
+      if (isOfflineSale) {
+        // Keep the REAL sale time so daily reports/shift summaries land on the right day —
+        // but only believe a sane one (not in the future, not absurdly old).
+        const t = new Date((req.body as any).soldAt);
+        const now = Date.now();
+        if (Number.isFinite(t.getTime()) && t.getTime() <= now + 5 * 60 * 1000 && t.getTime() >= now - 45 * 24 * 60 * 60 * 1000) {
+          soldAt = t;
+        }
+        const rawNo = (req.body as any).offlineNumber;
+        offlineNumber = typeof rawNo === "string" && /^OFF-[A-Z0-9-]{1,30}$/.test(rawNo.toUpperCase()) ? rawNo.toUpperCase() : null;
+        // Credit the cashier who actually rang it up — but only a real staff account, and the
+        // name/role come from the database, never from the request text.
+        const claimedId = Number((req.body as any).sellerId);
+        if (Number.isInteger(claimedId) && claimedId > 0 && claimedId !== (req.user as any).id) {
+          const claimed = await storage.getUser(claimedId);
+          if (claimed && ["admin", "employee"].includes((claimed as any).role)) seller = getPosSeller(claimed as any);
+        }
       }
       let computedSubtotal = 0;
       const validatedItems: any[] = [];
@@ -4992,7 +5157,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
         quantity: item.quantity,
         newSize: !!item.newSize,
       }));
-      const order = await storage.createPosOrderAtomic(
+      let order: any;
+      try {
+        order = await storage.createPosOrderAtomic(
         {
           totalAmount: expectedTotal.toFixed(2),
           subtotalAmount: computedSubtotal.toFixed(2),
@@ -5007,9 +5174,26 @@ Sitemap: ${SITE_URL}/sitemap.xml
           sellerId: seller.id,
           sellerName: seller.name,
           sellerRole: seller.role,
-        },
-        stockItems
+          clientRef,
+          offlineSale: isOfflineSale,
+          offlineNumber,
+          ...(soldAt ? { createdAt: soldAt } : {}),
+        } as any,
+        stockItems,
+        { allowOversell: isOfflineSale }
       );
+      } catch (e: any) {
+        // Two uploads of the same sale racing: the unique index rejects the loser, which then
+        // simply returns the winner's invoice (the loser's stock changes were rolled back).
+        // The database driver wraps the real Postgres error one level down (e.cause), so look at both.
+        const pgCode = e?.code ?? e?.cause?.code;
+        const pgText = `${e?.message || ""} ${e?.cause?.message || ""}`;
+        if (clientRef && (pgCode === "23505" || /ux_pos_orders_client_ref/.test(pgText))) {
+          const existing = await storage.getPosOrderByClientRef(clientRef);
+          if (existing) return res.json({ ...existing, duplicate: true });
+        }
+        throw e;
+      }
       res.json(order);
     } catch (err: any) {
       const msg: string = err.message || "";

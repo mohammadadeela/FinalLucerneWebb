@@ -1,12 +1,15 @@
 import { useLanguage } from "@/i18n";
 import { SiInstagram, SiFacebook } from "react-icons/si";
+import { SeasonalFooterStrip } from "@/components/seasonal/SeasonalDecor";
 import { Link } from "wouter";
 
 export function Footer() {
   const { t, language } = useLanguage();
 
   return (
-    <footer className="bg-foreground text-background pt-12 sm:pt-20 pb-6 sm:pb-8">
+  <>
+  <SeasonalFooterStrip />
+  <footer className="bg-foreground text-background pt-12 sm:pt-20 pb-6 sm:pb-8">
       <div className="w-full px-4 sm:px-6 lg:px-8">
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-16">
@@ -69,5 +72,6 @@ export function Footer() {
 
       </div>
     </footer>
-  );
+    </>
+    );
 }

@@ -117,6 +117,34 @@ function getAdminEmail() {
   return sender;
 }
 
+/* ── OTP code block with a "Copy code" button ─────────────────
+   Email clients never run JavaScript, so a true click-to-clipboard button
+   can't live inside the email itself. This block does the next best thing:
+   1. the code sits in a large box with user-select:all, so a single
+      tap/click selects the whole code in clients that honour it, and
+   2. a bulletproof button opens /copy-code on the site, which copies the
+      code with one tap. The code travels in the URL *fragment* (#), which
+      browsers never send to a server, so it doesn't end up in server logs. */
+const OTP_COPY_PAGE_URL = "https://lucerne-boutique.com/copy-code";
+
+function otpCodeBlock(code: string): string {
+  const href = `${OTP_COPY_PAGE_URL}#${encodeURIComponent(code)}`;
+  return `
+      <div style="text-align:center;margin:24px 0 8px;">
+        <div style="display:inline-block;background:#ffffff;border:1px solid #e5e5e5;border-radius:12px;padding:18px 24px;">
+          <span style="display:block;font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:38px;line-height:1.1;font-weight:700;letter-spacing:10px;padding-left:10px;color:#111;-webkit-user-select:all;user-select:all;">${esc(code)}</span>
+        </div>
+      </div>
+      <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:16px auto 0;">
+        <tr>
+          <td align="center" bgcolor="#111111" style="border-radius:10px;">
+            <a href="${href}" target="_blank" style="display:inline-block;min-width:200px;padding:15px 32px;font-family:'Segoe UI',Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;letter-spacing:0.3px;">نسخ الرمز · Copy code</a>
+          </td>
+        </tr>
+      </table>
+      <p style="text-align:center;font-size:12px;line-height:1.6;color:#999;margin:10px 0 0;">اضغطي على الزر لنسخ الرمز<br/>Tap the button to copy the code</p>`;
+}
+
 export async function sendVerificationEmail(
   to: string,
   code: string,
@@ -130,9 +158,7 @@ export async function sendVerificationEmail(
       <p style="text-align:center;color:#888;font-size:11px;margin:0 0 20px;">لوسيرن بوتيك</p>
       <hr style="border: none; border-top: 1px solid #ddd; margin-bottom: 30px;" />
       <p style="font-size: 15px; color: #333;">Your verification code is:</p>
-      <div style="text-align: center; margin: 24px 0;">
-        <span style="font-size: 36px; letter-spacing: 8px; font-weight: bold; color: #111;">${code}</span>
-      </div>
+      ${otpCodeBlock(code)}
       <p style="font-size: 13px; color: #888;">This code will be used to verify your email address. If you did not request this, please ignore this email.</p>
     </div>
   `;
@@ -174,9 +200,7 @@ export async function sendSignupVerificationCode(
       <hr style="border: none; border-top: 1px solid #ddd; margin-bottom: 30px;" />
       <p style="font-size: 15px; color: #333; text-align: center;">أدخلي هذا الرمز لتأكيد بريدك الإلكتروني</p>
       <p style="font-size: 13px; color: #888; text-align: center; margin-bottom: 20px;">Enter this code to verify your email address</p>
-      <div style="text-align: center; margin: 24px 0;">
-        <span style="font-size: 40px; letter-spacing: 10px; font-weight: bold; color: #111;">${code}</span>
-      </div>
+      ${otpCodeBlock(code)}
       <p style="font-size: 12px; color: #aaa; text-align: center; margin-top: 20px;">الرمز صالح لمدة 15 دقيقة · This code expires in 15 minutes</p>
     </div>
   `;
@@ -217,9 +241,7 @@ export async function sendPasswordResetCode(
       <p style="text-align:center;color:#888;font-size:11px;margin:0 0 20px;">لوسيرن بوتيك</p>
       <hr style="border: none; border-top: 1px solid #ddd; margin-bottom: 30px;" />
       <p style="font-size: 15px; color: #333;">رمز إعادة تعيين كلمة المرور / Your password reset code:</p>
-      <div style="text-align: center; margin: 24px 0;">
-        <span style="font-size: 36px; letter-spacing: 8px; font-weight: bold; color: #111;">${code}</span>
-      </div>
+      ${otpCodeBlock(code)}
       <p style="font-size: 13px; color: #888;">This code expires in 15 minutes. If you did not request a password reset, please ignore this email.</p>
     </div>
   `;

@@ -7,4 +7,8 @@ contextBridge.exposeInMainWorld("electronPOS", {
   printReceipt: (html) => ipcRenderer.invoke("print-receipt", html),
   // Lists installed printers so Settings can offer a picker.
   getPrinters: () => ipcRenderer.invoke("get-printers"),
+  // Used by the connection-error screen.
+  retryLoad: () => ipcRenderer.invoke("retry-load"),
+  openSettings: () => ipcRenderer.invoke("open-settings"),
+  checkConnection: () => ipcRenderer.invoke("check-connection"),
 });

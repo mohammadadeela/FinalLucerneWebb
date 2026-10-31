@@ -187,6 +187,7 @@ export const ar = {
   orderStatus: {
     Pending: "بالانتظار",
     OnTheWay: "بالطريق إلك",
+    ReadyForPickup: "جاهز للاستلام",
     Delivered: "تم التسليم",
     Cancelled: "تم إلغاء الطلب",
   },

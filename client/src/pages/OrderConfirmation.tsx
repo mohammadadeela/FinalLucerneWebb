@@ -4,15 +4,26 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useOrder } from "@/hooks/use-orders";
 import { useLanguage } from "@/i18n";
-import { CheckCircle, Package, ShoppingBag } from "lucide-react";
+import { CheckCircle, Package, ShoppingBag, Store, UserRound, Gift } from "lucide-react";
+import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
 import { Button } from "@/components/ui/button";
 import { getOrderItemImage } from "@/lib/utils";
 
 export default function OrderConfirmation() {
   const [, params] = useRoute("/order-confirmation/:id");
   const orderId = params?.id ? Number(params.id) : 0;
-  const { data: orderDetails, isLoading } = useOrder(orderId);
-  const { t } = useLanguage();
+  // A guest (no account) opens this page from a signed link: /order-confirmation/12?t=<token>
+  const guestToken = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("t") : null;
+  const { data: orderDetails, isLoading } = useOrder(orderId, guestToken);
+  const { t, language } = useLanguage();
+  const { data: siteSettings } = useSiteSettings();
+  const ar = language === "ar";
+  const orderAny = orderDetails?.order as any;
+  const isPickup = orderAny?.deliveryMethod === "pickup";
+  const isGuestOrder = !!orderAny && orderAny.userId == null;
+  const guestPoints = isGuestOrder && siteSettings?.loyalty_points_enabled !== "false"
+  ? Math.floor(Math.max(0, parseFloat(orderAny.totalAmount) - parseFloat(orderAny.shippingCost || "0")) / 2)
+  : 0;
 
   // Always show the confirmation page from the top (checkout leaves the page scrolled down)
   useEffect(() => {
@@ -24,6 +35,7 @@ export default function OrderConfirmation() {
 
   const statusColor = {
     Pending: "bg-amber-100 text-amber-800",
+    ReadyForPickup: "bg-violet-100 text-violet-800",
     OnTheWay: "bg-blue-100 text-blue-800",
     Delivered: "bg-green-100 text-green-800",
     Cancelled: "bg-red-100 text-red-800",
@@ -51,7 +63,25 @@ export default function OrderConfirmation() {
               {t.orderConfirmation.title}
             </h1>
 
-            <p className="text-muted-foreground mb-8 text-sm">{t.orderConfirmation.emailSent}</p>
+            <p className="text-muted-foreground mb-8 text-sm" data-testid="text-confirmation-notice">
+            {isGuestOrder && !orderAny?.guestEmail
+            ? (ar ? "سنراسلك على واتساب برقم الهاتف الذي أدخلته بتفاصيل طلبك" : "We'll message you on WhatsApp at the number you gave with your order updates")
+            : t.orderConfirmation.emailSent}
+            </p>
+
+            {isPickup && (
+            <div className="mb-8 rounded-2xl border-2 border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/30 p-6 text-center" data-testid="card-pickup-code">
+            <div className="flex items-center justify-center gap-2 mb-2 text-violet-800 dark:text-violet-300">
+            <Store className="w-5 h-5" />
+            <p className="text-sm font-bold">{ar ? "استلام من المتجر" : "Store pickup"}</p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">{ar ? "اعرضي هذا الرمز عند الاستلام" : "Show this code when you collect your order"}</p>
+            <p className="font-mono text-4xl sm:text-5xl font-extrabold tracking-[0.35em] ps-[0.35em] select-all ltr-num" dir="ltr" data-testid="text-pickup-code">{orderAny?.pickupCode}</p>
+            <p className="mt-4 text-sm">{ar ? getSetting(siteSettings, "location_address_ar") : getSetting(siteSettings, "location_address_en")}</p>
+            <p className="text-xs text-muted-foreground mt-1">{ar ? getSetting(siteSettings, "location_hours_ar") : getSetting(siteSettings, "location_hours_en")}</p>
+            <p className="text-xs text-muted-foreground mt-3">{ar ? "سنخبرك على واتساب عندما يصبح طلبك جاهزاً." : "We'll message you on WhatsApp when your order is ready."}</p>
+            </div>
+            )}
 
             <div className="bg-secondary p-6 sm:p-8 mb-8 text-start">
               <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 pb-6 border-b border-border">
@@ -139,13 +169,32 @@ export default function OrderConfirmation() {
               })()}
             </div>
 
+            {isGuestOrder && (
+            <div className="mb-8 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/20 p-5 text-start flex items-start gap-3" data-testid="card-guest-signin">
+            <span className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+            {guestPoints > 0 ? <Gift className="w-4 h-4 text-amber-700 dark:text-amber-400" /> : <UserRound className="w-4 h-4 text-amber-700 dark:text-amber-400" />}
+            </span>
+            <div className="flex-1">
+            <p className="text-sm font-bold" data-testid="text-guest-points-cta">
+            {guestPoints > 0
+            ? (ar ? `سجّلي الدخول لتكسبي ${guestPoints} نقطة على طلب كهذا في المرة القادمة` : `Sign in next time to earn ${guestPoints} points on an order like this`)
+            : (ar ? "أنشئي حساباً لتتبّع طلباتك وكسب النقاط" : "Create an account to track your orders and earn points")}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">{ar ? "الطلبات كضيف لا تحصل على نقاط. حفظنا رابط هذه الصفحة لتعودي إليها." : "Guest orders don't earn points. Bookmark this page to come back to your order."}</p>
+            <Link href="/auth"><Button size="sm" variant="outline" className="mt-3" data-testid="button-guest-create-account">{ar ? "تسجيل الدخول / إنشاء حساب" : "Sign in / Create account"}</Button></Link>
+            </div>
+            </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              {!isGuestOrder && (
               <Link href={`/profile?order=${orderId}`} className="w-full sm:w-auto">
-                <Button variant="outline" className="w-full sm:w-auto rounded-md uppercase tracking-widest text-xs sm:text-sm px-6 sm:px-8 py-4 sm:py-5" data-testid="button-track-order">
-                  <Package className="w-4 h-4 me-2" />
-                  {t.orderConfirmation.trackOrder}
-                </Button>
+              <Button variant="outline" className="w-full sm:w-auto rounded-md uppercase tracking-widest text-xs sm:text-sm px-6 sm:px-8 py-4 sm:py-5" data-testid="button-track-order">
+              <Package className="w-4 h-4 me-2" />
+              {t.orderConfirmation.trackOrder}
+              </Button>
               </Link>
+              )}
               <Link href="/shop" className="w-full sm:w-auto">
                 <Button className="w-full sm:w-auto rounded-md uppercase tracking-widest text-xs sm:text-sm px-6 sm:px-8 py-4 sm:py-5" data-testid="button-continue-shopping">
                   <ShoppingBag className="w-4 h-4 me-2" />

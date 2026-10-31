@@ -89,6 +89,16 @@ export const defaultSettings: Record<string, string> = {
   news_bar_text_ar: "",
   news_bar_text_en: "",
 
+  // Guest checkout and store pickup (both on until the admin turns them off)
+  guest_checkout_enabled: "true",
+  online_pickup_enabled: "true",
+
+  // Seasonal themes: "none" | "christmas" | "eid_fitr" | "eid_adha" (only one can be active)
+  seasonal_theme: "none",
+  seasonal_countdown_date: "",
+  seasonal_text_ar: "",
+  seasonal_text_en: "",
+
   // FAQ page
   faq_items: JSON.stringify([
     { question_ar: "كيف يمكنني تتبع طلبي؟", question_en: "How can I track my order?", answer_ar: "بعد تأكيد طلبك ستصلك رسالة عبر واتساب تتضمن تفاصيل الشحن ورقم التتبع.", answer_en: "Once your order is confirmed, you'll receive a WhatsApp message with shipping details and a tracking number." },

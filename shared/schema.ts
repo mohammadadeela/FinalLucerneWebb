@@ -108,6 +108,12 @@ export const orders = pgTable("orders", {
   discountCode: text("discount_code"),
   discountAmount: numeric("discount_amount"),
   creditUsed: numeric("credit_used"),
+  // "delivery" (default) or "pickup" (customer collects from the store; online payment only).
+  deliveryMethod: text("delivery_method").notNull().default("delivery"),
+  // Short code the customer shows at the store to collect a pickup order. Server-generated only.
+  pickupCode: text("pickup_code"),
+  // Optional email a guest (not signed in) can leave for the order confirmation.
+  guestEmail: text("guest_email"),
   createdAt: timestamp("created_at").defaultNow(),
   deliveredAt: timestamp("delivered_at"),
 }, (table) => ({
@@ -308,6 +314,13 @@ export const posOrders = pgTable("pos_orders", {
     byName?: string;
     byRole?: string;
   }>>().default([]),
+  // Offline POS: a unique id generated on the cashier's device for each sale so a
+  // retried upload can never create a duplicate invoice (unique when set).
+  clientRef: text("client_ref"),
+  // True when the sale was rung up while the POS had no connection and uploaded later.
+  offlineSale: boolean("offline_sale").default(false),
+  // The temporary invoice number printed on the receipt while offline (e.g. OFF-PC1-0007).
+  offlineNumber: text("offline_number"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

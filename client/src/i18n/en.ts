@@ -190,6 +190,7 @@ export const en = {
   orderStatus: {
     Pending: "Pending",
     OnTheWay: "On the Way",
+    ReadyForPickup: "Ready for pickup",
     Delivered: "Delivered",
     Cancelled: "Cancelled",
   },

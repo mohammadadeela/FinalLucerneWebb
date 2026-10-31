@@ -15,6 +15,7 @@ import { signInWithGoogle, signInWithFacebook, handleFirebaseRedirectResult, get
 import { SiFacebook } from "react-icons/si";
 import { Loader2, Mail, Lock, ShieldX, X, ArrowLeft, ArrowRight, Eye, EyeOff, BookmarkCheck, Phone, MessageSquare } from "lucide-react";
 import { PhoneCountrySelect, PHONE_COUNTRIES } from "@/components/ui/PhoneCountrySelect";
+import { consumePostLoginTarget } from "@/lib/post-login";
 
 // An Arabic keyboard's number row types Eastern Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩)
 // instead of 0-9. \D (used everywhere below to strip non-digits) does NOT match
@@ -354,7 +355,7 @@ export default function Auth() {
     if (!user) return;
     if (user.role === "admin") setLocation("/admin");
     else if (user.role === "employee") setLocation("/admin/pos");
-    else setLocation("/");
+    else setLocation(consumePostLoginTarget());
   }, [user]);
 
   // Handle redirect result after mobile Google/Facebook login
@@ -386,7 +387,7 @@ export default function Auth() {
             toast({ title: user?.isNewUser ? t.auth.welcomeToast : t.auth.welcomeBackToast });
             if (user?.role === "admin") setLocation("/admin");
             else if (user?.role === "employee") setLocation("/admin/pos");
-            else setLocation("/");
+            else setLocation(consumePostLoginTarget());
           })
           .catch((err: any) => {
             const msg = err.message === "account_blocked" ? "هذا الحساب محظور" : err.message;
@@ -429,7 +430,7 @@ export default function Auth() {
       toast({ title: (user as any)?.isNewUser ? t.auth.welcomeToast : t.auth.welcomeBackToast });
       if (user?.role === "admin") setLocation("/admin");
       else if (user?.role === "employee") setLocation("/admin/pos");
-      else setLocation("/");
+      else setLocation(consumePostLoginTarget());
     },
     onError: (err: any) => {
       const msg = err.message === "account_blocked" ? "هذا الحساب محظور" : err.message;
@@ -586,7 +587,7 @@ export default function Auth() {
     toast({ title: isNewUser ? t.auth.welcomeToast : t.auth.welcomeBackToast });
     if (userData?.role === "admin") setLocation("/admin");
     else if (userData?.role === "employee") setLocation("/admin/pos");
-    else setLocation("/");
+    else setLocation(consumePostLoginTarget());
   };
 
   async function callJson(url: string, body: any) {
@@ -948,7 +949,7 @@ export default function Auth() {
       toast({ title: t.auth.welcomeBackToast });
       if ((result as any)?.role === "admin") setLocation("/admin");
       else if ((result as any)?.role === "employee") setLocation("/admin/pos");
-      else setLocation("/");
+      else setLocation(consumePostLoginTarget());
     } catch (err: any) {
       const code = err.message;
       if (code === "email_not_found" || code === "invalid_password" || code === "account_blocked" || code === "google_account") {
@@ -1003,7 +1004,7 @@ export default function Auth() {
       } as any);
       rememberLoginMethod("email");
       toast({ title: t.auth.welcomeToast });
-      setLocation("/");
+      setLocation(consumePostLoginTarget());
     } catch (err: any) {
       toast({ title: t.auth.error, description: err.message, variant: "destructive" });
     }

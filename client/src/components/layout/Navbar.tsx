@@ -18,6 +18,8 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
+import { SeasonalLogoAccent } from "@/components/seasonal/SeasonalDecor";
+import { SEASONS, getActiveTheme, seasonBarText } from "@/lib/seasonal";
 import { useCart } from "@/store/use-cart";
 import { useAuth, useLogout } from "@/hooks/use-auth";
 import { useWishlist } from "@/hooks/use-wishlist";
@@ -333,8 +335,12 @@ export function Navbar() {
     getSetting(siteSettings, "news_bar_enabled") === "true";
   const newsBarTextAr = getSetting(siteSettings, "news_bar_text_ar");
   const newsBarTextEn = getSetting(siteSettings, "news_bar_text_en");
-  const newsBarText = language === "ar" ? newsBarTextAr : newsBarTextEn;
-  const showNewsBar = newsBarEnabled && newsBarText.trim().length > 0;
+  const baseNewsBarText = language === "ar" ? newsBarTextAr : newsBarTextEn;
+  // An active seasonal theme (Christmas / Eid) replaces the regular bar with a themed one.
+  const season = getActiveTheme(siteSettings);
+  const seasonInfo = season ? SEASONS[season] : null;
+  const newsBarText = season ? seasonBarText(siteSettings, season, language === "ar" ? "ar" : "en") : baseNewsBarText;
+  const showNewsBar = season ? newsBarText.trim().length > 0 : newsBarEnabled && newsBarText.trim().length > 0;
   const isAr = language === "ar";
 
   const { data: allProducts } = useProducts();
@@ -606,22 +612,26 @@ export function Navbar() {
           return (
             <div
               ref={newsBarRef}
-              className="fixed top-0 w-full z-[51] overflow-hidden bg-foreground text-background"
+              className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-foreground text-background"}`}
+              style={seasonInfo ? { background: seasonInfo.barBg, color: seasonInfo.barText } : undefined}
               data-testid="news-bar"
+              data-season={season ?? undefined}
             >
               {/* Fade edges */}
               <div
                 className="pointer-events-none absolute top-0 start-0 bottom-0 w-14 z-10"
                 style={{
-                  background:
-                    "linear-gradient(to right, hsl(var(--foreground)), transparent)",
+                  background: seasonInfo
+                  ? `linear-gradient(to right, ${seasonInfo.barEdge}, transparent)`
+                  : "linear-gradient(to right, hsl(var(--foreground)), transparent)",
                 }}
               />
               <div
                 className="pointer-events-none absolute top-0 end-0 bottom-0 w-14 z-10"
                 style={{
-                  background:
-                    "linear-gradient(to left, hsl(var(--foreground)), transparent)",
+                  background: seasonInfo
+                  ? `linear-gradient(to left, ${seasonInfo.barEdge}, transparent)`
+                  : "linear-gradient(to left, hsl(var(--foreground)), transparent)",
                 }}
               />
 
@@ -645,11 +655,11 @@ export function Navbar() {
                           key={`${rep}-${i}`}
                           className="inline-flex items-center gap-10"
                         >
-                          <span className="text-xs sm:text-sm font-light tracking-[0.25em] uppercase text-background/80">
-                            {item}
+                          <span className={`text-xs sm:text-sm tracking-[0.25em] uppercase ${seasonInfo ? "font-medium" : "font-light text-background/80"}`}>
+                          {item}
                           </span>
-                          <span className="text-background/30 text-[8px]">
-                            ✦
+                          <span className={seasonInfo ? "text-[10px] opacity-80" : "text-background/30 text-[8px]"}>
+                          {seasonInfo ? seasonInfo.sep : "✦"}
                           </span>
                         </span>
                       )),
@@ -676,7 +686,10 @@ export function Navbar() {
               className="flex flex-col items-center gap-0.5"
               data-testid="link-logo"
             >
+              <span className="relative inline-block">
               <LucerneLogo className="h-8 w-auto sm:h-10" />
+              <SeasonalLogoAccent />
+              </span>
               <span className="font-display text-[10px] sm:text-sm tracking-widest font-semibold uppercase leading-none">
                 Lucerne Boutique
               </span>

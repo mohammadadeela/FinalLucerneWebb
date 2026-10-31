@@ -4,15 +4,21 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/use-cart";
 import { useLanguage } from "@/i18n";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Store, Gift } from "lucide-react";
+import { useSiteSettings } from "@/hooks/use-site-settings";
 import { Button } from "@/components/ui/button";
 
 export default function CheckoutSuccess() {
   const [, setLocation] = useLocation();
   const { clearCart } = useCart();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const ar = language === "ar";
+  const { data: siteSettings } = useSiteSettings();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [orderId, setOrderId] = useState<number | null>(null);
+  // Set for guests (no account): the signed token that lets them reopen this order.
+  const [guestToken, setGuestToken] = useState<string | null>(null);
+  const [placed, setPlaced] = useState<any>(null);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
@@ -28,11 +34,13 @@ export default function CheckoutSuccess() {
           if (!res.ok) throw new Error("Payment verification failed");
           const data = await res.json();
           setOrderId(data.order?.id);
+          setGuestToken(data.guestToken ?? null);
+          setPlaced(data.order ?? null);
           setStatus("success");
           clearCart();
-        })
-        .catch(() => setStatus("error"));
-    } else if (sessionId) {
+          })
+          .catch(() => setStatus("error"));
+          } else if (sessionId) {
       fetch(`/api/stripe/checkout-success?session_id=${sessionId}`, {
         credentials: "include",
       })
@@ -68,18 +76,37 @@ export default function CheckoutSuccess() {
               <h1 className="font-display text-3xl" data-testid="text-checkout-success">{t.checkout.orderSuccess}</h1>
               <p className="text-muted-foreground">{t.checkout.orderSuccessDesc}</p>
               {orderId && (
-                <p className="text-sm text-muted-foreground">
-                  {t.profile.orderNumber} #{orderId}
-                </p>
+              <p className="text-sm text-muted-foreground">
+              {t.profile.orderNumber} #{orderId}
+              </p>
               )}
+              {placed?.deliveryMethod === "pickup" && placed?.pickupCode && (
+              <div className="rounded-2xl border-2 border-violet-300 bg-violet-50 dark:bg-violet-950/30 p-5" data-testid="card-pickup-code">
+              <div className="flex items-center justify-center gap-2 text-violet-800 dark:text-violet-300 mb-1"><Store className="w-4 h-4" /><p className="text-sm font-bold">{ar ? "رمز الاستلام من المتجر" : "Store pickup code"}</p></div>
+              <p className="font-mono text-4xl font-extrabold tracking-[0.35em] ps-[0.35em] select-all ltr-num" dir="ltr" data-testid="text-pickup-code">{placed.pickupCode}</p>
+              <p className="text-xs text-muted-foreground mt-2">{ar ? "اعرضيه عند الاستلام. سنخبرك على واتساب عندما يصبح جاهزاً." : "Show it when you collect. We'll message you on WhatsApp when it's ready."}</p>
+              </div>
+              )}
+              {guestToken && siteSettings?.loyalty_points_enabled !== "false" && placed && (() => {
+              const pts = Math.floor(Math.max(0, parseFloat(placed.totalAmount) - parseFloat(placed.shippingCost || "0")) / 2);
+              return pts > 0 ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/70 dark:bg-amber-950/20 p-4 flex items-center gap-3 text-start" data-testid="card-guest-signin">
+              <Gift className="w-5 h-5 text-amber-700 shrink-0" />
+              <p className="text-sm font-semibold" data-testid="text-guest-points-cta">{ar ? `سجّلي الدخول في طلبك القادم لتكسبي ${pts} نقطة` : `Sign in on your next order to earn ${pts} points`}</p>
+              </div>
+              ) : null;
+              })()}
               <div className="flex gap-4 justify-center pt-4">
-                <Button
-                  onClick={() => setLocation(orderId ? `/profile?order=${orderId}` : "/profile")}
-                  className="rounded-md uppercase tracking-widest text-sm"
-                  data-testid="button-view-orders"
-                >
-                  {t.profile.orderHistory}
-                </Button>
+              <Button
+              onClick={() => setLocation(
+              guestToken && orderId ? `/order-confirmation/${orderId}?t=${guestToken}`
+              : orderId ? `/profile?order=${orderId}` : "/profile"
+              )}
+              className="rounded-md uppercase tracking-widest text-sm"
+              data-testid="button-view-orders"
+              >
+              {guestToken ? (ar ? "عرض الطلب" : "View order") : t.profile.orderHistory}
+              </Button>
                 <Button
                   variant="outline"
                   onClick={() => setLocation("/shop")}

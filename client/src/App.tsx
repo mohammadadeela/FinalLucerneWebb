@@ -11,6 +11,7 @@ import NotFound from "@/pages/not-found";
 import { SiInstagram } from "react-icons/si";
 import { X } from "lucide-react";
 import ChatBot from "@/components/ui/ChatBot";
+import ConnectionBanner from "@/components/ConnectionBanner";
 import Home from "@/pages/Home";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminProducts from "@/pages/admin/Products";
@@ -138,6 +139,7 @@ class ErrorBoundary extends Component<
 }
 
 const Auth = lazy(() => import("@/pages/Auth"));
+const CopyCode = lazy(() => import("@/pages/CopyCode"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const OurLocation = lazy(() => import("@/pages/OurLocation"));
 const FAQ = lazy(() => import("@/pages/FAQ"));
@@ -341,6 +343,7 @@ function Router() {
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/order-confirmation/:id" component={OrderConfirmation} />
         <Route path="/auth" component={Auth} />
+        <Route path="/copy-code" component={CopyCode} />
         <Route path="/profile" component={Profile} />
         <Route path="/wishlist" component={Wishlist} />
         <Route path="/our-location" component={OurLocation} />
@@ -418,6 +421,7 @@ function App() {
           <AbandonedCartReminder />
           <ProductImagePreloader />
           <Router />
+          <ConnectionBanner />
           <ChatBot igVisible={!igDismissed} />
           <InstagramButton dismissed={igDismissed} onDismiss={handleIgDismiss} />
           <Toaster />

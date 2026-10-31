@@ -8,7 +8,7 @@ import { useProducts } from "@/hooks/use-products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Package, User, LogOut, ExternalLink, Clock, Truck, PackageCheck, XCircle, CheckCircle2, Search, X, Eye, Sparkles, Gift, Shield, ArrowLeft, ArrowRight, Mail, Phone, Settings, ArrowLeftRight } from "lucide-react";
+import { Package, User, LogOut, ExternalLink, Clock, Truck, PackageCheck, XCircle, CheckCircle2, Search, X, Eye, Sparkles, Gift, Shield, ArrowLeft, ArrowRight, Mail, Phone, Settings, ArrowLeftRight, Store } from "lucide-react";
 import { AccountSettingsDialog } from "@/components/profile/AccountSettingsDialog";
 import { ExchangeRequestDialog, type ExchangeItemType } from "@/components/profile/ExchangeRequestDialog";
 import { MyExchangesList } from "@/components/profile/MyExchangesList";
@@ -228,6 +228,7 @@ export default function Profile() {
 
   const statusConfig: Record<string, { icon: any; bg: string; border: string; text: string; dot: string }> = {
     Pending:   { icon: Clock,        bg: "bg-amber-50",  border: "border-amber-300", text: "text-amber-700",  dot: "bg-amber-400"  },
+    ReadyForPickup: { icon: Store,   bg: "bg-violet-50", border: "border-violet-300", text: "text-violet-700", dot: "bg-violet-500" },
     OnTheWay:  { icon: Truck,        bg: "bg-blue-50",   border: "border-blue-300",  text: "text-blue-700",   dot: "bg-blue-500"   },
     Delivered: { icon: PackageCheck, bg: "bg-green-50",  border: "border-green-300", text: "text-green-700",  dot: "bg-green-500"  },
     Cancelled: { icon: XCircle,      bg: "bg-red-50",    border: "border-red-300",   text: "text-red-600",    dot: "bg-red-400"    },
@@ -245,7 +246,10 @@ export default function Profile() {
   };
 
   const PROGRESS_STEPS = ["Pending", "OnTheWay", "Delivered"] as const;
-  const getProgressTracker = (status: string) => {
+  const PICKUP_STEPS = ["Pending", "ReadyForPickup", "Delivered"] as const;
+  const getProgressTracker = (status: string, order?: any) => {
+  const isPickup = order?.deliveryMethod === "pickup";
+  const STEPS: readonly string[] = isPickup ? PICKUP_STEPS : PROGRESS_STEPS;
     if (status === "Cancelled") {
       return (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
@@ -257,17 +261,17 @@ export default function Profile() {
         </div>
       );
     }
-    const currentIdx = PROGRESS_STEPS.indexOf(status as any);
+    const currentIdx = STEPS.indexOf(status as any);
     return (
       <div className="relative flex items-center justify-between px-0.5 sm:px-2">
-        {PROGRESS_STEPS.map((step, i) => {
+        {STEPS.map((step, i) => {
           const done = i <= currentIdx;
           const active = i === currentIdx;
           const cfg = statusConfig[step];
           const Icon = cfg.icon;
           return (
             <div key={step} className="flex-1 flex flex-col items-center relative">
-              {i < PROGRESS_STEPS.length - 1 && (
+              {i < STEPS.length - 1 && (
                 <div className={`absolute top-3.5 sm:top-4 start-1/2 w-full h-0.5 transition-colors ${i < currentIdx ? "bg-green-400" : "bg-border"}`} />
               )}
               <div className={`relative z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-2 transition-all ${
@@ -950,7 +954,13 @@ export default function Profile() {
               </div>
 
               <div className="pt-1 pb-2">
-                {getProgressTracker(orderDetails.order.status)}
+                {getProgressTracker(orderDetails.order.status, orderDetails.order)}
+                {(orderDetails.order as any).deliveryMethod === "pickup" && (orderDetails.order as any).pickupCode && (
+                <div className="mt-4 rounded-xl border border-violet-300 bg-violet-50 p-4 text-center" data-testid="profile-pickup-code">
+                <p className="text-xs text-violet-800 font-semibold mb-1">🛍️ {language === "ar" ? "رمز الاستلام من المتجر" : "Store pickup code"}</p>
+                <p className="font-mono text-3xl font-extrabold tracking-[0.3em] ps-[0.3em] select-all ltr-num" dir="ltr">{(orderDetails.order as any).pickupCode}</p>
+                </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3 text-sm">

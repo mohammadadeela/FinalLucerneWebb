@@ -433,6 +433,36 @@ async function ensureProductSchemaAndLegacyData() {
     console.error("[startup] pos_orders discount schema migration failed:", e);
   }
 
+  // Guest checkout + online pickup + offline POS: new columns. All idempotent
+  // (ADD COLUMN IF NOT EXISTS) so this is safe to run on every boot and on a
+  // production database that already has data.
+  try {
+    await withRetry(() => db.execute(sql`
+      ALTER TABLE orders
+        ADD COLUMN IF NOT EXISTS delivery_method text NOT NULL DEFAULT 'delivery',
+        ADD COLUMN IF NOT EXISTS pickup_code text,
+        ADD COLUMN IF NOT EXISTS guest_email text
+    `));
+    await withRetry(() => db.execute(sql`
+      ALTER TABLE pos_orders
+        ADD COLUMN IF NOT EXISTS client_ref text,
+        ADD COLUMN IF NOT EXISTS offline_sale boolean DEFAULT false,
+        ADD COLUMN IF NOT EXISTS offline_number text
+    `));
+    // One invoice per device-generated sale id: a retried offline upload can never duplicate.
+    await withRetry(() => db.execute(sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_pos_orders_client_ref ON pos_orders (client_ref) WHERE client_ref IS NOT NULL
+    `));
+    await withRetry(() => db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_pos_orders_offline_number ON pos_orders (offline_number) WHERE offline_number IS NOT NULL
+    `));
+    await withRetry(() => db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_orders_pickup_code ON orders (pickup_code) WHERE pickup_code IS NOT NULL
+    `));
+  } catch (e) {
+    console.error("[startup] guest/pickup/offline-POS schema migration failed:", e);
+  }
+
   // Ensure product_events table exists (auto-migration for production)
   try {
     await withRetry(() => db.execute(sql`
