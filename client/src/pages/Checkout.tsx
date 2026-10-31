@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
-import { CreditCard, Banknote, MapPin, Truck, Sparkles, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, UserRound } from "lucide-react";
+import { CreditCard, Banknote, MapPin, Truck, Sparkles, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn } from "lucide-react";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
@@ -981,29 +981,37 @@ export default function Checkout() {
           <div>
             {/* Guest notice: they can order, but points and discount codes belong to accounts */}
             {!user && guestCheckoutEnabled && (
-              <div className="flex items-start gap-3 rounded-2xl border border-amber-200/80 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/20 p-4 mb-6" data-testid="banner-guest-checkout">
-                <span className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
-                  <UserRound className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                </span>
-                <div className="flex-1 min-w-0 leading-snug">
-                  <p className="text-sm font-bold">{language === "ar" ? "أنتِ تتسوقين كضيفة" : "You're checking out as a guest"}</p>
-                  <p className="text-xs text-muted-foreground mt-1" data-testid="text-guest-points-hint">
-                    {loyaltyPointsEnabled && Math.floor(subtotal / 2) > 0
-                      ? (language === "ar"
-                          ? `سجّلي الدخول لتكسبي ${Math.floor(subtotal / 2)} نقطة على هذا الطلب. الضيوف لا يحصلون على نقاط أو أكواد خصم.`
-                          : `Sign in to earn ${Math.floor(subtotal / 2)} points on this order. Guests can't earn points or use discount codes.`)
-                      : (language === "ar"
-                          ? "الضيوف لا يحصلون على نقاط أو أكواد خصم. سجّلي الدخول للاستفادة منها."
-                          : "Guests can't earn points or use discount codes. Sign in to enjoy them.")}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => { rememberPostLoginTarget("/checkout"); setLocation("/auth"); }}
-                    className="mt-2 text-xs font-semibold text-amber-800 dark:text-amber-300 underline underline-offset-2 hover:no-underline"
-                    data-testid="button-guest-signin"
-                  >
-                    {language === "ar" ? "تسجيل الدخول" : "Sign in"}
-                  </button>
+              <div className="relative overflow-hidden rounded-2xl text-white shadow-lg mb-6" data-testid="banner-guest-checkout">
+                {/* Same pink as the points card on the profile page (pink stops only under the text, so it stays readable) */}
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-pink-600 to-pink-700" />
+                <div className="absolute -top-10 -end-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
+                <div className="absolute -bottom-14 -start-8 w-44 h-44 rounded-full bg-amber-300/25 blur-2xl" />
+                <Sparkles className="absolute -bottom-4 -end-3 w-24 h-24 text-white/10" aria-hidden="true" />
+                <div className="relative flex items-start gap-4 p-5">
+                  <span className="w-11 h-11 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-bold leading-snug">{language === "ar" ? "أنتِ تتسوقين كضيفة" : "You're checking out as a guest"}</p>
+                    <p className="text-[13px] text-white/90 mt-1.5 leading-relaxed" data-testid="text-guest-points-hint">
+                      {loyaltyPointsEnabled && Math.floor(subtotal / 2) > 0
+                        ? (language === "ar"
+                            ? <>سجّلي الدخول لتكسبي <b className="mx-0.5 inline-flex items-center rounded-full bg-white/25 px-2 py-0.5 text-[13px] font-bold leading-none ltr-num">{Math.floor(subtotal / 2)}</b> نقطة على هذا الطلب. الضيوف لا يحصلون على نقاط أو أكواد خصم.</>
+                            : <>Sign in to earn <b className="mx-0.5 inline-flex items-center rounded-full bg-white/25 px-2 py-0.5 text-[13px] font-bold leading-none ltr-num">{Math.floor(subtotal / 2)}</b> points on this order. Guests can't earn points or use discount codes.</>)
+                        : (language === "ar"
+                            ? "الضيوف لا يحصلون على نقاط أو أكواد خصم. سجّلي الدخول للاستفادة منها."
+                            : "Guests can't earn points or use discount codes. Sign in to enjoy them.")}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { rememberPostLoginTarget("/checkout"); setLocation("/auth"); }}
+                      className="mt-3.5 inline-flex items-center gap-2 rounded-full bg-white text-rose-600 px-5 py-2 text-xs font-semibold shadow-sm hover:bg-white/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-pink-600"
+                      data-testid="button-guest-signin"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      {language === "ar" ? "تسجيل الدخول" : "Sign in"}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
