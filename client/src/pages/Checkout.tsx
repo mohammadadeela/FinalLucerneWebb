@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
-import { CreditCard, Banknote, MapPin, Truck, Sparkles, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn } from "lucide-react";
+import { CreditCard, Banknote, MapPin, Truck, Sparkles, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn, Lock } from "lucide-react";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
@@ -165,6 +165,7 @@ export default function Checkout() {
   // Guests must confirm a phone (SMS) or email with a one-time code before they can order.
   const [guestVerified, setGuestVerified] = useState<GuestVerified | null>(null);
   const [verifyShake, setVerifyShake] = useState(0);
+  const [unlockPulse, setUnlockPulse] = useState(false);
   const verifyCardRef = useRef<HTMLDivElement>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
   // The "real purchase" scene plays while the order is being placed. It stays up for a minimum time so it never
@@ -896,6 +897,15 @@ export default function Checkout() {
 
   const isPending = createOrder.isPending || stripeLoading;
 
+  // Guests can't place an order until their phone/email is confirmed with a one-time code.
+  const guestPhoneFull = `${phonePrefix}${formData.phone.replace(/\D/g, "")}`;
+  const guestLocked = !user && guestCheckoutEnabled && !isGuestContactVerified(guestVerified, guestPhoneFull, guestEmail);
+  const focusGuestField = (field: "phone" | "email") => {
+    const el = document.getElementById(field === "phone" ? "phone" : "guest-email") as HTMLInputElement | null;
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => el?.focus({ preventScroll: true }), 350);
+  };
+
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
@@ -1277,17 +1287,21 @@ export default function Checkout() {
                 )}
               </div>
               {!user && guestCheckoutEnabled && (
-              <div ref={verifyCardRef}>
-              <GuestVerifyCard
-              phoneFull={`${phonePrefix}${formData.phone.replace(/\D/g, "")}`}
-              phoneValid={formData.phone.replace(/\D/g, "").length === 9}
-              email={guestEmail}
-              setEmail={setGuestEmail}
-              value={guestVerified}
-              onVerified={setGuestVerified}
-              onReset={() => setGuestVerified(null)}
-              shakeKey={verifyShake}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="guest-email">{language === "ar" ? "البريد الإلكتروني (اختياري)" : "Email (optional)"}</Label>
+                <Input
+                  id="guest-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  dir="ltr"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="rounded-md border-border focus-visible:ring-primary"
+                  data-testid="input-guest-email"
+                />
+                <p className="text-xs text-muted-foreground">{language === "ar" ? "لاستلام إيصال الطلب، ويمكنك التحقق به بدلاً من رسالة SMS." : "For your receipt. You can also use it to verify instead of SMS."}</p>
               </div>
               )}
               {deliveryMethod === "delivery" && (<>
@@ -1732,13 +1746,31 @@ export default function Checkout() {
               </div>
               )}
 
+              {/* Guests confirm with a one-time code first. The card sits right above the button, which stays locked
+                  until it's done; then the card folds away. */}
+              {!user && guestCheckoutEnabled && (
+              <div ref={verifyCardRef}>
+                <GuestVerifyCard
+                  phoneFull={guestPhoneFull}
+                  phoneValid={formData.phone.replace(/\D/g, "").length === 9}
+                  email={guestEmail}
+                  value={guestVerified}
+                  onVerified={setGuestVerified}
+                  onUnlocked={() => { setUnlockPulse(true); window.setTimeout(() => setUnlockPulse(false), 1600); }}
+                  onFocusField={focusGuestField}
+                  shakeKey={verifyShake}
+                />
+              </div>
+              )}
+
               <Button
                 type="submit"
                 form="checkout-form"
-                disabled={isPending}
-                className="w-full rounded-md py-6 uppercase tracking-widest text-sm font-semibold"
+                disabled={isPending || guestLocked}
+                className={`w-full rounded-md py-6 uppercase tracking-widest text-sm font-semibold transition-shadow duration-500 ${unlockPulse ? "ring-4 ring-emerald-400/50" : ""}`}
                 data-testid="button-place-order"
               >
+                {guestLocked && !isPending && <Lock className="w-4 h-4 me-2" />}
                 {isPending
                   ? t.checkout.processing
                   : paymentMethod === "card"
