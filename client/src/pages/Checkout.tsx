@@ -939,7 +939,7 @@ export default function Checkout() {
       <Navbar />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-5xl mx-auto">
-        <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} />
+        <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} images={items.slice(0, 3).map((it: any) => getItemImage(it)).filter(Boolean)} />
         <h1 className="font-display text-3xl sm:text-4xl mb-8 sm:mb-12" data-testid="text-checkout-title">{t.checkout.title}</h1>
 
         {soldOutItems.length > 0 && items.length > 0 && (
