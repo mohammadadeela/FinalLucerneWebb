@@ -28,7 +28,6 @@ export const useConnection = create<ConnectionState>(() => ({
 }));
 
 let nativeFetch: typeof fetch | null = null;
-let installed = false;
 let checking: Promise<boolean> | null = null;
 let recheckTimer: number | undefined;
 let restoredTimer: number | undefined;
@@ -124,28 +123,52 @@ function isSameOrigin(input: RequestInfo | URL): boolean {
   }
 }
 
-export function installConnectionMonitor() {
-  if (installed || typeof window === "undefined") return;
-  installed = true;
+/** Starts watching the connection. Returns a function that stops watching and restores `fetch` exactly as it was.
+ *  Only the POS page does this — the customer-facing website is never touched. */
+let installCount = 0;
+let restore: (() => void) | null = null;
 
-  nativeFetch = window.fetch.bind(window);
-  const original = nativeFetch;
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    try {
-      return await original(input, init);
-    } catch (err) {
-      // Only our own server matters; a blocked ad/analytics/CDN request must
-      // never make the app think the connection is down.
-      if ((err instanceof TypeError || isNetworkError(err)) && isSameOrigin(input)) {
-        void checkConnectionNow();
+export function installConnectionMonitor(): () => void {
+  if (typeof window === "undefined") return () => {};
+  installCount++;
+  if (!restore) {
+    nativeFetch = window.fetch.bind(window);
+    const original = window.fetch;
+    const originalBound = nativeFetch;
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      try {
+        return await originalBound(input, init);
+      } catch (err) {
+        // Only our own server matters; a blocked ad/analytics/CDN request must
+        // never make the app think the connection is down.
+        if ((err instanceof TypeError || isNetworkError(err)) && isSameOrigin(input)) {
+          void checkConnectionNow();
+        }
+        throw err;
       }
-      throw err;
-    }
+    };
+    const onOffline = () => applyStatus(false);
+    const onOnline = () => void checkConnectionNow();
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
+    // Started while already disconnected: begin watching for the way back.
+    if (navigator.onLine === false) scheduleRecheck();
+    restore = () => {
+      window.fetch = original;
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", onOnline);
+      window.clearTimeout(recheckTimer);
+      recheckTimer = undefined;
+      nativeFetch = null;
+      useConnection.setState({ online: true, justRestored: false });
+      restore = null;
+    };
+  }
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    installCount--;
+    if (installCount <= 0 && restore) restore();
   };
-
-  window.addEventListener("offline", () => applyStatus(false));
-  window.addEventListener("online", () => void checkConnectionNow());
-
-  // Started while already disconnected: begin watching for the way back.
-  if (navigator.onLine === false) scheduleRecheck();
 }

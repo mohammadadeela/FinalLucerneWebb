@@ -11,7 +11,7 @@ import NotFound from "@/pages/not-found";
 import { SiInstagram } from "react-icons/si";
 import { X } from "lucide-react";
 import ChatBot from "@/components/ui/ChatBot";
-import ConnectionBanner from "@/components/ConnectionBanner";
+
 import Home from "@/pages/Home";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminProducts from "@/pages/admin/Products";
@@ -421,7 +421,7 @@ function App() {
           <AbandonedCartReminder />
           <ProductImagePreloader />
           <Router />
-          <ConnectionBanner />
+
           <ChatBot igVisible={!igDismissed} />
           <InstagramButton dismissed={igDismissed} onDismiss={handleIgDismiss} />
           <Toaster />

@@ -81,6 +81,9 @@ import type { Product, Category, ColorVariant, Subcategory } from "@shared/schem
 import { optimizeCloudinaryUrl, sortSizes } from "@/lib/utils";
 import { RECEIPT_SITE_QR_SVG, RECEIPT_SITE_HOST } from "@/lib/receipt-qr";
 import { ensureOnline, isNetworkError, isTimeoutError, timeoutSignal } from "@/lib/connection";
+import { applyPendingToProducts, enqueueSale, loadProductsSnapshot, newClientRef, saveProductsSnapshot, useOfflineQueue } from "@/lib/offline-pos";
+import ConnectionBanner from "@/components/ConnectionBanner";
+import OfflineSyncPanel from "@/components/pos/OfflineSyncPanel";
 import { describePrintFailure } from "@/lib/print-errors";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 
@@ -228,7 +231,9 @@ interface HeldCart {
   time: Date;
 }
 interface CompletedOrder {
-  id: number;
+id: number;
+/** Temporary invoice number (OFF-…) while the sale is only saved on this device. */
+offlineNumber?: string;
   items: PosCartItem[];
   subtotal: number;
   discountAmount: number;
@@ -1930,7 +1935,22 @@ export default function POS() {
   }, [exchangeMode, exchangeReplacementResultsOpen]);
 
   /* Queries */
-  const { data: products = [] } = useProducts();
+  const { data: rawProducts = [], isError: productsFailed } = useProducts();
+  const queuedSales = useOfflineQueue((st) => st.sales);
+  // Stock on screen already accounts for sales saved on this device but not uploaded yet.
+  const products = useMemo(() => applyPendingToProducts(rawProducts as any[], queuedSales) as typeof rawProducts, [rawProducts, queuedSales]);
+  // Keep a copy of the product list on this device, so the POS still has products if the page is opened offline.
+  useEffect(() => {
+  if (rawProducts.length === 0) return;
+  const t = window.setTimeout(() => void saveProductsSnapshot(rawProducts), 2000);
+  return () => window.clearTimeout(t);
+  }, [rawProducts]);
+  useEffect(() => {
+  if (rawProducts.length > 0 || !productsFailed) return;
+  void loadProductsSnapshot().then((snap) => {
+  if (snap?.products?.length) qc.setQueryData(["/api/products"], snap.products);
+  });
+  }, [productsFailed, rawProducts.length]);
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
   });
@@ -3542,7 +3562,7 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
       <div class="cash-row"><span>نقدي</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${order.cashReceived.toFixed(2)}</span></div>
       <div class="cash-row"><span>بطاقة</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${order.cardReceived.toFixed(2)}</span></div>`
         : "";
-    const receiptHtml = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>${isExchangeInvoice ? "فاتورة تبديل" : "فاتورة"} #${order.id}</title>
+    const receiptHtml = `<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8"><title>${isExchangeInvoice ? "فاتورة تبديل" : "فاتورة"} ${order.offlineNumber ?? `#${order.id}`}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#fff;color:#1a1a1a;max-width:360px;margin:0 auto;padding:0 20px 20px;font-size:13px}
   .hdr{text-align:center;padding-bottom:18px}.hdr-bar{height:3px;background:linear-gradient(90deg,#e8d5b7,#1a1a1a 40%,#e8d5b7);margin-bottom:6px;border-radius:2px}
@@ -3614,7 +3634,8 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
   }
 </style></head><body>
 <div class="hdr"><div class="hdr-bar"></div><svg style="width:60px;height:46px;margin:0 auto 2px;display:block;" version="1.0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 393 297"><g transform="translate(0,297) scale(0.1,-0.1)" fill="#000" stroke="#000" stroke-width="6"><path d="M2685 2594 c-179 -27 -296 -59 -490 -136 -259 -103 -609 -284 -965 -501 -126 -77 -160 -104 -160 -124 0 -26 34 -12 158 65 434 269 823 464 1138 571 167 57 252 73 379 75 100 1 115 -1 160 -25 105 -53 147 -157 126 -310 -15 -115 -53 -252 -108 -389 -114 -287 -230 -468 -408 -638 -133 -127 -246 -199 -407 -257 -76 -27 -77 -27 -101 -9 -113 89 -164 123 -242 160 -128 61 -190 76 -342 81 -115 5 -141 3 -201 -16 -114 -34 -167 -103 -125 -159 11 -15 37 -37 59 -49 52 -30 240 -89 334 -105 102 -17 356 -17 449 1 l74 15 49 -55 c67 -75 133 -175 176 -267 33 -70 37 -85 37 -163 0 -78 -2 -89 -27 -122 -16 -20 -53 -48 -85 -64 -55 -27 -64 -28 -198 -28 -145 0 -184 8 -345 66 -194 71 -407 241 -518 414 -151 234 -171 410 -152 1340 4 223 3 256 -13 301 -37 107 -122 196 -225 235 -71 26 -176 37 -187 19 -12 -19 23 -40 64 -40 69 0 161 -41 217 -96 57 -57 104 -160 104 -227 0 -39 -17 -49 -39 -24 -6 8 -35 19 -64 26 -103 23 -199 -28 -248 -133 -59 -124 -18 -252 87 -274 60 -13 151 6 196 40 18 14 37 26 42 27 6 0 10 -131 11 -337 2 -555 40 -725 211 -949 208 -272 589 -458 899 -440 163 10 250 52 298 146 64 128 4 322 -165 534 -32 39 -58 75 -58 80 0 4 10 12 23 17 12 5 56 23 99 40 222 90 465 318 620 583 130 221 234 512 257 716 20 186 -46 322 -179 366 -48 16 -166 26 -215 19z m-1854 -495 c30 -12 55 -50 64 -99 9 -50 -36 -135 -92 -174 -34 -23 -53 -29 -102 -30 -53 -1 -64 2 -87 26 -38 37 -44 107 -14 175 45 104 128 141 231 102z m759 -1010 c92 -23 220 -84 294 -139 100 -73 76 -85 -169 -85 -189 1 -281 15 -424 66 -113 39 -145 59 -149 91 -5 38 38 61 173 92 38 9 200 -6 275 -25z"/></g></svg><div class="hdr-logo">LUCERNE</div><div class="hdr-sub">B O U T I Q U E</div><div class="hdr-city">رام الله</div><div class="hdr-bar-bottom"></div>${isExchangeInvoice ? `<div class="exchange-badge">🔄 فاتورة تبديل &nbsp;·&nbsp; EXCHANGE INVOICE</div>` : ""}</div>
-<div class="meta"><div class="meta-inv">${isExchangeInvoice ? "فاتورة تبديل" : "فاتورة"} &nbsp;<span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">#${order.id}</span></div><div style="text-align:left;"><div class="meta-date" style="direction:ltr;unicode-bidi:isolate;">${dateStr}</div><div class="meta-time" style="direction:ltr;unicode-bidi:isolate;">${timeStr}</div></div></div>
+<div class="meta"><div class="meta-inv">${isExchangeInvoice ? "فاتورة تبديل" : "فاتورة"} &nbsp;<span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">${order.offlineNumber ?? `#${order.id}`}</span></div><div style="text-align:left;"><div class="meta-date" style="direction:ltr;unicode-bidi:isolate;">${dateStr}</div><div class="meta-time" style="direction:ltr;unicode-bidi:isolate;">${timeStr}</div></div></div>
+${order.offlineNumber ? `<div style="text-align:center;font-size:10px;font-weight:700;border:1.5px dashed #000;border-radius:5px;padding:5px 6px;margin:0 0 10px;">فاتورة مؤقتة — تُعتمد تلقائياً عند عودة الاتصال</div>` : ""}
 ${sellerHtml}
 ${noteHtml}
 <table><thead><tr><th>المنتج</th><th>الكمية</th><th>المجموع</th></tr></thead><tbody>${itemsHtml}</tbody></table>
@@ -3624,7 +3645,7 @@ ${noteHtml}
   ${splitHtml}
   ${order.paymentMethod === "cash" && order.cashReceived > 0 ? `<div class="cash-row"><span>المبلغ المدفوع</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${order.cashReceived.toFixed(2)}</span></div><div class="change-row"><span class="label">الباقي للزبون</span><span class="amount" style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${order.change.toFixed(2)}</span></div>` : ""}
 </div>
-<div class="inv-barcode">${renderBarcodeSvg(String(order.id), { height: 40, width: 1.8, fontSize: 12 })}</div>
+<div class="inv-barcode">${renderBarcodeSvg(String(order.offlineNumber ?? order.id), { height: 40, width: 1.8, fontSize: 12 })}</div>
 <div class="ftr"><div class="ftr-dots">· · · · · · · · · · · ·</div><div class="ftr-thanks">شكراً لتسوقكم</div><div class="ftr-brand">LUCERNE BOUTIQUE</div>${isExchangeInvoice ? `<div class="ftr-policy exchange-lock">أي منتج في فاتورة التبديل هذه لا يمكن تبديله مرة أخرى</div>` : `<div class="ftr-policy strong">يجب إحضار هذه الفاتورة لإتمام أي عملية تبديل</div><div class="ftr-policy">مدة التبديل: يومان (٤٨ ساعة) من تاريخ الشراء فقط</div>`}<div class="ftr-policy">القطع الرسمية لا تبدل &nbsp;·&nbsp; الفساتين لا تبدل &nbsp;·&nbsp; العبايات لا تبدل &nbsp;·&nbsp; لا يوجد ترجيع لجميع القطع</div></div>
 <div class="ftr-qr"><div class="ftr-qr-title">امسح الرمز</div><div class="ftr-qr-sub">لتتسوق عبر موقعنا الإلكتروني</div><div class="ftr-qr-code">${RECEIPT_SITE_QR_SVG}</div><div class="ftr-qr-url">${RECEIPT_SITE_HOST}</div></div>
 </body></html>`;
@@ -3895,16 +3916,137 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
       return;
     }
     setCompleting(true);
+    // One unique id per sale, sent with the request. If the connection dies mid-request we can't know whether the
+    // server saved it, so the sale is retried later with the SAME id: the server then returns the invoice it already
+    // made instead of creating a second one.
+    const clientRef = newClientRef();
+    const saleBody = {
+      totalAmount: cartTotal.toFixed(2),
+      subtotalAmount: cartSubtotal.toFixed(2),
+      discountAmount: discountAmount.toFixed(2),
+      paymentMethod,
+      note: note || null,
+      cashAmount:
+        paymentMethod === "cash"
+          ? cashAmt
+          : paymentMethod === "split"
+            ? cashAmt
+            : null,
+      cardAmount:
+        paymentMethod === "card"
+          ? cartTotal
+          : paymentMethod === "split"
+            ? cardAmt
+            : null,
+      items: cart.map((i) => ({
+        productId: i.product.id,
+        name: i.product.name,
+        barcode: (i.product as any).barcode || null,
+        quantity: i.quantity,
+        price: i.unitPrice.toFixed(2),
+        size: i.size,
+        color: i.color,
+        newSize: i.isNewSize || undefined,
+      })),
+    };
+
+    // Finish the sale on screen: receipt dialog, customer display, cleared cart, print. Used for normal sales AND
+    // for sales saved on this device (those carry a temporary OFF- invoice number).
+    const finalizeSale = (order: any, offlineNumber?: string) => {
+      const finished: CompletedOrder = {
+        id: order.id ?? 0,
+        offlineNumber,
+        items: [...cart],
+        subtotal: cartSubtotal,
+        discountAmount,
+        total: cartTotal,
+        date: new Date(),
+        cashReceived: cashAmt,
+        cardReceived: cardAmt,
+        change: changeAmount,
+        paymentMethod,
+        note,
+        sellerName:
+          getPosOrderSellerName(order) ||
+          (currentUser?.fullName || "").trim() ||
+          undefined,
+        sellerRole: getPosOrderSellerRole(order) || currentUser?.role || undefined,
+      };
+      setCompletedOrder(finished);
+      /* Broadcast completion to customer screen */
+      try {
+        const completedPayload = {
+          items: finished.items.map((i) => ({
+            productName: i.product.name,
+            productNameAr: (i.product as any).nameAr || i.product.name,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            size: i.size,
+            color: i.color,
+            image: getProductImage(i.product, i.color),
+          })),
+          subtotal: finished.subtotal,
+          discountAmount: finished.discountAmount,
+          total: finished.total,
+          paymentMethod: finished.paymentMethod,
+          completed: true,
+          currency: "₪",
+        };
+        posChannel.current?.postMessage({ type: "CART_UPDATE", payload: completedPayload });
+        localStorage.setItem("lucerne_pos_cart", JSON.stringify(completedPayload));
+      } catch {}
+      setCart([]);
+      setDiscountValue("");
+      setNote("");
+      setPaymentMethod(null);
+      setCashReceived("");
+      setCardReceived("");
+      qc.invalidateQueries({ queryKey: ["/api/products"] });
+      qc.invalidateQueries({ queryKey: ["/api/pos/orders"] });
+      qc.invalidateQueries({ queryKey: ["/api/stats"] });
+      qc.invalidateQueries({ queryKey: ["/api/admin/low-stock"] });
+      toast(
+        offlineNumber
+          ? {
+              title: ar ? `✓ حُفظ على الجهاز — فاتورة مؤقتة ${offlineNumber}` : `✓ Saved on this device — temporary invoice ${offlineNumber}`,
+              description: ar ? "ستُرسل تلقائياً عند عودة الاتصال." : "It will upload automatically when the connection is back.",
+            }
+          : {
+              title: ar
+                ? `✓ تم البيع — فاتورة #${order.id}`
+                : `✓ Sale done — Invoice #${order.id}`,
+            },
+      );
+      if (autoPrint) triggerPrint(finished);
+      barcodeRef.current?.focus();
+    };
+
+    // Save the sale on THIS device to upload later. Returns false only if even that failed.
+    const saveOffline = async (): Promise<boolean> => {
+      try {
+        const sale = await enqueueSale({
+          clientRef,
+          payload: saleBody,
+          total: cartTotal,
+          sellerId: currentUser?.id,
+          sellerName: (currentUser?.fullName || "").trim() || undefined,
+        });
+        finalizeSale({ id: 0 }, sale.offlineNumber);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
     try {
-      // No connection → don't send anything. Nothing was saved and the cart is
-      // left exactly as it is, so the sale can simply be completed again once
-      // the connection is back.
+      // No connection → keep the sale on this device (with a temporary invoice number) instead of refusing it.
       if (!(await ensureOnline())) {
+        if (await saveOffline()) return;
         toast({
           title: ar ? "لا يوجد اتصال بالإنترنت" : "No internet connection",
           description: ar
-            ? "لم يتم حفظ البيع. السلة محفوظة كما هي، أعد المحاولة عند عودة الاتصال."
-            : "The sale was not saved. Your cart is kept as it is, so try again when the connection is back.",
+            ? "تعذّر حفظ البيع على هذا الجهاز. السلة محفوظة كما هي، أعد المحاولة."
+            : "The sale could not be saved on this device. Your cart is kept as it is, so try again.",
           variant: "destructive",
         });
         return;
@@ -3915,35 +4057,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
         credentials: "include",
         // A weak connection must never leave the cashier stuck on a spinner.
         signal: timeoutSignal(30000),
-        body: JSON.stringify({
-          totalAmount: cartTotal.toFixed(2),
-          subtotalAmount: cartSubtotal.toFixed(2),
-          discountAmount: discountAmount.toFixed(2),
-          paymentMethod,
-          note: note || null,
-          cashAmount:
-            paymentMethod === "cash"
-              ? cashAmt
-              : paymentMethod === "split"
-                ? cashAmt
-                : null,
-          cardAmount:
-            paymentMethod === "card"
-              ? cartTotal
-              : paymentMethod === "split"
-                ? cardAmt
-                : null,
-          items: cart.map((i) => ({
-            productId: i.product.id,
-            name: i.product.name,
-            barcode: (i.product as any).barcode || null,
-            quantity: i.quantity,
-            price: i.unitPrice.toFixed(2),
-            size: i.size,
-            color: i.color,
-            newSize: i.isNewSize || undefined,
-          })),
-        }),
+        body: JSON.stringify({ ...saleBody, clientRef }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -4015,76 +4129,21 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
         return;
       }
       const order = await res.json();
-      const finished: CompletedOrder = {
-        id: order.id,
-        items: [...cart],
-        subtotal: cartSubtotal,
-        discountAmount,
-        total: cartTotal,
-        date: new Date(),
-        cashReceived: cashAmt,
-        cardReceived: cardAmt,
-        change: changeAmount,
-        paymentMethod,
-        note,
-        sellerName:
-          getPosOrderSellerName(order) ||
-          (currentUser?.fullName || "").trim() ||
-          undefined,
-        sellerRole: getPosOrderSellerRole(order) || currentUser?.role || undefined,
-      };
-      setCompletedOrder(finished);
-      /* Broadcast completion to customer screen */
-      try {
-        const completedPayload = {
-          items: finished.items.map((i) => ({
-            productName: i.product.name,
-            productNameAr: (i.product as any).nameAr || i.product.name,
-            quantity: i.quantity,
-            unitPrice: i.unitPrice,
-            size: i.size,
-            color: i.color,
-            image: getProductImage(i.product, i.color),
-          })),
-          subtotal: finished.subtotal,
-          discountAmount: finished.discountAmount,
-          total: finished.total,
-          paymentMethod: finished.paymentMethod,
-          completed: true,
-          currency: "₪",
-        };
-        posChannel.current?.postMessage({ type: "CART_UPDATE", payload: completedPayload });
-        localStorage.setItem("lucerne_pos_cart", JSON.stringify(completedPayload));
-      } catch {}
-      setCart([]);
-      setDiscountValue("");
-      setNote("");
-      setPaymentMethod(null);
-      setCashReceived("");
-      setCardReceived("");
-      qc.invalidateQueries({ queryKey: ["/api/products"] });
-      qc.invalidateQueries({ queryKey: ["/api/pos/orders"] });
-      qc.invalidateQueries({ queryKey: ["/api/stats"] });
-      qc.invalidateQueries({ queryKey: ["/api/admin/low-stock"] });
-      toast({
-        title: ar
-          ? `✓ تم البيع — فاتورة #${order.id}`
-          : `✓ Sale done — Invoice #${order.id}`,
-      });
-      if (autoPrint) triggerPrint(finished);
-      barcodeRef.current?.focus();
+      finalizeSale(order);
     } catch (err: any) {
       if (isNetworkError(err) || isTimeoutError(err)) {
-        // The request was sent but we never got an answer, so the sale may or
-        // may not have been saved. Retrying blindly could create a duplicate
-        // invoice, so tell the cashier to check the log first.
-        toast({
-          title: ar ? "انقطع الاتصال أثناء إتمام البيع" : "Connection lost while completing the sale",
-          description: ar
-            ? "لا نعرف إن كانت الفاتورة قد حُفظت. افتح سجل الفواتير وتأكد قبل إعادة المحاولة حتى لا تتكرر."
-            : "We can't tell if the invoice was saved. Check the invoice log before trying again so it isn't duplicated.",
-          variant: "destructive",
-        });
+      // The request was sent but we never got an answer, so the sale may or may not have been saved. That is safe:
+      // we keep it on this device and upload it again with the same id — if the server did save it, the upload just
+      // returns that invoice instead of creating a duplicate.
+      if (!(await saveOffline())) {
+      toast({
+      title: ar ? "انقطع الاتصال أثناء إتمام البيع" : "Connection lost while completing the sale",
+      description: ar
+      ? "لا نعرف إن كانت الفاتورة قد حُفظت. افتح سجل الفواتير وتأكد قبل إعادة المحاولة حتى لا تتكرر."
+      : "We can't tell if the invoice was saved. Check the invoice log before trying again so it isn't duplicated.",
+      variant: "destructive",
+      });
+      }
       } else {
         toast({
           title: ar ? "خطأ في الاتصال" : "Connection error",
@@ -4920,13 +4979,16 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
       </div>
 
       {/* ── Completed order banner ─────────────────────────────────── */}
+      {/* Offline mode lives on the POS page only: connection banner + saved-sales panel */}
+      <ConnectionBanner />
+      <OfflineSyncPanel />
       {completedOrder && (
         <div className="mb-4 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <span className="font-semibold text-green-800 dark:text-green-200 text-sm">
               {ar
-                ? <><span>✓ تم البيع — فاتورة </span><span className="ltr-num">#{completedOrder.id}</span></>
-                : <><span>✓ Sale done — Invoice </span><span className="ltr-num">#{completedOrder.id}</span></>}
+                ? <><span>✓ تم البيع — فاتورة </span><span className="ltr-num">{completedOrder.offlineNumber ?? `#${completedOrder.id}`}</span></>
+                : <><span>✓ Sale done — Invoice </span><span className="ltr-num">{completedOrder.offlineNumber ?? `#${completedOrder.id}`}</span></>}
             </span>
             <span className="text-green-700 dark:text-green-300 text-sm ms-3 ltr-num">
               ₪{completedOrder.total.toFixed(2)}

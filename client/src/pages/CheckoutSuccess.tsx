@@ -4,57 +4,47 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/use-cart";
 import { useLanguage } from "@/i18n";
-import { CheckCircle, Store, Gift } from "lucide-react";
-import { useSiteSettings } from "@/hooks/use-site-settings";
+import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/* Where the online-payment page sends the customer back to. It confirms the payment with the server and then
+   moves on to the order confirmation page (the same one cash-on-delivery orders land on). Opening or reloading
+   this page again is safe: the server returns the same order. */
 export default function CheckoutSuccess() {
   const [, setLocation] = useLocation();
   const { clearCart } = useCart();
   const { t, language } = useLanguage();
   const ar = language === "ar";
-  const { data: siteSettings } = useSiteSettings();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [orderId, setOrderId] = useState<number | null>(null);
-  // Set for guests (no account): the signed token that lets them reopen this order.
-  const [guestToken, setGuestToken] = useState<string | null>(null);
-  const [placed, setPlaced] = useState<any>(null);
+  const [status, setStatus] = useState<"loading" | "error">("loading");
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
     const params = new URLSearchParams(window.location.search);
     const reference = params.get("reference");
     const sessionId = params.get("session_id");
+    const startedAt = Date.now();
 
-    if (reference) {
-      fetch(`/api/lahza/verify?reference=${encodeURIComponent(reference)}`, {
-        credentials: "include",
+    const finish = (data: any) => {
+      const id = data?.order?.id;
+      if (!id) { setStatus("error"); return; }
+      clearCart();
+      const target = data.guestToken ? `/order-confirmation/${id}?t=${data.guestToken}` : `/order-confirmation/${id}`;
+      // Let the "payment confirmed" moment register before moving on.
+      window.setTimeout(() => setLocation(target, { replace: true }), Math.max(0, 900 - (Date.now() - startedAt)));
+    };
+
+    const url = reference
+      ? `/api/lahza/verify?reference=${encodeURIComponent(reference)}`
+      : sessionId
+        ? `/api/stripe/checkout-success?session_id=${sessionId}`
+        : null;
+    if (!url) { setStatus("error"); return; }
+    fetch(url, { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Payment verification failed");
+        finish(await res.json());
       })
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Payment verification failed");
-          const data = await res.json();
-          setOrderId(data.order?.id);
-          setGuestToken(data.guestToken ?? null);
-          setPlaced(data.order ?? null);
-          setStatus("success");
-          clearCart();
-          })
-          .catch(() => setStatus("error"));
-          } else if (sessionId) {
-      fetch(`/api/stripe/checkout-success?session_id=${sessionId}`, {
-        credentials: "include",
-      })
-        .then(async (res) => {
-          if (!res.ok) throw new Error("Payment verification failed");
-          const data = await res.json();
-          setOrderId(data.order?.id);
-          setStatus("success");
-          clearCart();
-        })
-        .catch(() => setStatus("error"));
-    } else {
-      setStatus("error");
-    }
+      .catch(() => setStatus("error"));
   }, []);
 
   return (
@@ -63,59 +53,14 @@ export default function CheckoutSuccess() {
       <main className="flex-1 flex items-center justify-center p-4 py-20">
         <div className="text-center max-w-md">
           {status === "loading" && (
-            <div className="space-y-6 animate-pulse">
-              <div className="w-16 h-16 rounded-full bg-muted mx-auto" />
-              <div className="h-6 w-48 bg-muted rounded mx-auto" />
-              <div className="h-4 w-64 bg-muted rounded mx-auto" />
-            </div>
-          )}
-
-          {status === "success" && (
-            <div className="space-y-6">
-              <CheckCircle className="w-16 h-16 mx-auto text-green-600" />
-              <h1 className="font-display text-3xl" data-testid="text-checkout-success">{t.checkout.orderSuccess}</h1>
-              <p className="text-muted-foreground">{t.checkout.orderSuccessDesc}</p>
-              {orderId && (
-              <p className="text-sm text-muted-foreground">
-              {t.profile.orderNumber} #{orderId}
-              </p>
-              )}
-              {placed?.deliveryMethod === "pickup" && placed?.pickupCode && (
-              <div className="rounded-2xl border-2 border-violet-300 bg-violet-50 dark:bg-violet-950/30 p-5" data-testid="card-pickup-code">
-              <div className="flex items-center justify-center gap-2 text-violet-800 dark:text-violet-300 mb-1"><Store className="w-4 h-4" /><p className="text-sm font-bold">{ar ? "رمز الاستلام من المتجر" : "Store pickup code"}</p></div>
-              <p className="font-mono text-4xl font-extrabold tracking-[0.35em] ps-[0.35em] select-all ltr-num" dir="ltr" data-testid="text-pickup-code">{placed.pickupCode}</p>
-              <p className="text-xs text-muted-foreground mt-2">{ar ? "اعرضيه عند الاستلام. سنخبرك على واتساب عندما يصبح جاهزاً." : "Show it when you collect. We'll message you on WhatsApp when it's ready."}</p>
+            <div className="space-y-6" data-testid="payment-verifying">
+              <div className="relative mx-auto w-24 h-24">
+                <span className="absolute inset-0 rounded-full border-4 border-foreground/10" />
+                <span className="absolute inset-0 rounded-full border-4 border-transparent border-t-foreground animate-spin" />
+                <span className="absolute inset-0 flex items-center justify-center"><ShieldCheck className="w-9 h-9 text-emerald-600" /></span>
               </div>
-              )}
-              {guestToken && siteSettings?.loyalty_points_enabled !== "false" && placed && (() => {
-              const pts = Math.floor(Math.max(0, parseFloat(placed.totalAmount) - parseFloat(placed.shippingCost || "0")) / 2);
-              return pts > 0 ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/70 dark:bg-amber-950/20 p-4 flex items-center gap-3 text-start" data-testid="card-guest-signin">
-              <Gift className="w-5 h-5 text-amber-700 shrink-0" />
-              <p className="text-sm font-semibold" data-testid="text-guest-points-cta">{ar ? `سجّلي الدخول في طلبك القادم لتكسبي ${pts} نقطة` : `Sign in on your next order to earn ${pts} points`}</p>
-              </div>
-              ) : null;
-              })()}
-              <div className="flex gap-4 justify-center pt-4">
-              <Button
-              onClick={() => setLocation(
-              guestToken && orderId ? `/order-confirmation/${orderId}?t=${guestToken}`
-              : orderId ? `/profile?order=${orderId}` : "/profile"
-              )}
-              className="rounded-md uppercase tracking-widest text-sm"
-              data-testid="button-view-orders"
-              >
-              {guestToken ? (ar ? "عرض الطلب" : "View order") : t.profile.orderHistory}
-              </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setLocation("/shop")}
-                  className="rounded-md uppercase tracking-widest text-sm"
-                  data-testid="button-continue-shopping"
-                >
-                  {t.cart.continueShopping}
-                </Button>
-              </div>
+              <h1 className="font-display text-2xl">{ar ? "نتحقق من دفعك بأمان…" : "Securely confirming your payment…"}</h1>
+              <p className="text-sm text-muted-foreground">{ar ? "لحظات ونعرض لكِ تفاصيل طلبك. لا تغلقي الصفحة." : "One moment, then we'll show your order. Please keep this page open."}</p>
             </div>
           )}
 
@@ -123,11 +68,7 @@ export default function CheckoutSuccess() {
             <div className="space-y-6">
               <h1 className="font-display text-3xl" data-testid="text-checkout-error">{t.checkout.checkoutFailed}</h1>
               <p className="text-muted-foreground">{t.checkout.paymentError}</p>
-              <Button
-                onClick={() => setLocation("/checkout")}
-                className="rounded-md uppercase tracking-widest text-sm"
-                data-testid="button-retry-checkout"
-              >
+              <Button onClick={() => setLocation("/checkout")} className="rounded-md uppercase tracking-widest text-sm" data-testid="button-retry-checkout">
                 {t.checkout.tryAgain}
               </Button>
             </div>

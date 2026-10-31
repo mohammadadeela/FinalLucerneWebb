@@ -18,6 +18,7 @@ import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
 import { useSiteSettings, getShippingZones, getSetting } from "@/hooks/use-site-settings";
 import { rememberPostLoginTarget } from "@/lib/post-login";
+import PurchaseScene from "@/components/checkout/PurchaseScene";
 import GuestVerifyCard, { isGuestContactVerified, type GuestVerified } from "@/components/checkout/GuestVerifyCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -166,6 +167,23 @@ export default function Checkout() {
   const [verifyShake, setVerifyShake] = useState(0);
   const verifyCardRef = useRef<HTMLDivElement>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
+  // The "real purchase" scene plays while the order is being placed. It stays up for a minimum time so it never
+  // flashes by, goes away at once if the order fails, and plays its "leaving the shop" ending before we navigate.
+  const SCENE_MIN_MS = 4800;
+  const [sceneHold, setSceneHold] = useState(false);
+  const [sceneDone, setSceneDone] = useState(false);
+  const sceneStartRef = useRef(0);
+  const orderInFlight = createOrder.isPending || stripeLoading;
+  useEffect(() => {
+  if (orderInFlight) sceneStartRef.current = Date.now();
+  }, [orderInFlight]);
+  const holdScene = async () => {
+  setSceneHold(true);
+  const wait = Math.max(0, SCENE_MIN_MS - (Date.now() - sceneStartRef.current));
+  await new Promise((r) => setTimeout(r, wait));
+  setSceneDone(true);
+  await new Promise((r) => setTimeout(r, 1500));
+  };
   const [shippingRegion, setShippingRegion] = useState<string>("");
   const shippingRegionRef = useRef<HTMLDivElement>(null);
   const [saveInfo, setSaveInfo] = useState(true);
@@ -778,7 +796,8 @@ export default function Checkout() {
         }
         const { url } = await res.json();
         if (url) {
-          window.location.href = url;
+        await holdScene();
+        window.location.href = url;
         }
       } catch (err: any) {
       if (handleGuestVerifyError(err)) return;
@@ -819,6 +838,7 @@ export default function Checkout() {
           ...(!user && guestVerified ? { guestProof: guestVerified.proof } : {}),
           } as any);
 
+      await holdScene();
       clearCart();
       setSoldOutItems([]);
       // A guest has no account to look the order up in, so the link carries a signed token.
@@ -881,6 +901,20 @@ export default function Checkout() {
       <Navbar />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-5xl mx-auto">
+        <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} />
+        <ol className="flex items-center justify-center gap-2 sm:gap-3 mb-6 text-[11px] sm:text-xs font-semibold" data-testid="checkout-steps" aria-label={language === "ar" ? "مراحل الطلب" : "Checkout steps"}>
+        {[language === "ar" ? "السلة" : "Cart", language === "ar" ? "التفاصيل" : "Details", language === "ar" ? "الدفع" : "Payment", language === "ar" ? "تم" : "Done"].map((label, i, arr) => {
+        const current = orderInFlight ? 2 : 1;
+        const state = i < current ? "done" : i === current ? "active" : "todo";
+        return (
+        <li key={label} className="flex items-center gap-2 sm:gap-3" data-state={state}>
+        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] border-2 ${state === "done" ? "bg-emerald-500 border-emerald-500 text-white" : state === "active" ? "bg-foreground border-foreground text-background" : "border-border text-muted-foreground"}`}>{state === "done" ? "✓" : i + 1}</span>
+        <span className={state === "todo" ? "text-muted-foreground" : ""}>{label}</span>
+        {i < arr.length - 1 && <span className={`w-6 sm:w-12 h-0.5 rounded ${i < current ? "bg-emerald-500" : "bg-border"}`} />}
+        </li>
+        );
+        })}
+        </ol>
         <h1 className="font-display text-3xl sm:text-4xl mb-8 sm:mb-12" data-testid="text-checkout-title">{t.checkout.title}</h1>
 
         {soldOutItems.length > 0 && items.length > 0 && (

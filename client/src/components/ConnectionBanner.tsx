@@ -4,7 +4,7 @@ import { Wifi, WifiOff } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { installConnectionMonitor, useConnection } from "@/lib/connection";
 
-/* Shows a small pill at the bottom-centre when the connection drops and a
+/* POS ONLY. Shows a small pill at the bottom-centre when the connection drops and a
    brief green "back online" pill when it returns.
 
    Designed not to get in the cashier's way: it never blocks clicks
@@ -17,9 +17,8 @@ export default function ConnectionBanner() {
   const online = useConnection((s) => s.online);
   const justRestored = useConnection((s) => s.justRestored);
 
-  useEffect(() => {
-    installConnectionMonitor();
-  }, []);
+  // Watch the connection only while the POS page is open.
+  useEffect(() => installConnectionMonitor(), []);
 
   if (location.startsWith("/admin/pos-customer")) return null;
   if (online && !justRestored) return null;
