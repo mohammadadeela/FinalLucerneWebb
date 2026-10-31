@@ -117,32 +117,18 @@ function getAdminEmail() {
   return sender;
 }
 
-/* ── OTP code block with a "Copy code" button ─────────────────
-   Email clients never run JavaScript, so a true click-to-clipboard button
-   can't live inside the email itself. This block does the next best thing:
-   1. the code sits in a large box with user-select:all, so a single
-      tap/click selects the whole code in clients that honour it, and
-   2. a bulletproof button opens /copy-code on the site, which copies the
-      code with one tap. The code travels in the URL *fragment* (#), which
-      browsers never send to a server, so it doesn't end up in server logs. */
-const OTP_COPY_PAGE_URL = "https://lucerne-boutique.com/copy-code";
+/* ── OTP code block ───────────────────────────────────────────
+   The code sits in a large box with user-select:all, so a single tap/click selects the whole code in
+   clients that honour it. A "Copy code" link button used to be here; it was removed because the link
+   made these emails land in spam. Keep verification emails link-free. */
 
 function otpCodeBlock(code: string): string {
-  const href = `${OTP_COPY_PAGE_URL}#${encodeURIComponent(code)}`;
   return `
       <div style="text-align:center;margin:24px 0 8px;">
         <div style="display:inline-block;background:#ffffff;border:1px solid #e5e5e5;border-radius:12px;padding:18px 24px;">
           <span style="display:block;font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:38px;line-height:1.1;font-weight:700;letter-spacing:10px;padding-left:10px;color:#111;-webkit-user-select:all;user-select:all;">${esc(code)}</span>
         </div>
-      </div>
-      <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:16px auto 0;">
-        <tr>
-          <td align="center" bgcolor="#111111" style="border-radius:10px;">
-            <a href="${href}" target="_blank" style="display:inline-block;min-width:200px;padding:15px 32px;font-family:'Segoe UI',Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:10px;letter-spacing:0.3px;">نسخ الرمز · Copy code</a>
-          </td>
-        </tr>
-      </table>
-      <p style="text-align:center;font-size:12px;line-height:1.6;color:#999;margin:10px 0 0;">اضغطي على الزر لنسخ الرمز<br/>Tap the button to copy the code</p>`;
+      </div>`;
 }
 
 /** Returns true only when the email was really handed to the mail server, so callers can tell the

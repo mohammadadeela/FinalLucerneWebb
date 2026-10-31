@@ -658,7 +658,7 @@ export function Navbar() {
                           <span className={`text-xs sm:text-sm tracking-[0.25em] uppercase ${seasonInfo ? "font-medium" : "font-light text-background/80"}`}>
                           {item}
                           </span>
-                          <span className={seasonInfo ? "text-[10px] opacity-80" : "text-background/30 text-[8px]"}>
+                          <span className={seasonInfo ? "text-[10px]" : "text-background/30 text-[8px]"} style={seasonInfo ? { color: seasonInfo.accent } : undefined}>
                           {seasonInfo ? seasonInfo.sep : "✦"}
                           </span>
                         </span>

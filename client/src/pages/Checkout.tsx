@@ -902,19 +902,6 @@ export default function Checkout() {
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-5xl mx-auto">
         <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} />
-        <ol className="flex items-center justify-center gap-2 sm:gap-3 mb-6 text-[11px] sm:text-xs font-semibold" data-testid="checkout-steps" aria-label={language === "ar" ? "مراحل الطلب" : "Checkout steps"}>
-        {[language === "ar" ? "السلة" : "Cart", language === "ar" ? "التفاصيل" : "Details", language === "ar" ? "الدفع" : "Payment", language === "ar" ? "تم" : "Done"].map((label, i, arr) => {
-        const current = orderInFlight ? 2 : 1;
-        const state = i < current ? "done" : i === current ? "active" : "todo";
-        return (
-        <li key={label} className="flex items-center gap-2 sm:gap-3" data-state={state}>
-        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] border-2 ${state === "done" ? "bg-emerald-500 border-emerald-500 text-white" : state === "active" ? "bg-foreground border-foreground text-background" : "border-border text-muted-foreground"}`}>{state === "done" ? "✓" : i + 1}</span>
-        <span className={state === "todo" ? "text-muted-foreground" : ""}>{label}</span>
-        {i < arr.length - 1 && <span className={`w-6 sm:w-12 h-0.5 rounded ${i < current ? "bg-emerald-500" : "bg-border"}`} />}
-        </li>
-        );
-        })}
-        </ol>
         <h1 className="font-display text-3xl sm:text-4xl mb-8 sm:mb-12" data-testid="text-checkout-title">{t.checkout.title}</h1>
 
         {soldOutItems.length > 0 && items.length > 0 && (

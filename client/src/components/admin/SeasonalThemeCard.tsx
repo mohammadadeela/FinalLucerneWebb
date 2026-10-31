@@ -2,13 +2,8 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { SeasonThumb } from "@/components/seasonal/SeasonalDecor";
 import { SEASONS, SEASONAL_THEMES, getActiveTheme, seasonBarText, daysUntil, daysLabel, type SeasonalTheme } from "@/lib/seasonal";
-
-const DESC: Record<SeasonalTheme, string> = {
-  christmas: "ثلج متساقط، أضواء وزينة وعصي الحلوى على البانر، شريط أخبار احتفالي",
-  eid_fitr: "هلال ونجوم وفوانيس متأرجحة ولمعان ذهبي، شريط أخبار بألوان العيد",
-  eid_adha: "هلال وفوانيس وأفق مساجد بألوان خضراء وذهبية، شريط أخبار للعيد",
-};
 
 /** Pick ONE seasonal theme. The choice is stored as a single value (`seasonal_theme`), so two can never be on together. */
 export default function SeasonalThemeCard({
@@ -59,29 +54,42 @@ export default function SeasonalThemeCard({
             يمكن تفعيل موسم واحد فقط في كل مرة — تفعيل موسم يُطفئ الآخر تلقائياً.
           </p>
 
-          <div className="border border-border rounded-xl divide-y divide-border/50 overflow-hidden">
+          <div className="grid sm:grid-cols-3 gap-3" data-testid="season-cards">
             {SEASONAL_THEMES.map((id) => {
               const s = SEASONS[id];
               const on = active === id;
+              const swatches = [s.palette.night, s.palette.deep, s.palette.glow, s.palette.light, s.palette.gold];
               return (
-                <div key={id} className="flex items-center justify-between gap-4 px-4 py-3.5">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={on}
-                    aria-label={s.nameAr}
-                    onClick={() => onChange("seasonal_theme", on ? "none" : id)}
-                    className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? "bg-foreground" : "bg-muted-foreground/25"}`}
-                    data-testid={`toggle-seasonal-${id}`}
-                  >
-                    <span className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-background shadow-sm transition-transform duration-200 ${on ? "left-[3px] translate-x-[20px]" : "left-[3px] translate-x-0"}`} />
-                  </button>
-                  <div className="flex items-center gap-3 min-w-0 flex-1 justify-end text-right">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm">{s.nameAr} · {s.nameEn}</p>
-                      <p className="text-[11px] text-muted-foreground">{DESC[id]}</p>
+                <div
+                  key={id}
+                  className={`rounded-xl border overflow-hidden bg-background transition-all ${on ? "border-foreground ring-1 ring-foreground shadow-md" : "border-border hover:border-foreground/40"}`}
+                  data-testid={`card-season-${id}`}
+                >
+                  <SeasonThumb id={id} />
+                  <div className="p-3.5 space-y-2.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={on}
+                        aria-label={s.nameAr}
+                        onClick={() => onChange("seasonal_theme", on ? "none" : id)}
+                        className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${on ? "bg-foreground" : "bg-muted-foreground/30"}`}
+                        data-testid={`toggle-seasonal-${id}`}
+                      >
+                        <span className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-background shadow-sm transition-transform duration-200 left-[3px] ${on ? "translate-x-[20px]" : "translate-x-0"}`} />
+                      </button>
+                      <div className="text-right min-w-0">
+                        <p className="font-semibold text-sm">{s.nameAr}</p>
+                        <p className="text-[11px] text-muted-foreground">{s.nameEn}</p>
+                      </div>
                     </div>
-                    <span className="text-2xl shrink-0" aria-hidden>{s.emoji}</span>
+                    <p className="text-[11px] leading-relaxed text-muted-foreground text-right">{s.ideaAr}</p>
+                    <div className="flex justify-end gap-1.5" aria-hidden="true">
+                      {swatches.map((c) => (
+                        <span key={c} className="w-4 h-4 rounded-full border border-black/10" style={{ background: c }} />
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
@@ -95,7 +103,9 @@ export default function SeasonalThemeCard({
                 style={{ background: info.barBg, color: info.barText }}
                 data-testid="seasonal-preview"
               >
-                {seasonBarText(values, active, "ar").split("|")[0].trim()}
+                <span style={{ color: info.accent }}>✦</span>
+                <span className="mx-3">{seasonBarText(values, active, "ar").split("|")[0].trim()}</span>
+                <span style={{ color: info.accent }}>✦</span>
               </div>
 
               <div className="space-y-2">
