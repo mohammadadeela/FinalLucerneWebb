@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { clearPosOfflineLoginCache } from "@/lib/pos-sw";
 import { useLocation } from "wouter";
 import { api } from "@shared/routes";
 import { type LoginRequest, type RegisterRequest } from "@shared/schema";
@@ -171,8 +172,9 @@ export function useLogout() {
       if (!res.ok) throw new Error("Failed to logout");
     },
     onSuccess: () => {
-      authTransition.explicitLogout = true;
-      queryClient.setQueryData([api.auth.me.path], null);
+    clearPosOfflineLoginCache();
+    authTransition.explicitLogout = true;
+    queryClient.setQueryData([api.auth.me.path], null);
       queryClient.setQueryData([api.orders.list.path], []);
       queryClient.setQueryData(["/api/wishlist"], []);
       queryClient.setQueryData(["/api/wishlist/products"], []);

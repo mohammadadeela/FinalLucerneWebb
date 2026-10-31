@@ -84,6 +84,7 @@ import { ensureOnline, isNetworkError, isTimeoutError, timeoutSignal } from "@/l
 import { applyPendingToProducts, enqueueSale, loadProductsSnapshot, newClientRef, saveProductsSnapshot, useOfflineQueue } from "@/lib/offline-pos";
 import ConnectionBanner from "@/components/ConnectionBanner";
 import OfflineSyncPanel from "@/components/pos/OfflineSyncPanel";
+import { registerPosServiceWorker } from "@/lib/pos-sw";
 import { describePrintFailure } from "@/lib/print-errors";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 
@@ -1937,6 +1938,8 @@ export default function POS() {
   /* Queries */
   const { data: rawProducts = [], isError: productsFailed } = useProducts();
   const queuedSales = useOfflineQueue((st) => st.sales);
+  // Let the POS open with no internet next time (production build only; POS pages only).
+  useEffect(() => { registerPosServiceWorker(); }, []);
   // Stock on screen already accounts for sales saved on this device but not uploaded yet.
   const products = useMemo(() => applyPendingToProducts(rawProducts as any[], queuedSales) as typeof rawProducts, [rawProducts, queuedSales]);
   // Keep a copy of the product list on this device, so the POS still has products if the page is opened offline.
