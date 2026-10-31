@@ -2220,7 +2220,7 @@ export default function SiteContent() {
 
         {/* Sub-page navigation */}
         {!searching && (
-          <nav className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-1 px-1 scrollbar-hide" role="tablist" aria-label="صفحات الإعدادات" data-testid="admin-tabs">
+          <nav className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="صفحات الإعدادات" data-testid="admin-tabs">
             {TABS.map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
