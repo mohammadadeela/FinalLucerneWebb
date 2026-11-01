@@ -39,7 +39,8 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
   const reduce = !!useReducedMotion();
   const [stage, setStage] = useState(0);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [glide, setGlide] = useState<{ from: number; to: number } | null>(null);
+  const [glide, setGlide] = useState<{ from: number; to: number; left: number } | null>(null);
+  const scrollbar = useRef(0);
 
   useEffect(() => {
     if (!open) { setStage(0); setGlide(null); return; }
@@ -49,6 +50,7 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
 
   useEffect(() => {
     if (!open) return;
+    scrollbar.current = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
@@ -57,12 +59,15 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
   // where the confirmation page's seal sits: navbar padding + the page's top padding (see .pt-navbar and OrderConfirmation)
   useLayoutEffect(() => {
     if (!done || !open) return;
+    // the page underneath is still scrolled to the "place order" button; put it at the top now, under the sheet,
+    // so the confirmation page opens at the top with its seal in view
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
     const r = stageRef.current?.getBoundingClientRect();
     if (!r) return;
     const w = window.innerWidth;
     const newsBar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--news-bar-offset")) || 0;
     const target = (w >= 768 ? 144 : w >= 640 ? 136 : 112) + newsBar;
-    setGlide({ from: r.top + r.height / 2 - 56, to: target });
+    setGlide({ from: r.top + r.height / 2 - 56, to: target, left: (w - scrollbar.current) / 2 - 56 });
   }, [done, open]);
 
   if (!open) return null;
@@ -80,8 +85,10 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
       data-testid="purchase-scene" data-phase={phase} data-story={pickup ? "pickup" : method === "card" ? "card" : "delivery"}
       style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <motion.div className="absolute top-10 inset-x-0 text-center select-none" aria-hidden initial={reduce ? false : { opacity: 0, y: -6 }} animate={{ opacity: done ? 0 : 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <div className="text-[11px] tracking-[0.42em] uppercase text-neutral-500" style={{ fontFamily: SERIF }}>Lucerne Boutique</div>
+      <motion.div className="absolute top-8 sm:top-10 inset-x-0 flex flex-col items-center gap-2 select-none" aria-hidden initial={reduce ? false : { opacity: 0, y: -6 }} animate={{ opacity: done ? 0 : 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <span className="w-10 h-10 rounded-full flex items-center justify-center text-[#2a2a2f] text-lg font-bold shadow-md" style={{ fontFamily: SERIF, background: "linear-gradient(135deg,#f6e2a6 0%,#cfa355 55%,#f1d68e 100%)" }}>L</span>
+        <span className="text-xl sm:text-2xl tracking-[0.3em] uppercase text-neutral-900 leading-none" style={{ fontFamily: SERIF, fontWeight: 600 }}>Lucerne</span>
+        <span className="text-[10px] sm:text-[11px] tracking-[0.45em] uppercase text-neutral-500 leading-none" style={{ fontFamily: SERIF }}>Boutique</span>
       </motion.div>
 
       {/* the sheet the line draws on */}
@@ -131,7 +138,7 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
       {/* the seal pops over the ring, then glides up to where the confirmation page will show its own */}
       <AnimatePresence>
         {done && glide && (
-          <motion.div className="absolute left-1/2 w-28 h-28" style={{ top: glide.to, marginLeft: -56 }} data-testid="scene-check"
+          <motion.div className="absolute w-28 h-28" style={{ top: glide.to, left: glide.left }} data-testid="scene-check"
             initial={{ y: glide.from - glide.to, scale: reduce ? 1 : 0 }} animate={{ y: [glide.from - glide.to, glide.from - glide.to, 0], scale: 1 }}
             transition={tr(reduce, { scale: { delay: 0.7, type: "spring", stiffness: 320, damping: 16 }, y: { delay: 1.15, duration: 0.5, times: [0, 0, 1], ease: [0.3, 0, 0.1, 1] } })}>
             <SealShape id="scene-seal" colors={ROSE} className="absolute inset-0 w-full h-full drop-shadow-[0_18px_30px_rgba(214,67,109,0.35)]" />

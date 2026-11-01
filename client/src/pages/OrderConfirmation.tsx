@@ -171,6 +171,8 @@ export default function OrderConfirmation() {
         { icon: Shirt, ar: "استمتعي بإطلالتك", en: "Enjoy your look", dAr: "ونحب أن نرى رأيك!", dEn: "We'd love to hear what you think!" },
       ];
 
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior }); }, []);
+
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
