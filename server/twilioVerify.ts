@@ -55,7 +55,7 @@ async function callVerify(path: string, params: URLSearchParams): Promise<any> {
 async function sendMessage(phone: string, code: string): Promise<void> {
   const from = getSmsFrom();
   if (!isTwilioSmsConfigured() || !from) throw new Error("twilio_sms_not_configured");
-  if (!/^\d{6}$/.test(code)) throw new Error("invalid_code");
+  if (!/^\d{4,6}$/.test(code)) throw new Error("invalid_code");
 
   const params = new URLSearchParams();
   params.set("To", normalizeE164(phone));

@@ -99,6 +99,8 @@ export default function GuestVerifyCard({
   // Both SMS codes are used up for this checkout: SMS is closed, email is the way.
   const [smsExhausted, setSmsExhausted] = useState(restored?.channel === "sms" && restored?.sendsLeft === 0);
   const [sid] = useState(checkoutSessionId);
+  // SMS codes are 4 digits, emailed codes 6 (the server says which with each send).
+  const [codeLength, setCodeLength] = useState<number>(restored?.codeLength ?? (restored?.channel === "email" ? 6 : 4));
   const codeRef = useRef<HTMLInputElement>(null);
   const secondsLeft = Math.max(0, Math.ceil((cooldownEndsAt - now) / 1000));
 
@@ -168,7 +170,7 @@ export default function GuestVerifyCard({
     resend: ar ? "إعادة إرسال الرمز" : "Resend code",
     resendIn: (s: number) => (ar ? `إعادة الإرسال خلال ${s} ث` : `Resend in ${s}s`),
     verify: ar ? "تأكيد الرمز" : "Verify code",
-    codeLabel: ar ? "أدخلي الرمز المكوّن من 6 أرقام" : "Enter the 6-digit code",
+    codeLabel: ar ? `أدخلي الرمز المكوّن من ${codeLength} أرقام` : `Enter the ${codeLength}-digit code`,
     needPhone: ar ? "أدخلي رقم هاتفك في تفاصيل التوصيل أولاً" : "Enter your phone number in the delivery details first",
     needEmail: ar ? "أدخلي بريدك الإلكتروني في تفاصيل التوصيل أولاً" : "Enter your email in the delivery details first",
     goPhone: ar ? "أدخلي الرقم" : "Add phone",
@@ -220,8 +222,8 @@ export default function GuestVerifyCard({
   };
 
   // Remember the code we asked for, so a page refresh can pick up right here instead of starting from zero.
-  const remember = (ends: number, left: number | null) =>
-    savePending({ channel, target, sentAt: Date.now(), cooldownEndsAt: ends, sendsLeft: left });
+  const remember = (ends: number, left: number | null, len: number = codeLength) =>
+    savePending({ channel, target, sentAt: Date.now(), cooldownEndsAt: ends, sendsLeft: left, codeLength: len });
 
   const send = async () => {
     if (!canSend || busy) return;
@@ -231,12 +233,14 @@ export default function GuestVerifyCard({
     setBusy(null);
     if (r.ok) {
       const ends = Date.now() + (r.data.cooldownSec ?? 60) * 1000;
+      const len = typeof r.data.codeLength === "number" ? r.data.codeLength : channel === "sms" ? 4 : 6;
+      setCodeLength(len);
       setSentTo(target);
       setCode("");
       setCooldownEndsAt(ends);
       setNow(Date.now());
       setSendsLeft(r.data.sendsLeft ?? null);
-      remember(ends, r.data.sendsLeft ?? null);
+      remember(ends, r.data.sendsLeft ?? null, len);
       window.setTimeout(() => codeRef.current?.focus({ preventScroll: true }), 60);
       return;
     }
@@ -267,7 +271,7 @@ export default function GuestVerifyCard({
   };
 
   const check = async () => {
-    if (code.length < 6 || busy) return;
+    if (code.length < codeLength || busy) return;
     setBusy("check");
     setError(null);
     const r = await call("/api/guest/verify/check", channel === "sms" ? { channel, phone: phoneFull, code } : { channel, email: email.trim(), code });
@@ -282,7 +286,7 @@ export default function GuestVerifyCard({
 
   // The code checks itself as soon as the 6th digit is in (the button stays as a fallback, e.g. after a network error).
   useEffect(() => {
-    if (code.length === 6 && sent && !verifiedNow) void check();
+    if (code.length === codeLength && sent && !verifiedNow) void check();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
@@ -408,16 +412,16 @@ export default function GuestVerifyCard({
                     <div dir="ltr" className="flex justify-center">
                       <InputOTP
                         ref={codeRef}
-                        maxLength={6}
+                        maxLength={codeLength}
                         value={code}
-                        onChange={(v) => setCode(normalizeArabicDigits(v).replace(/\D/g, "").slice(0, 6))}
+                        onChange={(v) => setCode(normalizeArabicDigits(v).replace(/\D/g, "").slice(0, codeLength))}
                         onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), check())}
                         inputMode="numeric"
                         autoComplete="one-time-code"
                         data-testid="gv-code-input"
                       >
                         <InputOTPGroup className="gap-1.5 sm:gap-2">
-                          {[0, 1, 2, 3, 4, 5].map((i) => (
+                          {Array.from({ length: codeLength }, (_, i) => i).map((i) => (
                             <InputOTPSlot
                               key={i}
                               index={i}
@@ -428,7 +432,7 @@ export default function GuestVerifyCard({
                       </InputOTP>
                     </div>
                   </div>
-                  <Button type="button" onClick={check} disabled={code.length < 6 || busy === "check"} className={PRIMARY_BTN} data-testid="gv-verify">
+                  <Button type="button" onClick={check} disabled={code.length < codeLength || busy === "check"} className={PRIMARY_BTN} data-testid="gv-verify">
                     {busy === "check" ? <Loader2 className="w-4 h-4 animate-spin" /> : T.verify}
                   </Button>
                   <div className="text-center space-y-1">

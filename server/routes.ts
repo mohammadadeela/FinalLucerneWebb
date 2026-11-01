@@ -1477,21 +1477,24 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const rawPhone = String((req.body || {}).phone || "").trim();
       const digits = rawPhone.replace(/\D/g, "");
       if (digits.length < 8 || digits.length > 15) return res.status(400).json({ message: "invalid_phone" });
-      const phone = `+${digits}`;
+      // "+970 52…" is really "+972 52…" (the SMS provider rejects the former) — same rule as guest checkout
+      const phone = canonicalPhone(rawPhone) ?? `+${digits}`;
       const reservation = reservePhoneOtpSend(phone);
       if (!reservation.ok) return res.status(429).json(reservation);
       const usesVerify = usesTwilioVerifyService();
-      const code = usesVerify ? undefined : String(randomInt(100000, 999999));
+      // 4-digit SMS codes; with Twilio's Verify service the length is whatever is configured there (6 by default)
+      const code = usesVerify ? undefined : String(randomInt(1000, 9999));
       if (code) phoneOtpCodes.set(phone, { code, expiresAt: Date.now() + PHONE_OTP_TTL_MS, attempts: 0 });
       try {
         await sendTwilioSmsVerification(phone, code);
         commitPhoneOtpSend(reservation.reservationId);
-      } catch (err) {
+      } catch (err: any) {
         if (code) phoneOtpCodes.delete(phone);
         rollbackPhoneOtpSend(reservation.reservationId);
+        if (err?.code === 21211 || err?.code === 21614 || err?.code === 21408) return res.status(400).json({ message: "invalid_phone" });
         throw err;
       }
-      res.json({ sent: true });
+      res.json({ sent: true, phone, codeLength: code ? code.length : 6 });
     } catch (err: any) {
       console.error("[twilio-sms-send-otp] error:", err?.message || err);
       res.status(502).json({ message: "send_failed" });
@@ -1508,7 +1511,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       if (digits.length < 8 || digits.length > 15 || !/^\d{4,10}$/.test(code)) {
         return res.status(400).json({ message: "invalid_input" });
       }
-      const phone = `+${digits}`;
+      const phone = canonicalPhone(rawPhone) ?? `+${digits}`;
       if (usesTwilioVerifyService()) {
         const approved = await checkTwilioSmsVerification(phone, code);
         if (!approved) return res.status(400).json({ message: "invalid_code" });

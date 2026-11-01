@@ -132,8 +132,11 @@ export function registerGuestVerifyRoutes(app: Express) {
     const sessionLeft = channel === "sms" ? bump(guards, now) : MAX_SENDS;
     const sendsLeft = Math.min(MAX_SENDS - next.count, sessionLeft);
 
+    // SMS codes are 4 digits (quick to read off a notification); emailed codes stay 6. With Twilio's Verify service
+    // the length is whatever is configured there (6 by default).
     const useTwilioVerifyService = channel === "sms" && usesTwilioVerifyService();
-    const code = useTwilioVerifyService ? undefined : String(randomInt(100000, 999999));
+    const code = useTwilioVerifyService ? undefined : channel === "sms" ? String(randomInt(1000, 9999)) : String(randomInt(100000, 999999));
+    const codeLength = code ? code.length : 6;
     if (code) codes.set(key, { code, expiresAt: now + CODE_TTL_MS, attempts: 0 });
     try {
       if (channel === "sms") {
@@ -154,7 +157,7 @@ export function registerGuestVerifyRoutes(app: Express) {
       const badNumber = err?.code === 21211 || err?.code === 21614 || err?.code === 21408;
       return res.status(badNumber ? 400 : 502).json({ message: badNumber ? "invalid_phone" : "sms_failed", sendsLeft, ...fallback });
     }
-    res.json({ sent: true, target, cooldownSec: COOLDOWN_MS / 1000, sendsLeft });
+    res.json({ sent: true, target, codeLength, cooldownSec: COOLDOWN_MS / 1000, sendsLeft });
   });
 
   app.post("/api/guest/verify/check", ipCheckLimiter, async (req, res) => {

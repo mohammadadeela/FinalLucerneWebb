@@ -17,7 +17,7 @@ const PENDING_TTL_MS = 15 * 60 * 1000;
 const VERIFIED_TTL_MS = 25 * 60 * 1000;
 const DRAFT_TTL_MS = 6 * 60 * 60 * 1000;
 
-export type PendingCode = { channel: "sms" | "email"; target: string; sentAt: number; cooldownEndsAt: number; sendsLeft: number | null };
+export type PendingCode = { channel: "sms" | "email"; target: string; sentAt: number; cooldownEndsAt: number; sendsLeft: number | null; codeLength?: number };
 export type VerifiedProof = { proof: string; channel: "sms" | "email"; target: string };
 export type GuestDraft = {
   form: { fullName: string; phone: string; phone2: string; address: string; city: string; notes: string };
