@@ -1482,8 +1482,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const reservation = reservePhoneOtpSend(phone);
       if (!reservation.ok) return res.status(429).json(reservation);
       const usesVerify = usesTwilioVerifyService();
-      // 4-digit SMS codes; with Twilio's Verify service the length is whatever is configured there (6 by default)
-      const code = usesVerify ? undefined : String(randomInt(1000, 9999));
+      // Restore the original six-digit SMS codes.
+      const code = usesVerify ? undefined : String(randomInt(100000, 999999));
       if (code) phoneOtpCodes.set(phone, { code, expiresAt: Date.now() + PHONE_OTP_TTL_MS, attempts: 0 });
       try {
         await sendTwilioSmsVerification(phone, code);

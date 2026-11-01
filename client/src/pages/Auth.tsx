@@ -332,7 +332,6 @@ export default function Auth() {
   const [phoneCountryCode, setPhoneCountryCode] = useState("+970");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
-  const [phoneOtpLength, setPhoneOtpLength] = useState(6);   // our SMS codes are 4 digits; Firebase / WhatsApp send 6
   const [phoneFullNumber, setPhoneFullNumber] = useState("");
   const [phoneName, setPhoneName] = useState("");
   const [phoneIntent, setPhoneIntent] = useState<PhoneIntent>("signup");
@@ -755,7 +754,6 @@ export default function Auth() {
           reservationId = permission.reservationId;
           const confirmation = await sendPhoneVerificationCode(fullPhoneE164, "recaptcha-container");
           firebaseSmsConfirmationRef.current = confirmation;
-          setPhoneOtpLength(6);
           await callJson("/api/auth/phone-otp-send-complete", { reservationId });
           setResendCountdown(30);
           toast({ title: language === "ar" ? "تم إرسال الرمز إلى رقمك عبر SMS" : "Code sent to your number via SMS" });
@@ -779,9 +777,7 @@ export default function Auth() {
         return;
       }
       if (channel === "twilio") {
-        const sent = await callJson("/api/auth/twilio-sms-send-otp", { phone: fullPhoneE164 });
-        setPhoneOtpLength(typeof sent?.codeLength === "number" ? sent.codeLength : 4);
-        setPhoneOtp("");
+        await callJson("/api/auth/twilio-sms-send-otp", { phone: fullPhoneE164 });
         setResendCountdown(30);
         toast({ title: language === "ar" ? "تم إرسال الرمز إلى رقمك عبر SMS" : "Code sent to your number via SMS" });
         setStep("phone-otp");
@@ -789,7 +785,6 @@ export default function Auth() {
       }
       // ── Twilio WhatsApp path — unchanged ──
       await callJson("/api/auth/wa-send-otp", { phone: fullPhoneE164 });
-      setPhoneOtpLength(6);
       setResendCountdown(30);
       toast({ title: language === "ar" ? "تم إرسال الرمز إلى رقم واتساب الخاص بك" : "Code sent to your WhatsApp number" });
       setStep("phone-otp");
@@ -832,7 +827,7 @@ export default function Auth() {
   };
 
   const handleVerifyPhoneOtp = async () => {
-    if (phoneOtp.length !== phoneOtpLength) return;
+    if (phoneOtp.length !== 6) return;
     setPhoneVerifying(true);
     try {
       let verifyToken: string;
@@ -2142,10 +2137,10 @@ export default function Auth() {
                 <Input
                   id="phone-otp-input"
                   value={phoneOtp}
-                  onChange={e => setPhoneOtp(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, phoneOtpLength))}
+                  onChange={e => setPhoneOtp(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, 6))}
                   className="rounded-md h-12 text-center text-2xl tracking-widest font-mono"
-                  placeholder={"0".repeat(phoneOtpLength)}
-                  maxLength={phoneOtpLength}
+                  placeholder="000000"
+                  maxLength={6}
                   dir="ltr"
                   data-testid="input-phone-otp"
                 />
@@ -2153,7 +2148,7 @@ export default function Auth() {
 
               <Button
                 onClick={handleVerifyPhoneOtp}
-                disabled={phoneOtp.length !== phoneOtpLength || phoneVerifying}
+                disabled={phoneOtp.length !== 6 || phoneVerifying}
                 className="w-full rounded-md h-12 uppercase tracking-widest text-sm font-semibold"
                 data-testid="button-verify-phone-otp"
               >
