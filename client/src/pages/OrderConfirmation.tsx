@@ -45,31 +45,48 @@ function Confetti() {
   );
 }
 
+/* The success badge: it picks up where the checkout scene left off — a rose circle — and turns emerald as the
+   check draws itself, with a ring that traces around it and a small burst of brand-coloured sparks. */
+const SPARKS = ["#e0587c", "#f0c987", "#7bd0c0", "#c9a6d8", "#34d399", "#f4a9a0", "#e0587c", "#f0c987", "#7bd0c0", "#34d399"];
+
 function AnimatedCheck() {
   const reduce = useReducedMotion();
+  const spring = { type: "spring" as const, stiffness: 280, damping: 17 };
   return (
-    <div className="relative mx-auto w-24 h-24" data-testid="success-check">
-      <motion.span
-        className="absolute inset-0 rounded-full bg-emerald-400/25"
-        initial={reduce ? false : { scale: 0.6, opacity: 0 }}
-        animate={reduce ? undefined : { scale: [0.6, 1.5], opacity: [0.7, 0] }}
-        transition={{ duration: 1.4, repeat: 2, ease: "easeOut" }}
-      />
-      <motion.div
-        className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-lg shadow-emerald-500/30 flex items-center justify-center"
-        initial={reduce ? false : { scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 16 }}
-      >
-        <svg viewBox="0 0 52 52" className="w-12 h-12" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
-          <motion.path
-            d="M14 27 l8 8 l16 -18"
-            initial={reduce ? false : { pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ delay: 0.3, duration: 0.55, ease: "easeOut" }}
-          />
+    <div className="relative mx-auto w-28 h-28" data-testid="success-check">
+      {/* ripples, after the colour has turned */}
+      {!reduce && [0, 1].map((i) => (
+        <motion.span key={i} className="absolute inset-0 rounded-full border-2 border-emerald-400" aria-hidden
+          initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: [0.9, 1.9], opacity: [0.55, 0] }} transition={{ delay: 0.85 + i * 0.3, duration: 1.1, ease: "easeOut" }} />
+      ))}
+      {/* a thin ring traces around the badge, rose first, then settles emerald */}
+      <svg viewBox="0 0 120 120" className="absolute inset-0 -rotate-90" aria-hidden>
+        <motion.circle cx="60" cy="60" r="56" fill="none" stroke="#e0587c" strokeWidth="2.5" strokeLinecap="round"
+          initial={reduce ? false : { pathLength: 0, opacity: 1 }} animate={{ pathLength: 1, opacity: 0 }} transition={{ pathLength: { delay: 0.1, duration: 0.6, ease: "easeInOut" }, opacity: { delay: 0.75, duration: 0.4 } }} />
+        <motion.circle cx="60" cy="60" r="56" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 6"
+          initial={reduce ? false : { pathLength: 0, opacity: 0, rotate: 0 }} animate={reduce ? { opacity: 0.7 } : { pathLength: 1, opacity: 0.7, rotate: 360 }}
+          transition={{ pathLength: { delay: 0.7, duration: 0.5 }, opacity: { delay: 0.7, duration: 0.3 }, rotate: { duration: 14, repeat: Infinity, ease: "linear" } }} style={{ originX: 0.5, originY: 0.5 }} />
+      </svg>
+      {/* the badge: rose underneath, emerald fades in over it */}
+      <motion.div className="absolute inset-3 rounded-full overflow-hidden flex items-center justify-center"
+        initial={reduce ? false : { scale: 0 }} animate={{ scale: 1 }} transition={spring}>
+        <span className="absolute inset-0 bg-gradient-to-br from-rose-400 to-rose-600" />
+        <motion.span className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55, duration: 0.5 }} />
+        <motion.span className="absolute -inset-1 rounded-full" aria-hidden initial={{ opacity: 0 }} animate={reduce ? undefined : { opacity: [0, 0.35, 0] }} transition={{ delay: 1.2, duration: 2.2, repeat: Infinity, repeatDelay: 1 }}
+          style={{ background: "radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 70%)" }} />
+        <svg viewBox="0 0 52 52" className="relative w-11 h-11" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+          <motion.path d="M14 27 l8 8 l16 -18" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }} />
         </svg>
       </motion.div>
+      <motion.span className="absolute inset-3 rounded-full" aria-hidden initial={{ boxShadow: "0 18px 40px -14px rgba(224,88,124,0.55)" }} animate={{ boxShadow: "0 18px 40px -14px rgba(16,185,129,0.55)" }} transition={{ delay: 0.55, duration: 0.6 }} />
+      {/* sparks burst out as the colour turns */}
+      {!reduce && SPARKS.map((c, i) => {
+        const a = (i / SPARKS.length) * Math.PI * 2 - Math.PI / 2; const d = 62 + (i % 2) * 14;
+        return (
+          <motion.span key={i} className={`absolute left-1/2 top-1/2 block ${i % 3 === 0 ? "w-1.5 h-3 rounded-[2px]" : "w-2 h-2 rounded-full"}`} style={{ background: c, marginLeft: -4, marginTop: -4 }} aria-hidden
+            initial={{ x: 0, y: 0, opacity: 0, scale: 0.4 }} animate={{ x: Math.cos(a) * d, y: Math.sin(a) * d, opacity: [0, 1, 0], scale: [0.4, 1, 0.6], rotate: 160 + i * 25 }} transition={{ delay: 0.65, duration: 0.85, ease: "easeOut" }} />
+        );
+      })}
     </div>
   );
 }
