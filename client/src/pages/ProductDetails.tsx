@@ -15,6 +15,7 @@ import { useCart } from "@/store/use-cart";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
+Flame,
 Minus,
 Plus,
 ShoppingBag,
@@ -2430,48 +2431,49 @@ isThumbnail
 {translateColorName(activeVariant.name, isAr ? "ar" : "en")}
 </span>
 </div>
-<div className="flex flex-wrap gap-2.5 pb-1">
-{variants.map((v, idx) => (
+{/* one scrolling row of swatches, each with its colour name underneath; the swatches are a thumb-sized 48px */}
+<div className="flex gap-3 pb-2 pt-1 -mx-4 px-4 overflow-x-auto scrollbar-hide snap-x" role="radiogroup" aria-label={t.product.color}>
+{variants.map((v, idx) => {
+const name = translateColorName(v.name, isAr ? "ar" : "en");
+const selected = selectedColorIdx === idx;
+return (
 <button
 key={idx}
+type="button"
+role="radio"
+aria-checked={selected}
 onClick={() => setSelectedColorIdx(idx)}
-className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 overflow-hidden flex-shrink-0 ${
-selectedColorIdx === idx
-? "border-primary scale-110 shadow-lg ring-2 ring-primary/20"
-: "border-border hover:border-primary/60"
-}`}
-title={translateColorName(v.name, isAr ? "ar" : "en")}
+className="flex flex-col items-center gap-1.5 w-16 shrink-0 snap-start"
+title={name}
 data-testid={`button-color-swatch-mobile-${idx}`}
 >
+<span className={`relative w-12 h-12 rounded-full border-2 overflow-hidden transition-all duration-200 ${
+selected ? "border-primary shadow-lg ring-2 ring-primary/20 scale-105" : "border-border"
+}`}>
 {v.mainImage ? (
 <img
-src={
-optimizeCloudinaryUrl(v.mainImage, 80) ||
-v.mainImage
-}
-alt={v.name}
-width={40}
-height={40}
+src={optimizeCloudinaryUrl(v.mainImage, 96) || v.mainImage}
+alt={name}
+width={48}
+height={48}
 loading="lazy"
 decoding="async"
 className="w-full h-full object-cover"
 draggable={false}
 />
 ) : (
-<span className="flex w-full h-full">
-<span
-className="h-full flex-1"
-style={{ backgroundColor: v.colorCode }}
-/>
-</span>
+<span className="block w-full h-full" style={{ backgroundColor: v.colorCode }} />
 )}
-{selectedColorIdx === idx && (
+{selected && (
 <span className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
 <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />
 </span>
 )}
+</span>
+<span className={`w-full text-center text-[11px] leading-tight line-clamp-2 ${selected ? "font-bold text-foreground" : "text-muted-foreground"}`}>{name}</span>
 </button>
-))}
+);
+})}
 </div>
 </div>
 )}
@@ -2563,48 +2565,48 @@ isAr ? "ar" : "en",
 )}
 </span>
 </span>
-<div className="flex flex-wrap gap-3">
-{variants.map((v, idx) => (
+<div className="flex flex-wrap gap-x-4 gap-y-3" role="radiogroup" aria-label={t.product.color}>
+{variants.map((v, idx) => {
+const name = translateColorName(v.name, isAr ? "ar" : "en");
+const selected = selectedColorIdx === idx;
+return (
 <button
 key={idx}
+type="button"
+role="radio"
+aria-checked={selected}
 onClick={() => setSelectedColorIdx(idx)}
-className={`relative w-14 h-14 rounded-full border-2 transition-all duration-200 overflow-hidden flex-shrink-0 ${
-selectedColorIdx === idx
-? "border-primary scale-110 shadow-lg ring-2 ring-primary/20"
-: "border-border hover:border-primary/60 hover:scale-105"
-}`}
-title={translateColorName(v.name, isAr ? "ar" : "en")}
+className="group flex flex-col items-center gap-2 w-[4.5rem]"
+title={name}
 data-testid={`button-color-swatch-${idx}`}
 >
+<span className={`relative w-14 h-14 rounded-full border-2 overflow-hidden transition-all duration-200 ${
+selected ? "border-primary shadow-lg ring-2 ring-primary/20 scale-105" : "border-border group-hover:border-primary/60 group-hover:scale-105"
+}`}>
 {v.mainImage ? (
 <img
-src={
-optimizeCloudinaryUrl(v.mainImage, 80) ||
-v.mainImage
-}
-alt={v.name}
-width={44}
-height={44}
+src={optimizeCloudinaryUrl(v.mainImage, 112) || v.mainImage}
+alt={name}
+width={56}
+height={56}
 loading="lazy"
 decoding="async"
 className="w-full h-full object-cover"
 draggable={false}
 />
 ) : (
-<span className="flex w-full h-full">
-<span
-className="h-full flex-1"
-style={{ backgroundColor: v.colorCode }}
-/>
-</span>
+<span className="block w-full h-full" style={{ backgroundColor: v.colorCode }} />
 )}
-{selectedColorIdx === idx && (
+{selected && (
 <span className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
 <Check className="w-4 h-4 text-white drop-shadow-md" />
 </span>
 )}
+</span>
+<span className={`w-full text-center text-xs leading-tight line-clamp-2 transition-colors ${selected ? "font-bold text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>{name}</span>
 </button>
-))}
+);
+})}
 </div>
 </div>
 )}
@@ -2710,13 +2712,29 @@ sizeInv[selectedSize] !== undefined &&
 sizeInv[selectedSize] >= 1 &&
 sizeInv[selectedSize] <= 2 && (
 <div
-className="flex items-center gap-2 text-xs font-medium text-foreground/80 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-700/50 px-3 py-2 rounded-xl mb-4"
+className="flex items-center gap-3 rounded-xl border border-amber-200/80 dark:border-amber-700/50 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 px-3 py-2.5 mb-4 shadow-sm"
+role="status"
 data-testid="text-low-stock-urgency"
 >
-<span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0 animate-pulse" />
+<span className="relative w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+<span className="absolute inset-0 rounded-full bg-amber-300/50 animate-ping" aria-hidden />
+<Flame className="relative w-4 h-4" />
+</span>
+<div className="min-w-0 leading-tight">
+<p className="text-sm font-bold text-amber-900 dark:text-amber-200 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+<span>
 {isAr
-? `متبقي ${sizeInv[selectedSize]} ${sizeInv[selectedSize] === 1 ? "قطعة" : "قطع"} فقط بمقاس ${selectedSize} - ينفد بسرعة!`
-: `Only ${sizeInv[selectedSize]} left in size ${selectedSize} — selling fast!`}
+? `باقي ${sizeInv[selectedSize] === 1 ? "قطعة واحدة" : "قطعتان"} فقط`
+: `Only ${sizeInv[selectedSize]} left`}
+</span>
+<span className="inline-flex items-center rounded-full bg-white/80 dark:bg-black/30 border border-amber-200 dark:border-amber-700/60 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+{isAr ? `مقاس ${selectedSize}` : `Size ${selectedSize}`}
+</span>
+</p>
+<p className="text-[11px] text-amber-700/90 dark:text-amber-300/80 mt-0.5">
+{isAr ? "ينفد بسرعة — اطلبيها قبل ما تخلص" : "Selling fast — order it before it's gone"}
+</p>
+</div>
 </div>
 )}
 
