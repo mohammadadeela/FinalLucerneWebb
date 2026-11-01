@@ -9,7 +9,7 @@ import { useProducts } from "@/hooks/use-products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LayoutDashboard, Award, Info, Package, User, LogOut, ExternalLink, Clock, Truck, PackageCheck, XCircle, CheckCircle2, Search, X, Eye, Gift, Shield, ArrowLeft, ArrowRight, Mail, Phone, Settings, ArrowLeftRight, Store } from "lucide-react";
+import { LayoutDashboard, Info, Package, User, LogOut, ExternalLink, Clock, Truck, PackageCheck, XCircle, CheckCircle2, Search, X, Eye, Gift, Shield, ArrowLeft, ArrowRight, Mail, Phone, Settings, ArrowLeftRight, Store, Coins, Wallet, Sparkles } from "lucide-react";
 import { AccountSettingsDialog } from "@/components/profile/AccountSettingsDialog";
 import { ExchangeRequestDialog, type ExchangeItemType } from "@/components/profile/ExchangeRequestDialog";
 import { MyExchangesList } from "@/components/profile/MyExchangesList";
@@ -22,6 +22,29 @@ import { useCategories } from "@/hooks/use-categories";
 import { getOrderItemImage, isPlaceholderEmail } from "@/lib/utils";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { ProductThumb } from "@/components/ui/ProductThumb";
+
+
+/* The loyalty mark: a gold Lucerne coin with a shine that sweeps across it. */
+function LucerneCoin({ className = "w-9 h-9" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 40 40" className={className} aria-hidden>
+      <defs>
+        <linearGradient id="lc-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fff1bf" /><stop offset=".45" stopColor="#e9bf5f" /><stop offset="1" stopColor="#c8923a" /></linearGradient>
+        <linearGradient id="lc-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fbe7a6" /><stop offset="1" stopColor="#b8822e" /></linearGradient>
+        <clipPath id="lc-clip"><circle cx="20" cy="20" r="17" /></clipPath>
+      </defs>
+      <circle cx="20" cy="21.5" r="17" fill="rgba(0,0,0,.18)" />
+      <circle cx="20" cy="20" r="17" fill="url(#lc-rim)" />
+      <circle cx="20" cy="20" r="14" fill="url(#lc-gold)" />
+      <circle cx="20" cy="20" r="14" fill="none" stroke="rgba(120,70,10,.35)" strokeWidth="1" strokeDasharray="1.5 2.2" />
+      <text x="20" y="25.5" textAnchor="middle" fontSize="15" fontWeight="700" fill="#7a4d10" style={{ fontFamily: "var(--font-display, 'Cormorant Garamond'), Georgia, serif" }}>L</text>
+      <g clipPath="url(#lc-clip)">
+        <rect x="-14" y="-6" width="10" height="52" fill="rgba(255,255,255,.55)" transform="rotate(25 20 20)" className="lc-shine" />
+      </g>
+      <style>{`@keyframes lc-shine{0%{transform:translateX(-18px) rotate(25deg)}60%,100%{transform:translateX(58px) rotate(25deg)}} .lc-shine{transform-box:fill-box;transform-origin:center;animation:lc-shine 3.2s ease-in-out infinite} @media (prefers-reduced-motion: reduce){.lc-shine{animation:none}}`}</style>
+    </svg>
+  );
+}
 
 export default function Profile() {
   const { data: user, isLoading } = useAuth();
@@ -358,9 +381,7 @@ export default function Profile() {
                       {/* Header */}
                       <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                            <Award className="w-4 h-4" />
-                          </div>
+                          <LucerneCoin className="w-9 h-9 drop-shadow-md" />
                           <h3 className="font-semibold text-sm tracking-wide">{ar ? "نقاطي" : "Loyalty Rewards"}</h3>
                         </div>
                         <span className="text-[10px] uppercase tracking-widest bg-white/15 px-2 py-1 rounded-full backdrop-blur">
@@ -371,11 +392,11 @@ export default function Profile() {
                       {/* Stats */}
                       <div className="grid grid-cols-2 gap-3 mb-5">
                         <div>
-                          <p className="text-[10px] uppercase tracking-widest text-white/70 mb-1">{ar ? "نقاطك" : "Points"}</p>
+                          <p className="text-[10px] uppercase tracking-widest text-white/70 mb-1 flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-amber-200" />{ar ? "نقاطك" : "Points"}</p>
                           <p className="text-3xl font-bold" data-testid="text-loyalty-points">{points.toLocaleString()}</p>
                         </div>
                         <div className="text-end">
-                          <p className="text-[10px] uppercase tracking-widest text-white/70 mb-1">{ar ? "رصيدك" : "Credit"}</p>
+                          <p className="text-[10px] uppercase tracking-widest text-white/70 mb-1 flex items-center justify-end gap-1.5"><Wallet className="w-3.5 h-3.5 text-amber-200" />{ar ? "رصيدك" : "Credit"}</p>
                           <p className="text-3xl font-bold" data-testid="text-loyalty-credit"><span className="ltr-num">₪{credit.toFixed(2)}</span></p>
                         </div>
                       </div>
@@ -385,15 +406,21 @@ export default function Profile() {
                         <span className="ltr-num">{cyclePoints} / 450</span>
                         <span>{remaining > 0 ? (ar ? `${remaining} للحصول على 15 ₪` : `${remaining} pts → ₪15`) : (ar ? "جاهزة للتحويل!" : "Ready to redeem!")}</span>
                       </div>
-                      <div className="h-2 rounded-full bg-white/20 overflow-hidden mb-5">
-                        <div
-                          className="h-full bg-white rounded-full transition-all duration-500"
-                          style={{ width: `${progressPct}%` }}
-                        />
+                      <div className="flex items-center gap-2 mb-5">
+                        <div className="relative flex-1 h-2 rounded-full bg-white/20 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-100 to-white rounded-full transition-all duration-500"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${remaining > 0 ? "bg-white/20" : "bg-white text-rose-600 shadow-md animate-bounce"}`} aria-hidden>
+                          <Gift className="w-3.5 h-3.5" />
+                        </span>
                       </div>
 
                       {/* Rule */}
-                      <p className="text-[11px] text-white/85 leading-relaxed mb-4">
+                      <p className="text-[11px] text-white/85 leading-relaxed mb-4 flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5 shrink-0 text-white/70" />
                         {ar
                           ? "الحد الأدنى للتحويل 450 نقطة"
                           : "Minimum conversion is 450 points"}
@@ -410,7 +437,7 @@ export default function Profile() {
                         className="w-full rounded-full uppercase tracking-widest text-xs bg-white text-rose-600 hover:bg-white/90 disabled:bg-white/40 disabled:text-white/70 font-semibold"
                         data-testid="button-convert-points"
                       >
-                        <Gift className="w-4 h-4 me-2" />
+                        <Sparkles className="w-4 h-4 me-2" />
                         {ar ? "حوّلي النقاط إلى رصيد" : "Convert points to credit"}
                       </Button>
                     </div>
@@ -1175,19 +1202,17 @@ export default function Profile() {
                   <div className="absolute -bottom-12 -start-8 w-32 h-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                   <DialogHeader className="relative">
                     <DialogTitle className="font-display text-xl flex items-center gap-2.5 text-white">
-                      <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                        <Gift className="w-4.5 h-4.5" />
-                      </div>
+                      <LucerneCoin className="w-9 h-9 drop-shadow-md" />
                       {ar ? "تحويل النقاط إلى رصيد" : "Convert points to credit"}
                     </DialogTitle>
                   </DialogHeader>
                   <div className="relative mt-4 grid grid-cols-2 gap-3 text-white">
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-white/75 mb-0.5">{ar ? "نقاطك المتاحة" : "Available points"}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-white/75 mb-0.5 flex items-center gap-1.5"><Coins className="w-3.5 h-3.5 text-amber-200" />{ar ? "نقاطك المتاحة" : "Available points"}</p>
                       <p className="text-2xl font-bold leading-tight">{points.toLocaleString()}</p>
                     </div>
                     <div className="text-end">
-                      <p className="text-[10px] uppercase tracking-widest text-white/75 mb-0.5">{ar ? "حدّ التحويل" : "Max credit"}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-white/75 mb-0.5 flex items-center justify-end gap-1.5"><Wallet className="w-3.5 h-3.5 text-amber-200" />{ar ? "حدّ التحويل" : "Max credit"}</p>
                       <p className="text-2xl font-bold leading-tight">₪{maxCredit}</p>
                     </div>
                   </div>
@@ -1258,7 +1283,7 @@ export default function Profile() {
                         </div>
                         <div className="flex flex-col items-center gap-1 px-3">
                           <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shadow-md shrink-0">
-                            <Gift className="w-5 h-5 text-white" />
+                            <ArrowLeftRight className="w-5 h-5 text-white" />
                           </div>
                         </div>
                         <div className="flex-1 min-w-0 text-end">
