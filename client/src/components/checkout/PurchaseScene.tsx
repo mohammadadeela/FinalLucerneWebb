@@ -41,6 +41,14 @@ function Defs() {
         {g("ls-sky", "#fff3ee", "#fbd9df")}{g("ls-road", "#4d4a56", "#33313b")}
         <linearGradient id="ls-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f6e2a6" /><stop offset=".5" stopColor="#cfa355" /><stop offset="1" stopColor="#f1d68e" /></linearGradient>
         <radialGradient id="ls-spot" cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#fff" stopOpacity=".9" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+        <linearGradient id="ls-skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f9dcc4" /><stop offset="1" stopColor="#ecb998" /></linearGradient>
+        <linearGradient id="ls-hijab" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f7a9bf" /><stop offset=".55" stopColor="#e2678c" /><stop offset="1" stopColor="#c7466f" /></linearGradient>
+        <linearGradient id="ls-hijabIn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#b73b63" /><stop offset="1" stopColor="#8e2a4b" /></linearGradient>
+        <linearGradient id="ls-apron" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#35353c" /><stop offset="1" stopColor="#141417" /></linearGradient>
+        <linearGradient id="ls-blouse" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#efe6df" /></linearGradient>
+        <linearGradient id="ls-faceShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#000" stopOpacity=".10" /><stop offset=".35" stopColor="#000" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity="0" /></linearGradient>
+        <radialGradient id="ls-cheek" cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#f08a9c" stopOpacity=".55" /><stop offset="1" stopColor="#f08a9c" stopOpacity="0" /></radialGradient>
+        <clipPath id="ls-win"><path d="M36 -92 L30 -92 L30 -54 L84 -54 L56 -86 Q50 -92 36 -92 Z" /></clipPath>
         <clipPath id="ls-card"><rect x="-32" y="-38" width="64" height="64" rx="8" /></clipPath>
         <clipPath id="ls-label"><rect x="-24" y="-30" width="48" height="60" rx="4" /></clipPath>
       </defs>
@@ -146,24 +154,47 @@ function Packer({ reduce, lift }: { reduce: boolean; lift: boolean }) {
   return (
     <motion.g animate={reduce ? undefined : { y: [0, -1.5, 0] }} transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}>
       <g transform="translate(180 236)">
-        <path d="M-46 70 L-44 10 Q-40 -10 -20 -16 L20 -16 Q40 -10 44 10 L46 70 Z" fill="url(#ls-boxf)" />
-        <path d="M-20 -16 Q0 -4 20 -16 L18 6 Q0 14 -18 6 Z" fill="#fff6ee" />
-        <circle cx="0" cy="22" r="8" fill={GOLD} /><text x="0" y="25.5" textAnchor="middle" fontSize="10" fontWeight="700" fill="#2a2a2f" style={{ fontFamily: SERIF }}>L</text>
-        <rect x="-7" y="-26" width="14" height="14" rx="5" fill="#eab08f" />
-        <path d="M-33 -36 Q-36 -92 0 -94 Q36 -92 33 -36 Q32 -8 0 -4 Q-32 -8 -33 -36 Z" fill="url(#ls-rose)" />
-        <ellipse cx="0" cy="-50" rx="23" ry="27" fill="#f7d6bd" />
-        <path d="M-23 -56 Q-10 -78 0 -78 Q10 -78 23 -56 Q16 -70 0 -70 Q-16 -70 -23 -56 Z" fill="url(#ls-rose)" opacity=".9" />
+        <path d="M-50 78 L-47 14 Q-44 -6 -22 -14 L22 -14 Q44 -6 47 14 L50 78 Z" fill="url(#ls-blouse)"/>
+        <path d="M-38 78 L-34 8 Q-30 -2 -16 -4 L16 -4 Q30 -2 34 8 L38 78 Z" fill="url(#ls-apron)"/>
+        <path d="M-16 -4 L-20 -14 L-18 -4 Z M16 -4 L20 -14 L18 -4 Z" fill="#1a1a1e"/>
+        <path d="M-22 -14 Q-10 -4 0 8 Q10 -4 22 -14" fill="none" stroke="#1a1a1e" strokeWidth="3" strokeLinecap="round"/>
+        <path d="M-34 10 L34 10" stroke="rgba(255,255,255,.08)" strokeWidth="1"/>
+        <rect x="-16" y="40" width="32" height="20" rx="4" fill="rgba(255,255,255,.07)"/>
+        <circle cx="0" cy="24" r="8.5" fill="url(#ls-gold)"/><circle cx="0" cy="24" r="8.5" fill="none" stroke="rgba(0,0,0,.18)" strokeWidth=".8"/>
+        <text x="0" y="27.5" textAnchor="middle" fontSize="10" style={{ fontFamily: SERIF }} fontWeight="700" fill="#2a2a2f">L</text>
+        <path d="M-42 -30 Q-46 -98 0 -100 Q46 -98 42 -30 Q44 0 30 10 L-30 10 Q-44 0 -42 -30 Z" fill="url(#ls-hijab)"/>
+        <path d="M-26 -34 Q-14 -8 0 -8 Q14 -8 26 -34 L30 -14 Q16 2 0 2 Q-16 2 -30 -14 Z" fill="url(#ls-hijabIn)"/>
+        <path d="M-24 -56 Q-26 -82 0 -84 Q26 -82 24 -56 Q24 -38 12 -28 Q0 -22 -12 -28 Q-24 -38 -24 -56 Z" fill="url(#ls-skin)"/>
+        <path d="M-24 -56 Q-26 -82 0 -84 Q26 -82 24 -56 Q24 -38 12 -28 Q0 -22 -12 -28 Q-24 -38 -24 -56 Z" fill="url(#ls-faceShade)"/>
+        <path d="M-28 -58 Q-24 -90 0 -92 Q24 -90 28 -58 Q24 -78 0 -80 Q-24 -78 -28 -58 Z" fill="url(#ls-hijabIn)"/>
+        <path d="M-30 -52 Q-26 -94 0 -96 Q26 -94 30 -52 L34 -22 Q24 -14 20 -22 Q26 -60 0 -62 Q-26 -60 -20 -22 Q-24 -14 -34 -22 Z" fill="url(#ls-hijab)" opacity="0"/>
+        <path d="M-29 -56 Q-28 -92 0 -94 Q28 -92 29 -56 Q30 -40 26 -30 L28 -16 Q24 -10 18 -14 L18 -22 Q26 -40 24 -56 Q24 -82 0 -84 Q-24 -82 -24 -56 Q-26 -40 -18 -22 L-18 -14 Q-24 -10 -28 -16 L-26 -30 Q-30 -40 -29 -56 Z" fill="url(#ls-hijab)"/>
+        <path d="M-36 -40 Q-40 -10 -30 8" stroke="rgba(255,255,255,.28)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <path d="M34 -36 Q40 -10 32 8" stroke="rgba(0,0,0,.14)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d="M-16 -94 Q0 -99 16 -94" stroke="rgba(255,255,255,.35)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+        <path d="M-16 -64 Q-10 -68 -4 -64" stroke="#4a2f2a" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d="M4 -64 Q10 -68 16 -64" stroke="#4a2f2a" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
         <motion.g style={{ originX: 0.5, originY: 0.5 }} animate={reduce ? undefined : { scaleY: [1, 1, 0.1, 1, 1] }} transition={{ duration: 3.4, times: [0, 0.58, 0.62, 0.66, 1], repeat: Infinity }}>
-          <circle cx="-9" cy="-50" r="2.4" fill="#2b2230" /><circle cx="9" cy="-50" r="2.4" fill="#2b2230" />
+          <path d="M-16 -56 Q-10 -62 -4 -56 Q-10 -51 -16 -56 Z" fill="#fff"/><path d="M4 -56 Q10 -62 16 -56 Q10 -51 4 -56 Z" fill="#fff"/>
+          <circle cx="-9.5" cy="-56" r="2.8" fill="#5a3a2e"/><circle cx="10.5" cy="-56" r="2.8" fill="#5a3a2e"/>
+          <circle cx="-9.5" cy="-56" r="1.4" fill="#2a1a16"/><circle cx="10.5" cy="-56" r="1.4" fill="#2a1a16"/>
+          <circle cx="-8.6" cy="-57" r=".8" fill="#fff"/><circle cx="11.4" cy="-57" r=".8" fill="#fff"/>
+          <path d="M-16 -56 Q-10 -62.5 -4 -56" stroke="#3a2622" strokeWidth="1.4" fill="none" strokeLinecap="round"/><path d="M4 -56 Q10 -62.5 16 -56" stroke="#3a2622" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
+          <path d="M-16 -56.5 L-17.5 -58.5" stroke="#3a2622" strokeWidth="1" strokeLinecap="round"/><path d="M16 -56.5 L17.5 -58.5" stroke="#3a2622" strokeWidth="1" strokeLinecap="round"/>
         </motion.g>
-        <path d="M-6 -40 Q0 -34 6 -40" stroke="#c0515d" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <circle cx="-15" cy="-41" r="4" fill="#f3a7b0" opacity=".6" /><circle cx="15" cy="-41" r="4" fill="#f3a7b0" opacity=".6" />
-        <circle cx="-25" cy="-62" r="2" fill="#f6e2a6" />
+        <path d="M-1 -50 Q-3 -44 1 -43" stroke="#d9a383" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+        <path d="M-6 -36 Q0 -31 6 -36" stroke="#c9566a" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <path d="M-5 -36 Q0 -34 5 -36" fill="#e9808f"/>
+        <circle cx="-15" cy="-42" r="6" fill="url(#ls-cheek)"/><circle cx="15" cy="-42" r="6" fill="url(#ls-cheek)"/>
+        <circle cx="-26" cy="-26" r="2.2" fill="url(#ls-gold)"/>
         {/* arms: they rise to take the lid and come back down */}
         <motion.g animate={lift && !reduce ? { y: [0, -34, -34, 0] } : { y: 0 }} transition={tr(reduce, { delay: 0.55, duration: 0.85, times: [0, 0.3, 0.55, 1], ease: "easeInOut" })}>
-          <path d="M-40 6 Q-78 40 -64 64" stroke="#fff6ee" strokeWidth="13" fill="none" strokeLinecap="round" />
-          <path d="M40 6 Q78 40 64 64" stroke="#fff6ee" strokeWidth="13" fill="none" strokeLinecap="round" />
-          <circle cx="-66" cy="66" r="7" fill="#eab08f" /><circle cx="66" cy="66" r="7" fill="#eab08f" />
+          <path d="M-44 6 Q-84 36 -70 66" stroke="url(#ls-blouse)" strokeWidth="14" fill="none" strokeLinecap="round"/>
+          <path d="M44 6 Q84 36 70 66" stroke="url(#ls-blouse)" strokeWidth="14" fill="none" strokeLinecap="round"/>
+          <path d="M-76 56 Q-70 60 -64 58" stroke="#e4d6cc" strokeWidth="3" fill="none" strokeLinecap="round"/>
+          <path d="M76 56 Q70 60 64 58" stroke="#e4d6cc" strokeWidth="3" fill="none" strokeLinecap="round"/>
+          <g transform="translate(-70 70)"><path d="M-8 -4 Q-9 -10 -3 -10 L3 -10 Q9 -10 8 -4 L8 8 Q8 14 0 14 Q-8 14 -8 8 Z" fill="url(#ls-skin)"/><path d="M-4 2 L-4 10 M0 3 L0 11 M4 2 L4 10" stroke="rgba(0,0,0,.09)" strokeWidth="1.4" strokeLinecap="round"/><path d="M8 -2 Q11 2 9 8" stroke="url(#ls-skin)" strokeWidth="4" strokeLinecap="round" fill="none"/></g>
+          <g transform="translate(70 70)"><path d="M-8 -4 Q-9 -10 -3 -10 L3 -10 Q9 -10 8 -4 L8 8 Q8 14 0 14 Q-8 14 -8 8 Z" fill="url(#ls-skin)"/><path d="M-4 2 L-4 10 M0 3 L0 11 M4 2 L4 10" stroke="rgba(0,0,0,.09)" strokeWidth="1.4" strokeLinecap="round"/><path d="M-8 -2 Q-11 2 -9 8" stroke="url(#ls-skin)" strokeWidth="4" strokeLinecap="round" fill="none"/></g>
         </motion.g>
       </g>
     </motion.g>
@@ -352,6 +383,20 @@ function Street({ done, reduce }: { done: boolean; reduce: boolean }) {
           <ellipse cx="0" cy="4" rx="118" ry="7" fill="rgba(30,20,30,.25)" />
           <path d="M-112 -20 L-112 -92 Q-112 -100 -104 -100 L30 -100 Q46 -100 56 -88 L96 -46 Q104 -38 104 -28 L104 -20 Z" fill="url(#ls-van)" />
           <path d="M36 -92 L30 -92 L30 -54 L84 -54 L56 -86 Q50 -92 36 -92 Z" fill="#e9f3f6" />
+          {/* the courier at the wheel (he waves once the order is confirmed) */}
+          <g clipPath="url(#ls-win)">
+          <g transform="translate(50 -66)">
+          <path d="M-14 22 Q-14 4 0 4 Q14 4 14 22 Z" fill="url(#ls-apron)"/>
+          <path d="M-9 -4 Q-9 -16 0 -16 Q9 -16 9 -4 Q9 6 0 6 Q-9 6 -9 -4 Z" fill="url(#ls-skin)"/>
+          <path d="M-10 -8 Q-10 -20 0 -20 Q10 -20 10 -8 L12 -6 L-12 -6 Z" fill="url(#ls-rose)"/>
+          <path d="M8 -6 L18 -8 L18 -5 L8 -4 Z" fill="#c7466f"/>
+          <circle cx="-3" cy="-4" r="1.3" fill="#2a1a16"/><circle cx="3" cy="-4" r="1.3" fill="#2a1a16"/>
+          <path d="M-2.5 1 Q0 3 2.5 1" stroke="#b45a5a" strokeWidth="1" fill="none" strokeLinecap="round"/>
+          <path d="M-8 -10 Q0 -13 8 -10" stroke="rgba(255,255,255,.4)" strokeWidth="1.2" fill="none"/>
+          </g>
+          <motion.circle cx="70" cy="-62" r="4.5" fill="url(#ls-skin)" animate={done && !reduce ? { y: [0, -10, -8, -10, 0] } : { y: 0 }} transition={done ? { duration: 0.9, repeat: Infinity } : { duration: 0 }} />
+          <path d="M62 -58 Q70 -66 78 -58" stroke="#3a3a40" strokeWidth="2" fill="none"/>
+          </g>
           <path d="M36 -92 L30 -92 L30 -54 L84 -54 L56 -86 Q50 -92 36 -92 Z" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2" />
           <rect x="-112" y="-32" width="216" height="6" fill="rgba(0,0,0,.14)" />
           <rect x="-108" y="-96" width="40" height="70" rx="3" fill="#1b1b1f" />
@@ -403,6 +448,7 @@ function Shop({ done, reduce }: { done: boolean; reduce: boolean }) {
         <rect x="50" y="186" width="26" height="28" rx="5" fill="#f4a9b8" /><rect x="88" y="190" width="26" height="24" rx="5" fill="#2a2a30" />
         <rect x="248" y="188" width="26" height="26" rx="5" fill="#c9a6d8" /><rect x="286" y="184" width="26" height="30" rx="5" fill="#7bd0c0" />
       </g>
+      <Packer reduce={reduce} lift={false} />
       <rect x="0" y="336" width="360" height="104" fill="url(#ls-marble)" />
       <rect x="0" y="330" width="360" height="12" rx="4" fill="#efe1d6" /><path d="M0 342 H360" stroke="rgba(0,0,0,.08)" />
       <g transform="translate(46 330)"><path d="M-10 0 L10 0 L7 -24 L-7 -24 Z" fill="#d4466e" /><path d="M0 -24 Q-20 -40 -8 -70 Q-2 -48 0 -24 Z" fill="#9edcc3" /><path d="M0 -24 Q22 -44 10 -76 Q4 -50 0 -24 Z" fill="#7bd0c0" /><path d="M0 -24 Q0 -56 -4 -84 Q6 -58 0 -24 Z" fill="#b8e2cf" /></g>

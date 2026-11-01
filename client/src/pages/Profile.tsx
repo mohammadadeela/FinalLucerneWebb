@@ -902,10 +902,14 @@ export default function Profile() {
             <div className="overflow-y-auto flex-1 px-4 sm:px-6 py-4 sm:py-5 space-y-4 sm:space-y-5">
               <div className="flex justify-between items-center">
                 {getStatusBadge(orderDetails.order.status)}
-                <span className="text-sm text-muted-foreground">
-                  <span className="ltr-num">{orderDetails.order.createdAt ? format(new Date(orderDetails.order.createdAt), 'yyyy-MM-dd') : ''}</span>
-                  {orderDetails.order.createdAt && <span className="ltr-num ms-2 font-semibold text-foreground/80">{format(new Date(orderDetails.order.createdAt), 'hh:mm a')}</span>}
-                </span>
+                {orderDetails.order.createdAt && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs sm:text-sm text-muted-foreground" dir="ltr" data-testid="text-order-datetime">
+                    <span className="ltr-num">{format(new Date(orderDetails.order.createdAt), 'yyyy-MM-dd')}</span>
+                    <span className="opacity-40">·</span>
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span className="ltr-num font-semibold text-foreground/80">{format(new Date(orderDetails.order.createdAt), 'hh:mm a')}</span>
+                  </span>
+                )}
               </div>
 
               <div className="pt-1 pb-2">
