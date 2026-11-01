@@ -173,7 +173,7 @@ export default function Checkout() {
   const [stripeLoading, setStripeLoading] = useState(false);
   // The "real purchase" scene plays while the order is being placed. It stays up for a minimum time so it never
   // flashes by, goes away at once if the order fails, and plays its "leaving the shop" ending before we navigate.
-  const SCENE_MIN_MS = 3000;
+  const SCENE_MIN_MS = 2900;
   const [sceneHold, setSceneHold] = useState(false);
   const [sceneDone, setSceneDone] = useState(false);
   const sceneStartRef = useRef(0);
@@ -186,7 +186,7 @@ export default function Checkout() {
   const wait = Math.max(0, SCENE_MIN_MS - (Date.now() - sceneStartRef.current));
   await new Promise((r) => setTimeout(r, wait));
   setSceneDone(true);
-  await new Promise((r) => setTimeout(r, 1300));
+  await new Promise((r) => setTimeout(r, 1750));
   };
   const [shippingRegion, setShippingRegion] = useState<string>("");
   const shippingRegionRef = useRef<HTMLDivElement>(null);

@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useOrder } from "@/hooks/use-orders";
 import { useLanguage } from "@/i18n";
+import { JADE, ROSE, SealShape, SealTick } from "@/components/ui/success-seal";
 import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
 import {
   Check, Copy, Package, PackageCheck, ShoppingBag, Store, Truck, ClipboardCheck, UserRound, Gift,
@@ -45,40 +46,38 @@ function Confetti() {
   );
 }
 
-/* The success badge: it picks up where the checkout scene left off — a rose circle — and turns emerald as the
-   check draws itself, with a ring that traces around it and a small burst of brand-coloured sparks. */
-const SPARKS = ["#e0587c", "#f0c987", "#7bd0c0", "#c9a6d8", "#34d399", "#f4a9a0", "#e0587c", "#f0c987", "#7bd0c0", "#34d399"];
+/* The success seal: the same scalloped Lucerne seal the checkout scene glides into this spot — it arrives rose and
+   turns jade green as a ring traces around it, with a small burst of brand-coloured sparks. */
+const SPARKS = ["#e0587c", "#f0c987", "#3ee0a0", "#c9a6d8", "#0ea371", "#f4a9a0", "#e0587c", "#f0c987", "#3ee0a0", "#0ea371"];
 
 function AnimatedCheck() {
   const reduce = useReducedMotion();
-  const spring = { type: "spring" as const, stiffness: 280, damping: 17 };
   return (
     <div className="relative mx-auto w-28 h-28" data-testid="success-check">
       {/* ripples, after the colour has turned */}
       {!reduce && [0, 1].map((i) => (
-        <motion.span key={i} className="absolute inset-0 rounded-full border-2 border-emerald-400" aria-hidden
+        <motion.span key={i} className="absolute inset-0 rounded-full border-2" style={{ borderColor: JADE[0] }} aria-hidden
           initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: [0.9, 1.9], opacity: [0.55, 0] }} transition={{ delay: 0.85 + i * 0.3, duration: 1.1, ease: "easeOut" }} />
       ))}
-      {/* a thin ring traces around the badge, rose first, then settles emerald */}
-      <svg viewBox="0 0 120 120" className="absolute inset-0 -rotate-90" aria-hidden>
-        <motion.circle cx="60" cy="60" r="56" fill="none" stroke="#e0587c" strokeWidth="2.5" strokeLinecap="round"
+      {/* a thin ring traces around the seal, rose first, then settles green and slowly turns */}
+      <svg viewBox="0 0 120 120" className="absolute -inset-2 w-[calc(100%+1rem)] h-[calc(100%+1rem)] -rotate-90" aria-hidden>
+        <motion.circle cx="60" cy="60" r="56" fill="none" stroke={ROSE[0]} strokeWidth="2.5" strokeLinecap="round"
           initial={reduce ? false : { pathLength: 0, opacity: 1 }} animate={{ pathLength: 1, opacity: 0 }} transition={{ pathLength: { delay: 0.1, duration: 0.6, ease: "easeInOut" }, opacity: { delay: 0.75, duration: 0.4 } }} />
-        <motion.circle cx="60" cy="60" r="56" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 6"
+        <motion.circle cx="60" cy="60" r="56" fill="none" stroke={JADE[0]} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 6"
           initial={reduce ? false : { pathLength: 0, opacity: 0, rotate: 0 }} animate={reduce ? { opacity: 0.7 } : { pathLength: 1, opacity: 0.7, rotate: 360 }}
           transition={{ pathLength: { delay: 0.7, duration: 0.5 }, opacity: { delay: 0.7, duration: 0.3 }, rotate: { duration: 14, repeat: Infinity, ease: "linear" } }} style={{ originX: 0.5, originY: 0.5 }} />
       </svg>
-      {/* the badge: rose underneath, emerald fades in over it */}
-      <motion.div className="absolute inset-3 rounded-full overflow-hidden flex items-center justify-center"
-        initial={reduce ? false : { scale: 0 }} animate={{ scale: 1 }} transition={spring}>
-        <span className="absolute inset-0 bg-gradient-to-br from-rose-400 to-rose-600" />
-        <motion.span className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-emerald-600" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55, duration: 0.5 }} />
+      {/* the seal: rose underneath, jade fades in over it */}
+      <motion.div className="absolute inset-0" initial={reduce ? false : { scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 280, damping: 18 }}>
+        <SealShape id="confirm-seal-rose" colors={ROSE} className="absolute inset-0 w-full h-full" />
+        <motion.div className="absolute inset-0" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55, duration: 0.5 }}>
+          <SealShape id="confirm-seal-jade" colors={JADE} className="absolute inset-0 w-full h-full" />
+        </motion.div>
         <motion.span className="absolute -inset-1 rounded-full" aria-hidden initial={{ opacity: 0 }} animate={reduce ? undefined : { opacity: [0, 0.35, 0] }} transition={{ delay: 1.2, duration: 2.2, repeat: Infinity, repeatDelay: 1 }}
           style={{ background: "radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 70%)" }} />
-        <svg viewBox="0 0 52 52" className="relative w-11 h-11" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
-          <motion.path d="M14 27 l8 8 l16 -18" initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.35, duration: 0.5, ease: "easeOut" }} />
-        </svg>
+        <SealTick className="absolute inset-0 w-full h-full" delay={0.05} duration={0.3} draw={!reduce} />
       </motion.div>
-      <motion.span className="absolute inset-3 rounded-full" aria-hidden initial={{ boxShadow: "0 18px 40px -14px rgba(224,88,124,0.55)" }} animate={{ boxShadow: "0 18px 40px -14px rgba(16,185,129,0.55)" }} transition={{ delay: 0.55, duration: 0.6 }} />
+      <motion.span className="absolute inset-2 rounded-full -z-10" aria-hidden initial={{ boxShadow: "0 18px 40px -14px rgba(224,88,124,0.55)" }} animate={{ boxShadow: "0 18px 40px -14px rgba(14,163,113,0.55)" }} transition={{ delay: 0.55, duration: 0.6 }} />
       {/* sparks burst out as the colour turns */}
       {!reduce && SPARKS.map((c, i) => {
         const a = (i / SPARKS.length) * Math.PI * 2 - Math.PI / 2; const d = 62 + (i % 2) * 14;
