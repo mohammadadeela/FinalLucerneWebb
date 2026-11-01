@@ -66,7 +66,7 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
     if (!r) return;
     const w = window.innerWidth;
     const newsBar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--news-bar-offset")) || 0;
-    const target = (w >= 768 ? 144 : w >= 640 ? 136 : 112) + newsBar;
+    const target = (w >= 640 ? 144 : 120) + newsBar;   // navbar 5rem + the page's top padding (2.5rem on phones, 4rem from sm)
     setGlide({ from: r.top + r.height / 2 - 56, to: target, left: (w - scrollbar.current) / 2 - 56 });
   }, [done, open]);
 

@@ -171,7 +171,15 @@ export default function OrderConfirmation() {
         { icon: Shirt, ar: "استمتعي بإطلالتك", en: "Enjoy your look", dAr: "ونحب أن نرى رأيك!", dEn: "We'd love to hear what you think!" },
       ];
 
-  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior }); }, []);
+  // Open at the very top, and stay there while the page settles (the order loads, iOS finishes its toolbar dance),
+  // so the seal is never hidden under the navbar. Only for the first moments after opening: never fights the user.
+  const openedAt = useMemo(() => Date.now(), []);
+  useEffect(() => {
+    const toTop = () => { if (Date.now() - openedAt < 1500) window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior }); };
+    toTop();
+    const timers = [40, 160, 400, 800].map((ms) => window.setTimeout(toTop, ms));
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [openedAt, order?.id]);
 
   return (
     <div className="min-h-screen flex flex-col pt-navbar">

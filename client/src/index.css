@@ -191,7 +191,7 @@
 
 @media (max-width: 767px) {
   .pt-navbar {
-    padding-top: calc(4.5rem + var(--news-bar-offset, 0px));
+    padding-top: calc(5rem + var(--news-bar-offset, 0px));
   }
 
   [data-radix-popper-content-wrapper] {
