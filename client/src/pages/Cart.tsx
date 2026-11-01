@@ -4,7 +4,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart, type CartItem } from "@/store/use-cart";
 import { Button } from "@/components/ui/button";
-import { Coins, Minus, Plus, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
+import { LucerneCoin } from "@/components/ui/lucerne-coin";
 import { useLanguage } from "@/i18n";
 import { useToast } from "@/hooks/use-toast";
 import type { ColorVariant } from "@shared/schema";
@@ -344,9 +345,7 @@ export default function Cart() {
                 >
                   <div className="absolute -top-6 -end-6 w-20 h-20 rounded-full bg-white/15 blur-xl pointer-events-none" />
                   <div className="relative flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
-                      <Coins className="w-4 h-4" />
-                    </div>
+                    <LucerneCoin className="w-10 h-10 shrink-0 drop-shadow-md" />
                     <div className="flex-1 leading-snug">
                       <p className="text-sm font-bold">
                         {language === "ar"

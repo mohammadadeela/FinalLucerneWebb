@@ -5,11 +5,14 @@ import { useLanguage } from "@/i18n";
 
 /* The animated order-progress tracker. One component, used both on the "thank you" page right after ordering and
    in the order details window of the customer's account, so the two always look and behave the same:
-   the line fills with green, finished steps get a check, and the NEXT step pulses in amber. */
+   the line fills with green, finished steps get a check, and ONLY the step the order is at right now moves:
+   it pulses in amber with its icon animating, the line flowing towards it, and a "now" pointer under it. */
 
-/** The store is closed on Fridays (open Saturday–Thursday), so deliveries skip Fridays. */
+/** The store is closed on Fridays (open Saturday–Thursday): an order that comes in on a Friday is handled on
+ *  Saturday, so it counts from Saturday, and Fridays are never counted as working days or used as a delivery day. */
 export function addBusinessDays(from: Date, days: number): Date {
   const d = new Date(from);
+  if (d.getDay() === 5) { d.setDate(d.getDate() + 1); d.setHours(0, 0, 0, 0); }
   let left = days;
   while (left > 0) {
     d.setDate(d.getDate() + 1);
@@ -39,7 +42,7 @@ export default function OrderTracker({ order }: { order: TrackedOrder }) {
   const cancelled = status === "Cancelled";
 
   // Every step has its own icon (an open box for "preparing", a home for "delivered") and its own little motion,
-  // which plays on the step the order is at and on the step that is coming next.
+  // which plays only on the step the order is at right now.
   const steps = useMemo(() => isPickup
     ? [
         { ar: "تم استلام الطلب", en: "Order received", icon: ClipboardCheck, motion: "pop" },
@@ -86,40 +89,63 @@ export default function OrderTracker({ order }: { order: TrackedOrder }) {
   }
   const FooterIcon = footer.icon;
 
+  // where the order is right now: the step after the last finished one, or the last step once it is delivered
+  const current = reached === 3 ? 3 : reached + 1;
+
   return (
     <div data-testid="order-progress">
       <ol className="relative flex items-start justify-between">
         {steps.map((s, i) => {
           const Icon = s.icon;
           const done = i <= reached;
-          const inProgress = !done && i === reached + 1 && reached < 3;
+          const active = i === current;
+          const finished = done && !active;
+          const flowing = !reduce && i === current - 1 && current < 3;   // the line into the current step
           return (
-            <li key={i} className="relative flex-1 flex flex-col items-center text-center" data-testid={`tracker-step-${i}`} data-state={done ? "done" : inProgress ? "active" : "todo"}>
+            <li key={i} className="relative flex-1 flex flex-col items-center text-center" data-testid={`tracker-step-${i}`} data-state={active ? "active" : done ? "done" : "todo"}>
               {i < steps.length - 1 && (
-                <span className="absolute top-5 start-1/2 w-full h-0.5 bg-border" aria-hidden>
+                <span className="absolute top-5 start-1/2 w-full h-0.5 bg-border overflow-hidden" aria-hidden>
                   <motion.span
                     className="absolute inset-y-0 start-0 bg-emerald-500"
                     initial={reduce ? false : { width: 0 }}
                     animate={{ width: i < reached ? "100%" : "0%" }}
-                    transition={{ delay: 0.6 + i * 0.2, duration: 0.6 }}
+                    transition={{ delay: 0.5 + i * 0.2, duration: 0.6 }}
                   />
+                  {(flowing || (reduce && i === current - 1 && current < 3)) && (
+                    <motion.span className="absolute inset-y-0 start-0 w-[200%]" aria-hidden
+                      style={{ backgroundImage: "repeating-linear-gradient(90deg, #f59e0b 0 8px, transparent 8px 16px)", opacity: 0.9 }}
+                      animate={reduce ? undefined : { x: ar ? [0, 16] : [-16, 0] }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />
+                  )}
                 </span>
               )}
-              <span className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
-                done ? "bg-emerald-500 border-emerald-500 text-white" : inProgress ? "bg-background border-amber-400 text-amber-600" : "bg-background border-border text-muted-foreground"
-              }`}>
-                {inProgress && !reduce && <span className="absolute inset-0 rounded-full border-2 border-amber-400 animate-ping opacity-60" aria-hidden />}
-                {done && i < reached ? <Check className="w-4 h-4" /> : (
+              <motion.span
+                className={`relative z-10 rounded-full flex items-center justify-center border-2 transition-colors ${
+                  finished ? "w-10 h-10 bg-emerald-500 border-emerald-500 text-white"
+                  : active ? (done ? "w-12 h-12 bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30" : "w-12 h-12 bg-amber-50 dark:bg-amber-950/40 border-amber-400 text-amber-600 shadow-lg shadow-amber-400/30")
+                  : "w-10 h-10 bg-background border-border text-muted-foreground"
+                }`}
+                initial={active && !reduce ? { scale: 0.7 } : false}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 16, delay: 0.7 }}
+              >
+                {active && !reduce && <span className={`absolute inset-0 rounded-full border-2 animate-ping opacity-60 ${done ? "border-emerald-400" : "border-amber-400"}`} aria-hidden />}
+                {finished ? <Check className="w-4 h-4" /> : (
                   <motion.span className="flex" style={{ originX: 0.5, originY: 1 }}
-                    animate={!reduce && (done || inProgress) ? ICON_MOTION[s.motion].animate : undefined}
+                    animate={!reduce && active ? ICON_MOTION[s.motion].animate : undefined}
                     transition={ICON_MOTION[s.motion].transition}>
-                    <Icon className="w-4 h-4" />
+                    <Icon className={active ? "w-5 h-5" : "w-4 h-4"} />
                   </motion.span>
                 )}
-              </span>
-              <span className={`mt-2 text-[10px] sm:text-xs font-semibold leading-tight px-0.5 ${done ? "text-emerald-700 dark:text-emerald-400" : inProgress ? "text-amber-700" : "text-muted-foreground"}`}>
+              </motion.span>
+              <span className={`mt-2 text-[10px] sm:text-xs leading-tight px-0.5 ${
+                active ? (done ? "font-bold text-emerald-700 dark:text-emerald-400" : "font-bold text-amber-700 dark:text-amber-400")
+                : finished ? "font-semibold text-emerald-700 dark:text-emerald-400" : "font-semibold text-muted-foreground"}`}>
                 {ar ? s.ar : s.en}
               </span>
+              {active && (
+                <motion.span className={`mt-1 h-1 w-6 rounded-full ${done ? "bg-emerald-500" : "bg-amber-400"}`} aria-hidden
+                  initial={reduce ? false : { scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: 0.9, duration: 0.3 }} />
+              )}
             </li>
           );
         })}
