@@ -45,8 +45,9 @@ function Defs() {
         <linearGradient id="ls-apron" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#35353c" /><stop offset="1" stopColor="#141417" /></linearGradient>
         <linearGradient id="ls-blouse" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#efe6df" /></linearGradient>
         <linearGradient id="ls-faceShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#000" stopOpacity=".10" /><stop offset=".35" stopColor="#000" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity="0" /></linearGradient>
-        <linearGradient id="ls-hair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#5a3a2a" /><stop offset=".5" stopColor="#3e2619" /><stop offset="1" stopColor="#2a170f" /></linearGradient>
-        <linearGradient id="ls-hairHi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".28" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+        <linearGradient id="ls-blonde" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f3d58e" /><stop offset=".55" stopColor="#d9ae5c" /><stop offset="1" stopColor="#b88a3f" /></linearGradient>
+        <linearGradient id="ls-blondeDeep" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c9983f" /><stop offset="1" stopColor="#9c7230" /></linearGradient>
+        <linearGradient id="ls-blondeHi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff5d1" stopOpacity=".85" /><stop offset="1" stopColor="#fff5d1" stopOpacity="0" /></linearGradient>
         <radialGradient id="ls-cheek" cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#f08a9c" stopOpacity=".55" /><stop offset="1" stopColor="#f08a9c" stopOpacity="0" /></radialGradient>
         <clipPath id="ls-win"><path d="M36 -92 L30 -92 L30 -54 L84 -54 L56 -86 Q50 -92 36 -92 Z" /></clipPath>
         <clipPath id="ls-card"><rect x="-32" y="-38" width="64" height="64" rx="8" /></clipPath>
@@ -154,9 +155,11 @@ function Packer({ reduce, lift }: { reduce: boolean; lift: boolean }) {
   return (
     <motion.g animate={reduce ? undefined : { y: [0, -1.5, 0] }} transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}>
       <g transform="translate(180 236)">
-        <path d="M-46 34 Q-52 -30 -36 -72 Q-22 -106 0 -106 Q22 -106 36 -72 Q52 -30 46 34 Q38 44 28 32 Q24 10 24 -20 L-24 -20 Q-24 10 -28 32 Q-38 44 -46 34 Z" fill="url(#ls-hair)"/>
-        <path d="M-40 -30 Q-44 10 -36 30" stroke="url(#ls-hairHi)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-        <path d="M40 -30 Q44 10 36 30" stroke="url(#ls-hairHi)" strokeWidth="4" fill="none" strokeLinecap="round"/>
+        <path d="M-44 34 C-54 22 -48 6 -52 -14 C-56 -40 -52 -68 -40 -84 C-28 -104 -12 -108 0 -108 C12 -108 28 -104 40 -84 C52 -68 56 -40 52 -14 C48 6 54 22 44 34 C40 46 28 48 26 38 C24 30 30 22 24 12 L24 -20 L-24 -20 L-24 12 C-30 22 -24 30 -26 38 C-28 48 -40 46 -44 34 Z" fill="url(#ls-blonde)"/>
+        <path d="M-42 -60 C-50 -36 -46 -8 -40 16 C-44 -8 -46 -36 -36 -62 Z" fill="url(#ls-blondeHi)"/>
+        <path d="M42 -60 C50 -36 46 -8 40 16 C44 -8 46 -36 36 -62 Z" fill="url(#ls-blondeHi)"/>
+        <path d="M-48 0 C-52 16 -46 28 -42 34" stroke="url(#ls-blondeDeep)" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity=".5"/>
+        <path d="M48 0 C52 16 46 28 42 34" stroke="url(#ls-blondeDeep)" strokeWidth="2.5" fill="none" strokeLinecap="round" opacity=".5"/>
         <path d="M-50 78 L-47 14 Q-44 -6 -22 -14 L22 -14 Q44 -6 47 14 L50 78 Z" fill="url(#ls-blouse)"/>
         <path d="M-9 -30 L9 -30 L11 -12 Q0 -6 -11 -12 Z" fill="#e3ad8d"/>
         <path d="M-12 -14 Q0 -4 12 -14 L14 -8 Q0 2 -14 -8 Z" fill="url(#ls-skin)"/>
@@ -169,14 +172,17 @@ function Packer({ reduce, lift }: { reduce: boolean; lift: boolean }) {
         <ellipse cx="-25" cy="-54" rx="3.5" ry="5" fill="#ecb998"/><ellipse cx="25" cy="-54" rx="3.5" ry="5" fill="#ecb998"/>
         <path d="M-24 -56 Q-26 -82 0 -84 Q26 -82 24 -56 Q24 -38 12 -28 Q0 -22 -12 -28 Q-24 -38 -24 -56 Z" fill="url(#ls-skin)"/>
         <path d="M-24 -56 Q-26 -82 0 -84 Q26 -82 24 -56 Q24 -38 12 -28 Q0 -22 -12 -28 Q-24 -38 -24 -56 Z" fill="url(#ls-faceShade)"/>
-        <path d="M-27 -60 Q-26 -92 2 -93 Q30 -93 28 -62 Q26 -74 14 -78 Q4 -82 -6 -76 Q-18 -70 -27 -60 Z" fill="url(#ls-hair)"/>
-        <path d="M-22 -74 Q-36 -46 -32 -8 Q-32 22 -22 28 Q-14 16 -18 -8 Q-24 -44 -12 -70 Z" fill="url(#ls-hair)"/>
-        <path d="M22 -74 Q34 -48 31 -14 Q30 10 24 18 Q18 10 22 -12 Q26 -44 14 -70 Z" fill="url(#ls-hair)"/>
-        <path d="M-20 -80 Q-4 -90 12 -86" stroke="url(#ls-hairHi)" strokeWidth="5" fill="none" strokeLinecap="round"/>
-        <path d="M-28 -40 Q-32 -10 -26 14" stroke="url(#ls-hairHi)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-        <g transform="translate(-18 -72) rotate(-35)"><rect x="-6" y="-1.5" width="12" height="3" rx="1.5" fill="url(#ls-gold)"/><circle cx="6" cy="0" r="2.2" fill="url(#ls-gold)"/></g>
-        <path d="M-16 -64 Q-10 -68 -4 -64" stroke="#3e2619" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
-        <path d="M4 -64 Q10 -68 16 -64" stroke="#3e2619" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d="M-28 -56 C-32 -92 -8 -100 4 -98 C30 -96 32 -72 28 -58 C26 -72 16 -80 4 -82 C-10 -84 -20 -72 -28 -56 Z" fill="url(#ls-blonde)"/>
+        <path d="M-10 -78 C4 -88 20 -82 26 -68 C28 -62 28 -56 27 -52 C24 -66 14 -76 2 -78 C-4 -79 -8 -78 -10 -78 Z" fill="url(#ls-blondeDeep)" opacity=".3"/>
+        <path d="M-23 -74 C-40 -50 -30 -22 -36 -2 C-40 16 -30 30 -22 28 C-16 24 -22 8 -20 -8 C-18 -30 -28 -50 -13 -70 Z" fill="url(#ls-blonde)"/>
+        <path d="M23 -74 C36 -50 30 -24 33 -8 C35 8 28 20 24 18 C20 14 24 2 22 -10 C20 -32 28 -50 13 -70 Z" fill="url(#ls-blonde)"/>
+        <path d="M-20 -86 C-6 -96 12 -94 20 -84 C10 -90 -4 -90 -16 -82 Z" fill="url(#ls-blondeHi)"/>
+        <path d="M-30 -40 C-36 -20 -32 2 -28 14 C-32 0 -34 -22 -26 -42 Z" fill="url(#ls-blondeHi)"/>
+        <path d="M30 -44 C34 -24 32 -4 28 8 C32 -6 32 -26 26 -44 Z" fill="url(#ls-blondeHi)"/>
+        <path d="M-30 -56 C-26 -72 -14 -80 -4 -82" stroke="url(#ls-blondeDeep)" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity=".45"/>
+        <g transform="translate(-19 -70)"><circle r="4.2" fill="url(#ls-rose)"/><circle r="4.2" fill="none" stroke="rgba(255,255,255,.35)"/><circle r="1.6" fill="#f6e2a6"/></g>
+        <path d="M-16 -64 Q-10 -68 -4 -64" stroke="#7a5a2e" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d="M4 -64 Q10 -68 16 -64" stroke="#7a5a2e" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
         <motion.g style={{ originX: 0.5, originY: 0.5 }} animate={reduce ? undefined : { scaleY: [1, 1, 0.1, 1, 1] }} transition={{ duration: 3.4, times: [0, 0.58, 0.62, 0.66, 1], repeat: Infinity }}>
           <path d="M-16 -56 Q-10 -62 -4 -56 Q-10 -51 -16 -56 Z" fill="#fff"/><path d="M4 -56 Q10 -62 16 -56 Q10 -51 4 -56 Z" fill="#fff"/>
           <circle cx="-9.5" cy="-56" r="2.8" fill="#5a3a2e"/><circle cx="10.5" cy="-56" r="2.8" fill="#5a3a2e"/>
