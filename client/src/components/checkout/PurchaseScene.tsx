@@ -8,7 +8,7 @@ import { useLanguage } from "@/i18n";
      1. Handover  — the sheet pans to the street: the Lucerne van pulls up, the box goes in the back
                     (store pickup: the box is set on the counter with a READY tag and the bell rings)
      2. Done      — the van drives off and a big check springs in
-   Everything is SVG moved with framer-motion, in a 340×220 stage.
+   Everything is SVG moved with framer-motion, in a 360×240 stage.
 
    Contract with the checkout page (unchanged): `open` while the order is being placed, `done` once it succeeded;
    the page keeps the scene up for a minimum time and removes it at once if the order fails.
@@ -199,17 +199,17 @@ function Wheel({ cx, cy, spin, reduce }: { cx: number; cy: number; spin: boolean
 
 
 /* ── scene A: the packing table (0..340) ─────────────────────────────────── */
-const PK = { x: 170, y: 150, s: 0.6 };        // where the assistant stands
-const BX = { x: 170, y: 200, s: 0.46 };       // where the box sits
+const PK = { x: 100, y: 160, s: 0.62 };       // where the assistant stands (left), the box to her right
+const BX = { x: 240, y: 210, s: 0.5 };        // where the box sits
 
 function Packing({ reduce, away }: { reduce: boolean; away: boolean }) {
   return (
     <g>
       <g transform={`translate(${PK.x - 180 * PK.s} ${PK.y - 236 * PK.s}) scale(${PK.s})`}><Packer reduce={reduce} lift /></g>
       {/* the table top hides her waist */}
-      <rect x="0" y="200" width="340" height="30" fill="#fff" />
-      <path d="M40 200 H300" stroke="#e5e5e5" strokeWidth="1.5" strokeLinecap="round" />
-      <ellipse cx="170" cy="203" rx="60" ry="3.5" fill="rgba(120,40,70,.10)" />
+      <rect x="0" y="210" width="360" height="30" fill="#fafafa" />
+      <path d="M24 210 H336" stroke="#e5e5e5" strokeWidth="1.5" strokeLinecap="round" />
+      <ellipse cx="240" cy="213" rx="52" ry="3.5" fill="rgba(120,40,70,.10)" />
       <motion.g initial={{ opacity: 1 }} animate={{ opacity: away ? 0 : 1 }} transition={{ duration: 0.2 }}>
         <g transform={`translate(${BX.x} ${BX.y}) scale(${BX.s})`}>
           <BoxBack /><BoxFront />
@@ -251,16 +251,17 @@ function Street({ done, reduce, active }: { done: boolean; reduce: boolean; acti
   useEffect(() => { if (!active) return; const t = window.setTimeout(() => setRolling(true), reduce ? 0 : 1250); return () => window.clearTimeout(t); }, [active, reduce]);
   const spin = (rolling || done) && !reduce;
   return (
-    <g transform="translate(340 0)">
-      <path d="M-20 204 H360" stroke="#e5e5e5" strokeWidth="1.5" />
-      <motion.path d="M-40 212 H400" stroke="#d4d4d4" strokeWidth="2" strokeDasharray="14 12" animate={spin ? { x: [0, -26] } : { x: 0 }} transition={spin ? { duration: done ? 0.2 : 0.45, repeat: Infinity, ease: "linear" } : { duration: 0 }} />
+    <g transform="translate(360 0)">
+      <rect x="-20" y="214" width="400" height="30" fill="#fafafa" />
+      <path d="M-20 214 H380" stroke="#e5e5e5" strokeWidth="1.5" />
+      <motion.path d="M-40 222 H420" stroke="#d4d4d4" strokeWidth="2" strokeDasharray="14 12" animate={spin ? { x: [0, -26] } : { x: 0 }} transition={spin ? { duration: done ? 0.2 : 0.45, repeat: Infinity, ease: "linear" } : { duration: 0 }} />
       {/* the box waits on the kerb (behind the van) */}
       <motion.g initial={{ opacity: 1 }} animate={{ opacity: active ? [1, 1, 0] : 1 }} transition={tr(reduce, { delay: 0.55, duration: 0.3, times: [0, 0.9, 1] })}>
-        <g transform="translate(46 203) scale(.3)"><WrappedBox /></g>
+        <g transform="translate(52 213) scale(.3)"><WrappedBox /></g>
       </motion.g>
       <motion.g initial={{ x: reduce ? 0 : -300 }} animate={active ? { x: done ? 520 : 0, y: spin && !done ? [0, -1.2, 0] : 0 } : { x: reduce ? 0 : -300 }}
         transition={done ? tr(reduce, { x: { duration: 0.7, ease: [0.55, 0, 0.9, 0.5] } }) : tr(reduce, { x: { duration: 0.55, ease: [0.15, 0.7, 0.2, 1] }, y: { duration: 0.35, repeat: Infinity, ease: "easeInOut" } })}>
-        <g transform="translate(176 204) scale(.74)">
+        <g transform="translate(190 214) scale(.74)">
           <ellipse cx="0" cy="4" rx="118" ry="7" fill="rgba(30,20,30,.25)" />
           <path d="M-112 -20 L-112 -92 Q-112 -100 -104 -100 L30 -100 Q46 -100 56 -88 L96 -46 Q104 -38 104 -28 L104 -20 Z" fill="url(#ls-van)" />
           <path d="M36 -92 L30 -92 L30 -54 L84 -54 L56 -86 Q50 -92 36 -92 Z" fill="#e9f3f6" />
@@ -307,11 +308,11 @@ function Street({ done, reduce, active }: { done: boolean; reduce: boolean; acti
 /* ── scene B (store pickup): the boutique counter ─────────────────────────── */
 function Counter({ done, reduce, active }: { done: boolean; reduce: boolean; active: boolean }) {
   return (
-    <g transform="translate(340 0)">
+    <g transform="translate(360 0)">
       <g transform={`translate(${PK.x - 180 * PK.s} ${PK.y - 236 * PK.s}) scale(${PK.s})`}><Packer reduce={reduce} lift={false} /></g>
-      <rect x="0" y="200" width="340" height="30" fill="#fff" />
-      <path d="M30 200 H310" stroke="#e5e5e5" strokeWidth="1.5" strokeLinecap="round" />
-      <g transform="translate(272 200)">
+      <rect x="0" y="210" width="360" height="30" fill="#fafafa" />
+      <path d="M24 210 H336" stroke="#e5e5e5" strokeWidth="1.5" strokeLinecap="round" />
+      <g transform="translate(322 210)">
         <ellipse cx="0" cy="0" rx="11" ry="2.5" fill="#c9994a" />
         <motion.g style={{ originX: 0.5, originY: 1 }} animate={active && !reduce ? { rotate: [0, 0, -8, 8, -5, 5, 0] } : { rotate: 0 }} transition={{ delay: 0.75, duration: 0.6, times: [0, 0.05, 0.25, 0.45, 0.65, 0.85, 1] }}>
           <path d="M-8 0 Q-8 -15 0 -16 Q8 -15 8 0 Z" fill={GOLD} /><circle cx="0" cy="-17.5" r="2.2" fill="#f3dc9c" />
@@ -325,7 +326,7 @@ function Counter({ done, reduce, active }: { done: boolean; reduce: boolean; act
       </motion.g>
       <motion.g style={{ originX: 0, originY: 0.5 }} initial={{ scale: reduce ? 1 : 0, rotate: reduce ? 12 : -30, opacity: reduce ? 1 : 0 }} animate={active ? { scale: 1, rotate: done ? [12, 6, 12] : 12, opacity: 1 } : { scale: reduce ? 1 : 0, opacity: reduce ? 1 : 0 }}
         transition={tr(reduce, done ? { rotate: { duration: 1.2, repeat: Infinity, ease: "easeInOut" } } : { delay: 0.65, type: "spring", stiffness: 240, damping: 14 })}>
-        <g transform="translate(214 132)">
+        <g transform="translate(290 150)">
           <rect x="-22" y="-9" width="44" height="18" rx="5" fill={GOLD} /><circle cx="-16" cy="0" r="1.5" fill="#2a2a2f" />
           <text x="3" y="3" textAnchor="middle" fontSize="7" letterSpacing="1.2" fontWeight="700" fill="#2a2a2f" style={{ fontFamily: SERIF }}>READY</text>
         </g>
@@ -378,10 +379,10 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
       </motion.div>
 
       {/* the small stage: one sheet that pans from the table to the street */}
-      <div className="relative w-[340px] max-w-[90vw]" style={{ aspectRatio: "340 / 220" }} data-testid="purchase-scene-stage">
-        <motion.svg viewBox="0 0 340 220" className="absolute inset-0 w-full h-full overflow-visible" aria-hidden
+      <div className="relative w-[360px] max-w-[92vw]" style={{ aspectRatio: "360 / 240" }} data-testid="purchase-scene-stage">
+        <motion.svg viewBox="0 0 360 240" className="absolute inset-0 w-full h-full overflow-hidden" aria-hidden
           animate={{ opacity: phase === 2 ? 0.25 : 1, scale: phase === 2 ? 0.92 : 1, y: phase === 2 ? 10 : 0 }} transition={{ duration: 0.4, delay: phase === 2 ? 0.55 : 0 }}>
-          <motion.g initial={{ x: 0 }} animate={{ x: handover ? -340 : 0 }} transition={tr(reduce, { duration: 0.55, ease: [0.4, 0, 0.2, 1] })}>
+          <motion.g initial={{ x: 0 }} animate={{ x: handover ? -360 : 0 }} transition={tr(reduce, { duration: 0.55, ease: [0.4, 0, 0.2, 1] })}>
             <Packing reduce={reduce} away={handover} />
             {pickup ? <Counter done={done} reduce={reduce} active={handover} /> : <Street done={done} reduce={reduce} active={handover} />}
           </motion.g>
