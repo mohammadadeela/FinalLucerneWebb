@@ -1,3 +1,4 @@
+import { normalizeGuestEmail } from "@shared/guest-email";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Loader2, Mail, MessageSquareText, PencilLine, ShieldCheck, Smartphone } from "lucide-react";
@@ -128,8 +129,22 @@ export default function GuestVerifyCard({
     return () => window.clearTimeout(id);
   }, [cooldownEndsAt, now]);
 
-  const target = channel === "sms" ? phoneFull : email.trim();
-  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+  const target = channel === "sms" ? phoneFull : email.trim().toLowerCase();
+  const emailLooksValid = !!normalizeGuestEmail(email);
+  const contactKey = `${channel}:${target}`;
+  const currentContact = useRef(contactKey);
+  currentContact.current = contactKey;
+  const previousContact = useRef(contactKey);
+  useEffect(() => {
+    if (previousContact.current === contactKey) return;
+    const sameChannel = previousContact.current.startsWith(`${channel}:`);
+    previousContact.current = contactKey;
+    setCode("");
+    if (sameChannel) setError(null);
+    setCooldownEndsAt(0);
+    setSendsLeft(null);
+    clearPending();
+  }, [contactKey]);
   const canSend = channel === "sms" ? phoneValid : emailLooksValid;
   // A code was sent to the OLD phone/email: once the contact changes it no longer applies, so this turns false by itself.
   const sent = sentTo !== null && sentTo === target;
@@ -170,7 +185,9 @@ export default function GuestVerifyCard({
     verify: ar ? "تأكيد الرمز" : "Verify code",
     codeLabel: ar ? "أدخلي الرمز المكوّن من 6 أرقام" : "Enter the 6-digit code",
     needPhone: ar ? "أدخلي رقم هاتفك في تفاصيل التوصيل أولاً" : "Enter your phone number in the delivery details first",
-    needEmail: ar ? "أدخلي بريدك الإلكتروني في تفاصيل التوصيل أولاً" : "Enter your email in the delivery details first",
+    needEmail: email.trim()
+      ? (ar ? "البريد غير صحيح. أدخلي عنواناً مثل name@example.com بدون مسافات." : "That email isn't valid. Enter an address like name@example.com without spaces.")
+      : (ar ? "أدخلي بريدك الإلكتروني في تفاصيل التوصيل أولاً" : "Enter your email in the delivery details first"),
     goPhone: ar ? "أدخلي الرقم" : "Add phone",
     goEmail: ar ? "أدخلي البريد" : "Add email",
     willSend: ar ? "سنرسل الرمز إلى" : "We'll send a code to",
@@ -185,12 +202,18 @@ export default function GuestVerifyCard({
   type Err = { text: string; tone: "error" | "warn"; action?: "email" | "phone" };
   const errText = (data: any, status: number): Err => {
     const m = data?.message as string | undefined;
+    if (m === "network") return { text: ar ? "تعذّر الاتصال. تحققي من الإنترنت وحاولي مجدداً." : "Couldn't connect. Check your internet connection and try again.", tone: "error" };
+    if (m === "timeout") return { text: ar ? "استغرق الطلب وقتاً طويلاً. قد يصلك الرمز؛ تحققي من البريد قبل إعادة الإرسال." : "The request took too long. A code may still arrive; check your inbox before resending.", tone: "warn" };
+    if (m === "email_domain_invalid" || m === "email_rejected") return { text: ar ? "تعذّر استقبال البريد على هذا العنوان. تأكدي من كتابته أو استخدمي بريداً آخر." : "This address couldn't accept email. Check the spelling or use another email address.", tone: "error", action: "email" };
+    if (m === "email_domain_unavailable") return { text: ar ? "تعذّر فحص خدمة البريد مؤقتاً. حاولي بعد قليل؛ هذا لا يعني أن عنوانك خاطئ." : "We couldn't check the email service right now. Try again shortly; this doesn't mean your address is wrong.", tone: "warn" };
+    if (m === "invalid_input") return { text: ar ? "أدخلي رمز التحقق كاملاً من 6 أرقام." : "Enter the complete six-digit verification code.", tone: "error" };
+    if (m === "verification_failed") return { text: ar ? "خدمة التحقق غير متاحة مؤقتاً. حاولي مجدداً." : "Verification is temporarily unavailable. Please try again.", tone: "error" };
     if (m === "otp_cooldown")
       return { text: ar ? `انتظري ${data.secondsLeft} ثانية قبل طلب رمز جديد` : `Please wait ${data.secondsLeft}s before asking for another code`, tone: "warn" };
     if (m === "otp_limit_reached")
       return channel === "sms"
         ? { text: ar ? "استُخدمت رسالتا SMS المسموحتان لهذا الطلب. أكملي التحقق عبر البريد الإلكتروني — يصلك الرمز خلال ثوانٍ." : "Both SMS codes for this order have been used. Finish verifying by email — the code arrives in seconds.", tone: "warn", action: "email" }
-        : { text: ar ? "وصلتِ للحد الأقصى لهذا البريد. حاولي بعد قليل." : "You've reached the limit for this email. Please try again shortly.", tone: "warn" };
+        : { text: ar ? `استُخدم الرمزان لهذا البريد. يمكنك استخدام آخر رمز أو المحاولة بعد ${Math.ceil((data.secondsLeft || 60) / 60)} دقيقة.` : `Both codes for this email have been used. Use the latest code or try again in ${Math.ceil((data.secondsLeft || 60) / 60)} minute(s).`, tone: "warn" };
     if (m === "sms_failed" || m === "sms_unavailable")
       return { text: ar ? "خدمة الرسائل النصية لا تعمل حالياً. يمكنك استخدام البريد الإلكتروني الآن 👇" : "SMS isn't working right now. You can use email right now 👇", tone: "warn" };
     if (m === "email_failed")
@@ -204,18 +227,22 @@ export default function GuestVerifyCard({
       const tail = left === 0 ? (ar ? " استُخدمت رسالتا SMS — أكملي عبر البريد الإلكتروني." : " Both SMS codes are used — finish by email.") : left === 1 ? (ar ? " بقيت محاولة واحدة." : " One try left.") : "";
       return { text: (ar ? "هذا الرقم لا يستقبل رسائل SMS. تأكدي من الرقم ومن المفتاح (+970 لجوّال وأوريدو، +972 للشركات الإسرائيلية)." : "This number can't receive SMS. Check the number and the code (+970 for Jawwal/Ooredoo, +972 for Israeli carriers).") + tail, tone: "error", action: left === 0 ? "email" : "phone" };
     }
-    if (m === "invalid_email") return { text: ar ? "البريد الإلكتروني غير صحيح" : "That email address isn't valid", tone: "error" };
+    if (m === "invalid_email") return { text: ar ? "البريد الإلكتروني غير صحيح. تحققي من كتابته." : "That email address isn't valid. Check its spelling.", tone: "error", action: "email" };
     if (m === "guest_checkout_disabled") return { text: ar ? "الطلب كضيف غير متاح حالياً. سجّلي الدخول." : "Guest checkout isn't available right now. Please sign in.", tone: "error" };
     return { text: ar ? "حدث خطأ. حاولي مرة أخرى بعد قليل." : "Something went wrong. Please try again in a moment.", tone: "error" };
   };
 
   const call = async (path: string, body: any) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30_000);
     try {
-      const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: controller.signal });
       const data = await res.json().catch(() => ({}));
       return { ok: res.ok, status: res.status, data };
     } catch {
-      return { ok: false, status: 0, data: { message: "network" } };
+      return { ok: false, status: 0, data: { message: controller.signal.aborted ? "timeout" : "network" } };
+    } finally {
+      window.clearTimeout(timeout);
     }
   };
 
@@ -229,6 +256,7 @@ export default function GuestVerifyCard({
     setError(null);
     const r = await call("/api/guest/verify/send", channel === "sms" ? { channel, phone: phoneFull, sid } : { channel, email: email.trim(), sid });
     setBusy(null);
+    if (currentContact.current !== contactKey) return;
     if (r.ok) {
       const ends = Date.now() + (r.data.cooldownSec ?? 60) * 1000;
       setSentTo(target);
@@ -241,8 +269,9 @@ export default function GuestVerifyCard({
       return;
     }
     const m = r.data?.message;
-    if (m === "otp_cooldown" && sentTo === target) {
-      // A code was already sent a moment ago: show the code step so they can use it.
+    if (m === "otp_cooldown" || (channel === "email" && m === "otp_limit_reached")) {
+      // Also recover a code sent before a network timeout or page refresh.
+      if (channel === "email") setSentTo(target);
       const ends = Date.now() + (r.data.secondsLeft ?? 60) * 1000;
       setCooldownEndsAt(ends);
       setNow(Date.now());
@@ -272,6 +301,7 @@ export default function GuestVerifyCard({
     setError(null);
     const r = await call("/api/guest/verify/check", channel === "sms" ? { channel, phone: phoneFull, code } : { channel, email: email.trim(), code });
     setBusy(null);
+    if (currentContact.current !== contactKey) return;
     if (r.ok && r.data?.proof) {
       clearPending();
       onVerified({ proof: r.data.proof, channel: r.data.channel, target: r.data.target });
@@ -346,7 +376,7 @@ export default function GuestVerifyCard({
                       type="button"
                       role="tab"
                       aria-selected={active}
-                      disabled={t.disabled}
+                      disabled={t.disabled || busy !== null}
                       onClick={() => !active && switchChannel(t.id)}
                       className={`flex flex-col items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
                         active ? "bg-white dark:bg-card text-rose-700 dark:text-rose-300 shadow-sm" : "text-muted-foreground hover:text-foreground"
@@ -397,9 +427,15 @@ export default function GuestVerifyCard({
                 </div>
               )}
 
+              {channel === "email" && sent && (
+                <p className="relative text-xs text-muted-foreground" role="status">
+                  {ar ? "لم يصلك الرمز؟ تأكدي من العنوان وافحصي البريد غير المرغوب فيه. وصول الرسالة قد يستغرق بضع دقائق. إذا أخطأتِ في العنوان اضغطي تغيير؛ إرسال الرسالة لا يؤكد وجود صندوق البريد." : "No code? Check the address and your spam/junk folder. Delivery can take a few minutes. If you mistyped the address, choose Change; sending doesn't confirm that the mailbox exists."}
+                </p>
+              )}
+
               {!sent ? (
-                <Button type="button" onClick={send} disabled={!canSend || busy === "send"} className={`relative ${PRIMARY_BTN}`} data-testid="gv-send">
-                  {busy === "send" ? <Loader2 className="w-4 h-4 animate-spin" /> : T.send}
+                <Button type="button" onClick={send} disabled={!canSend || busy !== null || secondsLeft > 0} className={`relative ${PRIMARY_BTN}`} data-testid="gv-send">
+                  {busy === "send" ? <Loader2 className="w-4 h-4 animate-spin" /> : secondsLeft > 0 ? T.resendIn(secondsLeft) : T.send}
                 </Button>
               ) : (
                 <div className="relative space-y-3.5">
@@ -428,14 +464,14 @@ export default function GuestVerifyCard({
                       </InputOTP>
                     </div>
                   </div>
-                  <Button type="button" onClick={check} disabled={code.length < 6 || busy === "check"} className={PRIMARY_BTN} data-testid="gv-verify">
+                  <Button type="button" onClick={check} disabled={code.length < 6 || busy !== null} className={PRIMARY_BTN} data-testid="gv-verify">
                     {busy === "check" ? <Loader2 className="w-4 h-4 animate-spin" /> : T.verify}
                   </Button>
                   <div className="text-center space-y-1">
                     <button
                       type="button"
                       onClick={send}
-                      disabled={secondsLeft > 0 || busy === "send" || sendsLeft === 0}
+                      disabled={secondsLeft > 0 || busy !== null}
                       className="text-sm font-semibold text-rose-600 hover:text-rose-700 disabled:no-underline disabled:text-muted-foreground disabled:cursor-not-allowed hover:underline"
                       data-testid="gv-resend"
                     >
@@ -470,7 +506,7 @@ export default function GuestVerifyCard({
                         data-testid={error.action === "email" ? "gv-go-email" : "gv-go-phone"}
                       >
                         {error.action === "email" ? <Mail className="w-3.5 h-3.5" /> : <PencilLine className="w-3.5 h-3.5" />}
-                        {error.action === "email" ? T.useEmail : T.fixPhone}
+                        {error.action === "email" ? (channel === "email" ? T.change : T.useEmail) : T.fixPhone}
                       </button>
                     )}
                   </span>

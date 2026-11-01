@@ -1,3 +1,4 @@
+import { guestEmailDomainAcceptsMail } from "./guest-email-domain";
 import type { Express } from "express";
 import rateLimit from "express-rate-limit";
 import { randomInt } from "crypto";
@@ -126,6 +127,16 @@ export function registerGuestVerifyRoutes(app: Express) {
       return res.status(429).json({ message: "otp_cooldown", secondsLeft: Math.ceil((COOLDOWN_MS - (now - active.lastSentAt)) / 1000), sendsLeft: MAX_SENDS - active.count, ...fallback });
     }
 
+    if (channel === "email") {
+      try {
+        if (!(await guestEmailDomainAcceptsMail(target))) return res.status(400).json({ message: "email_domain_invalid" });
+      } catch {
+        return res.status(503).json({ message: "email_domain_unavailable" });
+      }
+      // DNS yielded: another request may already have reserved this address.
+      if (limitOf(key) !== active) return res.status(429).json({ message: "otp_cooldown", secondsLeft: 60 });
+    }
+
     // Reserve the attempt up front (so two quick taps can't both pass). For SMS it stays used even if sending fails.
     const next: SendState = { count: (active?.count || 0) + 1, lastSentAt: now, windowExpiresAt: active?.windowExpiresAt || now + WINDOW_MS };
     sendLimits.set(key, next);
@@ -134,6 +145,7 @@ export function registerGuestVerifyRoutes(app: Express) {
 
     const useTwilioVerifyService = channel === "sms" && usesTwilioVerifyService();
     const code = useTwilioVerifyService ? undefined : String(randomInt(100000, 999999));
+    const previousCode = codes.get(key);
     if (code) codes.set(key, { code, expiresAt: now + CODE_TTL_MS, attempts: 0 });
     try {
       if (channel === "sms") {
@@ -148,7 +160,11 @@ export function registerGuestVerifyRoutes(app: Express) {
       if (channel === "email") {
         // email trouble is ours, not the guest's: the attempt is given back
         if (active) sendLimits.set(key, active); else sendLimits.delete(key);
-        return res.status(502).json({ message: "email_failed" });
+        if (previousCode && previousCode.expiresAt > Date.now()) codes.set(key, previousCode);
+        // Only a permanent RCPT rejection indicates a recipient problem; auth,
+        // sender-policy and temporary errors belong to the service.
+        const rejected = err?.command === "RCPT TO" && err?.responseCode >= 500 && err?.responseCode < 600;
+        return res.status(rejected ? 400 : 502).json({ message: rejected ? "email_rejected" : "email_failed" });
       }
       // Twilio 21211 / 21614: the number itself is not valid or can't receive SMS
       const badNumber = err?.code === 21211 || err?.code === 21614 || err?.code === 21408;
@@ -163,7 +179,8 @@ export function registerGuestVerifyRoutes(app: Express) {
     if (!(await isGuestCheckoutEnabled())) return res.status(403).json({ message: "guest_checkout_disabled" });
     const target = normalizeGuestTarget(channel, channel === "sms" ? req.body?.phone : req.body?.email);
     const code = String(req.body?.code ?? "").trim();
-    if (!target || !/^\d{4,10}$/.test(code)) return res.status(400).json({ message: "invalid_input" });
+    if (!target) return res.status(400).json({ message: channel === "email" ? "invalid_email" : "invalid_phone" });
+    if (!(channel === "email" ? /^\d{6}$/ : /^\d{4,10}$/).test(code)) return res.status(400).json({ message: "invalid_input" });
     const key = `${channel}:${target}`;
 
     try {
@@ -182,6 +199,10 @@ export function registerGuestVerifyRoutes(app: Express) {
           return res.status(429).json({ message: "too_many_attempts" });
         }
         if (entry.code !== code) {
+          if (channel === "email" && entry.attempts >= MAX_ATTEMPTS) {
+            codes.delete(key);
+            return res.status(429).json({ message: "too_many_attempts" });
+          }
           return res.status(400).json({ message: "invalid_code", attemptsLeft: MAX_ATTEMPTS - entry.attempts });
         }
         codes.delete(key);

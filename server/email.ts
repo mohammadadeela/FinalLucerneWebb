@@ -160,15 +160,19 @@ export async function sendVerificationEmail(
   }
 
   try {
-    await t.sendMail({
+    const delivery = await t.sendMail({
       from: `"Lucerne Boutique" <${getSenderEmail()}>`,
       to,
       subject: purpose === "guest-order" ? "رمز التحقق لإتمام طلبك — Lucerne Boutique" : "Verify your email - Lucerne Boutique",
       html,
     });
+    if (purpose === "guest-order" && !delivery.accepted?.length) {
+      throw Object.assign(new Error("recipient_rejected"), { command: "RCPT TO", responseCode: 550 });
+    }
     console.log(`[email] Verification email sent to ${redactEmail(to)}`);
     return true;
   } catch (err) {
+    if (purpose === "guest-order") throw err;
     console.error("[email] Failed to send email:", err);
     console.log(
       `[email] FALLBACK — Verification code for ${redactEmail(to)}: ${code}`,

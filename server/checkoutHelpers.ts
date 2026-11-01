@@ -1,3 +1,4 @@
+import { normalizeGuestEmail } from "../shared/guest-email";
 import { createHmac, randomInt, timingSafeEqual } from "crypto";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
@@ -69,11 +70,8 @@ export async function generateUniquePickupCode(): Promise<string> {
 
 /* ── Guest information ──────────────────────────────────────────────────────
    Guests must give the same contact details a signed-in customer would. */
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 export function cleanGuestEmail(value: unknown): string | null {
-  const v = typeof value === "string" ? value.trim() : "";
-  return v && EMAIL_RE.test(v) && v.length <= 160 ? v : null;
+  return normalizeGuestEmail(value);
 }
 
 /** Returns a machine-readable error code, or null when the guest details are acceptable. */

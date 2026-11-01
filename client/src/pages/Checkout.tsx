@@ -1,3 +1,4 @@
+import { normalizeGuestEmail, guestEmailSuggestion } from "@shared/guest-email";
 import { useState, useEffect, useRef } from "react";
 import { optimizeCloudinaryUrl, blurCloudinaryUrl } from "@/lib/utils";
 import { useLocation, Link } from "wouter";
@@ -1398,6 +1399,9 @@ export default function Checkout() {
                 <Label htmlFor="guest-email">{language === "ar" ? "البريد الإلكتروني (اختياري)" : "Email (optional)"}</Label>
                 <Input
                   id="guest-email"
+                  maxLength={160}
+                  aria-invalid={!!guestEmail.trim() && !normalizeGuestEmail(guestEmail)}
+                  aria-describedby="guest-email-help"
                   type="email"
                   inputMode="email"
                   autoComplete="email"
@@ -1408,6 +1412,13 @@ export default function Checkout() {
                   className="rounded-md border-border focus-visible:ring-primary"
                   data-testid="input-guest-email"
                 />
+                <p id="guest-email-help" className="text-xs text-red-600" role="status">
+                  {guestEmail.trim() && !normalizeGuestEmail(guestEmail)
+                    ? (language === "ar" ? "البريد غير صحيح. أدخلي عنواناً مثل name@example.com بدون مسافات." : "Enter a valid email such as name@example.com, without spaces.")
+                    : guestEmailSuggestion(guestEmail)
+                      ? (language === "ar" ? `هل تقصدين ${guestEmailSuggestion(guestEmail)}؟ تأكدي من البريد قبل إرسال الرمز.` : `Did you mean ${guestEmailSuggestion(guestEmail)}? Check your email before sending the code.`)
+                      : ""}
+                </p>
                 <p className="text-xs text-muted-foreground">{language === "ar" ? "لاستلام إيصال الطلب، ويمكنك التحقق به بدلاً من رسالة SMS." : "For your receipt. You can also use it to verify instead of SMS."}</p>
               </div>
               )}
