@@ -2729,6 +2729,171 @@ data-testid="text-low-stock-urgency"
 <span className="text-rose-700/80 dark:text-rose-300/80">{isAr ? " · ينفد بسرعة" : " · selling fast"}</span>
 </span>
 </div>
+)}
+
+{/* Qty + Add to cart — min 44px touch targets */}
+<div className="flex items-center gap-2.5 mb-4">
+{!isSoldOut && (
+<div className="flex items-center border border-border rounded-full overflow-hidden bg-background shrink-0">
+<button
+onClick={() => setQuantity(Math.max(1, quantity - 1))}
+disabled={!canAdd}
+className="w-12 h-14 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+data-testid="button-qty-minus"
+>
+<Minus className="w-3.5 h-3.5" />
+</button>
+<span
+className="w-8 text-center text-sm font-semibold select-none"
+data-testid="text-quantity"
+>
+{quantity}
+</span>
+<button
+onClick={() =>
+setQuantity(Math.min(remainingStock, quantity + 1))
+}
+disabled={!canAdd || quantity >= remainingStock}
+className="w-12 h-14 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+data-testid="button-qty-plus"
+>
+<Plus className="w-3.5 h-3.5" />
+</button>
+</div>
+)}
+
+<Button
+onClick={handleAddToCart}
+className="flex-1 h-14 rounded-full uppercase tracking-widest text-xs sm:text-sm font-semibold gap-2 shadow-sm"
+disabled={!canAdd}
+data-testid="button-add-to-cart"
+>
+{isSoldOut ? (
+t.product.soldOut
+) : canAdd ? (
+<>
+<ShoppingBag className="w-4 h-4 shrink-0" />
+{t.product.addToCart}
+</>
+) : hasSizes && !selectedSize ? (
+t.product.selectSize
+) : cartQtyForThis > 0 &&
+availableStock > 0 &&
+remainingStock === 0 ? (
+language === "ar" ? (
+`الحد الأقصى (${cartQtyForThis})`
+) : (
+`Max in cart (${cartQtyForThis})`
+)
+) : (
+t.product.outOfStock
+)}
+</Button>
+</div>
+
+<div className="flex items-center gap-2">
+{product && (
+<button
+onClick={() => {
+if (!user) {
+toast({
+title: t.wishlist.loginRequired,
+variant: "destructive",
+});
+return;
+}
+toggle(product.id, colorName ?? null);
+}}
+className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-full border text-xs sm:text-sm font-medium uppercase tracking-widest transition-all duration-200 ${
+isWishlisted(product.id)
+? "border-rose-400 text-rose-500 bg-rose-50 dark:bg-rose-950/30"
+: "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+}`}
+data-testid="button-wishlist-product"
+>
+<Heart
+className={`w-4 h-4 shrink-0 transition-all duration-200 ${isWishlisted(product.id) ? "fill-rose-500 stroke-rose-500" : "fill-transparent"}`}
+strokeWidth={1.5}
+/>
+{isWishlisted(product.id)
+? t.wishlist.removeFromWishlist
+: t.wishlist.addToWishlist}
+</button>
+)}
+
+<button
+onClick={() => {
+if (navigator.share) {
+navigator
+.share({
+title: product?.name || "",
+url: window.location.href,
+})
+.catch(() => {});
+} else {
+navigator.clipboard
+.writeText(window.location.href)
+.then(() => {
+setShareCopied(true);
+setTimeout(() => setShareCopied(false), 2500);
+});
+}
+}}
+className={`w-14 h-14 rounded-full border flex items-center justify-center transition-all shrink-0 ${
+shareCopied
+? "border-green-500 text-green-600 bg-green-50"
+: "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+}`}
+title={isAr ? "مشاركة" : "Share"}
+data-testid="button-share"
+>
+{shareCopied ? (
+<Check className="w-4 h-4" />
+) : navigator.share ? (
+<Share className="w-4 h-4" />
+) : (
+<Link2 className="w-4 h-4" />
+)}
+</button>
+</div>
+
+{!isSoldOut && selectedSize && availableStock > 0 && (
+<p
+className="text-xs text-muted-foreground mb-4"
+data-testid="text-size-stock"
+>
+{t.product.availableInSize} {selectedSize}: {availableStock}{" "}
+{t.product.pieces}
+</p>
+)}
+
+<div className="border-t border-border pt-6 mt-5 space-y-4 text-sm">
+<div className="flex justify-between">
+<span className="text-muted-foreground">
+{t.product.availability}
+</span>
+<span
+className={isSoldOut ? "font-semibold text-foreground" : availableStock > 0 ? "text-green-600" : "text-destructive"}
+data-testid="text-availability"
+>
+{isSoldOut
+? t.product.soldOut
+: hasSizes && !selectedSize
+? t.product.selectSizeFirst
+: availableStock > 0
+? t.product.inStock
+: t.product.outOfStock}
+</span>
+</div>
+<div className="flex justify-between">
+<span className="flex items-center gap-1.5 text-muted-foreground">
+<Truck className="w-3.5 h-3.5 flex-shrink-0" />
+{t.product.shipping}
+</span>
+<span>{t.product.freeDelivery}</span>
+</div>
+</div>
+</div>
 </div>
 
 {isSoldOut && similarProducts.length > 0 && (
