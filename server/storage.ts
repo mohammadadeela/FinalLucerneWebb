@@ -1079,7 +1079,8 @@ export class DatabaseStorage implements IStorage {
 
   async updateOrderStatus(id: number, status: string): Promise<Order | undefined> {
     return await db.transaction(async (tx) => {
-      const [currentOrder] = await tx.select().from(orders).where(eq(orders.id, id));
+      // Serialize status transitions so repeated/concurrent cancellations restore once.
+      const [currentOrder] = await tx.select().from(orders).where(eq(orders.id, id)).for("update");
       if (!currentOrder) return undefined;
 
       const wasDelivered = currentOrder.status === "Delivered";
@@ -1089,10 +1090,11 @@ export class DatabaseStorage implements IStorage {
       const isCanc = status === "Cancelled";
 
       if (wasCanc !== isCanc) {
-        const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, id));
+        const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, id)).orderBy(orderItems.productId, orderItems.id);
 
         for (const item of items) {
-          const [product] = await tx.select().from(products).where(eq(products.id, item.productId));
+          // Lock in product-id order to avoid lost updates and cross-order deadlocks.
+          const [product] = await tx.select().from(products).where(eq(products.id, item.productId)).for("update");
           if (!product) continue;
 
           const delta = isCanc ? item.quantity : -item.quantity;
@@ -1109,7 +1111,7 @@ export class DatabaseStorage implements IStorage {
 
           if (colorVariants.length > 0 && itemColor) {
             const variantIdx = colorVariants.findIndex((v) => v.name === itemColor);
-            if (variantIdx >= 0) {
+            if (variantIdx >= 0 && itemSize) {
               const vInv = colorVariants[variantIdx].sizeInventory || {};
               if (itemSize) {
                 vInv[itemSize] = Math.max(0, (vInv[itemSize] ?? 0) + delta);
@@ -1133,7 +1135,9 @@ export class DatabaseStorage implements IStorage {
               .where(eq(products.id, item.productId));
           } else {
             const sizeInv = (product.sizeInventory as Record<string, number>) || {};
-            if (itemSize) {
+            // Legacy products may carry an order size but track only total stock.
+            // Mirror checkout's deduction path instead of replacing that total.
+            if (itemSize && sizeInv[itemSize] !== undefined) {
               sizeInv[itemSize] = Math.max(0, (sizeInv[itemSize] ?? 0) + delta);
               const totalStock = Object.values(sizeInv).reduce((s, q) => s + q, 0);
               await tx
