@@ -168,7 +168,7 @@ export default function OrderConfirmation() {
     : [
         { icon: Package, ar: "نجهّز طلبك", en: "We prepare your order", dAr: "نراجع قطعك ونغلّفها بعناية.", dEn: "We check your pieces and wrap them with care." },
         { icon: Truck, ar: "نرسله إلى بابك", en: "It's on its way", dAr: "التوصيل خلال يومين من أيام العمل.", dEn: "Delivery within 2 business days." },
-        { icon: Shirt, ar: "استمتعي بإطلالتك", en: "Enjoy your look", dAr: "ونحب أن نسمع رأيك!", dEn: "We'd love to hear what you think!" },
+        { icon: Shirt, ar: "استمتعي بإطلالتك", en: "Enjoy your look", dAr: "وبنحب أن نسمع رأيك!", dEn: "We'd love to hear what you think!" },
       ];
 
   // Open at the very top, and stay there while the page settles (the order loads, iOS finishes its toolbar dance),
