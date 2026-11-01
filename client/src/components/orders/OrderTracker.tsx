@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { Check, ClipboardCheck, Clock, Package, PackageCheck, Store, Truck, XCircle } from "lucide-react";
+import { motion, useReducedMotion, type Transition } from "framer-motion";
+import { Check, ClipboardCheck, Clock, Home, PackageCheck, PackageOpen, ShoppingBag, Store, Truck, XCircle } from "lucide-react";
 import { useLanguage } from "@/i18n";
 
 /* The animated order-progress tracker. One component, used both on the "thank you" page right after ordering and
@@ -18,6 +18,15 @@ export function addBusinessDays(from: Date, days: number): Date {
   return d;
 }
 
+/* the small motion each icon makes while the order is at (or heading to) that step */
+const ICON_MOTION: Record<string, { animate: Record<string, number[]>; transition: Transition }> = {
+  pop:    { animate: { scale: [1, 1.18, 1] }, transition: { duration: 1.6, repeat: Infinity, repeatDelay: 1.2, ease: "easeInOut" } },
+  wiggle: { animate: { rotate: [0, -12, 12, -8, 8, 0], y: [0, -1, 0, -1, 0, 0] }, transition: { duration: 1.1, repeat: Infinity, repeatDelay: 0.9, ease: "easeInOut" } },
+  drive:  { animate: { x: [0, 2.5, 0, -1.5, 0], y: [0, -1, 0, -1, 0] }, transition: { duration: 0.9, repeat: Infinity, ease: "easeInOut" } },
+  bounce: { animate: { y: [0, -4, 0], scale: [1, 1.08, 1] }, transition: { duration: 1.0, repeat: Infinity, repeatDelay: 0.8, ease: "easeOut" } },
+  swing:  { animate: { rotate: [0, 10, -10, 6, -6, 0] }, transition: { duration: 1.4, repeat: Infinity, repeatDelay: 1.0, ease: "easeInOut" } },
+};
+
 type TrackedOrder = { status?: string | null; deliveryMethod?: string | null; createdAt?: string | Date | null };
 
 export default function OrderTracker({ order }: { order: TrackedOrder }) {
@@ -29,18 +38,20 @@ export default function OrderTracker({ order }: { order: TrackedOrder }) {
   const isPickup = order.deliveryMethod === "pickup";
   const cancelled = status === "Cancelled";
 
+  // Every step has its own icon (an open box for "preparing", a home for "delivered") and its own little motion,
+  // which plays on the step the order is at and on the step that is coming next.
   const steps = useMemo(() => isPickup
     ? [
-        { ar: "تم استلام الطلب", en: "Order received", icon: ClipboardCheck },
-        { ar: "قيد التجهيز", en: "Preparing", icon: Package },
-        { ar: "جاهز للاستلام", en: "Ready for pickup", icon: Store },
-        { ar: "تم الاستلام", en: "Collected", icon: PackageCheck },
+        { ar: "تم استلام الطلب", en: "Order received", icon: ClipboardCheck, motion: "pop" },
+        { ar: "قيد التجهيز", en: "Preparing", icon: PackageOpen, motion: "wiggle" },
+        { ar: "جاهز للاستلام", en: "Ready for pickup", icon: Store, motion: "bounce" },
+        { ar: "تم الاستلام", en: "Collected", icon: ShoppingBag, motion: "swing" },
       ]
     : [
-        { ar: "تم استلام الطلب", en: "Order received", icon: ClipboardCheck },
-        { ar: "قيد التجهيز", en: "Preparing", icon: Package },
-        { ar: "في الطريق إليك", en: "On the way", icon: Truck },
-        { ar: "تم التسليم", en: "Delivered", icon: PackageCheck },
+        { ar: "تم استلام الطلب", en: "Order received", icon: ClipboardCheck, motion: "pop" },
+        { ar: "قيد التجهيز", en: "Preparing", icon: PackageOpen, motion: "wiggle" },
+        { ar: "في الطريق إليك", en: "On the way", icon: Truck, motion: "drive" },
+        { ar: "تم التسليم", en: "Delivered", icon: Home, motion: "bounce" },
       ], [isPickup]);
   const reached = status === "Delivered" ? 3 : status === "OnTheWay" || status === "ReadyForPickup" ? 2 : 0;
 
@@ -98,7 +109,13 @@ export default function OrderTracker({ order }: { order: TrackedOrder }) {
                 done ? "bg-emerald-500 border-emerald-500 text-white" : inProgress ? "bg-background border-amber-400 text-amber-600" : "bg-background border-border text-muted-foreground"
               }`}>
                 {inProgress && !reduce && <span className="absolute inset-0 rounded-full border-2 border-amber-400 animate-ping opacity-60" aria-hidden />}
-                {done && i < reached ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                {done && i < reached ? <Check className="w-4 h-4" /> : (
+                  <motion.span className="flex" style={{ originX: 0.5, originY: 1 }}
+                    animate={!reduce && (done || inProgress) ? ICON_MOTION[s.motion].animate : undefined}
+                    transition={ICON_MOTION[s.motion].transition}>
+                    <Icon className="w-4 h-4" />
+                  </motion.span>
+                )}
               </span>
               <span className={`mt-2 text-[10px] sm:text-xs font-semibold leading-tight px-0.5 ${done ? "text-emerald-700 dark:text-emerald-400" : inProgress ? "text-amber-700" : "text-muted-foreground"}`}>
                 {ar ? s.ar : s.en}

@@ -186,7 +186,7 @@ export default function Checkout() {
   const wait = Math.max(0, SCENE_MIN_MS - (Date.now() - sceneStartRef.current));
   await new Promise((r) => setTimeout(r, wait));
   setSceneDone(true);
-  await new Promise((r) => setTimeout(r, 1300));
+  await new Promise((r) => setTimeout(r, 1900));
   };
   const [shippingRegion, setShippingRegion] = useState<string>("");
   const shippingRegionRef = useRef<HTMLDivElement>(null);

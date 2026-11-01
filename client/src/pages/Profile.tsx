@@ -660,7 +660,6 @@ export default function Profile() {
                       <div className="mt-4 flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                           <span className="rounded-full bg-background px-3 py-1.5">{language === "ar" ? "طلب اونلاين" : "Online Order"}</span>
-                          <span className="rounded-full bg-background px-3 py-1.5">{language === "ar" ? "تفاصيل جاهزة" : "Details available"}</span>
                         </div>
                         <Button variant="ghost" size="sm" className="h-11 rounded-full border border-border/70 px-4 text-xs font-semibold uppercase tracking-[0.18em] hover:bg-background sm:min-w-[170px] animate-shake-hint" onClick={() => { setSelectedOrderId(order.id); setShowDetails(true); }} data-testid={`button-view-details-${order.id}`}>
                           {t.profile.viewDetails} <ExternalLink className="w-3 h-3 ms-2" />
@@ -905,6 +904,7 @@ export default function Profile() {
                 {getStatusBadge(orderDetails.order.status)}
                 <span className="text-sm text-muted-foreground">
                   <span className="ltr-num">{orderDetails.order.createdAt ? format(new Date(orderDetails.order.createdAt), 'yyyy-MM-dd') : ''}</span>
+                  {orderDetails.order.createdAt && <span className="ltr-num ms-2 font-semibold text-foreground/80">{format(new Date(orderDetails.order.createdAt), 'hh:mm a')}</span>}
                 </span>
               </div>
 
