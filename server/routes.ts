@@ -32,6 +32,7 @@ import {
   PICKUP_REGION, PICKUP_ADDRESS_PLACEHOLDER, PICKUP_CITY_PLACEHOLDER,
   isGuestCheckoutEnabled, isOnlinePickupEnabled, guestOrderToken, verifyGuestOrderToken,
   generateUniquePickupCode, cleanGuestEmail, validateGuestInfo, verifyGuestProof, guestProofMatchesOrder,
+  canonicalPhone,
 } from "./checkoutHelpers";
 import { registerGuestVerifyRoutes } from "./guestVerify";
 
@@ -3320,6 +3321,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
       }
       let guestEmail: string | null = null;
       if (isGuest) {
+        // "+970 52…" is really "+972 52…": store the number the way it can actually be called
+        const canonicalGuestPhone = canonicalPhone((input.order as any).phone);
+        if (canonicalGuestPhone) (input.order as any).phone = canonicalGuestPhone;
         const guestError = validateGuestInfo({ ...(input.order as any) }, "delivery");
         if (guestError) return res.status(400).json({ message: guestError, code: "GUEST_INFO_INVALID" });
         // Guests get no discount codes and no loyalty credit — those belong to accounts.
@@ -4296,6 +4300,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
       let guestEmail: string | null = null;
       if (isGuest) {
+        const canonicalGuestPhone = canonicalPhone(order.phone);
+        if (canonicalGuestPhone) order.phone = canonicalGuestPhone;
         const guestError = validateGuestInfo(order, deliveryMethod);
         if (guestError) return res.status(400).json({ message: guestError, code: "GUEST_INFO_INVALID" });
         if (order.discountCode || Number((req.body as any)?.useCredit) > 0) {

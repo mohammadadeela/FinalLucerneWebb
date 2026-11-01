@@ -113,13 +113,27 @@ export async function isGuestSmsEnabled(): Promise<boolean> {
 export type GuestChannel = "sms" | "email";
 const PROOF_TTL_MS = 30 * 60 * 1000;
 
+/** The one correct form of a local mobile number, or null when it isn't one.
+ *  Customers pick +970 or +972 and type their 9 digits, and the two get mixed up all the time:
+ *  Palestinian mobiles (059…, 056…) work on +970; Israeli mobiles (050/052/053/054/055/058…) only on +972 —
+ *  "+970 52…" is rejected by the SMS provider as "not a valid phone number" (seen in the logs).
+ *  Accepted spellings: "+970591234567", "0591234567", "00972521234567", "+970 0591234567", "972-52-123-4567". */
+export function canonicalPhone(raw: unknown): string | null {
+  let d = typeof raw === "string" ? raw.replace(/\D/g, "") : "";
+  if (d.startsWith("00")) d = d.slice(2);
+  if (/^(970|972)0\d{9}$/.test(d)) d = d.slice(0, 3) + d.slice(4);   // "+970 0591…" (country code + the local 0)
+  if (/^05\d{8}$/.test(d)) d = (/^05[69]/.test(d) ? "970" : "972") + d.slice(1);
+  if (/^(970|972)5\d{8}$/.test(d)) {
+    if (d.startsWith("970") && !/^9705[69]/.test(d)) d = "972" + d.slice(3);   // Israeli mobile typed with +970
+    return `+${d}`;
+  }
+  return null;
+}
+
 /** Canonical form of a contact: "+9705…" for phones, lower-case address for emails; null if unusable. */
 export function normalizeGuestTarget(channel: GuestChannel, raw: unknown): string | null {
   const v = typeof raw === "string" ? raw.trim() : "";
-  if (channel === "sms") {
-    const digits = v.replace(/\D/g, "");
-    return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
-  }
+  if (channel === "sms") return canonicalPhone(v);
   const email = cleanGuestEmail(v);
   return email ? email.toLowerCase() : null;
 }
@@ -158,7 +172,8 @@ export function guestProofMatchesOrder(
 ): boolean {
   if (proof.channel === "sms") {
     const orderDigits = typeof order.phone === "string" ? order.phone.replace(/\D/g, "") : "";
-    return orderDigits.length > 0 && `+${orderDigits}` === proof.target;
+    const orderPhone = canonicalPhone(order.phone) ?? (orderDigits ? `+${orderDigits}` : "");
+    return orderPhone.length > 0 && orderPhone === proof.target;
   }
   const orderEmail = typeof order.guestEmail === "string" ? order.guestEmail.trim().toLowerCase() : "";
   return orderEmail === proof.target;

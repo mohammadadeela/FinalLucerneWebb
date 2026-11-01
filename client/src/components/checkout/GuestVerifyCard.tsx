@@ -21,6 +21,20 @@ import { clearPending, loadPending, savePending } from "@/lib/guest-checkout-mem
 
 export type GuestVerified = { proof: string; channel: "sms" | "email"; target: string };
 
+/** One id per checkout (per browser tab): the server counts the 2 allowed SMS codes against it, whatever number is typed. */
+function checkoutSessionId(): string {
+  const KEY = "lucerne.guestVerify.sid.v1";
+  try {
+    const existing = window.sessionStorage.getItem(KEY);
+    if (existing) return existing;
+    const id = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("");
+    window.sessionStorage.setItem(KEY, id);
+    return id;
+  } catch {
+    return "anon-" + Math.random().toString(36).slice(2, 14);
+  }
+}
+
 type Options = { guestCheckout: boolean; sms: boolean; email: boolean; cooldownSec: number; maxSends: number };
 
 function normPhone(p: string) {
@@ -78,15 +92,18 @@ export default function GuestVerifyCard({
   const [sentTo, setSentTo] = useState<string | null>(restored?.target ?? null);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"send" | "check" | null>(null);
-  const [error, setError] = useState<{ text: string; tone: "error" | "warn" } | null>(null);
+  const [error, setError] = useState<{ text: string; tone: "error" | "warn"; action?: "email" | "phone" } | null>(null);
   const [cooldownEndsAt, setCooldownEndsAt] = useState(restored?.cooldownEndsAt ?? 0);
   const [now, setNow] = useState(() => Date.now());
   const [sendsLeft, setSendsLeft] = useState<number | null>(restored?.sendsLeft ?? null);
+  // Both SMS codes are used up for this checkout: SMS is closed, email is the way.
+  const [smsExhausted, setSmsExhausted] = useState(restored?.channel === "sms" && restored?.sendsLeft === 0);
+  const [sid] = useState(checkoutSessionId);
   const codeRef = useRef<HTMLInputElement>(null);
   const secondsLeft = Math.max(0, Math.ceil((cooldownEndsAt - now) / 1000));
 
-  // Email-only when the admin switched SMS off, Twilio isn't configured, or SMS just failed.
-  const smsAvailable = smsOffered && !smsBroken;
+  // Email-only when the admin switched SMS off, Twilio isn't configured, SMS just failed, or both codes were used.
+  const smsAvailable = smsOffered && !smsBroken && !smsExhausted;
 
   // Switching method starts that method fresh (optionally with a message, e.g. "SMS is down, use email").
   const switchChannel = (next: "sms" | "email", carry: { text: string; tone: "error" | "warn" } | null = null) => {
@@ -144,6 +161,9 @@ export default function GuestVerifyCard({
     sms: ar ? "رسالة SMS" : "SMS",
     email: ar ? "البريد الإلكتروني" : "Email",
     smsDown: ar ? "غير متاح الآن" : "Unavailable now",
+    smsUsed: ar ? "استُخدمت الرسالتان" : "Both codes used",
+    useEmail: ar ? "استخدمي البريد الإلكتروني" : "Use email instead",
+    fixPhone: ar ? "تصحيح الرقم" : "Fix the number",
     send: ar ? "إرسال الرمز" : "Send code",
     resend: ar ? "إعادة إرسال الرمز" : "Resend code",
     resendIn: (s: number) => (ar ? `إعادة الإرسال خلال ${s} ث` : `Resend in ${s}s`),
@@ -162,17 +182,15 @@ export default function GuestVerifyCard({
     ready: ar ? "يمكنك الآن إتمام الطلب" : "You can now place your order",
   };
 
-  const errText = (data: any, status: number): { text: string; tone: "error" | "warn" } => {
+  type Err = { text: string; tone: "error" | "warn"; action?: "email" | "phone" };
+  const errText = (data: any, status: number): Err => {
     const m = data?.message as string | undefined;
     if (m === "otp_cooldown")
       return { text: ar ? `انتظري ${data.secondsLeft} ثانية قبل طلب رمز جديد` : `Please wait ${data.secondsLeft}s before asking for another code`, tone: "warn" };
     if (m === "otp_limit_reached")
-      return {
-        text: channel === "sms"
-          ? (ar ? "وصلتِ للحد الأقصى (رسالتان). يمكنك استخدام البريد الإلكتروني الآن." : "You've reached the limit (2 messages). You can use email right now.")
-          : (ar ? "وصلتِ للحد الأقصى (رسالتان). حاولي لاحقاً أو استخدمي الرسائل النصية." : "You've reached the limit (2 messages). Try again later or use SMS."),
-        tone: "warn",
-      };
+      return channel === "sms"
+        ? { text: ar ? "استُخدمت رسالتا SMS المسموحتان لهذا الطلب. أكملي التحقق عبر البريد الإلكتروني — يصلك الرمز خلال ثوانٍ." : "Both SMS codes for this order have been used. Finish verifying by email — the code arrives in seconds.", tone: "warn", action: "email" }
+        : { text: ar ? "وصلتِ للحد الأقصى لهذا البريد. حاولي بعد قليل." : "You've reached the limit for this email. Please try again shortly.", tone: "warn" };
     if (m === "sms_failed" || m === "sms_unavailable")
       return { text: ar ? "خدمة الرسائل النصية لا تعمل حالياً. يمكنك استخدام البريد الإلكتروني الآن 👇" : "SMS isn't working right now. You can use email right now 👇", tone: "warn" };
     if (m === "email_failed")
@@ -181,7 +199,11 @@ export default function GuestVerifyCard({
     if (m === "code_expired" || m === "no_code") return { text: ar ? "انتهت صلاحية الرمز. اطلبي رمزاً جديداً." : "That code has expired. Please request a new one.", tone: "error" };
     if (m === "too_many_attempts") return { text: ar ? "محاولات كثيرة خاطئة. اطلبي رمزاً جديداً لاحقاً." : "Too many wrong tries. Please request a new code later.", tone: "error" };
     if (m === "too_many_requests" || status === 429) return { text: ar ? "طلبات كثيرة. حاولي بعد قليل." : "Too many requests. Please try again shortly.", tone: "warn" };
-    if (m === "invalid_phone") return { text: ar ? "رقم الهاتف غير صحيح" : "That phone number isn't valid", tone: "error" };
+    if (m === "invalid_phone") {
+      const left = typeof data?.sendsLeft === "number" ? data.sendsLeft : null;
+      const tail = left === 0 ? (ar ? " استُخدمت رسالتا SMS — أكملي عبر البريد الإلكتروني." : " Both SMS codes are used — finish by email.") : left === 1 ? (ar ? " بقيت محاولة واحدة." : " One try left.") : "";
+      return { text: (ar ? "هذا الرقم لا يستقبل رسائل SMS. تأكدي من الرقم ومن المفتاح (+970 لجوّال وأوريدو، +972 للشركات الإسرائيلية)." : "This number can't receive SMS. Check the number and the code (+970 for Jawwal/Ooredoo, +972 for Israeli carriers).") + tail, tone: "error", action: left === 0 ? "email" : "phone" };
+    }
     if (m === "invalid_email") return { text: ar ? "البريد الإلكتروني غير صحيح" : "That email address isn't valid", tone: "error" };
     if (m === "guest_checkout_disabled") return { text: ar ? "الطلب كضيف غير متاح حالياً. سجّلي الدخول." : "Guest checkout isn't available right now. Please sign in.", tone: "error" };
     return { text: ar ? "حدث خطأ. حاولي مرة أخرى بعد قليل." : "Something went wrong. Please try again in a moment.", tone: "error" };
@@ -205,7 +227,7 @@ export default function GuestVerifyCard({
     if (!canSend || busy) return;
     setBusy("send");
     setError(null);
-    const r = await call("/api/guest/verify/send", channel === "sms" ? { channel, phone: phoneFull } : { channel, email: email.trim() });
+    const r = await call("/api/guest/verify/send", channel === "sms" ? { channel, phone: phoneFull, sid } : { channel, email: email.trim(), sid });
     setBusy(null);
     if (r.ok) {
       const ends = Date.now() + (r.data.cooldownSec ?? 60) * 1000;
@@ -218,17 +240,25 @@ export default function GuestVerifyCard({
       window.setTimeout(() => codeRef.current?.focus({ preventScroll: true }), 60);
       return;
     }
-    if (r.data?.message === "otp_cooldown") {
+    const m = r.data?.message;
+    if (m === "otp_cooldown" && sentTo === target) {
       // A code was already sent a moment ago: show the code step so they can use it.
       const ends = Date.now() + (r.data.secondsLeft ?? 60) * 1000;
-      setSentTo(target);
       setCooldownEndsAt(ends);
       setNow(Date.now());
       setSendsLeft(r.data.sendsLeft ?? null);
       remember(ends, r.data.sendsLeft ?? null);
     }
-    if (r.data?.message === "otp_limit_reached") setSendsLeft(0);
-    if (r.data?.message === "sms_failed" || r.data?.message === "sms_unavailable") {
+    if (typeof r.data?.sendsLeft === "number") setSendsLeft(r.data.sendsLeft);
+    if (channel === "sms" && (m === "otp_limit_reached" || (m === "invalid_phone" && r.data?.sendsLeft === 0))) {
+      // Both SMS codes are gone for this checkout: close SMS and walk them over to email.
+      setSmsExhausted(true);
+      const carry = errText(r.data, r.status);
+      switchChannel("email", carry);
+      if (!emailLooksValid) window.setTimeout(() => onFocusField("email"), 350);
+      return;
+    }
+    if (m === "sms_failed" || m === "sms_unavailable") {
       setSmsBroken(true); // hide SMS for now and move them to email
       switchChannel("email", errText(r.data, r.status)); // keep the explanation visible after the switch
       return;
@@ -305,8 +335,8 @@ export default function GuestVerifyCard({
 
               <div className="relative grid grid-cols-2 gap-1 p-1 rounded-xl bg-rose-100/60 dark:bg-rose-950/30" role="tablist">
                 {([
-                  { id: "sms", icon: MessageSquareText, label: T.sms, disabled: !smsAvailable },
-                  { id: "email", icon: Mail, label: T.email, disabled: false },
+                  { id: "sms", icon: MessageSquareText, label: T.sms, disabled: !smsAvailable, why: smsExhausted ? T.smsUsed : T.smsDown },
+                  { id: "email", icon: Mail, label: T.email, disabled: false, why: "" },
                 ] as const).map((t) => {
                   const Icon = t.icon;
                   const active = channel === t.id;
@@ -324,7 +354,7 @@ export default function GuestVerifyCard({
                       data-testid={`gv-tab-${t.id}`}
                     >
                       <span className="flex items-center gap-1.5"><Icon className="w-4 h-4" />{t.label}</span>
-                      {t.disabled && <span className="text-[10px] font-medium opacity-80">{T.smsDown}</span>}
+                      {t.disabled && <span className="text-[10px] font-medium opacity-80">{t.why}</span>}
                     </button>
                   );
                 })}
@@ -427,7 +457,23 @@ export default function GuestVerifyCard({
                   data-testid="gv-error"
                 >
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-px" />
-                  <span>{error.text}</span>
+                  <span className="flex-1 min-w-0">
+                    {error.text}
+                    {error.action && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (error.action === "email") { if (channel !== "email") switchChannel("email", error); onFocusField("email"); }
+                          else onFocusField("phone");
+                        }}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 text-xs font-semibold shadow-sm"
+                        data-testid={error.action === "email" ? "gv-go-email" : "gv-go-phone"}
+                      >
+                        {error.action === "email" ? <Mail className="w-3.5 h-3.5" /> : <PencilLine className="w-3.5 h-3.5" />}
+                        {error.action === "email" ? T.useEmail : T.fixPhone}
+                      </button>
+                    )}
+                  </span>
                 </div>
               )}
             </div>

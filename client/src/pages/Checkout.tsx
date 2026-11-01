@@ -32,6 +32,15 @@ function savedInfoKey(userId: number) {
 
 const PHONE_PREFIXES = ["+970", "+972"];
 
+/* The number in the one form it can actually be called / texted on. Customers mix the two codes up all the time:
+   Palestinian mobiles (059…, 056…) live on +970, Israeli mobiles (050/052/053/054/055/058…) only on +972, so a
+   "+970 52…" is quietly sent as "+972 52…" (the server applies exactly the same rule). */
+function canonicalPhone(prefix: string, digits: string): string {
+  const d = digits.replace(/\D/g, "");
+  if (prefix === "+970" && /^5[0-4578]/.test(d)) return `+972${d}`;
+  return `${prefix}${d}`;
+}
+
 function splitStoredPhone(stored: string): { prefix: string; digits: string } {
   const trimmed = (stored || "").trim();
   for (const p of PHONE_PREFIXES) {
@@ -686,14 +695,51 @@ export default function Checkout() {
   return true;
   };
 
+  /** The first delivery detail that is still missing (name / city / address), focused; or null when all are fine. */
+  const focusMissingField = (code?: string): { title: string; description: string } | null => {
+    const ar = language === "ar";
+    const bad = (id: string, title: string, description: string) => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => el?.focus({ preventScroll: true }), 300);
+      return { title, description };
+    };
+    const name = formData.fullName.trim(), city = formData.city.trim(), address = formData.address.trim();
+    if (code === "guest_name_required" || (!code && name.length < 2)) return bad("fullName", ar ? "الاسم مطلوب" : "Name required", ar ? "اكتبي اسمك الكامل" : "Please enter your full name");
+    if (deliveryMethod === "delivery") {
+      if (code === "guest_city_required" || (!code && city.length < 2)) return bad("city", ar ? "المدينة مطلوبة" : "City required", ar ? "اكتبي اسم المدينة" : "Please enter your city");
+      if (code === "guest_address_required" || (!code && address.length < 3)) return bad("address", ar ? "العنوان مطلوب" : "Address required", ar ? "اكتبي عنوان التوصيل بالتفصيل" : "Please enter your delivery address");
+    }
+    if (code === "guest_phone_invalid") return bad("phone", ar ? "رقم الهاتف غير صحيح" : "Invalid phone number", ar ? "تأكدي من رقم الهاتف" : "Please check the phone number");
+    if (code === "guest_email_invalid") return bad("guest-email", ar ? "البريد الإلكتروني غير صحيح" : "Invalid email", ar ? "تأكدي من البريد الإلكتروني" : "Please check the email address");
+    return null;
+  };
+
+  /** Turns the server's guest-details code (e.g. "guest_address_required") into a clear message + focused field. */
+  const handleGuestInfoError = (err: any): boolean => {
+    const m = String(err?.message || "");
+    if (!m.startsWith("guest_") || m.startsWith("guest_verification")) return false;
+    setStripeLoading(false);
+    const ar = language === "ar";
+    if (m === "guest_discount_not_allowed") {
+      toast({ title: ar ? "الخصم للأعضاء فقط" : "Discounts are for members", description: ar ? "سجّلي الدخول لاستخدام الكود أو الرصيد." : "Sign in to use a code or credit.", variant: "destructive" });
+      return true;
+    }
+    const missing = focusMissingField(m);
+    toast(missing
+      ? { title: missing.title, description: missing.description, variant: "destructive" }
+      : { title: ar ? "تحقّقي من بياناتك" : "Please check your details", description: ar ? "بعض بيانات التوصيل غير مكتملة." : "Some delivery details are incomplete.", variant: "destructive" });
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Build full international phone numbers early (used for profile save + order)
     const phoneDigits = formData.phone.replace(/\D/g, "");
     const phone2Digits = formData.phone2.replace(/\D/g, "");
-    const fullPhone = `${phonePrefix}${phoneDigits}`;
-    const fullPhone2 = formData.phone2 ? `${phone2Prefix}${phone2Digits}` : "";
+    const fullPhone = canonicalPhone(phonePrefix, phoneDigits);
+    const fullPhone2 = formData.phone2 ? canonicalPhone(phone2Prefix, phone2Digits) : "";
 
     /* Always persist info for faster future checkout, keyed by userId so different
        accounts on the same browser never overwrite each other's saved details. */
@@ -758,6 +804,14 @@ export default function Checkout() {
         variant: "destructive",
       });
       phone2InputRef.current?.focus();
+      return;
+    }
+
+    // The server rejects a name under 2 letters and, for delivery, a city under 2 or an address under 3 letters
+    // (a space passes the browser's "required"). Catch it here, say which field, and focus it.
+    const missing = focusMissingField();
+    if (missing) {
+      toast({ title: missing.title, description: missing.description, variant: "destructive" });
       return;
     }
 
@@ -853,7 +907,7 @@ export default function Checkout() {
         window.location.href = url;
         }
       } catch (err: any) {
-      if (handleGuestVerifyError(err) || handlePickupError(err)) return;
+      if (handleGuestVerifyError(err) || handleGuestInfoError(err) || handlePickupError(err)) return;
       if (err.message === "already_used_by_user") {
       toast({
       title: language === "ar" ? "لا يمكن استخدام الكود" : "Code can't be used",
@@ -899,7 +953,7 @@ export default function Checkout() {
       const guestToken = (order as any).guestToken as string | undefined;
       setLocation(guestToken ? `/order-confirmation/${order.id}?t=${guestToken}` : `/order-confirmation/${order.id}`);
     } catch (err: any) {
-    if (handleGuestVerifyError(err) || handlePickupError(err)) return;
+    if (handleGuestVerifyError(err) || handleGuestInfoError(err) || handlePickupError(err)) return;
     if (err.code === "OUT_OF_STOCK" && err.outOfStock?.length > 0) {
         const trulySoldOut = err.outOfStock.filter((oos: any) => oos.reason === "sold_out" || !oos.available || oos.available <= 0);
         const insufficientStock = err.outOfStock.filter((oos: any) => oos.reason === "insufficient_stock" && oos.available > 0);
@@ -951,7 +1005,7 @@ export default function Checkout() {
   const isPending = createOrder.isPending || stripeLoading;
 
   // Guests can't place an order until their phone/email is confirmed with a one-time code.
-  const guestPhoneFull = `${phonePrefix}${formData.phone.replace(/\D/g, "")}`;
+  const guestPhoneFull = canonicalPhone(phonePrefix, formData.phone);
   const guestLocked = !user && guestCheckoutEnabled && !isGuestContactVerified(guestVerified, guestPhoneFull, guestEmail);
   const focusGuestField = (field: "phone" | "email") => {
     const el = document.getElementById(field === "phone" ? "phone" : "guest-email") as HTMLInputElement | null;

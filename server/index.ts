@@ -160,6 +160,11 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false, limit: "25mb" }));
+// Bots probe with paths like "/%c0" that can't be decoded; the router would throw. Answer 400 and move on.
+app.use((req, res, next) => {
+  try { decodeURIComponent(req.path); } catch { return res.status(400).type("text").send("Bad request"); }
+  next();
+});
 
 // Serve locally-uploaded product images from the /uploads directory
 const uploadsDir = path.resolve(process.cwd(), "uploads");
