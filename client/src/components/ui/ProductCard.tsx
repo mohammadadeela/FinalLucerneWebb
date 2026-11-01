@@ -212,7 +212,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
   return (
     <div
-      className={`group block ${isSoldOut ? "cursor-not-allowed [&_*]:cursor-not-allowed" : "cursor-pointer"}`}
+      className="group block cursor-pointer"
       data-testid={`card-product-${product.id}`}
       onMouseEnter={() => { setIsCardHovered(true); handlePrefetchIntent(); }}
       onMouseLeave={() => setIsCardHovered(false)}
@@ -241,7 +241,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           {isSoldOut && (
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-muted/25 backdrop-brightness-90 px-4 pointer-events-none">
               <span
-                className="rounded-full border border-border bg-background px-3 py-1.5 text-center text-xs font-medium leading-none tracking-wide text-foreground"
+                className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-center text-xs font-medium leading-none tracking-wide text-white"
                 data-testid={`badge-sold-out-${product.id}`}
               >
                 Sold out
