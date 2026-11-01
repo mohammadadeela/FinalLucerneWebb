@@ -2432,7 +2432,7 @@ isThumbnail
 </span>
 </div>
 {/* one scrolling row of swatches, each with its colour name underneath; the swatches are a thumb-sized 48px */}
-<div className="flex gap-3 pb-2 pt-1 -mx-4 px-4 overflow-x-auto scrollbar-hide snap-x" role="radiogroup" aria-label={t.product.color}>
+<div className="flex items-start gap-3 pt-1.5 pb-2.5 -mx-4 px-4 overflow-x-auto scrollbar-hide snap-x" role="radiogroup" aria-label={t.product.color}>
 {variants.map((v, idx) => {
 const name = translateColorName(v.name, isAr ? "ar" : "en");
 const selected = selectedColorIdx === idx;
@@ -2470,7 +2470,7 @@ draggable={false}
 </span>
 )}
 </span>
-<span className={`w-full text-center text-[11px] leading-tight line-clamp-2 ${selected ? "font-bold text-foreground" : "text-muted-foreground"}`}>{name}</span>
+<span className={`w-full text-center text-[11px] leading-[1.4] break-words pb-0.5 ${selected ? "font-bold text-foreground" : "text-muted-foreground"}`}>{name}</span>
 </button>
 );
 })}
@@ -2603,7 +2603,7 @@ draggable={false}
 </span>
 )}
 </span>
-<span className={`w-full text-center text-xs leading-tight line-clamp-2 transition-colors ${selected ? "font-bold text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>{name}</span>
+<span className={`w-full text-center text-xs leading-[1.4] break-words pb-0.5 transition-colors ${selected ? "font-bold text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>{name}</span>
 </button>
 );
 })}
@@ -2712,194 +2712,22 @@ sizeInv[selectedSize] !== undefined &&
 sizeInv[selectedSize] >= 1 &&
 sizeInv[selectedSize] <= 2 && (
 <div
-className="flex items-center gap-3 rounded-xl border border-amber-200/80 dark:border-amber-700/50 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 px-3 py-2.5 mb-4 shadow-sm"
+className="inline-flex max-w-full items-center gap-2 rounded-full border border-rose-200/80 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-950/30 ps-1.5 pe-3 py-1 mb-4 text-xs"
 role="status"
 data-testid="text-low-stock-urgency"
 >
-<span className="relative w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-<span className="absolute inset-0 rounded-full bg-amber-300/50 animate-ping" aria-hidden />
-<Flame className="relative w-4 h-4" />
+<span className="relative w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+<span className="absolute inset-0 rounded-full bg-rose-300/40 animate-ping" aria-hidden />
+<Flame className="relative w-3.5 h-3.5" />
 </span>
-<div className="min-w-0 leading-tight">
-<p className="text-sm font-bold text-amber-900 dark:text-amber-200 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-<span>
+<span className="min-w-0 truncate text-rose-900 dark:text-rose-200">
+<span className="font-bold">
 {isAr
-? `باقي ${sizeInv[selectedSize] === 1 ? "قطعة واحدة" : "قطعتان"} فقط`
-: `Only ${sizeInv[selectedSize]} left`}
+? `باقي ${sizeInv[selectedSize] === 1 ? "قطعة واحدة" : "قطعتان"} فقط بمقاس ${selectedSize}`
+: `Only ${sizeInv[selectedSize]} left in size ${selectedSize}`}
 </span>
-<span className="inline-flex items-center rounded-full bg-white/80 dark:bg-black/30 border border-amber-200 dark:border-amber-700/60 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:text-amber-300">
-{isAr ? `مقاس ${selectedSize}` : `Size ${selectedSize}`}
+<span className="text-rose-700/80 dark:text-rose-300/80">{isAr ? " · ينفد بسرعة" : " · selling fast"}</span>
 </span>
-</p>
-<p className="text-[11px] text-amber-700/90 dark:text-amber-300/80 mt-0.5">
-{isAr ? "ينفد بسرعة — اطلبيها قبل ما تخلص" : "Selling fast — order it before it's gone"}
-</p>
-</div>
-</div>
-)}
-
-{/* Qty + Add to cart — min 44px touch targets */}
-<div className="flex items-center gap-2.5 mb-4">
-{!isSoldOut && (
-<div className="flex items-center border border-border rounded-full overflow-hidden bg-background shrink-0">
-<button
-onClick={() => setQuantity(Math.max(1, quantity - 1))}
-disabled={!canAdd}
-className="w-12 h-14 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-data-testid="button-qty-minus"
->
-<Minus className="w-3.5 h-3.5" />
-</button>
-<span
-className="w-8 text-center text-sm font-semibold select-none"
-data-testid="text-quantity"
->
-{quantity}
-</span>
-<button
-onClick={() =>
-setQuantity(Math.min(remainingStock, quantity + 1))
-}
-disabled={!canAdd || quantity >= remainingStock}
-className="w-12 h-14 flex items-center justify-center hover:bg-secondary transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-data-testid="button-qty-plus"
->
-<Plus className="w-3.5 h-3.5" />
-</button>
-</div>
-)}
-
-<Button
-onClick={handleAddToCart}
-className="flex-1 h-14 rounded-full uppercase tracking-widest text-xs sm:text-sm font-semibold gap-2 shadow-sm"
-disabled={!canAdd}
-data-testid="button-add-to-cart"
->
-{isSoldOut ? (
-t.product.soldOut
-) : canAdd ? (
-<>
-<ShoppingBag className="w-4 h-4 shrink-0" />
-{t.product.addToCart}
-</>
-) : hasSizes && !selectedSize ? (
-t.product.selectSize
-) : cartQtyForThis > 0 &&
-availableStock > 0 &&
-remainingStock === 0 ? (
-language === "ar" ? (
-`الحد الأقصى (${cartQtyForThis})`
-) : (
-`Max in cart (${cartQtyForThis})`
-)
-) : (
-t.product.outOfStock
-)}
-</Button>
-</div>
-
-<div className="flex items-center gap-2">
-{product && (
-<button
-onClick={() => {
-if (!user) {
-toast({
-title: t.wishlist.loginRequired,
-variant: "destructive",
-});
-return;
-}
-toggle(product.id, colorName ?? null);
-}}
-className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-full border text-xs sm:text-sm font-medium uppercase tracking-widest transition-all duration-200 ${
-isWishlisted(product.id)
-? "border-rose-400 text-rose-500 bg-rose-50 dark:bg-rose-950/30"
-: "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
-}`}
-data-testid="button-wishlist-product"
->
-<Heart
-className={`w-4 h-4 shrink-0 transition-all duration-200 ${isWishlisted(product.id) ? "fill-rose-500 stroke-rose-500" : "fill-transparent"}`}
-strokeWidth={1.5}
-/>
-{isWishlisted(product.id)
-? t.wishlist.removeFromWishlist
-: t.wishlist.addToWishlist}
-</button>
-)}
-
-<button
-onClick={() => {
-if (navigator.share) {
-navigator
-.share({
-title: product?.name || "",
-url: window.location.href,
-})
-.catch(() => {});
-} else {
-navigator.clipboard
-.writeText(window.location.href)
-.then(() => {
-setShareCopied(true);
-setTimeout(() => setShareCopied(false), 2500);
-});
-}
-}}
-className={`w-14 h-14 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-shareCopied
-? "border-green-500 text-green-600 bg-green-50"
-: "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
-}`}
-title={isAr ? "مشاركة" : "Share"}
-data-testid="button-share"
->
-{shareCopied ? (
-<Check className="w-4 h-4" />
-) : navigator.share ? (
-<Share className="w-4 h-4" />
-) : (
-<Link2 className="w-4 h-4" />
-)}
-</button>
-</div>
-
-{!isSoldOut && selectedSize && availableStock > 0 && (
-<p
-className="text-xs text-muted-foreground mb-4"
-data-testid="text-size-stock"
->
-{t.product.availableInSize} {selectedSize}: {availableStock}{" "}
-{t.product.pieces}
-</p>
-)}
-
-<div className="border-t border-border pt-6 mt-5 space-y-4 text-sm">
-<div className="flex justify-between">
-<span className="text-muted-foreground">
-{t.product.availability}
-</span>
-<span
-className={isSoldOut ? "font-semibold text-foreground" : availableStock > 0 ? "text-green-600" : "text-destructive"}
-data-testid="text-availability"
->
-{isSoldOut
-? t.product.soldOut
-: hasSizes && !selectedSize
-? t.product.selectSizeFirst
-: availableStock > 0
-? t.product.inStock
-: t.product.outOfStock}
-</span>
-</div>
-<div className="flex justify-between">
-<span className="flex items-center gap-1.5 text-muted-foreground">
-<Truck className="w-3.5 h-3.5 flex-shrink-0" />
-{t.product.shipping}
-</span>
-<span>{t.product.freeDelivery}</span>
-</div>
-</div>
 </div>
 </div>
 
