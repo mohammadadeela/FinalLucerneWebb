@@ -46,14 +46,15 @@ function Confetti() {
   );
 }
 
-/* The success seal: the same scalloped Lucerne seal the checkout scene glides into this spot — it arrives rose and
-   turns jade green as a ring traces around it, with a small burst of brand-coloured sparks. */
+/* The success seal: the checkout scene glides its rose seal into exactly this spot, so here it is already in place
+   and simply turns jade green as a ring traces around it, with a small burst of brand-coloured sparks. */
 const SPARKS = ["#e0587c", "#f0c987", "#3ee0a0", "#c9a6d8", "#0ea371", "#f4a9a0", "#e0587c", "#f0c987", "#3ee0a0", "#0ea371"];
 
 function AnimatedCheck() {
   const reduce = useReducedMotion();
   return (
     <div className="relative mx-auto w-28 h-28" data-testid="success-check">
+      <motion.span className="absolute inset-2 rounded-full" aria-hidden initial={{ boxShadow: "0 18px 40px -14px rgba(224,88,124,0.55)" }} animate={{ boxShadow: "0 18px 40px -14px rgba(14,163,113,0.55)" }} transition={{ delay: 0.55, duration: 0.6 }} />
       {/* ripples, after the colour has turned */}
       {!reduce && [0, 1].map((i) => (
         <motion.span key={i} className="absolute inset-0 rounded-full border-2" style={{ borderColor: JADE[0] }} aria-hidden
@@ -68,16 +69,15 @@ function AnimatedCheck() {
           transition={{ pathLength: { delay: 0.7, duration: 0.5 }, opacity: { delay: 0.7, duration: 0.3 }, rotate: { duration: 14, repeat: Infinity, ease: "linear" } }} style={{ originX: 0.5, originY: 0.5 }} />
       </svg>
       {/* the seal: rose underneath, jade fades in over it */}
-      <motion.div className="absolute inset-0" initial={reduce ? false : { scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 280, damping: 18 }}>
+      <div className="absolute inset-0">
         <SealShape id="confirm-seal-rose" colors={ROSE} className="absolute inset-0 w-full h-full" />
         <motion.div className="absolute inset-0" initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55, duration: 0.5 }}>
           <SealShape id="confirm-seal-jade" colors={JADE} className="absolute inset-0 w-full h-full" />
         </motion.div>
         <motion.span className="absolute -inset-1 rounded-full" aria-hidden initial={{ opacity: 0 }} animate={reduce ? undefined : { opacity: [0, 0.35, 0] }} transition={{ delay: 1.2, duration: 2.2, repeat: Infinity, repeatDelay: 1 }}
           style={{ background: "radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 70%)" }} />
-        <SealTick className="absolute inset-0 w-full h-full" delay={0.05} duration={0.3} draw={!reduce} />
-      </motion.div>
-      <motion.span className="absolute inset-2 rounded-full -z-10" aria-hidden initial={{ boxShadow: "0 18px 40px -14px rgba(224,88,124,0.55)" }} animate={{ boxShadow: "0 18px 40px -14px rgba(14,163,113,0.55)" }} transition={{ delay: 0.55, duration: 0.6 }} />
+        <SealTick className="absolute inset-0 w-full h-full" draw={false} />
+      </div>
       {/* sparks burst out as the colour turns */}
       {!reduce && SPARKS.map((c, i) => {
         const a = (i / SPARKS.length) * Math.PI * 2 - Math.PI / 2; const d = 62 + (i % 2) * 14;
@@ -178,18 +178,22 @@ export default function OrderConfirmation() {
         {order && <Confetti />}
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-16 w-full">
           {isLoading ? (
-            <div className="animate-pulse space-y-6 py-6">
-              <div className="mx-auto w-24 h-24 rounded-full bg-muted" />
+            <div className="space-y-6">
+              {/* the seal is already here while the order loads: the checkout scene just glided its seal to this exact spot */}
+              <div className="relative mx-auto w-28 h-28" aria-hidden><SealShape id="loading-seal" colors={ROSE} className="absolute inset-0 w-full h-full" /><SealTick className="absolute inset-0 w-full h-full" draw={false} /></div>
+              <div className="animate-pulse space-y-6">
               <div className="mx-auto h-8 w-64 bg-muted rounded" />
               <div className="mx-auto h-4 w-80 bg-muted rounded" />
               <div className="bg-muted rounded-2xl h-56 w-full" />
               <div className="bg-muted rounded-2xl h-32 w-full" />
+              </div>
             </div>
           ) : orderDetails && order ? (
             <div className="space-y-8">
               {/* Celebration */}
-              <motion.div className="text-center" {...fadeUp(0, reduce)}>
+              <div className="text-center">
                 <AnimatedCheck />
+                <motion.div {...fadeUp(0, reduce)}>
                 <h1 className="font-display text-3xl sm:text-5xl mt-6 mb-3" data-testid="text-confirmation-title">{t.orderConfirmation.title}</h1>
                 {firstName && (
                   <p className="text-base sm:text-lg font-semibold" data-testid="text-confirmation-thanks">
@@ -201,7 +205,8 @@ export default function OrderConfirmation() {
                     ? (ar ? "احتفظي برقم طلبك ورابط هذه الصفحة لمتابعة طلبك" : "Keep your order number and this page's link to follow your order")
                     : t.orderConfirmation.emailSent}
                 </p>
-              </motion.div>
+                </motion.div>
+              </div>
 
               {/* Tracker */}
               <motion.section {...fadeUp(1, reduce)} className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm" data-testid="order-tracker" aria-label={ar ? "حالة الطلب" : "Order progress"}>

@@ -4,18 +4,18 @@ import { useLanguage } from "@/i18n";
 import { ROSE, SealShape, SealTick } from "@/components/ui/success-seal";
 
 /* The moment after "place order": one rose line draws the story on a white sheet —
-     a bag (your pieces) → a parcel, which gets the "LUCERNE · تم التأكيد" stamp → a van / the boutique / a shield
+     a bag (your pieces) → a parcel → a van / the boutique / a shield
      → a ring that becomes the Lucerne seal with a check.
    The seal then glides up to exactly where the confirmation page shows its own seal, which starts rose and turns
    green, so the two screens read as one motion.
 
    Contract with the checkout page (unchanged): `open` while the order is being placed, `done` once it succeeded;
    the page keeps the scene up for a minimum time and removes it at once if the order fails.
-   data-phase: 0 bag · 1 parcel + stamp · 2 on its way (loops until the server confirms) · 3 done. */
+   data-phase: 0 bag · 1 parcel · 2 on its way (loops until the server confirms) · 3 done. */
 
 type Method = "cod" | "card" | "pickup";
 
-const T1 = 1.0, T2 = 2.05;                 // when the parcel and the last icon start drawing
+const T1 = 1.0, T2 = 1.8;                  // when the parcel and the last icon start drawing
 const ACCENT = "#d6436d";
 const SERIF = "var(--font-display, 'Cormorant Garamond'), Georgia, serif";
 const STAGE = 280;                         // px; the ring is r=64 of a 320 box, so the seal (112 px) covers it exactly
@@ -70,8 +70,8 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
   const phase = done ? 3 : stage;
   const pickup = method === "pickup";
   const captions = ar
-    ? ["نستلم طلبك…", "نجهّزه ونختمه…", pickup ? "نحضّره للاستلام…" : method === "card" ? "نحوّلك لدفع آمن…" : "في الطريق إليك…", "تم الطلب بنجاح"]
-    : ["Receiving your order…", "Packing and stamping…", pickup ? "Getting it ready to collect…" : method === "card" ? "Taking you to secure payment…" : "On its way to you…", "Order placed"];
+    ? ["نستلم طلبك…", "نجهّز طلبك…", pickup ? "نحضّره للاستلام…" : method === "card" ? "نحوّلك لدفع آمن…" : "في الطريق إليك…", "تم الطلب بنجاح"]
+    : ["Receiving your order…", "Packing your order…", pickup ? "Getting it ready to collect…" : method === "card" ? "Taking you to secure payment…" : "On its way to you…", "Order placed"];
 
   return (
     <div
@@ -96,25 +96,10 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
               d="M118 150 V134 a42 42 0 0 1 84 0 V150 M104 150 H216 L227 230 Q228 238 220 238 H100 Q92 238 93 230 Z" />
           )}
 
-          {/* 2 · the parcel, which gets the stamp */}
-          {stage >= 1 && !done && (<>
-            <Stroke reduce={reduce} at={0.05} out={1.05} d="M96 150 L160 120 L224 150 V222 L160 252 L96 222 Z M96 150 L160 180 L224 150 M160 180 V252" />
-            <Stroke reduce={reduce} at={0.3} out={0.8} strokeWidth={2.5} d="M128 135 L192 165" />
-            {/* the stamp slams on, the parcel jolts */}
-            <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ opacity: reduce ? 1 : 0, scale: reduce ? 1 : 2.2, rotate: -12 }}
-              animate={{ opacity: [0, 1, 1, 1, 0], scale: [2.2, 0.96, 1, 1, 0.9], rotate: -12 }}
-              transition={tr(reduce, { delay: 0.5, duration: 0.95, times: [0, 0.2, 0.3, 0.75, 1], ease: ["easeIn", "easeOut", "linear", "easeIn"] })}>
-              <g transform="translate(160 186)" opacity=".92">
-                <rect x="-74" y="-28" width="148" height="56" rx="8" fill="#fff" fillOpacity=".85" stroke={ACCENT} strokeWidth="4" />
-                <rect x="-68" y="-22" width="136" height="44" rx="5" fill="none" stroke={ACCENT} strokeWidth="1.5" />
-                <text y="-4" textAnchor="middle" fontSize="15" fontWeight="600" letterSpacing="4" fill={ACCENT} style={{ fontFamily: SERIF }}>LUCERNE</text>
-                <text y="14" textAnchor="middle" fontSize="12" fontWeight="700" fill={ACCENT}>{ar ? "تم التأكيد ✓" : "CONFIRMED ✓"}</text>
-              </g>
-            </motion.g>
-            {!reduce && [[100, 150, 0.55], [224, 228, 0.6]].map(([cx, cy, d], i) => (
-              <motion.circle key={i} cx={cx} cy={cy} r="10" fill="none" stroke="#f08aa8" strokeWidth="2" style={{ originX: 0.5, originY: 0.5 }} initial={{ opacity: 0, scale: 0.3 }} animate={{ opacity: [0.7, 0], scale: [0.3, 1.8] }} transition={{ delay: d, duration: 0.5, ease: "easeOut" }} />
-            ))}
-          </>)}
+          {/* 2 · the parcel */}
+          {stage >= 1 && !done && (
+            <Stroke reduce={reduce} at={0.05} out={0.75} d="M96 150 L160 120 L224 150 V222 L160 252 L96 222 Z M96 150 L160 180 L224 150 M160 180 V252" />
+          )}
 
           {/* 3 · on its way: the van, the boutique, or the shield — it keeps bobbing until the server says yes */}
           {stage >= 2 && (
