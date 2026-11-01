@@ -56,7 +56,8 @@ export default function OrderTracker({ order }: { order: TrackedOrder }) {
         { ar: "في الطريق إليك", en: "On the way", icon: Truck, motion: "drive" },
         { ar: "تم التسليم", en: "Delivered", icon: Home, motion: "bounce" },
       ], [isPickup]);
-  const reached = status === "Delivered" ? 3 : status === "OnTheWay" || status === "ReadyForPickup" ? 2 : 0;
+  // the step the order is AT: preparing while pending, on the way / ready once dispatched, delivered at the end
+  const current = status === "Delivered" ? 3 : status === "OnTheWay" || status === "ReadyForPickup" ? 2 : 1;
 
   if (cancelled) {
     return (
@@ -89,18 +90,15 @@ export default function OrderTracker({ order }: { order: TrackedOrder }) {
   }
   const FooterIcon = footer.icon;
 
-  // where the order is right now: the step after the last finished one, or the last step once it is delivered
-  const current = reached === 3 ? 3 : reached + 1;
-
   return (
     <div data-testid="order-progress">
       <ol className="relative flex items-start justify-between">
         {steps.map((s, i) => {
           const Icon = s.icon;
-          const done = i <= reached;
           const active = i === current;
+          const done = i < current || (active && status === "Delivered");
           const finished = done && !active;
-          const flowing = !reduce && i === current - 1 && current < 3;   // the line into the current step
+          const flowing = !reduce && i === current - 1 && status !== "Delivered";   // the line into the current step
           return (
             <li key={i} className="relative flex-1 flex flex-col items-center text-center" data-testid={`tracker-step-${i}`} data-state={active ? "active" : done ? "done" : "todo"}>
               {i < steps.length - 1 && (
@@ -108,10 +106,10 @@ export default function OrderTracker({ order }: { order: TrackedOrder }) {
                   <motion.span
                     className="absolute inset-y-0 start-0 bg-emerald-500"
                     initial={reduce ? false : { width: 0 }}
-                    animate={{ width: i < reached ? "100%" : "0%" }}
+                    animate={{ width: i < current - 1 || status === "Delivered" ? "100%" : "0%" }}
                     transition={{ delay: 0.5 + i * 0.2, duration: 0.6 }}
                   />
-                  {(flowing || (reduce && i === current - 1 && current < 3)) && (
+                  {(flowing || (reduce && i === current - 1 && status !== "Delivered")) && (
                     <motion.span className="absolute inset-y-0 start-0 w-[200%]" aria-hidden
                       style={{ backgroundImage: "repeating-linear-gradient(90deg, #f59e0b 0 8px, transparent 8px 16px)", opacity: 0.9 }}
                       animate={reduce ? undefined : { x: ar ? [0, 16] : [-16, 0] }} transition={{ duration: 0.7, repeat: Infinity, ease: "linear" }} />

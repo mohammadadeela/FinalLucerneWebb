@@ -86,7 +86,6 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
       style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <motion.div className="absolute top-8 sm:top-10 inset-x-0 flex flex-col items-center gap-2 select-none" aria-hidden initial={reduce ? false : { opacity: 0, y: -6 }} animate={{ opacity: done ? 0 : 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <span className="w-10 h-10 rounded-full flex items-center justify-center text-[#2a2a2f] text-lg font-bold shadow-md" style={{ fontFamily: SERIF, background: "linear-gradient(135deg,#f6e2a6 0%,#cfa355 55%,#f1d68e 100%)" }}>L</span>
         <span className="text-xl sm:text-2xl tracking-[0.3em] uppercase text-neutral-900 leading-none" style={{ fontFamily: SERIF, fontWeight: 600 }}>Lucerne</span>
         <span className="text-[10px] sm:text-[11px] tracking-[0.45em] uppercase text-neutral-500 leading-none" style={{ fontFamily: SERIF }}>Boutique</span>
       </motion.div>
