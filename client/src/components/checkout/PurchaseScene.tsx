@@ -1,28 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { CalendarDays, Check, Package, ShieldCheck, Store, Truck } from "lucide-react";
+import { CalendarDays, Check, ClipboardList, Package, ShieldCheck, Store, Truck } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { addBusinessDays } from "@/components/orders/OrderTracker";
 
 /* The moment after "place order", told as a short premium story in three chapters:
-     0. The boutique  — the Lucerne Boutique storefront; its doors open and we walk in
-     1. We prepare    — behind the packing table our assistant packs the cart's pieces into the signature black
-                        box, ties the gold ribbon, presses the wax seal and sticks the QR delivery label on,
-                        which is then scanned
-     2. Handover      — a rose Lucerne van takes the box (store pickup: it's set on the counter with a READY tag)
-     3. Done          — "your order is ready for delivery" with the real expected delivery date (2 business days,
-                        the same rule the order tracker uses)
+     0. The order   — behind the packing table our assistant receives the order: the cart's own pieces appear in front
+                      of her with the order ticket
+     1. We prepare  — the pink Lucerne box slides in, the pieces go in, she lowers the lid, gold ribbon, wax seal,
+                      then the QR delivery label is stuck on and scanned
+     2. Handover    — a rose Lucerne van takes the box (store pickup: it's set on the counter with a READY tag)
+     3. Done        — "your order is ready for delivery" with the real expected delivery date (2 business days,
+                      the same rule the order tracker uses)
    Everything is SVG moved with framer-motion.
 
    Contract with the checkout page (unchanged): `open` while the order is being placed, `done` once it succeeded;
    the page keeps the scene up for a minimum time and removes it at once if the order fails.
-   data-phase: 0 boutique · 1 preparing · 2 handover · 3 done. */
+   data-phase: 0 order · 1 preparing · 2 handover · 3 done. */
 
 type Method = "cod" | "card" | "pickup";
 
-const T1 = 1.4;   // boutique  -> preparing
-const T2 = 4.0;   // preparing -> handover
-const HANDOVER_SECS = 1.5;
+const T1 = 1.2;   // order     -> preparing
+const T2 = 3.9;   // preparing -> handover
+const HANDOVER_SECS = 1.4;
 const SERIF = "var(--font-display, 'Cormorant Garamond'), Georgia, serif";
 const GOLD = "url(#ls-gold)";
 
@@ -50,6 +50,7 @@ function Defs() {
         <linearGradient id="ls-blondeHi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff5d1" stopOpacity=".85" /><stop offset="1" stopColor="#fff5d1" stopOpacity="0" /></linearGradient>
         <radialGradient id="ls-cheek" cx=".5" cy=".5" r=".5"><stop offset="0" stopColor="#f08a9c" stopOpacity=".55" /><stop offset="1" stopColor="#f08a9c" stopOpacity="0" /></radialGradient>
         <clipPath id="ls-win"><path d="M36 -92 L30 -92 L30 -54 L84 -54 L56 -86 Q50 -92 36 -92 Z" /></clipPath>
+        {g("ls-pinkF", "#f7bfd0", "#e38aa8")}{g("ls-pinkT", "#fbd4df", "#f0a9c0")}{g("ls-pinkRim", "#e07a9c", "#c9587f")}
         <clipPath id="ls-card"><rect x="-32" y="-38" width="64" height="64" rx="8" /></clipPath>
         <clipPath id="ls-label"><rect x="-24" y="-30" width="48" height="60" rx="4" /></clipPath>
       </defs>
@@ -82,22 +83,28 @@ function Card({ img, tint }: { img?: string; tint: string }) {
   );
 }
 
-/* ── the signature box (0,0 = bottom centre; the front face is 160×70) ───── */
+/* ── the signature pink box (0,0 = bottom centre; the front face is 160×70) ─ */
 const RIB_X = -46;   // the ribbon runs off-centre so the brand on the lid stays readable
 
 function BoxBack() {
-  return (<><path d="M-80 -70 L80 -70 L62 -86 L-62 -86 Z" fill="#1c1c20" /><path d="M-62 -86 L62 -86 L50 -80 L-50 -80 Z" fill="#f7d9d2" /></>);
+  return (<><path d="M-80 -70 L80 -70 L62 -86 L-62 -86 Z" fill="#b8486f" /><path d="M-62 -86 L62 -86 L50 -80 L-50 -80 Z" fill="#fff0e6" /></>);
 }
 function BoxFront() {
-  return <rect x="-80" y="-70" width="160" height="70" rx="3" fill="url(#ls-boxf)" />;
+  return (
+    <>
+      <rect x="-80" y="-70" width="160" height="70" rx="3" fill="url(#ls-pinkF)" />
+      <rect x="-80" y="-70" width="160" height="70" rx="3" fill="none" stroke="rgba(0,0,0,.06)" />
+      <text x="-8" y="-10" textAnchor="middle" fontSize="7" letterSpacing="2" fill="rgba(60,20,40,.55)" style={{ fontFamily: SERIF }}>LUCERNE</text>
+    </>
+  );
 }
 function Lid() {
   return (
     <g>
-      <path d="M-84 -86 L84 -86 L66 -104 L-66 -104 Z" fill="url(#ls-boxt)" />
-      <rect x="-84" y="-86" width="168" height="18" rx="2" fill="#1a1a1e" />
-      <rect x="-84" y="-86" width="168" height="2" fill="rgba(255,255,255,.12)" />
-      <text x="28" y="-73.5" textAnchor="middle" fontSize="8.5" letterSpacing="2" fill={GOLD} style={{ fontFamily: SERIF }}>LUCERNE BOUTIQUE</text>
+      <path d="M-84 -86 L84 -86 L66 -104 L-66 -104 Z" fill="url(#ls-pinkT)" />
+      <rect x="-84" y="-86" width="168" height="18" rx="2" fill="url(#ls-pinkRim)" />
+      <rect x="-84" y="-86" width="168" height="2" fill="rgba(255,255,255,.35)" />
+      <text x="18" y="-73.5" textAnchor="middle" fontSize="7.5" letterSpacing="2" fontWeight="600" fill="#fff6ee" style={{ fontFamily: SERIF }}>LUCERNE BOUTIQUE</text>
     </g>
   );
 }
@@ -114,8 +121,8 @@ function Bow() {
 function Seal() {
   return (
     <g>
-      <path d="M0 -17 Q13 -16 16 -4 Q18 10 6 16 Q-8 19 -15 8 Q-19 -8 -8 -15 Z" fill="#b8324f" />
-      <circle cx="0" cy="0" r="12" fill="#d4466e" /><circle cx="0" cy="0" r="12" fill="none" stroke="rgba(255,255,255,.25)" />
+      <path d="M0 -17 Q13 -16 16 -4 Q18 10 6 16 Q-8 19 -15 8 Q-19 -8 -8 -15 Z" fill="#1d1d22" />
+      <circle cx="0" cy="0" r="12" fill="#2b2b30" /><circle cx="0" cy="0" r="12" fill="none" stroke="rgba(255,255,255,.18)" />
       <text x="0" y="5" textAnchor="middle" fontSize="14" fontWeight="700" fill="#f6e2a6" style={{ fontFamily: SERIF }}>L</text>
     </g>
   );
@@ -134,12 +141,12 @@ function QrLabel() {
     </g>
   );
 }
-const LABEL_AT = { x: 40, y: -30, r: -5, s: 0.75 };
+const LABEL_AT = { x: 46, y: -30, r: -5, s: 0.75 };
 /* the finished, labelled box (used in the handover chapter) */
 function WrappedBox() {
   return (
     <g>
-      <ellipse cx="0" cy="4" rx="96" ry="7" fill="rgba(80,30,40,.16)" />
+      <ellipse cx="0" cy="4" rx="96" ry="7" fill="rgba(120,40,70,.16)" />
       <BoxBack /><BoxFront /><Lid />
       <rect x={RIB_X - 7} y="-104" width="14" height="104" fill={GOLD} />
       <rect x="-80" y="-42" width="160" height="14" fill={GOLD} /><rect x="-80" y="-42" width="160" height="14" fill="rgba(0,0,0,.08)" />
@@ -210,65 +217,20 @@ function Packer({ reduce, lift }: { reduce: boolean; lift: boolean }) {
   );
 }
 
-/* ── chapter 0: the storefront; its doors open and we walk in ────────────── */
-function Storefront({ reduce }: { reduce: boolean }) {
-  const mannequin = (x: number, dress: string, d: string) => (
-    <g transform={`translate(${x} 330)`}>
-      <rect x="-12" y="-6" width="24" height="6" rx="2" fill="#bfa27f" /><rect x="-1.5" y="-40" width="3" height="34" fill="#bfa27f" />
-      <path d={d} fill={dress} /><circle cx="0" cy="-92" r="7" fill="#eed6c4" />
-    </g>
-  );
-  const leaf = (side: -1 | 1) => (
-    <motion.g style={{ originX: side === -1 ? 0 : 1, originY: 0.5 }} initial={{ scaleX: 1 }} animate={{ scaleX: reduce ? 1 : 0.1 }} transition={tr(reduce, { delay: 0.45, duration: 0.5, ease: [0.4, 0, 0.2, 1] })}>
-      <rect x={side === -1 ? -36 : 1} y="230" width="35" height="120" rx="2" fill="#e9f3f6" />
-      <rect x={side === -1 ? -36 : 1} y="230" width="35" height="120" rx="2" fill="none" stroke="#1a1a1e" strokeWidth="2" />
-      <circle cx={6 * side} cy="292" r="2.5" fill="#cfa355" />
-      {side === 1 && (<><rect x="4" y="246" width="29" height="13" rx="3" fill="#fff" /><text x="18.5" y="255.5" textAnchor="middle" fontSize="6.5" letterSpacing="1.4" fontWeight="700" fill="#d4466e" style={{ fontFamily: SERIF }}>OPEN</text></>)}
-    </motion.g>
-  );
-  return (
-    <svg viewBox="0 0 360 440" className="absolute inset-0 w-full h-full" aria-hidden>
-      {/* the whole street pushes in towards the door as we walk through it */}
-      <motion.g style={{ originX: 0.5, originY: 0.66 }} initial={{ scale: 1 }} animate={{ scale: reduce ? 1 : 3 }} transition={tr(reduce, { delay: 0.75, duration: 0.75, ease: [0.5, 0, 0.8, 0.4] })}>
-        <rect width="360" height="440" fill="url(#ls-sky)" />
-        <circle cx="300" cy="60" r="26" fill="#fff0c2" />
-        <g fill="#fff" opacity=".9"><ellipse cx="70" cy="70" rx="26" ry="11" /><ellipse cx="90" cy="62" rx="18" ry="12" /></g>
-        <rect x="20" y="96" width="320" height="270" rx="6" fill="#fdf1ec" /><rect x="20" y="96" width="320" height="270" rx="6" fill="none" stroke="rgba(0,0,0,.06)" />
-        <g transform="translate(180 128)">
-          <rect x="-128" y="-24" width="256" height="48" rx="8" fill="#17171a" />
-          <rect x="-124" y="-20" width="248" height="40" rx="6" fill="none" stroke={GOLD} strokeWidth="1.5" />
-          <text x="0" y="6" textAnchor="middle" fontSize="15" letterSpacing="3.5" fontWeight="600" fill={GOLD} style={{ fontFamily: SERIF }}>LUCERNE BOUTIQUE</text>
-        </g>
-        <path d="M24 164 H336 L350 206 H10 Z" fill="url(#ls-rose)" />
-        <g fill="rgba(255,255,255,.5)"><path d="M52 164 H78 L84 206 H52 Z" /><path d="M108 164 H134 L138 206 H110 Z" /><path d="M164 164 H190 L190 206 H164 Z" /><path d="M220 164 H246 L244 206 H216 Z" /><path d="M276 164 H302 L302 206 H272 Z" /></g>
-        <path d="M10 206 H350" stroke="rgba(0,0,0,.15)" strokeWidth="2" />
-        <g fill="url(#ls-rose)">{[24, 62, 100, 138, 176, 214, 252, 290, 328].map((x) => <circle key={x} cx={x} cy="212" r="6" />)}</g>
-        <rect x="40" y="226" width="86" height="118" rx="6" fill="#e9f3f6" /><rect x="40" y="226" width="86" height="118" rx="6" fill="none" stroke="#d9c1b0" strokeWidth="3" />
-        <rect x="234" y="226" width="86" height="118" rx="6" fill="#e9f3f6" /><rect x="234" y="226" width="86" height="118" rx="6" fill="none" stroke="#d9c1b0" strokeWidth="3" />
-        {mannequin(83, "#c9a6d8", "M-10 -84 L10 -84 L22 -34 Q0 -26 -22 -34 Z")}{mannequin(277, "#f4a9b8", "M-9 -84 L9 -84 L16 -40 Q0 -32 -16 -40 Z")}
-        <path d="M46 232 L80 232 L46 300 Z" fill="rgba(255,255,255,.35)" /><path d="M240 232 L274 232 L240 300 Z" fill="rgba(255,255,255,.35)" />
-        <g transform="translate(180 0)">
-          <rect x="-40" y="226" width="80" height="128" rx="4" fill="#2a2a30" />
-          <rect x="-36" y="230" width="72" height="120" fill="url(#ls-wall)" />
-          {leaf(-1)}{leaf(1)}
-        </g>
-        <rect x="0" y="354" width="360" height="86" fill="#efe4da" /><rect x="0" y="354" width="360" height="4" fill="rgba(0,0,0,.06)" />
-        <rect x="0" y="406" width="360" height="34" fill="url(#ls-road)" />
-        <g transform="translate(150 354)"><rect x="-12" y="-16" width="24" height="16" rx="3" fill="#d4466e" /><circle cx="0" cy="-26" r="14" fill="#b8e2cf" /></g>
-        <g transform="translate(210 354)"><rect x="-12" y="-16" width="24" height="16" rx="3" fill="#d4466e" /><circle cx="0" cy="-26" r="14" fill="#a6dcc7" /></g>
-      </motion.g>
-      <motion.rect width="360" height="440" fill="#fff8f4" initial={{ opacity: 0 }} animate={{ opacity: reduce ? 0 : 1 }} transition={tr(reduce, { delay: 1.0, duration: 0.45 })} />
-    </svg>
-  );
-}
-
-/* ── chapter 1: the packing table ─────────────────────────────────────────── */
+/* ── chapters 0 + 1: the packing table ───────────────────────────────────── */
 const BOX_X = 180, BOX_Y = 334, BOX_S = 0.72;
-const DROP: Record<number, number[]> = { 1: [180], 2: [140, 220], 3: [110, 180, 250] };
+const SLOTS: Record<number, { x: number; r: number }[]> = {
+  1: [{ x: 180, r: 0 }],
+  2: [{ x: 140, r: -5 }, { x: 220, r: 5 }],
+  3: [{ x: 100, r: -8 }, { x: 180, r: 0 }, { x: 260, r: 8 }],
+};
+const SLOT_Y = 284, SLOT_S = 0.85;
 
-function Preparing({ images, n, reduce }: { images: string[]; n: number; reduce: boolean }) {
-  const xs = DROP[n];
-  const inside = { x: BOX_X, y: BOX_Y - 30 * BOX_S, scale: 0.33, rotate: 0 };
+function Table({ phase, images, n, reduce, ar }: { phase: number; images: string[]; n: number; reduce: boolean; ar: boolean }) {
+  const packing = phase >= 1;
+  const slots = SLOTS[n];
+  const inside = { x: BOX_X, y: BOX_Y - 30 * BOX_S, scale: 0.33, rotate: 0, opacity: 1 };
+  const slide = { duration: 0.4, ease: [0.2, 0.8, 0.2, 1] };
   return (
     <svg viewBox="0 0 360 440" className="absolute inset-0 w-full h-full" aria-hidden>
       <rect width="360" height="440" fill="url(#ls-wall)" />
@@ -279,55 +241,78 @@ function Preparing({ images, n, reduce }: { images: string[]; n: number; reduce:
         <rect x="34" y="94" width="22" height="26" rx="5" fill="#c9a6d8" /><rect x="64" y="98" width="22" height="22" rx="5" fill="#f4a9b8" /><rect x="94" y="94" width="16" height="26" rx="4" fill="#7bd0c0" />
         <rect x="250" y="96" width="20" height="24" rx="5" fill="#2a2a30" /><rect x="278" y="100" width="24" height="20" rx="5" fill="#e8c165" /><rect x="310" y="94" width="16" height="26" rx="4" fill="#f4a9b8" />
       </g>
-      <Packer reduce={reduce} lift />
+      <Packer reduce={reduce} lift={packing} />
       <rect x="0" y="336" width="360" height="104" fill="url(#ls-marble)" /><path d="M0 336 H360" stroke="rgba(0,0,0,.06)" />
       <path d="M20 380 Q90 360 150 390 T300 372" stroke="rgba(0,0,0,.05)" strokeWidth="2" fill="none" /><path d="M200 420 Q260 400 340 425" stroke="rgba(0,0,0,.04)" strokeWidth="2" fill="none" />
 
-      <g transform={`translate(${BOX_X} ${BOX_Y}) scale(${BOX_S})`}><ellipse cx="0" cy="4" rx="96" ry="7" fill="rgba(80,30,40,.16)" /><BoxBack /></g>
+      {/* the order ticket pops up beside her */}
+      <motion.g style={{ originX: 0.5, originY: 1 }} initial={reduce ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }} animate={packing && !reduce ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+        transition={tr(reduce, packing ? { duration: 0.25 } : { delay: 0.1, type: "spring", stiffness: 260, damping: 16 })}>
+        <g transform="translate(296 186) rotate(8)">
+          <rect x="-26" y="-30" width="52" height="60" rx="4" fill="#fff" stroke="rgba(0,0,0,.08)" />
+          <rect x="-18" y="-20" width="36" height="3" rx="1.5" fill="#2a2a2f" /><rect x="-18" y="-12" width="26" height="2.5" rx="1.25" fill="rgba(0,0,0,.25)" /><rect x="-18" y="-6" width="30" height="2.5" rx="1.25" fill="rgba(0,0,0,.25)" /><rect x="-18" y="0" width="22" height="2.5" rx="1.25" fill="rgba(0,0,0,.25)" />
+          <rect x="-18" y="10" width="36" height="2.5" rx="1.25" fill={GOLD} />
+          <text x="0" y="24" textAnchor="middle" fontSize={ar ? 8 : 7} fontWeight="700" fill="#d4466e" style={ar ? undefined : { fontFamily: SERIF }}>{ar ? "طلب جديد" : "NEW ORDER"}</text>
+        </g>
+      </motion.g>
 
-      {/* the pieces arc in from above and settle in the box */}
-      {xs.map((x, i) => (
+      {/* the pink box slides onto the table when packing starts (its back first, its front after the pieces) */}
+      <motion.g initial={reduce ? { x: 0, opacity: packing ? 1 : 0 } : { x: 300, opacity: 0 }} animate={packing ? { x: 0, opacity: 1 } : { x: 300, opacity: 0 }} transition={tr(reduce, slide)}>
+        <g transform={`translate(${BOX_X} ${BOX_Y}) scale(${BOX_S})`}><ellipse cx="0" cy="4" rx="96" ry="7" fill="rgba(120,40,70,.16)" /><BoxBack /></g>
+      </motion.g>
+
+      {/* the customer's pieces: laid out in front of her, then they lift and settle in the box */}
+      {slots.map((sl, i) => (
         <motion.g key={i}
-          initial={reduce ? inside : { x, y: -120, scale: 1, rotate: (x - 180) / 8, opacity: 0 }}
-          animate={reduce ? inside : { x: [x, (x + 180) / 2, BOX_X], y: [-120, 150, inside.y], scale: [1, 0.9, 0.33], rotate: [(x - 180) / 8, (x - 180) / 14, 0], opacity: 1 }}
-          transition={tr(reduce, { delay: 0.05 + i * 0.2, duration: 0.6, times: [0, 0.55, 1], ease: [0.4, 0, 0.3, 1], opacity: { duration: 0.15 } })}>
+          initial={reduce ? (packing ? inside : { x: sl.x, y: SLOT_Y, scale: SLOT_S, rotate: sl.r, opacity: 1 }) : { x: sl.x, y: SLOT_Y + 40, scale: 0.6, rotate: sl.r, opacity: 0 }}
+          animate={packing
+            ? (reduce ? inside : { x: [sl.x, (sl.x + BOX_X) / 2, BOX_X], y: [SLOT_Y, 190, inside.y], scale: [SLOT_S, 0.8, 0.33], rotate: [sl.r, sl.r / 2, 0], opacity: 1 })
+            : { x: sl.x, y: SLOT_Y, scale: SLOT_S, rotate: sl.r, opacity: 1 }}
+          transition={tr(reduce, packing
+            ? { delay: 0.35 + i * 0.15, duration: 0.5, times: [0, 0.5, 1], ease: [0.4, 0, 0.3, 1] }
+            : { delay: 0.25 + i * 0.16, type: "spring", stiffness: 220, damping: 16, opacity: { duration: 0.2 } })}>
           <Card img={images[i]} tint={CARD_FALLBACK[i % 3]} />
         </motion.g>
       ))}
 
-      <g transform={`translate(${BOX_X} ${BOX_Y}) scale(${BOX_S})`}>
-        <BoxFront />
-        <motion.g initial={{ y: reduce ? 0 : -150, opacity: reduce ? 1 : 0 }} animate={{ y: 0, opacity: 1 }} transition={tr(reduce, { delay: 0.95, duration: 0.42, ease: [0.3, 0, 0.1, 1], opacity: { duration: 0.15 } })}><Lid /></motion.g>
-        <motion.rect x={RIB_X - 7} y="-104" width="14" height="104" fill={GOLD} style={{ originX: 0.5, originY: 0 }} initial={{ scaleY: reduce ? 1 : 0 }} animate={{ scaleY: 1 }} transition={tr(reduce, { delay: 1.3, duration: 0.25, ease: "easeOut" })} />
-        <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scaleX: reduce ? 1 : 0 }} animate={{ scaleX: 1 }} transition={tr(reduce, { delay: 1.42, duration: 0.25, ease: "easeOut" })}>
-          <rect x="-80" y="-42" width="160" height="14" fill={GOLD} /><rect x="-80" y="-42" width="160" height="14" fill="rgba(0,0,0,.08)" />
-        </motion.g>
-        <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scale: reduce ? 1 : 0, rotate: reduce ? 0 : -25 }} animate={{ scale: 1, rotate: 0 }} transition={tr(reduce, { delay: 1.6, type: "spring", stiffness: 260, damping: 13 })}>
-          <g transform={`translate(${RIB_X} -104)`}><Bow /></g>
-        </motion.g>
-        <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scale: reduce ? 1 : 0, opacity: reduce ? 1 : 0 }} animate={{ scale: reduce ? 1 : [0, 1.6, 1], opacity: 1 }} transition={tr(reduce, { delay: 1.72, duration: 0.36, times: [0, 0.55, 1], ease: "easeOut" })}>
-          <g transform={`translate(${RIB_X} -35)`}><Seal /></g>
-        </motion.g>
-        {/* the QR delivery label is stuck on, then scanned */}
-        <motion.g initial={reduce ? { x: LABEL_AT.x, y: LABEL_AT.y, rotate: LABEL_AT.r, scale: LABEL_AT.s, opacity: 1 } : { x: 150, y: -40, rotate: 20, scale: 0.9, opacity: 0 }}
-          animate={{ x: LABEL_AT.x, y: LABEL_AT.y, rotate: LABEL_AT.r, scale: LABEL_AT.s, opacity: 1 }}
-          transition={tr(reduce, { delay: 1.95, duration: 0.4, ease: [0.3, 0, 0.2, 1], opacity: { duration: 0.1 } })}>
-          <QrLabel />
-          {!reduce && (
-            <g clipPath="url(#ls-label)">
-              <motion.rect x="-24" y="-3" width="48" height="6" fill="#d4466e" opacity=".8" initial={{ y: -34, opacity: 0 }} animate={{ y: [-34, 34, -34], opacity: [0, 0.85, 0] }} transition={{ delay: 2.45, duration: 0.5, ease: "easeInOut" }} />
-            </g>
-          )}
-        </motion.g>
-        <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scale: reduce ? 1 : 0 }} animate={{ scale: 1 }} transition={tr(reduce, { delay: 2.95, type: "spring", stiffness: 320, damping: 14 })}>
-          <g transform={`translate(${LABEL_AT.x + 18} ${LABEL_AT.y - 20})`}>
-            <circle r="9" fill="#10b981" /><path d="M-4 0.5 L-1 3.5 L4.5 -3" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          </g>
-        </motion.g>
-      </g>
+      <motion.g initial={reduce ? { x: 0, opacity: packing ? 1 : 0 } : { x: 300, opacity: 0 }} animate={packing ? { x: 0, opacity: 1 } : { x: 300, opacity: 0 }} transition={tr(reduce, slide)}>
+        <g transform={`translate(${BOX_X} ${BOX_Y}) scale(${BOX_S})`}>
+          <BoxFront />
+          {packing && (<>
+            <motion.g initial={{ y: reduce ? 0 : -150, opacity: reduce ? 1 : 0 }} animate={{ y: 0, opacity: 1 }} transition={tr(reduce, { delay: 1.05, duration: 0.38, ease: [0.3, 0, 0.1, 1], opacity: { duration: 0.15 } })}><Lid /></motion.g>
+            <motion.rect x={RIB_X - 7} y="-104" width="14" height="104" fill={GOLD} style={{ originX: 0.5, originY: 0 }} initial={{ scaleY: reduce ? 1 : 0 }} animate={{ scaleY: 1 }} transition={tr(reduce, { delay: 1.38, duration: 0.22, ease: "easeOut" })} />
+            <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scaleX: reduce ? 1 : 0 }} animate={{ scaleX: 1 }} transition={tr(reduce, { delay: 1.48, duration: 0.22, ease: "easeOut" })}>
+              <rect x="-80" y="-42" width="160" height="14" fill={GOLD} /><rect x="-80" y="-42" width="160" height="14" fill="rgba(0,0,0,.06)" />
+            </motion.g>
+            <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scale: reduce ? 1 : 0, rotate: reduce ? 0 : -25 }} animate={{ scale: 1, rotate: 0 }} transition={tr(reduce, { delay: 1.62, type: "spring", stiffness: 260, damping: 13 })}>
+              <g transform={`translate(${RIB_X} -104)`}><Bow /></g>
+            </motion.g>
+            <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scale: reduce ? 1 : 0, opacity: reduce ? 1 : 0 }} animate={{ scale: reduce ? 1 : [0, 1.6, 1], opacity: 1 }} transition={tr(reduce, { delay: 1.72, duration: 0.34, times: [0, 0.55, 1], ease: "easeOut" })}>
+              <g transform={`translate(${RIB_X} -35)`}><Seal /></g>
+            </motion.g>
+            {/* the QR delivery label is stuck on, then scanned */}
+            <motion.g initial={reduce ? { x: LABEL_AT.x, y: LABEL_AT.y, rotate: LABEL_AT.r, scale: LABEL_AT.s, opacity: 1 } : { x: 150, y: -40, rotate: 20, scale: 0.9, opacity: 0 }}
+              animate={{ x: LABEL_AT.x, y: LABEL_AT.y, rotate: LABEL_AT.r, scale: LABEL_AT.s, opacity: 1 }}
+              transition={tr(reduce, { delay: 1.9, duration: 0.36, ease: [0.3, 0, 0.2, 1], opacity: { duration: 0.1 } })}>
+              <QrLabel />
+              {!reduce && (
+                <g clipPath="url(#ls-label)">
+                  <motion.rect x="-24" y="-3" width="48" height="6" fill="#d4466e" opacity=".8" initial={{ y: -34, opacity: 0 }} animate={{ y: [-34, 34, -34], opacity: [0, 0.85, 0] }} transition={{ delay: 2.3, duration: 0.45, ease: "easeInOut" }} />
+                </g>
+              )}
+            </motion.g>
+            <motion.g style={{ originX: 0.5, originY: 0.5 }} initial={{ scale: reduce ? 1 : 0 }} animate={{ scale: 1 }} transition={tr(reduce, { delay: 2.72, type: "spring", stiffness: 320, damping: 14 })}>
+              <g transform={`translate(${LABEL_AT.x + 18} ${LABEL_AT.y - 20})`}>
+                <circle r="9" fill="#10b981" /><path d="M-4 0.5 L-1 3.5 L4.5 -3" stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </g>
+            </motion.g>
+          </>)}
+        </g>
+      </motion.g>
     </svg>
   );
 }
+
 /* ── chapter 2a: the Lucerne van ─────────────────────────────────────────── */
 function Wheel({ cx, cy, spin, reduce }: { cx: number; cy: number; spin: boolean; reduce: boolean }) {
   return (
@@ -529,7 +514,7 @@ export default function PurchaseScene({ open, done, method, images = [] }: { ope
   const pickup = method === "pickup";
   const etaText = eta.toLocaleDateString(ar ? "ar-u-nu-latn" : "en-GB", { weekday: "long", day: "numeric", month: "long" });
   const lines = [
-    { Icon: Store, text: ar ? "أهلاً بك في لوسيرن بوتيك" : "Welcome to Lucerne Boutique", sub: ar ? "تفضّلي، نجهّز طلبك الآن" : "Come in, we're preparing your order" },
+    { Icon: ClipboardList, text: ar ? "وصلنا طلبك ✨" : "Your order is in ✨", sub: ar ? "نستعرض قطعك الآن" : "Looking over your pieces" },
     { Icon: Package, text: ar ? "نجهّز الأوردر لك" : "Preparing your order", sub: ar ? "نغلّف قطعك ونلصق بطاقة التوصيل" : "Packing your pieces, adding the delivery label" },
     pickup
       ? { Icon: Store, text: ar ? "جاهز للاستلام من البوتيك" : "Ready at the boutique", sub: ar ? "ننتظرك في لوسيرن بوتيك" : "We'll see you at Lucerne Boutique" }
@@ -601,10 +586,9 @@ export default function PurchaseScene({ open, done, method, images = [] }: { ope
       {/* the stage */}
       <div className="relative rounded-[28px] overflow-hidden ring-1 ring-black/5 shadow-[0_30px_80px_-24px_rgba(214,67,109,0.45)] bg-white" style={{ width: "min(94vw, calc((100svh - 176px) * 0.818), 500px)", aspectRatio: "360 / 440" }} data-testid="purchase-scene-stage">
         <AnimatePresence>
-          <motion.div key={phase >= 2 ? "handover" : phase === 1 ? "preparing" : "boutique"} className="absolute inset-0"
+          <motion.div key={phase >= 2 ? "handover" : "table"} className="absolute inset-0"
             initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduce ? undefined : { opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
-            {phase === 0 && <Storefront reduce={reduce} />}
-            {phase === 1 && <Preparing images={imgs} n={n} reduce={reduce} />}
+            {phase < 2 && <Table phase={phase} images={imgs} n={n} reduce={reduce} ar={ar} />}
             {phase >= 2 && (pickup ? <Shop done={done} reduce={reduce} /> : <Street done={done} reduce={reduce} />)}
           </motion.div>
         </AnimatePresence>
