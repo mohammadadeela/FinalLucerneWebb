@@ -325,9 +325,9 @@ export default function OrderConfirmation() {
 
               {/* Guest sign-in invitation */}
               {isGuestOrder && (
-                <motion.div {...fadeUp(4, reduce)} className="rounded-2xl border border-amber-200/80 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-950/20 p-5 text-start flex items-start gap-3" data-testid="card-guest-signin">
-                  <span className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
-                    {guestPoints > 0 ? <Gift className="w-4 h-4 text-amber-700 dark:text-amber-400" /> : <UserRound className="w-4 h-4 text-amber-700 dark:text-amber-400" />}
+                <motion.div {...fadeUp(4, reduce)} className="rounded-2xl border border-rose-200/80 dark:border-rose-800/60 bg-rose-50/70 dark:bg-rose-950/20 p-5 text-start flex items-start gap-3" data-testid="card-guest-signin">
+                  <span className="w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center shrink-0">
+                    {guestPoints > 0 ? <Gift className="w-4 h-4 text-rose-600 dark:text-rose-400" /> : <UserRound className="w-4 h-4 text-rose-600 dark:text-rose-400" />}
                   </span>
                   <div className="flex-1">
                     <p className="text-sm font-bold" data-testid="text-guest-points-cta">
@@ -336,7 +336,7 @@ export default function OrderConfirmation() {
                         : (ar ? "أنشئي حساباً لتتبّع طلباتك وكسب النقاط" : "Create an account to track your orders and earn points")}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">{ar ? "الطلبات كضيف لا تحصل على نقاط. حفظنا رابط هذه الصفحة لتعودي إليها." : "Guest orders don't earn points. Bookmark this page to come back to your order."}</p>
-                    <Link href="/auth"><Button size="sm" variant="outline" className="mt-3" data-testid="button-guest-create-account">{ar ? "تسجيل الدخول / إنشاء حساب" : "Sign in / Create account"}</Button></Link>
+                    <Link href="/auth"><Button size="sm" variant="outline" className="mt-3 border-rose-300 text-rose-700 hover:bg-rose-100 hover:text-rose-800 dark:border-rose-700 dark:text-rose-300 dark:hover:bg-rose-900/40" data-testid="button-guest-create-account">{ar ? "تسجيل الدخول / إنشاء حساب" : "Sign in / Create account"}</Button></Link>
                   </div>
                 </motion.div>
               )}
