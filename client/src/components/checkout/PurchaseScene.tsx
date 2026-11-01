@@ -50,6 +50,87 @@ function Icon({ name, draw, delay = 0, reduce, idle = false, className = "" }: {
   );
 }
 
+
+/* ── three tiny characters (48×42 boxes) ──────────────────────────────────── */
+const SK = "#f3c9a8", INK = "#2b2b30";
+
+/* a courier on a rose scooter: wheels spin and she bobs while riding, little puffs trail behind */
+function Courier({ moving, reduce }: { moving: boolean; reduce: boolean }) {
+  const spin = moving && !reduce;
+  const wheel = (cx: number) => (
+    <g transform={`translate(${cx} 33)`}>
+      <circle r="5" fill={INK} />
+      <motion.g style={{ originX: 0.5, originY: 0.5 }} animate={spin ? { rotate: 360 } : { rotate: 0 }} transition={spin ? { duration: 0.5, repeat: Infinity, ease: "linear" } : { duration: 0 }}>
+        <circle r="2" fill="#fff" /><path d="M-2 0 L2 0" stroke={INK} strokeWidth="1" />
+      </motion.g>
+    </g>
+  );
+  return (
+    <motion.svg viewBox="0 0 48 42" className="w-12 h-[42px] overflow-visible" animate={spin ? { y: [0, -1.5, 0] } : { y: 0 }} transition={spin ? { duration: 0.35, repeat: Infinity, ease: "easeInOut" } : { duration: 0 }}>
+      {spin && [0, 1, 2].map((i) => (
+        <motion.circle key={i} cx="4" cy="30" r="2" fill="#e5e5e5" initial={{ x: 0, opacity: 0 }} animate={{ x: [0, -12], y: [0, -4], opacity: [0.9, 0], scale: [0.6, 1.4] }} transition={{ delay: i * 0.25, duration: 0.7, repeat: Infinity, ease: "easeOut" }} />
+      ))}
+      {wheel(11)}{wheel(37)}
+      <path d="M8 28 L24 28 Q30 28 32 24 L36 16" stroke={ACCENT} strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 28 L18 22 L26 22" stroke={ACCENT} strokeWidth="3" fill="none" strokeLinecap="round" />
+      <rect x="4" y="19" width="10" height="8" rx="2" fill={INK} /><text x="9" y="25.5" textAnchor="middle" fontSize="5.5" fontWeight="700" fill="#f3d795" style={{ fontFamily: SERIF }}>L</text>
+      <path d="M33 16 L40 15" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M19 22 L23 12 L30 12 L33 15" stroke="#fff6ee" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M23 12 L30 12 L33 15" stroke={ACCENT} strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="27" cy="7" r="5" fill={SK} />
+      <path d="M22 7 Q22 1 27 1 Q32 1 32 7 Z" fill={INK} /><path d="M31 6 L34 7 L31 8 Z" fill={INK} />
+      <circle cx="29" cy="7.5" r=".8" fill={INK} />
+    </motion.svg>
+  );
+}
+
+/* a customer walking to the boutique with her Lucerne bag (store pickup) */
+function Walker({ moving, reduce }: { moving: boolean; reduce: boolean }) {
+  const go = moving && !reduce;
+  const leg = (x: number, phase: number) => (
+    <g transform={`translate(${x} 30)`}>
+      <motion.path d="M0 0 L-1 9" stroke={INK} strokeWidth="3.5" strokeLinecap="round" style={{ originX: 0, originY: 0 }}
+        animate={go ? { rotate: phase ? [18, -18, 18] : [-18, 18, -18] } : { rotate: phase ? 6 : -6 }} transition={go ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0 }} />
+    </g>
+  );
+  return (
+    <motion.svg viewBox="0 0 48 42" className="w-12 h-[42px] overflow-visible" animate={go ? { y: [0, -1.5, 0] } : { y: 0 }} transition={go ? { duration: 0.25, repeat: Infinity, ease: "easeInOut" } : { duration: 0 }}>
+      {leg(21, 0)}{leg(27, 1)}
+      <path d="M19 15 L29 15 L31 30 L17 30 Z" fill={ACCENT} />
+      <motion.path d="M20 17 L15 26" stroke={SK} strokeWidth="3" strokeLinecap="round" style={{ originX: 1, originY: 0 }} animate={go ? { rotate: [-14, 14, -14] } : { rotate: 0 }} transition={go ? { duration: 0.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0 }} />
+      <g>
+        <path d="M28 17 L33 24" stroke={SK} strokeWidth="3" strokeLinecap="round" />
+        <path d="M30 26 L38 26 L39 36 L31 36 Z" fill="#fff" stroke={INK} strokeWidth="1.2" /><path d="M32 26 Q34.5 21 37 26" stroke={INK} strokeWidth="1.2" fill="none" />
+        <text x="34.5" y="33" textAnchor="middle" fontSize="5" fontWeight="700" fill={ACCENT} style={{ fontFamily: SERIF }}>L</text>
+      </g>
+      <circle cx="24" cy="8" r="6" fill={SK} />
+      <path d="M18 8 Q18 1 24 1 Q30 1 30 8 L30 13 Q28 10 27 7 Q21 8 18 12 Z" fill="#5a3a2a" />
+      <circle cx="26" cy="8.5" r=".8" fill={INK} />
+    </motion.svg>
+  );
+}
+
+/* the happy customer at the end: arms up, hopping, a heart floating off her */
+function Happy({ reduce }: { reduce: boolean }) {
+  return (
+    <motion.svg viewBox="0 0 48 42" className="w-12 h-[42px] overflow-visible" animate={reduce ? undefined : { y: [0, -7, 0] }} transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 0.35, ease: "easeOut" }}>
+      {!reduce && (
+        <motion.path d="M24 -2 c-2 -3 -6 -1 -4 2 l4 4 l4 -4 c2 -3 -2 -5 -4 -2z" fill={ACCENT} initial={{ y: 0, opacity: 0, scale: 0.6 }} animate={{ y: [0, -16], opacity: [0, 1, 0], scale: [0.6, 1, 0.9] }} transition={{ duration: 1.3, repeat: Infinity, repeatDelay: 0.5, ease: "easeOut" }} />
+      )}
+      <path d="M20 34 L20 40" stroke={INK} strokeWidth="3.5" strokeLinecap="round" /><path d="M28 34 L28 40" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
+      <path d="M18 17 L30 17 L33 34 L15 34 Z" fill={ACCENT} />
+      <motion.path d="M19 19 L12 10" stroke={SK} strokeWidth="3" strokeLinecap="round" style={{ originX: 1, originY: 1 }} animate={reduce ? undefined : { rotate: [0, 18, 0] }} transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 0.35 }} />
+      <motion.path d="M29 19 L36 10" stroke={SK} strokeWidth="3" strokeLinecap="round" style={{ originX: 0, originY: 1 }} animate={reduce ? undefined : { rotate: [0, -18, 0] }} transition={{ duration: 0.7, repeat: Infinity, repeatDelay: 0.35 }} />
+      <path d="M34 4 L41 4 L42 12 L35 12 Z" fill="#fff" stroke={INK} strokeWidth="1.2" /><path d="M36 4 Q37.5 0 39 4" stroke={INK} strokeWidth="1.2" fill="none" />
+      <circle cx="24" cy="9" r="7" fill={SK} />
+      <path d="M17 9 Q17 1 24 1 Q31 1 31 9 L31 15 Q30 12 29 9 Q24 7 19 12 L17 15 Z" fill={INK} />
+      <circle cx="21.5" cy="9.5" r=".9" fill={INK} /><circle cx="26.5" cy="9.5" r=".9" fill={INK} />
+      <path d="M22 12.5 Q24 14.5 26 12.5" stroke="#c0515d" strokeWidth="1.1" fill="none" strokeLinecap="round" />
+      <circle cx="19.5" cy="12" r="1.3" fill="#f4a9b8" opacity=".7" /><circle cx="28.5" cy="12" r="1.3" fill="#f4a9b8" opacity=".7" />
+    </motion.svg>
+  );
+}
+
 export default function PurchaseScene({ open, done, method }: { open: boolean; done: boolean; method: Method; images?: string[] }) {
   const { language } = useLanguage();
   const ar = language === "ar";
@@ -144,10 +225,28 @@ export default function PurchaseScene({ open, done, method }: { open: boolean; d
                   );
                 })}
               </ol>
+              {/* a tiny character travels along a track under the steps, from step to step */}
+              <div className="relative mt-5 h-12" aria-hidden data-testid="scene-track">
+                <span className="absolute left-[16.67%] right-[16.67%] bottom-0 border-t border-dashed border-neutral-200" />
+                <motion.div className="absolute bottom-0" initial={reduce ? false : { left: "16.67%", opacity: 0 }} animate={{ left: `${((2 * phase + 1) / 6) * 100}%`, opacity: 1 }}
+                  transition={reduce ? { duration: 0 } : { left: { duration: phase === 0 ? 0 : 0.7, ease: [0.4, 0, 0.2, 1] }, opacity: { duration: 0.3 } }}>
+                  <div className="-translate-x-1/2">
+                    {pickup ? <Walker moving={!reduce && phase > 0} reduce={reduce} /> : <Courier moving={!reduce && phase > 0} reduce={reduce} />}
+                  </div>
+                </motion.div>
+              </div>
             </motion.div>
           ) : (
             /* done: one big check */
-            <motion.div key="done" className="flex flex-col items-center" initial={reduce ? false : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+            <motion.div key="done" className="relative flex flex-col items-center" initial={reduce ? false : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}>
+              {!pickup && !reduce && (
+                <motion.div className="absolute -left-16 top-24" aria-hidden initial={{ x: 0, opacity: 1 }} animate={{ x: 520, opacity: [1, 1, 0] }} transition={{ duration: 0.75, ease: [0.5, 0, 0.9, 0.5] }}>
+                  <Courier moving reduce={reduce} />
+                </motion.div>
+              )}
+              <motion.div className="absolute left-[calc(50%+58px)] top-14" aria-hidden initial={reduce ? false : { opacity: 0, y: 16, scale: 0.6 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.45, type: "spring", stiffness: 300, damping: 15 }}>
+                <Happy reduce={reduce} />
+              </motion.div>
               <div className="relative w-24 h-24 flex items-center justify-center" data-testid="scene-check">
                 {!reduce && [0, 1].map((i) => (
                   <motion.span key={i} className="absolute inset-0 rounded-full border-2" style={{ borderColor: ACCENT }} aria-hidden
