@@ -212,7 +212,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
   return (
     <div
-      className="group block cursor-pointer"
+      className={`group block ${isSoldOut ? "cursor-not-allowed [&_*]:cursor-not-allowed" : "cursor-pointer"}`}
       data-testid={`card-product-${product.id}`}
       onMouseEnter={() => { setIsCardHovered(true); handlePrefetchIntent(); }}
       onMouseLeave={() => setIsCardHovered(false)}
@@ -239,12 +239,12 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           )}
           {/* Stock status takes priority over promotional badges. Keep the photo and link visible. */}
           {isSoldOut && (
-            <div className="absolute inset-0 z-40 flex items-center justify-center px-4 pointer-events-none">
+            <div className="absolute inset-0 z-40 flex items-center justify-center bg-muted/25 backdrop-brightness-90 px-4 pointer-events-none">
               <span
-                className="-rotate-[16deg] rounded-full bg-red-600 px-6 py-2.5 text-center text-[clamp(18px,2vw,30px)] font-extrabold uppercase leading-none tracking-[0.08em] text-white shadow-[0_10px_24px_rgba(220,38,38,0.28)] ring-1 ring-red-700/20"
+                className="rounded-full border border-border bg-background px-3 py-1.5 text-center text-xs font-medium leading-none tracking-wide text-foreground"
                 data-testid={`badge-sold-out-${product.id}`}
               >
-                SOLD OUT
+                Sold out
               </span>
             </div>
           )}
@@ -351,14 +351,14 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             )
           )}
 
-          {/* Keep the product photo clean when the sold-out stamp is shown. */}
+          {/* Keep the product photo clean when the sold-out pill is shown. */}
           {!isSoldOut && <ProductWatermark size="sm" />}
 
           {/* Hover dark overlay */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-400 z-10" />
+          {!isSoldOut && <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-400 z-10" />}
 
-          {/* View product bar — slides up on hover */}
-          <button
+          {/* View product bar — slides up on hover for available products only */}
+          {!isSoldOut && <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -369,10 +369,10 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             {t.product.view}
-          </button>
+          </button>}
 
           {/* Wishlist heart button */}
-          <button
+          {!isSoldOut && <button
             onClick={handleWishlistClick}
             aria-label={
               wishlisted
@@ -386,7 +386,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               className={`w-4 h-4 transition-all duration-200 ${wishlisted ? "fill-rose-500 stroke-rose-500" : "stroke-foreground fill-transparent"}`}
               strokeWidth={1.5}
             />
-          </button>
+          </button>}
 
           {/* Carousel dots */}
           {allImages.length > 1 && effectiveColorIdx === null && (
@@ -413,7 +413,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
         </p>
 
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-semibold text-foreground text-xs sm:text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors duration-200">
+          <h3 className={`font-semibold text-xs sm:text-sm leading-snug line-clamp-2 transition-colors duration-200 ${isSoldOut ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
             {product.name}
           </h3>
         </Link>
@@ -429,9 +429,10 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               return (
                 <button
                   key={idx}
+                  disabled={isSoldOut}
                   onClick={(e) => handleSwatchClick(e, idx)}
-                  onMouseEnter={(e) => handleSwatchHover(e, idx)}
-                  onMouseLeave={(e) => handleSwatchHover(e, null)}
+                  onMouseEnter={(e) => !isSoldOut && handleSwatchHover(e, idx)}
+                  onMouseLeave={(e) => !isSoldOut && handleSwatchHover(e, null)}
                   className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 transition-all duration-200 overflow-hidden flex-shrink-0 ${
                     activeColorIdx === idx || hoveredColorIdx === idx
                       ? "border-foreground scale-125 shadow-md"
@@ -481,8 +482,8 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           {discountPrice ? (
             <>
               <span
-                className="font-bold text-sm sm:text-base"
-                style={{ color: "#9B1C1C" }}
+                className={`font-bold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
+                style={isSoldOut ? undefined : { color: "#9B1C1C" }}
                 data-testid={`text-discount-price-${product.id}`}
               >
                 ₪{discountPrice}
@@ -496,7 +497,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             </>
           ) : (
             <span
-              className="font-bold text-sm sm:text-base"
+              className={`font-bold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
               data-testid={`text-price-${product.id}`}
             >
               ₪{price}
