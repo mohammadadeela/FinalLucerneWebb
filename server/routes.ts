@@ -12,6 +12,7 @@ import { sql, inArray, and, eq, desc, isNotNull, gt } from "drizzle-orm";
 import { subcategories } from "@shared/schema";
 import { db, pool } from "./db";
 import { uploadToCloudinary, deleteFromCloudinary, uploadVideoToCloudinary, warmCloudinaryCache } from "./cloudinary";
+import { uploadImageToR2, uploadVideoToR2 } from "./r2";
 import { sendPasswordResetCode, sendSignupVerificationCode, sendOrderNotification, sendOrderConfirmationToCustomer, sendExchangeStatusEmail, sendExchangeAdminNotification, sendAbandonedCartEmail, sendSaleDiscountEmail, sendDiscountCodeEmail, isPlaceholderEmail } from "./email";
 import { sendOrderConfirmationWA, sendDiscountCodeWA, sendTextMessage, sendOtpWhatsApp, isWhatsAppConfigured, sendOrderStatusWA, sendPickupConfirmationWA } from "./whatsapp";
 import { sendTwilioSmsVerification, checkTwilioSmsVerification, isTwilioSmsConfigured, usesTwilioVerifyService } from "./twilioVerify";
@@ -628,6 +629,62 @@ Disallow: /copy-code
 
 Sitemap: ${SITE_URL}/sitemap.xml
 `);
+  });
+
+  // ── Direct Cloudflare R2 uploads for the admin Bulk Upload tab ──────────
+  // Do not silently fall back to local VPS storage or Cloudinary: this UI
+  // promises that successfully uploaded files are accessible in the R2 browser.
+  const requireR2UploadAdmin = (req: any, res: any, next: any) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  };
+
+  app.post("/api/admin/r2/upload-image", requireR2UploadAdmin, (req, res, next) => {
+    upload.single("image")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400)
+          .json({ message: err.code === "LIMIT_FILE_SIZE" ? "Image must be 25 MB or less." : err.message });
+      }
+      if (err) return res.status(400).json({ message: err.message || "Invalid image" });
+      next();
+    });
+  }, async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No image selected" });
+    try {
+      const url = await uploadImageToR2(req.file.buffer, req.file.originalname);
+      return res.json({ url, type: "image", storage: "r2" });
+    } catch (err) {
+      console.error("[admin-r2-image-upload]", err);
+      return res.status(500).json({ message: "Failed to save image to R2. Please retry." });
+    }
+  });
+
+  app.post("/api/admin/r2/upload-video", requireR2UploadAdmin, (req, res, next) => {
+    uploadLocalVideo.single("video")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400)
+          .json({ message: err.code === "LIMIT_FILE_SIZE" ? "Video must be 500 MB or less." : err.message });
+      }
+      if (err) return res.status(400).json({ message: err.message || "Invalid video" });
+      next();
+    });
+  }, async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No video selected" });
+    const file = req.file;
+    try {
+      const url = await uploadVideoToR2(file.path, file.originalname);
+      const poster = url.replace(/\/video\.mp4(?:[?#].*)?$/i, "/video.jpg");
+      return res.json({ url, poster, type: "video", storage: "r2" });
+    } catch (err) {
+      console.error("[admin-r2-video-upload]", err);
+      return res.status(500).json({ message: "Failed to save video to R2. Please retry." });
+    } finally {
+      // Multer saves incoming videos to a temporary file before FFmpeg handles
+      // them; always clean that file up, including after an R2 failure.
+      await fs.promises.unlink(file.path).catch(() => {});
+    }
   });
 
   // ── Cloudinary image upload ──────────────────────────────────────────────
