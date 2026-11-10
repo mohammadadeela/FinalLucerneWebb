@@ -201,28 +201,123 @@ function hexToName(hex: string): string {
   const near = nearestMember(hex)?.member;
   return near ? (near.nameAr || near.nameEn) : hex;
 }
-// Default size rows per category: shoes (id 4) get the boutique's standard run,
-// everything else (clothes) gets S/M/L with 2 in stock each.
+// Match Add Product's existing presets exactly (Products.tsx/getDefaultSizes).
+// Categories 5+ (bags, accessories, etc.) have no default inventory sizes.
 function defaultSizeRows(catId: string | number): SizeRow[] {
-  if (Number(catId) === 4) return [
+  const id = Number(catId);
+  if (id === 4) return [
     { size: "36", qty: 1 }, { size: "37", qty: 2 }, { size: "38", qty: 2 },
     { size: "39", qty: 2 }, { size: "40", qty: 1 },
   ];
-  return [{ size: "S", qty: 2 }, { size: "M", qty: 2 }, { size: "L", qty: 2 }];
+  if ([1, 2, 3].includes(id)) return [
+    { size: "S", qty: 2 }, { size: "M", qty: 2 }, { size: "L", qty: 2 },
+  ];
+  return [];
 }
-function makeVariant(hex = "#000000", catId: string | number = ""): ColorVariant {
+function copySizeRows(rows: SizeRow[]): SizeRow[] {
+  return rows.map(({ size, qty }) => ({ size, qty }));
+}
+function makeVariant(hex = "#000000", catId: string | number = "", sizeTemplate?: SizeRow[]): ColorVariant {
   const family = getFamilyForHex(hex) || nearestMember(hex)?.family;
   return {
     name: hexToName(hex),
     colorCode: hex,
     colorTags: family ? [family.key] : [],
-    sizeRows: defaultSizeRows(catId),
+    sizeRows: copySizeRows(sizeTemplate ?? defaultSizeRows(catId)),
     newSizeName: "",
   };
 }
 function getQuickSizes(catId: string): string[] {
   const id = Number(catId);
   return id === 4 ? SHOES_SIZES : CLOTHES_SIZES;
+}
+
+/** Editable size template for this bulk-import batch, not a change to live inventory. */
+function CategorySizeEditor({
+  categoryId, rows, onChange, onReset,
+}: {
+  categoryId: string;
+  rows: SizeRow[];
+  onChange: (rows: SizeRow[]) => void;
+  onReset: () => void;
+}) {
+  const [customSize, setCustomSize] = useState("");
+  if (!categoryId) return null;
+
+  const availableSizes = getQuickSizes(categoryId).filter(
+    size => !rows.some(row => row.size === size),
+  );
+  const addSize = (name: string) => {
+    const size = name.trim().toUpperCase();
+    if (!size || rows.some(row => row.size.toUpperCase() === size)) return;
+    onChange([...rows, { size, qty: 1 }]);
+    setCustomSize("");
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3" data-testid="bulk-category-size-presets">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <Label className="text-sm font-semibold">Default Sizes &amp; Quantities</Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            These sizes and quantities will be added to every generated product color. You can still edit individual products later.
+          </p>
+        </div>
+        <Button type="button" variant="outline" size="sm" className="h-7 text-xs shrink-0" onClick={onReset}>
+          <RefreshCw className="w-3 h-3 me-1" /> Defaults
+        </Button>
+      </div>
+      {rows.length ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {rows.map((row, i) => (
+            <div key={row.size} className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1.5">
+              <span className="text-xs font-semibold min-w-7">{row.size}</span>
+              <Input
+                type="number" min={0} step={1} inputMode="numeric"
+                aria-label={`Quantity for size ${row.size}`}
+                value={row.qty}
+                onChange={e => onChange(rows.map((r, j) =>
+                  j === i ? { ...r, qty: Math.max(0, Math.floor(Number(e.target.value) || 0)) } : r,
+                ))}
+                className="h-8 min-w-0 w-full text-center text-xs"
+              />
+              <button type="button" onClick={() => onChange(rows.filter((_, j) => j !== i))}
+                title={`Remove size ${row.size}`} aria-label={`Remove size ${row.size}`}
+                className="shrink-0 rounded p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No default sizes for this category in Add Product. Add sizes below if this product needs them.
+        </p>
+      )}
+      {availableSizes.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground me-1">Add sizes:</span>
+          {availableSizes.map(size => (
+            <button key={size} type="button" onClick={() => addSize(size)}
+              className="rounded border border-border bg-background px-2.5 py-1 text-xs hover:border-primary hover:text-primary">
+              +{size}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input
+          value={customSize} onChange={e => setCustomSize(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addSize(customSize); } }}
+          placeholder="Custom size (e.g. ONE SIZE)" className="h-8 flex-1 text-xs"
+          aria-label="Custom size for bulk products"
+        />
+        <Button type="button" size="sm" variant="outline" className="h-8" disabled={!customSize.trim()} onClick={() => addSize(customSize)}>
+          <Plus className="w-3.5 h-3.5 me-1" /> Add
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 /* ── Same-product grouping ──────────────────────────────────────────────
@@ -716,7 +811,7 @@ function Lightbox({ images, index, setIndex, onClose }: {
    ══════════════════════════════════════════════ */
 function ProductCard({
   product, idx, categories, subcategories, onUpdate, onRemove,
-  usedImageUrls, usedVideoUrls,
+  usedImageUrls, usedVideoUrls, getSizesForCategory,
 }: {
   product: GeneratedProduct;
   idx: number;
@@ -726,6 +821,7 @@ function ProductCard({
   onRemove: (idx: number) => void;
   usedImageUrls?: Set<string>;
   usedVideoUrls?: Set<string>;
+  getSizesForCategory: (catId: string | number) => SizeRow[];
 }) {
   const [paletteOpen, setPaletteOpen] = useState<string | null>(null);
   const [mediaOpen, setMediaOpen] = useState(false);
@@ -745,7 +841,7 @@ function ProductCard({
     const family = getFamilyForHex(member.hex);
     onUpdate(idx, { variants: [
       ...product.variants,
-      { name: member.nameEn, colorCode: member.hex, colorTags: family?[family.key]:[], sizeRows:[], newSizeName:"" },
+      { name: member.nameEn, colorCode: member.hex, colorTags: family?[family.key]:[], sizeRows: getSizesForCategory(product.categoryId), newSizeName:"" },
     ]});
     setPaletteOpen(null);
   };
@@ -912,7 +1008,13 @@ function ProductCard({
             <div>
               <div className="flex justify-end mb-1"><span className="text-[11px] text-muted-foreground">Category</span></div>
               <select className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                value={product.categoryId} onChange={e => onUpdate(idx,{categoryId:e.target.value,subcategoryId:""})}>
+                value={product.categoryId} onChange={e => {
+                  const categoryId = e.target.value;
+                  onUpdate(idx, {
+                    categoryId, subcategoryId: "",
+                    variants: product.variants.map(v => ({ ...v, sizeRows: getSizesForCategory(categoryId) })),
+                  });
+                }}>
                 <option value="">None</option>
                 {categories.map((c:any) => <option key={c.id} value={c.id}>{catLabel(c)}</option>)}
               </select>
@@ -939,7 +1041,7 @@ function ProductCard({
             </div>
             <Button type="button" variant="outline" size="sm"
               className="h-7 text-xs border-dashed border-2 hover:border-solid hover:border-primary hover:bg-primary/5 transition-all"
-              onClick={() => onUpdate(idx, { variants: [...product.variants, makeVariant()] })}>
+              onClick={() => onUpdate(idx, { variants: [...product.variants, makeVariant("#000000", product.categoryId, getSizesForCategory(product.categoryId))] })}>
               <Plus className="w-3 h-3 me-1" /> Add Color
             </Button>
           </div>
@@ -1189,6 +1291,23 @@ export function BulkUploadTab() {
   const [publishResults, setPublishResults] = useState<{ created: number; errors: any[] } | null>(null);
   const [globalCategory, setGlobalCategory] = useState("");
   const [globalSubcategory, setGlobalSubcategory] = useState("");
+  // Admin adjustments are kept separately per category for this import session.
+  // If untouched, use exactly the same defaults as Add Product.
+  const [categorySizeOverrides, setCategorySizeOverrides] = useState<Record<string, SizeRow[]>>({});
+  const getSizesForCategory = (catId: string | number): SizeRow[] =>
+    copySizeRows(categorySizeOverrides[String(catId)] ?? defaultSizeRows(catId));
+  const updateCurrentSizeRows = (rows: SizeRow[]) => {
+    if (!globalCategory) return;
+    setCategorySizeOverrides(prev => ({ ...prev, [globalCategory]: copySizeRows(rows) }));
+  };
+  const resetCurrentSizeRows = () => {
+    if (!globalCategory) return;
+    setCategorySizeOverrides(prev => {
+      const next = { ...prev };
+      delete next[globalCategory];
+      return next;
+    });
+  };
   const [importLoading, setImportLoading] = useState(false);
 
   // ── Existing products — for "In use" indicators on R2 media ──────────
@@ -1457,7 +1576,11 @@ export function BulkUploadTab() {
     imageUrl: url, name: "", nameAr: "", description: "",
     price: "", categoryId: globalCategory, subcategoryId: globalSubcategory,
     isFeatured: false, isNewArrival: true, isBestSeller: false,
-    variants: [], aiGenerated: false,
+    // Skipping AI or a failed AI batch still preserves the selected size template.
+    variants: globalCategory
+      ? [{ ...makeVariant("#000000", globalCategory, getSizesForCategory(globalCategory)), mainImage: url }]
+      : [],
+    aiGenerated: false,
   });
 
   const generateAI = async () => {
@@ -1471,14 +1594,14 @@ export function BulkUploadTab() {
       // Only the ONE main color of this photo — secondary accents are ignored.
       let variants: ColorVariant[] = aiColors.slice(0,1).map((hex, ci) => {
         try {
-          const v = makeVariant(hex.startsWith("#") ? hex : "#" + hex, globalCategory);
+          const v = makeVariant(hex.startsWith("#") ? hex : "#" + hex, globalCategory, getSizesForCategory(globalCategory));
           if (aiNames[ci]) v.name = String(aiNames[ci]);
           v.mainImage = r.url;
           return v;
-        } catch { const v = makeVariant("#000000", globalCategory); v.mainImage = r.url; return v; }
+        } catch { const v = makeVariant("#000000", globalCategory, getSizesForCategory(globalCategory)); v.mainImage = r.url; return v; }
       });
       // Always ship at least one variant so the default sizes are present.
-      if (variants.length === 0) { const v = makeVariant("#000000", globalCategory); v.mainImage = r.url; variants = [v]; }
+      if (variants.length === 0) { const v = makeVariant("#000000", globalCategory, getSizesForCategory(globalCategory)); v.mainImage = r.url; variants = [v]; }
       all.push({ imageUrl: r.url, name: r.data?.name||"", nameAr: r.data?.nameAr||"",
         description: r.data?.description||"", price: String(r.data?.suggestedPrice||""),
         categoryId: globalCategory, subcategoryId: globalSubcategory,
@@ -1693,14 +1816,13 @@ export function BulkUploadTab() {
     }
   };
 
-  // Applies the chosen category to every product AND refills the correct default
-  // size run for that category (clothes S/M/L 2 each, shoes 36-40). Creates a
-  // default colour variant for any product that has none so sizes always exist.
+  // Apply the admin's chosen category template to ALL review cards only
+  // when they click Apply to All. Per-product edits remain independent otherwise.
   const applyGlobalCategory = () =>
     setGeneratedProducts(prev =>
       prev.map(p => {
-        const variants = (p.variants.length ? p.variants : [makeVariant("#000000", globalCategory)])
-          .map(v => ({ ...v, sizeRows: defaultSizeRows(globalCategory) }));
+        const variants = (p.variants.length ? p.variants : [{ ...makeVariant("#000000", globalCategory, getSizesForCategory(globalCategory)), mainImage: p.imageUrl }])
+          .map(v => ({ ...v, sizeRows: getSizesForCategory(globalCategory) }));
         return { ...p, categoryId: globalCategory, subcategoryId: globalSubcategory, variants };
       }));
 
@@ -1950,6 +2072,12 @@ export function BulkUploadTab() {
                   </select>
                 </div>
               </div>
+              <CategorySizeEditor
+                categoryId={globalCategory}
+                rows={getSizesForCategory(globalCategory)}
+                onChange={updateCurrentSizeRows}
+                onReset={resetCurrentSizeRows}
+              />
               <Button className="w-full gap-2" onClick={handleFetch} disabled={loadingImages}>
                 {loadingImages ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
                 Load {fetchCount} Images from R2
@@ -2484,6 +2612,14 @@ export function BulkUploadTab() {
               <FolderOpen className="w-3.5 h-3.5" /> Apply to All
             </Button>
           </div>
+          {globalCategory && (
+            <CategorySizeEditor
+              categoryId={globalCategory}
+              rows={getSizesForCategory(globalCategory)}
+              onChange={updateCurrentSizeRows}
+              onReset={resetCurrentSizeRows}
+            />
+          )}
 
           {/* Set one price for all products (optional) */}
           <div className="bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row gap-3 items-end">
@@ -2526,6 +2662,7 @@ export function BulkUploadTab() {
               <ProductCard key={idx} product={product} idx={idx}
                 categories={categories as any[]} subcategories={subcategories as any[]}
                 onUpdate={updateProduct} onRemove={removeProduct}
+                getSizesForCategory={getSizesForCategory}
                 usedImageUrls={usedImageUrls} usedVideoUrls={usedVideoUrls} />
             ))}
             <button onClick={() => setStep(2)}
