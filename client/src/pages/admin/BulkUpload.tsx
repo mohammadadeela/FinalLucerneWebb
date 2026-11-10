@@ -33,6 +33,7 @@ import {
   Key,
 } from "lucide-react";
 import { cn, optimizeCloudinaryUrl } from "@/lib/utils";
+import { R2MediaUploader, type R2UploadedMedia } from "@/components/admin/R2MediaUploader";
 
 interface MediaImage {
   publicId: string;
@@ -123,6 +124,28 @@ export default function AdminBulkUpload() {
       setLoadingImages(false);
     }
   }, [fetchCount, toast]);
+
+  const handleR2MediaUploaded = (items: R2UploadedMedia[]) => {
+    const images: MediaImage[] = items.filter(item => item.type === "image").map(item => ({
+      publicId: item.url.replace(/^https?:\/\/[^/]+\//, "").replace(/\/main\.webp$/, ""),
+      url: item.url.replace(/\/main\.webp$/, "/400.webp"),
+      fullUrl: item.url,
+      width: 0,
+      height: 0,
+      createdAt: new Date().toISOString(),
+      format: "webp",
+      bytes: 0,
+    }));
+    if (images.length) {
+      const uploadedUrls = new Set(images.map(img => img.fullUrl));
+      setMediaImages(prev => [...images, ...prev.filter(img => !uploadedUrls.has(img.fullUrl))]);
+      setSelectedImages(prev => new Set([...prev, ...images.map(img => img.fullUrl)]));
+      if (step <= 2) setStep(2);
+    }
+    const videoCount = items.filter(item => item.type === "video").length;
+    toast({ title: "Saved to Cloudflare R2",
+      description: `${images.length} photo(s) ready to select${videoCount ? `, ${videoCount} video(s) saved to R2` : ""}.` });
+  };
 
   const handleFetch = () => {
     setMediaImages([]);
@@ -350,6 +373,8 @@ export default function AdminBulkUpload() {
             </p>
           </div>
         </div>
+
+        <R2MediaUploader onUploaded={handleR2MediaUploaded} />
 
         {/* Step indicator */}
         <div className="bg-card border border-border rounded-xl p-4">
