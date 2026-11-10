@@ -55,6 +55,7 @@ import {
   getOllamaUrl, saveOllamaUrl, generateWithOllama,
 } from "@/lib/ollamaAI";
 import { cn, optimizeCloudinaryUrl } from "@/lib/utils";
+import { R2MediaUploader, type R2UploadedMedia } from "@/components/admin/R2MediaUploader";
 
 /* ─── Types ─── */
 interface SizeRow { size: string; qty: number }
@@ -1288,6 +1289,32 @@ export function BulkUploadTab() {
     } finally { setLoadingImages(false); }
   }, [fetchCount, toast]);
 
+  // Newly uploaded photos are ready for selection without a second R2 fetch.
+  // Videos stay in the R2 video library and can be attached via the media picker.
+  const handleR2MediaUploaded = (items: R2UploadedMedia[]) => {
+    const images = items.filter(item => item.type === "image").map(item => ({
+      publicId: item.url.replace(/^https?:\/\/[^/]+\//, "").replace(/\/main\.webp$/, ""),
+      url: item.url.replace(/\/main\.webp$/, "/400.webp"),
+      fullUrl: item.url,
+      width: null,
+      height: null,
+      createdAt: new Date().toISOString(),
+      format: "webp",
+      bytes: 0,
+    }));
+    if (images.length) {
+      const justUploaded = new Set(images.map(img => img.fullUrl));
+      setR2Images(prev => [...images, ...prev.filter(img => !justUploaded.has(img.fullUrl))]);
+      setSelectedImages(prev => new Set([...prev, ...images.map(img => img.fullUrl)]));
+      if (step <= 2) setStep(2);
+    }
+    const videos = items.filter(item => item.type === "video").length;
+    toast({
+      title: "Saved to Cloudflare R2",
+      description: `${images.length} photo(s) ready to select${videos ? `, ${videos} video(s) ready to attach` : ""}.`,
+    });
+  };
+
   const handleFetch = () => {
     const n = parseInt(fetchCountInput) || 30;
     setFetchCount(n);
@@ -1850,6 +1877,8 @@ export function BulkUploadTab() {
           </div>
         </div>
       </div>
+
+      <R2MediaUploader onUploaded={handleR2MediaUploaded} />
 
       {/* Steps */}
       <div className="flex items-center gap-1">
