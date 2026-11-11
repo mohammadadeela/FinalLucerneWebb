@@ -1790,6 +1790,9 @@ export default function POS() {
   });
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  // Visible fallback for scanners with a slower keystroke rate or no global
+  // keyboard focus. The global scanner listener remains active everywhere else.
+  const [barcodeInput, setBarcodeInput] = useState("");
 
   // Debounce search so filtering only runs 150ms after typing stops
   useEffect(() => {
@@ -1902,6 +1905,9 @@ export default function POS() {
   const [showDiscount, setShowDiscount] = useState(false);
 
   /* Refs */
+  const barcodeRef = useRef<HTMLInputElement>(null);
+  const barcodeScanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const barcodeTypingRef = useRef({ value: "", lastAt: 0, count: 0 });
   const exchangeSearchRef = useRef<HTMLInputElement>(null);
   const exchangeReplacementSearchRef = useRef<HTMLDivElement>(null);
   const returnSearchRef = useRef<HTMLInputElement>(null);
@@ -2224,6 +2230,24 @@ export default function POS() {
     run();
     requestAnimationFrame(() => requestAnimationFrame(run));
   }, []);
+
+  // Focus the restored barcode field as the POS first appears, after returning
+  // from the dashboard, and whenever this window becomes active again.
+  // focusField never steals focus from another editable field in use.
+  useEffect(() => {
+    if (activeTab !== "pos" || exchangeMode || returnMode) return;
+    focusField(barcodeRef);
+    const resume = () => focusField(barcodeRef);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") resume();
+    };
+    window.addEventListener("focus", resume);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", resume);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [activeTab, exchangeMode, returnMode, focusField]);
 
   // Exchange/Return open with the invoice number field ready to type or
   // scan into immediately — no extra click needed before a cashier can
@@ -2683,8 +2707,12 @@ export default function POS() {
       ];
       return !excluded.includes(type);
     };
+    // Scanner focus is not a request to show the POS touch keyboard.
+    const isBarcodeField = (element: Element | null) =>
+      !!element && element === barcodeRef.current;
     const onFocusIn = (e: FocusEvent) => {
       const t = e.target as Element;
+      if (isBarcodeField(t)) return;
       if (isEditable(t)) {
         setOskTarget(t);
         // Let the keyboard finish rendering first, then bring the field
@@ -2704,7 +2732,7 @@ export default function POS() {
       // on mousedown), so this never fires just from tapping a key.
       setTimeout(() => {
         const active = document.activeElement;
-        if (!isEditable(active)) setOskTarget(null);
+        if (isBarcodeField(active) || !isEditable(active)) setOskTarget(null);
       }, 0);
     };
     // Belt-and-braces: clicking anything that isn't a text field and isn't
@@ -2714,6 +2742,7 @@ export default function POS() {
     const onPointerDown = (e: PointerEvent) => {
       const target = e.target as Element;
       if (oskContainerRef.current?.contains(target)) return;
+      if (isBarcodeField(target)) return;
       if (isEditable(target)) return;
       setOskTarget(null);
     };
@@ -3199,7 +3228,7 @@ export default function POS() {
     setPickerProduct(null);
   };
 
-  /* ── Barcode lookup — shared by automatic scanner capture ── */
+  /* ── Barcode lookup — shared by visible field and global scanner capture ── */
   const processBarcode = useCallback(
     (rawCode: string) => {
       const code = rawCode.trim().toLowerCase();
@@ -3391,6 +3420,58 @@ export default function POS() {
     toast,
     ar,
   ]);
+
+  // Reliable manual/slow-scanner fallback: an Enter (or Tab) in the barcode
+  // field works regardless of how fast its characters were transmitted.
+  const submitBarcodeField = useCallback((value: string) => {
+    const scanned = value.trim();
+    if (!scanned) return;
+    if (barcodeScanTimerRef.current !== null) {
+      clearTimeout(barcodeScanTimerRef.current);
+      barcodeScanTimerRef.current = null;
+    }
+    barcodeTypingRef.current = { value: "", lastAt: 0, count: 0 };
+    setBarcodeInput("");
+    processBarcode(scanned);
+  }, [processBarcode]);
+
+  const onBarcodeFieldChange = useCallback((value: string) => {
+    setBarcodeInput(value);
+    if (barcodeScanTimerRef.current !== null) {
+      clearTimeout(barcodeScanTimerRef.current);
+      barcodeScanTimerRef.current = null;
+    }
+    const previous = barcodeTypingRef.current;
+    const now = performance.now();
+    const continuedBurst =
+      value.length === previous.value.length + 1 &&
+      value.startsWith(previous.value) &&
+      now - previous.lastAt <= 100;
+    const count = continuedBurst ? previous.count + 1 : 1;
+    barcodeTypingRef.current = { value, lastAt: now, count };
+
+    // Scanners without an Enter suffix: auto-process only when multiple
+    // characters arrived quickly AND the complete barcode exists locally.
+    // Ordinary manual typing continues to use Enter and is never hijacked.
+    if (count >= 3 && value.length >= 3) {
+      barcodeScanTimerRef.current = setTimeout(() => {
+        const code = value.trim().toLowerCase();
+        const known = products.some((product) =>
+          String((product as any).barcode ?? "").trim().toLowerCase() === code ||
+          ((product.colorVariants as ColorVariant[] | undefined) || []).some(
+            (variant) => String(variant.barcode ?? "").trim().toLowerCase() === code,
+          )
+        );
+        if (known && barcodeRef.current?.value.trim().toLowerCase() === code) {
+          submitBarcodeField(value);
+        }
+      }, 160);
+    }
+  }, [products, submitBarcodeField]);
+
+  useEffect(() => () => {
+    if (barcodeScanTimerRef.current !== null) clearTimeout(barcodeScanTimerRef.current);
+  }, []);
 
   /* ── Hold & Recall ───────────────────────────────────────────────── */
   const holdCart = () => {
@@ -4349,6 +4430,12 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      // The dedicated barcode field handles Enter/Tab itself, including slow
+      // scanners. Do not globally process the same code a second time.
+      if (event.target === barcodeRef.current) {
+        reset();
+        return;
+      }
       if (event.ctrlKey || event.metaKey || event.altKey || event.repeat ||
           event.isComposing || event.key === "Process") {
         reset();
@@ -5402,8 +5489,32 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
         <div className="flex gap-4 h-[calc(100vh-160px)] min-h-[600px]">
           {/* ── LEFT: Products ──────────────────────────────────────── */}
           <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-            {/* Optional product search — barcode scanning is always active */}
-            <div className="mb-3">
+            {/* The barcode field remains ready on load; the global scanner
+                listener also accepts scans when focus is elsewhere. */}
+            <div className="flex gap-2 mb-3">
+              <div className="flex items-stretch rounded-xl border-2 border-border bg-muted/30 overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-background transition-all shadow-sm w-48 flex-shrink-0">
+                <span className="flex items-center ps-3.5 text-muted-foreground">
+                  <Barcode className="w-5 h-5" />
+                </span>
+                <input
+                  ref={barcodeRef}
+                  autoFocus
+                  value={barcodeInput}
+                  onChange={(e) => onBarcodeFieldChange(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.key === "Enter" || e.key === "Tab") && e.currentTarget.value.trim()) {
+                      e.preventDefault();
+                      submitBarcodeField(e.currentTarget.value);
+                    }
+                  }}
+                  placeholder={ar ? "باركود..." : "Barcode..."}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="bg-transparent px-2 py-3.5 text-base font-mono outline-none w-full placeholder:text-muted-foreground/60"
+                  data-testid="input-barcode-pos"
+                  aria-label={ar ? "بحث بالباركود" : "Barcode search"}
+                />
+              </div>
               {/* Text search */}
               <div className="flex items-stretch rounded-xl border-2 border-border bg-muted/30 overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 focus-within:bg-background transition-all shadow-sm flex-1">
                 <span className="flex items-center ps-3.5 text-muted-foreground">
