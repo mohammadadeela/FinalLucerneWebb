@@ -4880,11 +4880,23 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3 pb-4 border-b border-border">
         <div className="flex items-center gap-3 min-w-0">
-          <LucerneBrandMark className="w-11 h-11 shrink-0" />
+          {isAdmin ? (
+            <LucerneBrandMark className="w-11 h-11 shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center shadow-sm shrink-0">
+              <Receipt className="w-5 h-5" />
+            </div>
+          )}
           <div className="min-w-0">
-            <h1 dir="ltr" className="text-base sm:text-lg font-display font-bold uppercase tracking-[0.09em] leading-tight whitespace-nowrap">
-              LUCERNE BOUTIQUE
-            </h1>
+            {isAdmin ? (
+              <h1 dir="ltr" className="text-base sm:text-lg font-display font-bold uppercase tracking-[0.07em] leading-tight">
+                LUCERNE BOUTIQUE
+              </h1>
+            ) : (
+              <h1 className="text-lg font-display font-bold leading-tight">
+                {ar ? "نقطة البيع" : "Point of Sale"}
+              </h1>
+            )}
             {isEmployee && (
               <div className="mt-1 flex items-center gap-2 text-[11px] leading-tight text-muted-foreground" data-testid="text-pos-employee-name">
                 <span className="font-semibold text-foreground truncate">{currentUser?.fullName?.trim() || currentUser?.email}</span>
