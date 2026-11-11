@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n";
 import { useState } from "react";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { LucerneBrandMark } from "@/components/ui/LucerneBrandMark";
 
 export function AdminLayout({
   children,
@@ -46,6 +47,7 @@ export function AdminLayout({
 
   const isEmployee = user?.role === "employee";
   const isAdmin = user?.role === "admin";
+  const isPosPage = location.startsWith("/admin/pos");
 
   if (!user || (!isAdmin && !isEmployee)) {
     window.location.href = "/auth";
@@ -68,7 +70,7 @@ export function AdminLayout({
     { label: language === "ar" ? "الاستبدالات" : "Exchanges", href: "/admin/exchanges", icon: ArrowLeftRight },
     { label: t.admin.users, href: "/admin/users", icon: Users },
     { label: language === "ar" ? "محتوى الصفحات" : "Site Content", href: "/admin/site-content", icon: ImageIcon },
-    { label: language === "ar" ? "نقطة البيع" : "POS", href: "/admin/pos", icon: Receipt },
+    { label: isPosPage ? "Lucerne Boutique" : language === "ar" ? "نقطة البيع" : "POS", href: "/admin/pos", icon: isPosPage ? LucerneBrandMark : Receipt },
     { label: language === "ar" ? "أكواد الخصم" : "Discount Codes", href: "/admin/discount-codes", icon: TicketPercent },
     { label: language === "ar" ? "الفئات" : "Categories", href: "/admin/categories", icon: FolderTree },
     ...(reportsPageEnabled
@@ -80,7 +82,7 @@ export function AdminLayout({
   ];
 
   const employeeNavItems = [
-    { label: language === "ar" ? "نقطة البيع" : "POS", href: "/admin/pos", icon: Receipt },
+    { label: isPosPage ? "Lucerne Boutique" : language === "ar" ? "نقطة البيع" : "POS", href: "/admin/pos", icon: isPosPage ? LucerneBrandMark : Receipt },
   ];
 
   const navItems = isEmployee ? employeeNavItems : adminNavItems;
@@ -96,11 +98,15 @@ export function AdminLayout({
   const SidebarContent = () => (
     <>
       <div className="h-20 flex items-center gap-3 px-6 border-b border-border/60">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
-          <span className="text-primary-foreground font-display font-bold text-base">L</span>
-        </div>
+        {isPosPage ? (
+          <LucerneBrandMark className="w-10 h-10 shrink-0" />
+        ) : (
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
+            <span className="text-primary-foreground font-display font-bold text-base">L</span>
+          </div>
+        )}
         <div className="min-w-0">
-          <h2 className="font-display text-base tracking-widest font-semibold uppercase truncate" data-testid="text-admin-title">{t.admin.admin}</h2>
+          <h2 className="font-display text-base tracking-widest font-semibold uppercase truncate" data-testid="text-admin-title">{isPosPage ? "LUCERNE BOUTIQUE" : t.admin.admin}</h2>
           {isEmployee && (
             <span className="text-[9px] font-semibold tracking-widest uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
               {language === "ar" ? "موظف" : "Employee"}
