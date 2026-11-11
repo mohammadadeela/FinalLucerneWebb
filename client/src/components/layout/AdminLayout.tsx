@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n";
 import { useState } from "react";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { LucerneBrandMark } from "@/components/ui/LucerneBrandMark";
 
 export function AdminLayout({
   children,
@@ -213,7 +214,14 @@ export function AdminLayout({
             >
               <Menu className="w-5 h-5" />
             </button>
-            {currentNav && (
+            {location === "/admin/pos" ? (
+              <div className="flex items-center gap-2 min-w-0" data-testid="pos-topbar-brand">
+                <LucerneBrandMark className="w-7 h-7 shrink-0" />
+                <span dir="ltr" className="text-sm font-semibold tracking-wide truncate" data-testid="text-current-page">
+                  Lucerne Boutique
+                </span>
+              </div>
+            ) : currentNav && (
               <div className="flex items-center gap-2 min-w-0">
                 <currentNav.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span className="text-sm font-semibold truncate" data-testid="text-current-page">{currentNav.label}</span>
