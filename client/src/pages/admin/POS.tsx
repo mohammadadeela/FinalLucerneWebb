@@ -4849,23 +4849,17 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
       )}
       {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3 pb-4 border-b border-border">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-foreground text-background flex items-center justify-center shadow-sm shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-foreground text-background flex items-center justify-center shadow-sm">
             <Receipt className="w-4.5 h-4.5" />
           </div>
-          <div className="min-w-0">
+          <div>
             <h1 className="text-lg font-display font-bold leading-tight">
               {ar ? "نقطة البيع" : "Point of Sale"}
             </h1>
             <p className="text-[11px] text-muted-foreground leading-none mt-0.5">
               {ar ? "إدارة المبيعات والفواتير" : "Manage sales & invoices"}
             </p>
-            {isEmployee && (
-              <div className="mt-1 flex items-center gap-2 text-[11px] leading-tight text-muted-foreground" data-testid="text-pos-employee-name">
-                <span className="font-semibold text-foreground truncate">{currentUser?.fullName?.trim() || currentUser?.email}</span>
-                <span className="shrink-0 rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium">{ar ? "موظف" : "Employee"}</span>
-              </div>
-            )}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -5423,7 +5417,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                 className={`flex-shrink-0 px-5 py-3 rounded-full text-sm font-semibold transition-all duration-200 border-2 ${categoryFilter === "all" ? "bg-foreground text-background border-foreground shadow-md scale-105" : "bg-background border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"}`}
                 data-testid="button-cat-all"
               >
-                {ar ? "الكل" : "All"}
+                {ar ? "✦ الكل" : "✦ All"}
               </button>
               {categories.map((cat) => {
                 const catSubs = subcategories.filter(

@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n";
 import { useState } from "react";
 import { useSiteSettings } from "@/hooks/use-site-settings";
-import { LucerneBrandMark } from "@/components/ui/LucerneBrandMark";
 
 export function AdminLayout({
   children,
@@ -97,13 +96,11 @@ export function AdminLayout({
   const SidebarContent = () => (
     <>
       <div className="h-20 flex items-center gap-3 px-6 border-b border-border/60">
-        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm shrink-0">
+        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm">
           <span className="text-primary-foreground font-display font-bold text-base">L</span>
         </div>
         <div className="min-w-0">
-          <h2 className="font-display text-base font-semibold truncate" data-testid="text-admin-title">
-            {isEmployee ? (language === "ar" ? "نقطة البيع" : "Point of Sale") : t.admin.admin}
-          </h2>
+          <h2 className="font-display text-base tracking-widest font-semibold uppercase truncate" data-testid="text-admin-title">{t.admin.admin}</h2>
           {isEmployee && (
             <span className="text-[9px] font-semibold tracking-widest uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400">
               {language === "ar" ? "موظف" : "Employee"}
@@ -214,14 +211,7 @@ export function AdminLayout({
             >
               <Menu className="w-5 h-5" />
             </button>
-            {location === "/admin/pos" ? (
-              <div className="flex items-center gap-2 min-w-0" data-testid="pos-topbar-brand">
-                <LucerneBrandMark className="w-7 h-7 shrink-0" />
-                <span dir="ltr" className="text-sm font-semibold tracking-wide truncate" data-testid="text-current-page">
-                  Lucerne Boutique
-                </span>
-              </div>
-            ) : currentNav && (
+            {currentNav && (
               <div className="flex items-center gap-2 min-w-0">
                 <currentNav.icon className="w-4 h-4 text-muted-foreground shrink-0" />
                 <span className="text-sm font-semibold truncate" data-testid="text-current-page">{currentNav.label}</span>
