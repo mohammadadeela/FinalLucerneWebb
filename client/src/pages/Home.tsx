@@ -72,7 +72,7 @@ function BannerImage({
   alt,
   className,
   style,
-  fetchpriority = "low",
+  fetchPriority = "low",
   loading = "lazy",
   width,
 }: {
@@ -80,7 +80,7 @@ function BannerImage({
   alt: string;
   className?: string;
   style?: React.CSSProperties;
-  fetchpriority?: "high" | "low" | "auto";
+  fetchPriority?: "high" | "low" | "auto";
   loading?: "eager" | "lazy";
   width?: number;
 }) {
@@ -103,7 +103,7 @@ function BannerImage({
         alt={alt}
         className={className}
         style={style}
-        fetchPriority={fetchpriority}
+        fetchPriority={fetchPriority}
         loading={loading}
         decoding="async"
         onLoad={() => setReady(true)}

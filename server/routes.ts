@@ -2890,7 +2890,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
     try {
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(Buffer.from(req.file.buffer));
+      // Multer and ExcelJS use differently typed Node Buffer declarations.
+      // The uploaded bytes are already a Buffer accepted by ExcelJS at runtime.
+      await workbook.xlsx.load(req.file.buffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
       const worksheet = workbook.worksheets[0];
       if (!worksheet) return res.status(400).json({ message: "The Excel file has no worksheet" });
 
