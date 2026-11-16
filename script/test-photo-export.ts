@@ -95,3 +95,38 @@ await assert.rejects(prepareProductPhotoDownload([1], "ai", () => {}, async () =
     "X-Photos-Total": "2", "X-Photos-Included": "1", "X-Photos-Failed": "1", "X-Photos-Next-Offset": "0",
   } })), /incomplete/);
 console.log("44 products / 176 color photos merged into one valid ZIP; retries and incomplete-export checks passed.");
+
+const { selectAiPhotoHistory, aiPhotoSeeds } = await import("../server/productPhotoSelection");
+const { buildAiPhotoHistoryQuery } = await import("../server/photoExportQuery");
+const legacyProducts = products.map((product, p) => ({ ...product,
+  colorVariants: product.colorVariants.map((variant, c) => ({ ...variant,
+    originalImage: `https://example.com/source/${p}/${c}`,
+    mainImage: `https://example.com/source/${p}/${c}`,
+    // Simulates older products: only 10 images carry explicit AI markers.
+    media: variant.media.map((m, shot) => ({ ...m, aiGenerated: p < 5 && c === 0 ? true : undefined })),
+    images: [`https://example.com/legacy/${p}/${c}.webp`],
+  })),
+}));
+const history = legacyProducts.flatMap((product) => product.colorVariants.flatMap((v) => [
+  ...v.media.map((m) => ({ url: m.url, source_url: v.originalImage })),
+  { url: v.images[0], source_url: null }, // old URL-only tracking still supported
+  { url: v.originalImage + "/missing-from-gallery.webp", source_url: v.originalImage },
+  { url: v.originalImage + "/regenerated.webp", source_url: v.originalImage + "/missing-from-gallery.webp" },
+]));
+assert.equal(legacyProducts.flatMap((p) => photosForProduct(p, "ai")).filter((p) => p.aiGenerated).length, 10);
+const recovered = selectAiPhotoHistory(legacyProducts, history);
+assert.equal(recovered.length, 440, "Recover all 5 generated images of each of 88 product colors, not only the 10 flagged photos");
+assert.equal(new Set(recovered.map((p) => p.productId)).size, 44);
+assert.ok(recovered.every((p) => !p.url.endsWith("/0") && !p.url.endsWith("/1")));
+assert.equal(aiPhotoSeeds(legacyProducts[0]).filter((p) => p.url.includes("/legacy/")).length, 2);
+assert.equal(selectAiPhotoHistory([legacyProducts[0]], [...history,
+  { url: "https://unrelated.test/ai.webp", source_url: "https://unrelated.test/source" },
+]).length, 10, "Unselected product history must not leak into the download");
+const cycle = [{ url: "https://cycle.test/a", source_url: "https://cycle.test/b" },
+  { url: "https://cycle.test/b", source_url: "https://cycle.test/a" }];
+assert.equal(selectAiPhotoHistory([{ id: 999, mainImage: cycle[0].url }], cycle).length, 2);
+const historyQuery = dialect.sqlToQuery(buildAiPhotoHistoryQuery(urls));
+assert.deepEqual(historyQuery.params, urls);
+assert.match(historyQuery.sql, /WITH RECURSIVE/);
+assert.doesNotMatch(historyQuery.sql, /UNION ALL/);
+console.log("AI history: 10 flagged photos expanded to 440 recorded photos across 44 products / 88 colors; legacy arrays, lineage, cycles and selection boundaries passed.");

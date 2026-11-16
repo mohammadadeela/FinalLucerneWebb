@@ -1,11 +1,11 @@
 import type { Express } from "express";
-import { sql } from "drizzle-orm";
+import { sql, inArray } from "drizzle-orm";
 import { db } from "./db";
-import { storage } from "./storage";
+import { products as productsTable } from "@shared/schema";
 import { buildZip } from "./watermark";
 import sharp from "sharp";
-import { buildTrackedPhotoLookupQuery } from "./photoExportQuery";
-import { photosForProduct, type PhotoMode, type PhotoEntry } from "./productPhotoSelection";
+import { buildAiPhotoHistoryQuery } from "./photoExportQuery";
+import { aiPhotoSeeds, selectAiPhotoHistory, type AiPhotoRecord, photosForProduct, type PhotoMode, type PhotoEntry } from "./productPhotoSelection";
 
 let indexPromise: Promise<void> | null = null;
 export function ensureAiPhotoIndex(): Promise<void> {
@@ -86,8 +86,9 @@ export function registerProductPhotoExportRoutes(app: Express) {
       const entries: PhotoEntry[] = [];
       // One query per export part, rather than querying hundreds of products
       // separately every time the admin downloads another ZIP.
-      const selectedIds = new Set(ids);
-      const matchingProducts = (await storage.getProducts()).filter((p) => selectedIds.has(p.id));
+      // Export the persisted galleries directly. Storefront normalization can
+      // discard legacy variant.images when a partial media array also exists.
+      const matchingProducts = await db.select().from(productsTable).where(inArray(productsTable.id, ids));
       const productsById = new Map(matchingProducts.map((p) => [p.id, p]));
       for (const id of ids) {
         const product = productsById.get(id);
@@ -95,28 +96,19 @@ export function registerProductPhotoExportRoutes(app: Express) {
       }
       let selected = entries;
       if (mode === "ai") {
-        // Product-media AI flags are sufficient on newer products. The URL
-        // index also captures generated photos saved before those flags
-        // existed, including when an AI photo became the main image.
-        const indexed = new Set<string>();
-        const urls = [...new Set(entries.map((photo) => photo.url))];
-        try {
-          await ensureAiPhotoIndex();
-          // Explicit SQL bind parameters avoid the old PostgreSQL array-cast
-          // failure. Bound the lookup so even large selections stay safe.
-          for (let index = 0; index < urls.length; index += 250) {
-            const chunk = urls.slice(index, index + 250);
-            const rows = await db.execute(buildTrackedPhotoLookupQuery(chunk));
-            for (const item of (rows as any).rows || []) {
-              if (typeof item.url === "string") indexed.add(item.url);
-            }
+        await ensureAiPhotoIndex();
+        const orderedProducts = ids.map((id) => productsById.get(id)).filter(Boolean);
+        const urls = [...new Set(orderedProducts.flatMap((p) => aiPhotoSeeds(p).map((photo) => photo.url)))];
+        const records = new Map<string, AiPhotoRecord>();
+        for (let index = 0; index < urls.length; index += 250) {
+          const rows = await db.execute(buildAiPhotoHistoryQuery(urls.slice(index, index + 250)));
+          for (const item of (rows as any).rows || []) {
+            if (typeof item.url === "string") records.set(item.url, item);
           }
-        } catch (error) {
-          // An old or inaccessible metadata index must not prevent exporting
-          // photos already marked aiGenerated on the product itself.
-          console.error("[photo-export] AI metadata lookup unavailable, using product media flags", error);
         }
-        selected = entries.filter((entry) => entry.aiGenerated || indexed.has(entry.url));
+        // A failed history lookup must fail the export, not silently fall back
+        // to the handful of newer photos that still have explicit media flags.
+        selected = selectAiPhotoHistory(orderedProducts, [...records.values()]);
       }
       const total = selected.length;
       if (!total) return res.status(404).json({
