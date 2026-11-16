@@ -30,7 +30,7 @@ import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCatego
 import { getEnvEmployees } from "./staff-env";
 import { auditMiddleware, registerAuditRoutes } from "./audit";
 import { adminUndoMiddleware, registerAdminUndoRoutes } from "./adminUndo";
-import { registerProductPhotoExportRoutes, trackAiProductPhoto } from "./photoExport";
+import { registerProductPhotoExportRoutes, trackAiProductPhoto, resolveOriginalAiSource } from "./photoExport";
 import {
   PICKUP_REGION, PICKUP_ADDRESS_PLACEHOLDER, PICKUP_CITY_PLACEHOLDER,
   isGuestCheckoutEnabled, isOnlinePickupEnabled, guestOrderToken, verifyGuestOrderToken,
@@ -423,6 +423,12 @@ function normalizeColorVariantsPayload(value: unknown): any[] {
       images: Array.from(new Set(mergedMedia.filter((item) => item.type === "image" && item.url !== mainImage).map((item) => item.url))),
       sizes: sizes.length > 0 ? sizes : Object.keys(sizeInventory),
       sizeInventory,
+      originalImage: (() => {
+        const original = String(variant?.originalImage || "").trim();
+        return original && mergedMedia.some((item) => item.type === "image" && item.url === original)
+          ? original
+          : undefined;
+      })(),
       colorTags: Array.isArray(variant?.colorTags) ? normalizeStringArrayPayload(variant.colorTags, `colorVariants[${idx}].colorTags`) : [],
       barcode: typeof variant?.barcode === "string" && variant.barcode.trim() ? variant.barcode.trim() : undefined,
       media: mergedMedia,
@@ -6748,13 +6754,20 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
     }
     try {
       const { generateAiProductPhoto } = await import("./aiPhotoGen");
+      let referenceUrl = imageUrl;
+      try {
+        referenceUrl = await resolveOriginalAiSource(imageUrl);
+      } catch (error) {
+        // Source history is a safety enhancement, not a reason to block photos.
+        console.error("[ai-photo] Could not resolve original reference", error);
+      }
       const { buffer } = await generateAiProductPhoto(
-        imageUrl,
+        referenceUrl,
         shotType === "model" ? "model" : "product",
         !!isFootwear,
       );
       const url = await uploadToCloudinary(buffer, "ai-generated-photo.png");
-      try { await trackAiProductPhoto(url); }
+      try { await trackAiProductPhoto(url, referenceUrl); }
       catch (error) { console.error("[ai-photo] Could not record AI image provenance", error); }
       res.json({ url });
     } catch (err: any) {

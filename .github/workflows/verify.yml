@@ -37,6 +37,8 @@ jobs:
         run: npm ci --include=dev --no-audit --no-fund
       - name: TypeScript check
         run: npm run check
+      - name: Verify original AI photo reference selection
+        run: node_modules/.bin/tsx script/test-ai-source.ts
       - name: Build frontend and backend
         if: always()
         run: npm run build

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { getVideoPosterUrl, optimizeCloudinaryUrl } from "@/lib/utils";
+import { getOriginalProductPhoto } from "@/lib/productAiSource";
 import JsBarcode from "jsbarcode";
 import { useLocation } from "wouter";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -727,6 +728,7 @@ interface VariantState {
   colorCode: string;
   mainImage: string;
   images: string[];
+  originalImage?: string;
   sizeRows: { size: string; qty: number }[];
   newSizeName: string;
   colorTags: string[];
@@ -2311,6 +2313,7 @@ export default function Products() {
             colorCode: v.colorCode || "#000000",
             mainImage: v.mainImage,
             images: v.images || [],
+            originalImage: v.originalImage,
             sizeRows: Object.entries(v.sizeInventory || {}).map(
               ([size, qty]) => ({ size, qty: qty as number }),
             ),
@@ -2910,6 +2913,7 @@ export default function Products() {
       media: normalized.media,
       mainImage: normalized.mainImage,
       images: normalized.images,
+      originalImage: item.url === variant.originalImage ? undefined : variant.originalImage,
     });
   };
 
@@ -3031,9 +3035,18 @@ export default function Products() {
    */
   const generateAiPhotosForVariant = async (
     variantIdx: number,
-    sourceUrl: string,
+    requestedSourceUrl: string,
     key: string,
   ): Promise<void> => {
+    const sourceUrl = getOriginalProductPhoto(variants[variantIdx], requestedSourceUrl);
+    if (!sourceUrl) {
+      toast({
+        title: language === "ar" ? "لا توجد صورة أصلية" : "No original product photo",
+        description: language === "ar" ? "أضف صورة للمنتج قبل التوليد." : "Add a product photo before generating.",
+        variant: "destructive",
+      });
+      return;
+    }
     setPhotoGenerating(key, true);
     const isFootwear = Number(formData.categoryId) === SHOES_CATEGORY_ID;
 
@@ -3092,7 +3105,10 @@ export default function Products() {
         const normalized = normalizeVariantMediaState(variant, newMedia);
         return prev.map((v, i) =>
           i === variantIdx
-            ? { ...v, media: normalized.media, mainImage: normalized.mainImage, images: normalized.images }
+            ? {
+                ...v, originalImage: sourceUrl, media: normalized.media,
+                mainImage: normalized.mainImage, images: normalized.images,
+              }
             : v,
         );
       });
@@ -3220,8 +3236,11 @@ export default function Products() {
         const cvs = ((product as any).colorVariants as ColorVariant[]) || [];
         const hasVariants = cvs.length > 0;
         const imageUrls = hasVariants
-          ? cvs.map((v) => v.mainImage || (product as any).mainImage).filter(Boolean)
-          : [(product as any).mainImage].filter(Boolean);
+          ? cvs.map((v) => getOriginalProductPhoto(v, undefined, product.mainImage)).filter((url): url is string => !!url)
+          : [getOriginalProductPhoto({
+              mainImage: product.mainImage,
+              images: (product as any).images || [],
+            })].filter((url): url is string => !!url);
         if (imageUrls.length === 0) throw new Error("No photos on product");
 
         const res = await fetch("/api/admin/ai-generate", {
@@ -3326,8 +3345,12 @@ export default function Products() {
       }
     };
 
-    const processVariant = async (variant: any, isFootwear: boolean): Promise<any> => {
-      const sourceUrl: string | undefined = variant?.mainImage || undefined;
+    const processVariant = async (
+      variant: any,
+      isFootwear: boolean,
+      fallbackMainImage?: string,
+    ): Promise<any> => {
+      const sourceUrl = getOriginalProductPhoto(variant, undefined, fallbackMainImage);
       if (!sourceUrl) throw new Error("no source image");
 
       const wantModel = bulkAiPhotoShotTypes.has("model");
@@ -3366,7 +3389,10 @@ export default function Products() {
         { ...variant, sizeRows: [], newSizeName: "", colorTags: variant.colorTags || [] } as any,
         newMedia,
       );
-      return { ...variant, media: normalized.media, mainImage: normalized.mainImage, images: normalized.images };
+      return {
+        ...variant, originalImage: sourceUrl, media: normalized.media,
+        mainImage: normalized.mainImage, images: normalized.images,
+      };
     };
 
     let failed = 0;
@@ -3391,7 +3417,7 @@ export default function Products() {
         }));
 
         try {
-          newColorVariants.push(await processVariant(variant, isFootwear));
+          newColorVariants.push(await processVariant(variant, isFootwear, product?.mainImage));
         } catch {
           failed += 1;
           newColorVariants.push(variant);
@@ -3453,9 +3479,7 @@ export default function Products() {
 
     // Helper: get the primary image URL for a variant
     const getVariantImage = (v: VariantState): string | undefined =>
-      v.mainImage ||
-      v.images[0] ||
-      v.media.find((m) => m.type === "image")?.url;
+      getOriginalProductPhoto(v);
 
     // Collect images — one per variant for multi-color, first available for single
     const variantImages: { variantIdx: number; url: string }[] = [];
@@ -3715,6 +3739,7 @@ export default function Products() {
           colorCode: v.colorCode,
           mainImage: normalizedVariant.mainImage,
           images: normalizedVariant.images,
+          originalImage: getOriginalProductPhoto(normalizedVariant),
           sizes: v.sizeRows.map((r) => r.size),
           sizeInventory,
           colorTags: v.colorTags,

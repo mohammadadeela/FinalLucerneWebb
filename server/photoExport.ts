@@ -16,7 +16,10 @@ export function ensureAiPhotoIndex(): Promise<void> {
         url text PRIMARY KEY,
         created_at timestamptz NOT NULL DEFAULT now()
       )
-    `).then(() => undefined).catch((error) => {
+    `).then(async () => {
+      // Existing installations already have the URL index table.
+      await db.execute(sql`ALTER TABLE ai_generated_product_media ADD COLUMN IF NOT EXISTS source_url text`);
+    }).catch((error) => {
       indexPromise = null;
       throw error;
     });
@@ -24,12 +27,33 @@ export function ensureAiPhotoIndex(): Promise<void> {
   return indexPromise;
 }
 
-export async function trackAiProductPhoto(url: string): Promise<void> {
+export async function trackAiProductPhoto(url: string, originalSourceUrl?: string): Promise<void> {
   await ensureAiPhotoIndex();
   await db.execute(sql`
-    INSERT INTO ai_generated_product_media (url)
-    VALUES (${url}) ON CONFLICT (url) DO NOTHING
+    INSERT INTO ai_generated_product_media (url, source_url)
+    VALUES (${url}, ${originalSourceUrl || null})
+    ON CONFLICT (url) DO UPDATE
+      SET source_url = COALESCE(ai_generated_product_media.source_url, EXCLUDED.source_url)
   `);
+}
+
+// Generated photos retain their original reference URL even if used as the
+// storefront main photo or regenerated later. Follow the lineage, never
+// recursively treat a generated result as ground-truth product photography.
+export async function resolveOriginalAiSource(url: string): Promise<string> {
+  await ensureAiPhotoIndex();
+  let current = url;
+  const visited = new Set<string>();
+  for (let i = 0; i < 12 && !visited.has(current); i++) {
+    visited.add(current);
+    const result = await db.execute(sql`
+      SELECT source_url FROM ai_generated_product_media WHERE url = ${current} LIMIT 1
+    `);
+    const source = (result as any).rows?.[0]?.source_url;
+    if (typeof source !== "string" || !source.trim() || source === current) break;
+    current = source.trim();
+  }
+  return current;
 }
 
 function safeName(value: unknown): string {

@@ -58,6 +58,8 @@ export interface ColorVariant {
   images: string[];
   sizes: string[];
   sizeInventory: Record<string, number>;
+  // Reference used for AI photography, independent of mainImage.
+  originalImage?: string;
   colorTags?: string[];
   media?: MediaItem[];
   barcode?: string;
