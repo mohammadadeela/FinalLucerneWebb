@@ -30,11 +30,11 @@ const PRODUCT_BACKGROUNDS = [
 // top-down flat lays of the pair directly on a textured stone/concrete floor,
 // sometimes with one real-life prop (a chair leg) just entering the frame.
 const FOOTWEAR_SURFACES = [
-  "the pair resting directly on the floor, shot top-down as a flat lay, with the chrome leg of a modern chair partially entering the top corner of the frame as a subtle real-life prop",
-  "the pair resting directly on the floor, shot top-down as a flat lay, one shoe laid flat and the other tipped naturally on its side against it, toes pointing slightly apart",
-  "the pair resting directly on the floor, shot top-down as a flat lay, with generous empty floor around them and nothing else in frame",
-  "the pair resting directly on the floor near the soft out-of-focus edge of a sheer white curtain touching the floor",
-  "the pair on a low honed-stone step, shot from a slightly elevated three-quarter angle",
+  "the pair resting directly on the floor, photographed from a low lateral side angle showing the full outer side profiles of both shoes, with the chrome leg of a modern chair partially entering the corner of the frame as a subtle real-life prop",
+  "the pair resting directly on the floor, photographed from the side with one shoe slightly behind the other, both full side silhouettes unobstructed and toes pointing slightly apart",
+  "the pair resting directly on the floor, shot from a low side-on angle showing both entire side profiles, with generous empty floor around them and nothing else in frame",
+  "the pair resting directly on the floor near the soft out-of-focus edge of a sheer white curtain touching the floor, photographed from the side with the complete toe-to-heel silhouettes clearly visible",
+  "the pair on a low honed-stone step, photographed from a low lateral side angle showing the full outer sides and heels, never straight from the front",
 ];
 
 // Apparel product shots (no model) — the garment must still look real and
@@ -185,7 +185,7 @@ ${FIDELITY_RULES}
 ═══════════════════════════════════════
 ✅ ONLY CHANGE — the photography around the product:
 ═══════════════════════════════════════
-⚠️ MANDATORY: Show the product from the FRONT. Never generate a back view, rear view, or an angle where the front design of the product is hidden or turned away from the camera.
+⚠️ MANDATORY: ${isFootwear ? "Photograph the footwear from a CLEAR LATERAL SIDE PROFILE, like a side-view shoe catalog image. Show the complete outer sides of the shoes, with each full toe-to-heel silhouette, heel height, upper design and sole unobstructed. Camera is low and side-on, NEVER straight from the front, toe-on, head-on, overhead/top-down, or front three-quarter. Keep both shoes fully in frame and easy to inspect." : "Show the product from the FRONT. Never generate a back view, rear view, or an angle where the front design of the product is hidden or turned away from the camera."}
 - This is a CLEAN PRODUCT-ONLY shot — absolutely NO person, model, hands, or body parts anywhere in the frame.
 - Floor / background: ${scene.background}
 - Placement: ${scene.surface}
@@ -199,7 +199,7 @@ ${FIDELITY_RULES}
 ═══════════════════════════════════════
 ${TECH_QUALITY} No human model or body part of any kind in this shot.
 
-FINAL REMINDER — the single most important rule: every physical detail of the product (shape, color, heel height, garment length, materials, decorations) must remain perfectly unchanged from the source image. Only the background, lighting, angle, and styling may change, and this shot must contain the product ALONE with no person in it.`;
+FINAL REMINDER — the single most important rule: every physical detail of the product (shape, color, heel height, garment length, materials, decorations) must remain perfectly unchanged from the source image. Only the background, lighting, angle, and styling may change, and this shot must contain the product ALONE with no person in it.${isFootwear ? " For footwear, use the same clear side-on lateral profile as the reference example: entire shoes visible from toe to heel, not a frontal or overhead view." : ""}`;
 }
 
 /**
@@ -211,7 +211,7 @@ FINAL REMINDER — the single most important rule: every physical detail of the 
 export function buildModelShotPrompt(isFootwear: boolean, scene = buildModelScene()): string {
   const wornInstructions = isFootwear
     ? `- This is a shot of a woman's bare legs and feet, WEARING the exact shoes from the source photo — cropped from roughly mid-calf down. NO face, NO upper body, NO torso — legs and feet only, exactly like an editorial fashion close-up.
-- The shoes must be shown from the FRONT/side-front — the toe box and front upper of the shoe must be clearly visible facing the camera. Do NOT show only the back/heel of the shoe.
+- The shoes MUST be photographed from a CLEAR LATERAL SIDE PROFILE, showing the full outer side of each shoe, from toe to heel, including the sole, side upper and heel shape. Keep the entire shoes visible and unobstructed. NEVER use a straight-on front/toe-on, front three-quarter, top-down, or rear-only view.
 - Pose: ${scene.pose}
 - Styling: ${pick([
         "bare legs, cropped from mid-calf down",
@@ -238,11 +238,11 @@ ${FIDELITY_RULES}
 ═══════════════════════════════════════
 ✅ ONLY CHANGE — the photography and styling around the product:
 ═══════════════════════════════════════
-⚠️ MANDATORY: The product must be shown from the FRONT. Never generate a back view, rear view, or a view where the front design of the product is hidden or turned away from the camera.
+⚠️ MANDATORY: ${isFootwear ? "Show the shoes from a clear side-on LATERAL PROFILE. The full toe-to-heel silhouette of each shoe must be visible and easy for a customer to inspect. No front-facing, toe-on, front three-quarter, top-down or rear-only views." : "The product must be shown from the FRONT. Never generate a back view, rear view, or a view where the front design of the product is hidden or turned away from the camera."}
 ${wornInstructions}
 - Background / set: ${scene.background}
 - Lighting: ${scene.lighting}
-- Camera angle: ${scene.angle}
+- Camera angle: ${isFootwear ? "a clear low side-on LATERAL camera angle at shoe height, showing the full side silhouette of the shoes, never a frontal or overhead perspective" : scene.angle}
 - Realistic soft contact shadow grounded on the floor
 - Overall look: a real boutique's Instagram fashion photo — a styled interior set with real props, shot like premium fashion social content (in the spirit of Zara, Mango, Massimo Dutti lookbooks). Warm, elegant, believable. No other people in the frame.
 
@@ -251,7 +251,7 @@ ${REALISM_RULES}
 ═══════════════════════════════════════
 ${TECH_QUALITY} Do not generate any readable text, watermark, or brand logo other than what already exists on the product itself. Do not depict any real, identifiable public figure — the model must be a completely fictional, invented person. The model's face must be sharp and clearly visible — never blurred, pixelated, or censored.
 
-FINAL REMINDER — the single most important rule: every physical detail of the product (shape, color, heel height, garment length, materials, decorations) must remain perfectly unchanged from the source image, AND the product must face the camera — front view only, never the back.`;
+FINAL REMINDER — the single most important rule: every physical detail of the product (shape, color, heel height, garment length, materials, decorations) must remain perfectly unchanged from the source image${isFootwear ? ", AND the shoes must be seen from their full OUTER SIDES in a clear toe-to-heel lateral profile, never from the front, above or back." : ", AND the product must face the camera — front view only, never the back."}`;
 }
 
 /**
