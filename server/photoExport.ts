@@ -64,6 +64,46 @@ function safeName(value: unknown): string {
 }
 
 export function registerProductPhotoExportRoutes(app: Express) {
+  // Count exactly the photos selected by each export mode, including recorded
+  // generations that are no longer present in a product's current gallery.
+  app.post("/api/admin/products/photo-export/counts", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const rawIds: unknown[] = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    const ids: number[] = [...new Set(rawIds
+      .map(Number).filter((id: number) => Number.isInteger(id) && id > 0))];
+    if (!ids.length || ids.length > 1000) {
+      return res.status(400).json({ message: "Select between 1 and 1000 products" });
+    }
+    try {
+      const matchingProducts = await db.select().from(productsTable).where(inArray(productsTable.id, ids));
+      const productsById = new Map(matchingProducts.map((p) => [p.id, p]));
+      const orderedProducts = ids.map((id) => productsById.get(id)).filter(Boolean);
+      const counts = { main: 0, all: 0, ai: 0 };
+      for (const product of orderedProducts) {
+        counts.main += photosForProduct(product, "main").length;
+        counts.all += photosForProduct(product, "all").length;
+      }
+
+      await ensureAiPhotoIndex();
+      const urls = [...new Set(orderedProducts.flatMap((p) => aiPhotoSeeds(p).map((photo) => photo.url)))];
+      const records = new Map<string, AiPhotoRecord>();
+      for (let index = 0; index < urls.length; index += 250) {
+        const rows = await db.execute(buildAiPhotoHistoryQuery(urls.slice(index, index + 250)));
+        for (const item of (rows as any).rows || []) {
+          if (typeof item.url === "string") records.set(item.url, item);
+        }
+      }
+      counts.ai = selectAiPhotoHistory(orderedProducts, [...records.values()]).length;
+      res.setHeader("Cache-Control", "no-store");
+      return res.json(counts);
+    } catch (error) {
+      console.error("[photo-export] counts failed", error);
+      return res.status(500).json({ message: "Could not count selected product photos" });
+    }
+  });
+
   app.post("/api/admin/products/photo-export", async (req, res) => {
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
