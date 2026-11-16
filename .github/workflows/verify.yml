@@ -39,6 +39,8 @@ jobs:
         run: npm run check
       - name: Verify original AI photo reference selection
         run: node_modules/.bin/tsx script/test-ai-source.ts
+      - name: Verify photo export SQL and ZIP generation
+        run: node_modules/.bin/tsx script/test-photo-export.ts
       - name: Build frontend and backend
         if: always()
         run: npm run build

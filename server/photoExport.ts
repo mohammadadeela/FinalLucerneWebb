@@ -4,6 +4,7 @@ import { db } from "./db";
 import { storage } from "./storage";
 import { buildZip } from "./watermark";
 import sharp from "sharp";
+import { buildTrackedPhotoLookupQuery } from "./photoExportQuery";
 
 type PhotoMode = "main" | "all" | "ai";
 type PhotoEntry = { productId: number; productName: string; color: string; url: string; index: number; aiGenerated: boolean };
@@ -139,12 +140,27 @@ export function registerProductPhotoExportRoutes(app: Express) {
       }
       let selected = entries;
       if (mode === "ai") {
-        await ensureAiPhotoIndex();
-        const urls = [...new Set(entries.map((p) => p.url))];
-        const rows = urls.length
-          ? await db.execute(sql`SELECT url FROM ai_generated_product_media WHERE url = ANY(${urls}::text[])`)
-          : { rows: [] };
-        const indexed = new Set(((rows as any).rows || []).map((r: any) => r.url));
+        // Product-media AI flags are sufficient on newer products. The URL
+        // index also captures generated photos saved before those flags
+        // existed, including when an AI photo became the main image.
+        const indexed = new Set<string>();
+        const urls = [...new Set(entries.map((photo) => photo.url))];
+        try {
+          await ensureAiPhotoIndex();
+          // Explicit SQL bind parameters avoid the old PostgreSQL array-cast
+          // failure. Bound the lookup so even large selections stay safe.
+          for (let index = 0; index < urls.length; index += 250) {
+            const chunk = urls.slice(index, index + 250);
+            const rows = await db.execute(buildTrackedPhotoLookupQuery(chunk));
+            for (const item of (rows as any).rows || []) {
+              if (typeof item.url === "string") indexed.add(item.url);
+            }
+          }
+        } catch (error) {
+          // An old or inaccessible metadata index must not prevent exporting
+          // photos already marked aiGenerated on the product itself.
+          console.error("[photo-export] AI metadata lookup unavailable, using product media flags", error);
+        }
         selected = entries.filter((entry) => entry.aiGenerated || indexed.has(entry.url));
       }
       const total = selected.length;
@@ -157,12 +173,12 @@ export function registerProductPhotoExportRoutes(app: Express) {
 
       // Each part is a bounded ZIP, so large selections never silently stop
       // after the first few hundred photos or exhaust server memory.
-      const partSize = 75;
+      const partSize = 40;
       const chosen = selected.slice(offset, offset + partSize);
       const files: { name: string; data: Buffer }[] = [];
       const usedNames = new Set<string>();
       let failed = 0;
-      for (const photo of chosen) {
+      const convertPhoto = async (photo: PhotoEntry): Promise<{ photo: PhotoEntry; data: Buffer } | null> => {
         try {
           let jpeg: Buffer | undefined;
           for (let attempt = 0; attempt < 2 && !jpeg; attempt++) {
@@ -177,18 +193,32 @@ export function registerProductPhotoExportRoutes(app: Express) {
             }
           }
           if (!jpeg) throw new Error("Image conversion failed");
+          return { photo, data: jpeg };
+        } catch (error) {
+          failed++;
+          console.error("[photo-export] image failed", photo.productId, photo.url, error);
+          return null;
+        }
+      };
+
+      // Fetch and convert a few images at a time. A slow image must not hold
+      // every other image in the ZIP hostage or cause a reverse-proxy timeout.
+      for (let index = 0; index < chosen.length; index += 4) {
+        const batch = await Promise.all(chosen.slice(index, index + 4).map(convertPhoto));
+        for (const converted of batch) {
+          if (!converted) continue;
+          const { photo, data } = converted;
           const base = photo.productId + "-" + safeName(photo.productName) + "-" + safeName(photo.color);
           let name = base + "-" + photo.index + ".jpg";
           let suffix = 2;
           while (usedNames.has(name)) name = base + "-" + photo.index + "-" + suffix++ + ".jpg";
           usedNames.add(name);
-          files.push({ name, data: jpeg });
-        } catch (error) {
-          failed++;
-          console.error("[photo-export] image failed", photo.productId, photo.url, error);
+          files.push({ name, data });
         }
       }
-      if (!files.length) return res.status(502).json({ message: "All photos in this part failed to download" });
+      if (!files.length) return res.status(502).json({
+        message: "None of the photos in this ZIP part could be retrieved. Please retry or check the stored image URLs.",
+      });
 
       const nextOffset = offset + chosen.length < total ? offset + chosen.length : 0;
       res.setHeader("Content-Type", "application/zip");
@@ -201,7 +231,9 @@ export function registerProductPhotoExportRoutes(app: Express) {
       return res.send(buildZip(files));
     } catch (error: any) {
       console.error("[photo-export] failed", error);
-      return res.status(500).json({ message: error?.message || "Photo export failed" });
+      return res.status(500).json({
+        message: "Could not prepare the photo ZIP. Please retry the download.",
+      });
     }
   });
 }

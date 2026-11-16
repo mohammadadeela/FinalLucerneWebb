@@ -3175,10 +3175,17 @@ export default function Products() {
         part++;
       }
       toast({
-        title: language === "ar" ? `تم تجهيز تحميل ${included} صورة` : `Prepared ${included} photo(s) for download`,
-        description: part > 1
-          ? (language === "ar" ? `تم تقسيم الصور إلى ${part} ملفات ZIP` : `Split into ${part} ZIP files`)
-          : failed ? `${failed} photo(s) could not be processed` : undefined,
+        title: language === "ar"
+          ? `تم تجهيز تحميل ${included} صورة`
+          : `Prepared ${included} photo(s) for download`,
+        description: [
+          part > 1
+            ? (language === "ar" ? `تم تقسيم الصور إلى ${part} ملفات ZIP` : `Split into ${part} ZIP files`)
+            : "",
+          failed > 0
+            ? (language === "ar" ? `تعذر تحميل ${failed} صورة؛ تحقق من روابط الصور أو أعد المحاولة` : `${failed} photo(s) could not be retrieved; check image URLs or retry`)
+            : "",
+        ].filter(Boolean).join(" • ") || undefined,
       });
     } catch (err: any) {
       toast({
