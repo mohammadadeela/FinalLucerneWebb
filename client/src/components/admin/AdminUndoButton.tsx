@@ -159,8 +159,8 @@ export function AdminUndoButton() {
           })}
         </div>
         <p className="text-xs text-muted-foreground border-t pt-3">
-          {ar ? "يشمل إضافة وتعديل المنتجات وتعديلات الفئات. الحذف والفواتير وحركات مخزون المبيعات غير قابلة للتراجع هنا."
-              : "Covers product additions and edits, plus category edits. Deletions, invoices and sales stock movements are not reversible here."}
+          {ar ? "يشمل إضافة وتعديل المنتجات والفئات. لا يشمل الحذف أو الفواتير أو حركات مخزون المبيعات."
+              : "Covers product and category additions/edits. Deletions, invoices, and sales stock movements are not reversible."}
         </p>
       </DialogContent>
     </Dialog>

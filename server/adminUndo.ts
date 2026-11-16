@@ -41,6 +41,12 @@ function selectSpec(req: Request): UndoSpec | null {
   if (path === "/api/products" && method === "POST") {
     return { entity: "product", operation: "create", ids: [] };
   }
+  if (path === "/api/categories" && method === "POST") {
+    return { entity: "category", operation: "create", ids: [] };
+  }
+  if (path === "/api/subcategories" && method === "POST") {
+    return { entity: "subcategory", operation: "create", ids: [] };
+  }
   if (productId && method === "PUT") {
     return { entity: "product", operation: "update", ids: [Number(productId[1])] };
   }
@@ -87,6 +93,57 @@ function restoreDates(row: Row): Row {
   const copy = { ...row };
   if (typeof copy.createdAt === "string") copy.createdAt = new Date(copy.createdAt);
   return copy;
+}
+
+// Before undoing a creation, check every database foreign-key reference,
+// including CASCADE references, so removing the new record never silently
+// removes a subsequent order, wishlist item or other related data.
+async function assertNotReferenced(tx: any, entity: Entity, id: number): Promise<void> {
+  const table = entity === "product" ? "products" : entity === "category" ? "categories" : "subcategories";
+  const refs = await tx.execute(sql`
+    SELECT ns.nspname AS schema_name, cl.relname AS table_name, att.attname AS column_name
+    FROM pg_constraint fk
+    JOIN pg_class cl ON cl.oid = fk.conrelid
+    JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+    JOIN pg_attribute att ON att.attrelid = cl.oid AND att.attnum = fk.conkey[1]
+    WHERE fk.contype = 'f'
+      AND fk.confrelid = to_regclass(${"public." + table})
+      AND array_length(fk.conkey, 1) = 1
+  `);
+  for (const ref of ((refs as any).rows || [])) {
+    const identifier = (v: string) => '"' + v.replace(/"/g, '""') + '"';
+    const relatedTable = sql.raw(identifier(ref.schema_name) + "." + identifier(ref.table_name));
+    const relatedColumn = sql.raw(identifier(ref.column_name));
+    const found = await tx.execute(sql`
+      SELECT EXISTS(SELECT 1 FROM ${relatedTable} WHERE ${relatedColumn} = ${id}) AS in_use
+    `);
+    if ((found as any).rows?.[0]?.in_use) {
+      throw new Error("Cannot undo creation: this item has related records or sales.");
+    }
+  }
+  // POS invoices store item references in JSONB, not as foreign keys.
+  // Prevent deleting a product with POS history even though PostgreSQL
+  // would otherwise allow it and leave the invoice referring to a missing ID.
+  if (entity === "product") {
+    const pos = await tx.execute(sql`
+      SELECT EXISTS(
+        SELECT 1 FROM pos_orders
+        WHERE items @> ${JSON.stringify([{ productId: id }])}::jsonb
+      ) AS in_use
+    `);
+    if ((pos as any).rows?.[0]?.in_use) {
+      throw new Error("Cannot undo creation: this product is referenced by a POS invoice.");
+    }
+    const groupsExist = await tx.execute(sql`SELECT to_regclass('public.product_groups') AS relation`);
+    if ((groupsExist as any).rows?.[0]?.relation) {
+      const groups = await tx.execute(sql`
+        SELECT EXISTS(SELECT 1 FROM product_groups WHERE ${id} = ANY(product_ids)) AS in_use
+      `);
+      if ((groups as any).rows?.[0]?.in_use) {
+        throw new Error("Cannot undo creation: this product belongs to a product group.");
+      }
+    }
+  }
 }
 
 // Capture the actual DB state before and after a successful admin mutation.
@@ -188,6 +245,7 @@ export function registerAdminUndoRoutes(app: Express): void {
         }
         for (const row of after) {
           if (operation !== "create") continue;
+          await assertNotReferenced(tx, entity, Number(row.id));
           if (entity === "product") await tx.delete(products).where(eq(products.id, row.id));
           else if (entity === "category") await tx.delete(categories).where(eq(categories.id, row.id));
           else await tx.delete(subcategories).where(eq(subcategories.id, row.id));

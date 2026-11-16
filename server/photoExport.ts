@@ -83,7 +83,8 @@ export function registerProductPhotoExportRoutes(app: Express) {
     if (!["main", "all", "ai"].includes(mode)) {
       return res.status(400).json({ message: "Invalid photo export mode" });
     }
-    const ids = [...new Set((Array.isArray(req.body?.ids) ? req.body.ids : [])
+    const rawIds: unknown[] = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    const ids: number[] = [...new Set(rawIds
       .map(Number).filter((id: number) => Number.isInteger(id) && id > 0))];
     if (!ids.length || ids.length > 1000) {
       return res.status(400).json({ message: "Select between 1 and 1000 products" });
@@ -94,8 +95,13 @@ export function registerProductPhotoExportRoutes(app: Express) {
     }
     try {
       const entries: PhotoEntry[] = [];
+      // One query per export part, rather than querying hundreds of products
+      // separately every time the admin downloads another ZIP.
+      const selectedIds = new Set(ids);
+      const matchingProducts = (await storage.getProducts()).filter((p) => selectedIds.has(p.id));
+      const productsById = new Map(matchingProducts.map((p) => [p.id, p]));
       for (const id of ids) {
-        const product = await storage.getProduct(id);
+        const product = productsById.get(id);
         if (product) entries.push(...photosForProduct(product, mode));
       }
       let selected = entries;
@@ -125,11 +131,19 @@ export function registerProductPhotoExportRoutes(app: Express) {
       let failed = 0;
       for (const photo of chosen) {
         try {
-          const response = await fetch(photo.url, { signal: AbortSignal.timeout(20000) });
-          if (!response.ok) throw new Error("Image fetch failed: " + response.status);
-          const buffer = Buffer.from(await response.arrayBuffer());
-          const jpeg = await sharp(buffer, { failOn: "none" }).rotate()
-            .jpeg({ quality: 93, mozjpeg: true }).toBuffer();
+          let jpeg: Buffer | undefined;
+          for (let attempt = 0; attempt < 2 && !jpeg; attempt++) {
+            try {
+              const response = await fetch(photo.url, { signal: AbortSignal.timeout(25000) });
+              if (!response.ok) throw new Error("Image fetch failed: " + response.status);
+              const buffer = Buffer.from(await response.arrayBuffer());
+              jpeg = await sharp(buffer, { failOn: "none" }).rotate()
+                .jpeg({ quality: 93, mozjpeg: true }).toBuffer();
+            } catch (error) {
+              if (attempt === 1) throw error;
+            }
+          }
+          if (!jpeg) throw new Error("Image conversion failed");
           const base = photo.productId + "-" + safeName(photo.productName) + "-" + safeName(photo.color);
           let name = base + "-" + photo.index + ".jpg";
           let suffix = 2;
