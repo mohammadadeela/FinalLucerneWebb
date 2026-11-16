@@ -51,7 +51,8 @@ function selectSpec(req: Request): UndoSpec | null {
     return { entity: "product", operation: "update", ids: [Number(productId[1])] };
   }
   if (method === "PATCH" && ["/api/products/bulk-edit", "/api/products/bulk-flags"].includes(path)) {
-    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter((v: number) => Number.isInteger(v) && v > 0) : [];
+    const rawIds: unknown[] = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    const ids: number[] = rawIds.map(Number).filter((v) => Number.isInteger(v) && v > 0);
     if (!ids.length || ids.length > 500) return null;
     return { entity: "product", operation: "update", ids: [...new Set(ids)] };
   }

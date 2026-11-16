@@ -71,6 +71,15 @@ function photosForProduct(product: any, mode: PhotoMode): PhotoEntry[] {
       }
     }
   }
+  // Legacy products can also have top-level gallery images alongside their
+  // color variants. Include those when exporting all/AI images; the seen
+  // set prevents duplicate files when they mirror a variant's gallery.
+  if (mode !== "main") {
+    add(product.mainImage, "product");
+    for (const url of (Array.isArray(product.images) ? product.images : [])) {
+      add(url, "product");
+    }
+  }
   return entries;
 }
 
