@@ -44,3 +44,54 @@ assert.ok(zip.includes(Buffer.from("shoe-001.jpg")));
 assert.ok(zip.includes(Buffer.from("shoe-002.jpg")));
 
 console.log("Photo export: bound SQL lookup, edge cases, and ZIP checks passed.");
+
+const { photosForProduct } = await import("../server/productPhotoSelection");
+const { prepareProductPhotoDownload } = await import("../client/src/lib/productPhotoDownload");
+const JSZip = (await import("jszip")).default;
+const products = Array.from({ length: 44 }, (_, i) => ({
+  id: i + 1, name: "بوت شتوي",
+  colorVariants: ["بني", "أسود"].map((name, color) => ({
+    name,
+    // No mainImage/isPrimary: first media fallback previously lost AI flag.
+    media: [0, 1].map((shot) => ({ type: "image", aiGenerated: true,
+      url: `https://example.com/${i}/${color}/${shot}.webp` })),
+  })),
+}));
+const selected = products.flatMap((p) => photosForProduct(p, "ai")).filter((p) => p.aiGenerated);
+assert.equal(selected.length, 176, "Both AI shots of every color of all 44 products");
+assert.deepEqual(new Set(selected.map((p) => p.color)), new Set(["بني", "أسود"]));
+const entries = selected.map((p) => ({ name: `${p.productId}-${p.color}-${p.index}.jpg`, data: Buffer.from(p.url) }));
+let calls = 0;
+const request: typeof fetch = async (_url, init) => {
+  calls++;
+  const body = JSON.parse(init!.body as string);
+  assert.equal(body.ids.length, 44);
+  assert.equal(body.mode, "ai");
+  const end = Math.min(body.offset + 4, entries.length);
+  return new Response(new Uint8Array(buildZip(entries.slice(body.offset, end))), { headers: {
+    "X-Photos-Total": String(entries.length), "X-Photos-Included": String(end - body.offset),
+    "X-Photos-Failed": "0", "X-Photos-Next-Offset": String(end < entries.length ? end : 0),
+  } });
+};
+const result = await prepareProductPhotoDownload(products.map((p) => p.id), "ai", () => {}, request);
+const complete = await JSZip.loadAsync(await result.blob.arrayBuffer(), { checkCRC32: true });
+assert.equal(result.included, 176);
+assert.equal(Object.keys(complete.files).length, 176);
+assert.equal(calls, 44);
+for (const entry of entries) assert.deepEqual(await complete.file(entry.name)!.async("nodebuffer"), entry.data);
+let retries = 0;
+await prepareProductPhotoDownload(products.map((p) => p.id), "ai", () => {}, async (...args) => {
+  if (retries++ === 0) return new Response("", { status: 502 });
+  return request(...args);
+});
+await assert.rejects(prepareProductPhotoDownload([1], "ai", () => {}, async () =>
+  new Response(JSON.stringify({ message: "Missing image" }), { status: 502 })), /Missing image/);
+await assert.rejects(prepareProductPhotoDownload([1], "ai", () => {}, async () =>
+  new Response(new Uint8Array(buildZip(entries.slice(0, 1))), { headers: {
+    "X-Photos-Total": "2", "X-Photos-Included": "1", "X-Photos-Failed": "0", "X-Photos-Next-Offset": "0",
+  } })), /Not all product photos/);
+await assert.rejects(prepareProductPhotoDownload([1], "ai", () => {}, async () =>
+  new Response(new Uint8Array(buildZip(entries.slice(0, 1))), { headers: {
+    "X-Photos-Total": "2", "X-Photos-Included": "1", "X-Photos-Failed": "1", "X-Photos-Next-Offset": "0",
+  } })), /incomplete/);
+console.log("44 products / 176 color photos merged into one valid ZIP; retries and incomplete-export checks passed.");

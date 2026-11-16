@@ -1,3 +1,4 @@
+import { prepareProductPhotoDownload, type PhotoExportMode } from "@/lib/productPhotoDownload";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { getVideoPosterUrl, optimizeCloudinaryUrl } from "@/lib/utils";
 import { getOriginalProductPhoto } from "@/lib/productAiSource";
@@ -3134,63 +3135,34 @@ export default function Products() {
    * selected products. The server exports clean, unwatermarked JPEG files
    * directly at the root of a single ZIP (no product/color subfolders).
    */
-  type PhotoExportMode = "main" | "all" | "ai";
   const handleDownloadMainPhotos = async (ids: number[], mode: PhotoExportMode = "main") => {
     if (!ids.length) return;
     const single = ids.length === 1 ? ids[0] : null;
     setDownloadMenuOpen(false);
     if (single !== null) setDownloadingPhotoIds((prev) => new Set(prev).add(single));
     else setBulkPhotoDownloading(true);
-    let included = 0;
-    let failed = 0;
-    let offset = 0;
-    let part = 1;
     try {
-      while (true) {
-        setPhotoDownloadProgress(language === "ar" ? `جاري تجهيز الجزء ${part}...` : `Preparing part ${part}...`);
-        const res = await fetch("/api/admin/products/photo-export", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ ids, mode, offset }),
-        });
-        if (!res.ok) {
-          const error = await res.json().catch(() => ({}));
-          throw new Error(error.message || `Download failed (${res.status})`);
-        }
-        const blob = await res.blob();
-        const fileUrl = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = fileUrl;
-        anchor.download = `lucerne-${single === null ? ids.length + "-products" : "product-" + single}-${mode}-photos-part-${part}.zip`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
-        included += Number(res.headers.get("X-Photos-Included") || 0);
-        failed += Number(res.headers.get("X-Photos-Failed") || 0);
-        const next = Number(res.headers.get("X-Photos-Next-Offset") || 0);
-        if (!Number.isInteger(next) || next <= offset) break;
-        offset = next;
-        part++;
-      }
+      setPhotoDownloadProgress(language === "ar" ? "جاري تجهيز الصور..." : "Preparing photos...");
+      const { blob, included } = await prepareProductPhotoDownload(ids, mode, (done, total) => {
+        setPhotoDownloadProgress(language === "ar" ? `جاري تجهيز الصور ${done}/${total}...` : `Preparing photos ${done}/${total}...`);
+      });
+      const fileUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = fileUrl;
+      anchor.download = `lucerne-${single === null ? ids.length + "-products" : "product-" + single}-${mode}-photos.zip`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
       toast({
         title: language === "ar"
-          ? `تم تجهيز تحميل ${included} صورة`
-          : `Prepared ${included} photo(s) for download`,
-        description: [
-          part > 1
-            ? (language === "ar" ? `تم تقسيم الصور إلى ${part} ملفات ZIP` : `Split into ${part} ZIP files`)
-            : "",
-          failed > 0
-            ? (language === "ar" ? `تعذر تحميل ${failed} صورة؛ تحقق من روابط الصور أو أعد المحاولة` : `${failed} photo(s) could not be retrieved; check image URLs or retry`)
-            : "",
-        ].filter(Boolean).join(" • ") || undefined,
+          ? `تم تجهيز تحميل ${included} صورة في ملف ZIP واحد`
+          : `Prepared ${included} photo(s) in one ZIP`,
       });
     } catch (err: any) {
       toast({
         title: language === "ar" ? "فشل تحميل الصور" : "Photo download failed",
-        description: err.message + (included ? ` (${included} photos already downloaded)` : ""),
+        description: err.message,
         variant: "destructive",
       });
     } finally {

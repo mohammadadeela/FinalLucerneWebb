@@ -5,9 +5,7 @@ import { storage } from "./storage";
 import { buildZip } from "./watermark";
 import sharp from "sharp";
 import { buildTrackedPhotoLookupQuery } from "./photoExportQuery";
-
-type PhotoMode = "main" | "all" | "ai";
-type PhotoEntry = { productId: number; productName: string; color: string; url: string; index: number; aiGenerated: boolean };
+import { photosForProduct, type PhotoMode, type PhotoEntry } from "./productPhotoSelection";
 
 let indexPromise: Promise<void> | null = null;
 export function ensureAiPhotoIndex(): Promise<void> {
@@ -63,49 +61,6 @@ function safeName(value: unknown): string {
     .trim()
     .replace(/\s+/g, "-")
     .slice(0, 48) || "product";
-}
-
-function photosForProduct(product: any, mode: PhotoMode): PhotoEntry[] {
-  const entries: PhotoEntry[] = [];
-  const seen = new Set<string>();
-  const add = (url: unknown, color: string, aiGenerated = false) => {
-    if (typeof url !== "string" || !/^https?:\/\//i.test(url) || seen.has(url)) return;
-    seen.add(url);
-    entries.push({ productId: product.id, productName: product.name, color, url, index: entries.length + 1, aiGenerated });
-  };
-  const variants = Array.isArray(product.colorVariants) ? product.colorVariants : [];
-  if (!variants.length) {
-    add(product.mainImage, "main");
-    if (mode !== "main") {
-      for (const url of (Array.isArray(product.images) ? product.images : [])) add(url, "main");
-    }
-    return entries;
-  }
-  for (let i = 0; i < variants.length; i++) {
-    const variant = variants[i];
-    const color = variant.name || "color-" + (i + 1);
-    const media = Array.isArray(variant.media) ? variant.media.filter((m: any) => m && m.type === "image") : [];
-    const primary = media.find((m: any) => m.isPrimary && typeof m.url === "string");
-    const first = media.find((m: any) => typeof m.url === "string");
-    add(variant.mainImage || primary?.url || first?.url || variant.images?.[0], color,
-      !!media.find((m: any) => m.url === (variant.mainImage || primary?.url) && m.aiGenerated));
-    if (mode !== "main") {
-      for (const m of media) add(m.url, color, !!m.aiGenerated);
-      for (const url of (Array.isArray(variant.images) ? variant.images : [])) {
-        add(url, color, !!media.find((m: any) => m.url === url && m.aiGenerated));
-      }
-    }
-  }
-  // Legacy products can also have top-level gallery images alongside their
-  // color variants. Include those when exporting all/AI images; the seen
-  // set prevents duplicate files when they mirror a variant's gallery.
-  if (mode !== "main") {
-    add(product.mainImage, "product");
-    for (const url of (Array.isArray(product.images) ? product.images : [])) {
-      add(url, "product");
-    }
-  }
-  return entries;
 }
 
 export function registerProductPhotoExportRoutes(app: Express) {
@@ -173,7 +128,7 @@ export function registerProductPhotoExportRoutes(app: Express) {
 
       // Each part is a bounded ZIP, so large selections never silently stop
       // after the first few hundred photos or exhaust server memory.
-      const partSize = 40;
+      const partSize = 4;
       const chosen = selected.slice(offset, offset + partSize);
       const files: { name: string; data: Buffer }[] = [];
       const usedNames = new Set<string>();
@@ -183,7 +138,7 @@ export function registerProductPhotoExportRoutes(app: Express) {
           let jpeg: Buffer | undefined;
           for (let attempt = 0; attempt < 2 && !jpeg; attempt++) {
             try {
-              const response = await fetch(photo.url, { signal: AbortSignal.timeout(25000) });
+              const response = await fetch(photo.url, { signal: AbortSignal.timeout(10000) });
               if (!response.ok) throw new Error("Image fetch failed: " + response.status);
               const buffer = Buffer.from(await response.arrayBuffer());
               jpeg = await sharp(buffer, { failOn: "none" }).rotate()
@@ -216,8 +171,8 @@ export function registerProductPhotoExportRoutes(app: Express) {
           files.push({ name, data });
         }
       }
-      if (!files.length) return res.status(502).json({
-        message: "None of the photos in this ZIP part could be retrieved. Please retry or check the stored image URLs.",
+      if (failed || !files.length) return res.status(502).json({
+        message: "Some product photos could not be retrieved. No incomplete ZIP was downloaded. Please retry or check the stored image URLs.",
       });
 
       const nextOffset = offset + chosen.length < total ? offset + chosen.length : 0;
