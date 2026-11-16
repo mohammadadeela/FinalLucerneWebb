@@ -1,6 +1,21 @@
 export type PhotoMode = "main" | "all" | "ai";
 export type PhotoEntry = { productId: number; productName: string; color: string; url: string; index: number; aiGenerated: boolean };
 
+// Before AI provenance was introduced, generation appended outputs after the
+// original reference and promoted a generated output to main. Recover that
+// legacy layout without changing the stored product or its storefront gallery.
+// This is a compatibility inference; explicit non-AI markers take precedence.
+export function legacyGeneratedPhotoUrls(variant: any): Set<string> {
+  const media = Array.isArray(variant?.media)
+    ? variant.media.filter((m: any) => m?.type === "image" && typeof m.url === "string") : [];
+  const source = variant?.originalImage || media[0]?.url;
+  const primary = variant?.mainImage || media.find((m: any) => m.isPrimary)?.url;
+  if (!source || source !== media[0]?.url || !primary || primary === source ||
+      !media.some((m: any) => m.url === primary)) return new Set();
+  return new Set(media.slice(1).filter((m: any) => m.url !== source && m.aiGenerated !== false)
+    .map((m: any) => m.url));
+}
+
 export function photosForProduct(product: any, mode: PhotoMode): PhotoEntry[] {
   const entries: PhotoEntry[] = [];
   const seen = new Map<string, PhotoEntry>();
@@ -29,12 +44,14 @@ export function photosForProduct(product: any, mode: PhotoMode): PhotoEntry[] {
     const media = Array.isArray(variant.media) ? variant.media.filter((m: any) => m && m.type === "image") : [];
     const primary = media.find((m: any) => m.isPrimary && typeof m.url === "string");
     const first = media.find((m: any) => typeof m.url === "string");
+    const legacyAiUrls = mode === "ai" ? legacyGeneratedPhotoUrls(variant) : new Set<string>();
     add(variant.mainImage || primary?.url || first?.url || variant.images?.[0], color,
+      legacyAiUrls.has(variant.mainImage || primary?.url || first?.url || variant.images?.[0]) ||
       !!media.find((m: any) => m.url === (variant.mainImage || primary?.url) && m.aiGenerated));
     if (mode !== "main") {
-      for (const m of media) add(m.url, color, !!m.aiGenerated);
+      for (const m of media) add(m.url, color, !!m.aiGenerated || legacyAiUrls.has(m.url));
       for (const url of (Array.isArray(variant.images) ? variant.images : [])) {
-        add(url, color, !!media.find((m: any) => m.url === url && m.aiGenerated));
+        add(url, color, legacyAiUrls.has(url) || !!media.find((m: any) => m.url === url && m.aiGenerated));
       }
     }
   }
@@ -53,7 +70,7 @@ export function photosForProduct(product: any, mode: PhotoMode): PhotoEntry[] {
 export type AiPhotoRecord = { url: string; source_url?: string | null };
 
 export function aiPhotoSeeds(product: any): PhotoEntry[] {
-  const seeds = photosForProduct(product, "all");
+  const seeds = photosForProduct(product, "ai");
   for (const [i, variant] of (Array.isArray(product.colorVariants) ? product.colorVariants : []).entries()) {
     if (typeof variant?.originalImage === "string" && /^https?:\/\//i.test(variant.originalImage)) {
       seeds.push({ productId: product.id, productName: product.name, color: variant.name || `color-${i + 1}`,

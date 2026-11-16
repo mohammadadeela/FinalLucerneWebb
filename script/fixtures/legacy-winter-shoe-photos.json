@@ -1,0 +1,1572 @@
+[
+  {
+    "id": 553,
+    "name": "بوت شمواه جملي",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/f42738e2-a168-46bc-852f-02e32b9d06e9/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/ef4aa3ce-f066-41b2-a8f7-5377660e5efd/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "جملي",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/f42738e2-a168-46bc-852f-02e32b9d06e9/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/ef4aa3ce-f066-41b2-a8f7-5377660e5efd/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ef4aa3ce-f066-41b2-a8f7-5377660e5efd/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/f42738e2-a168-46bc-852f-02e32b9d06e9/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 552,
+    "name": "بوت جلد بني",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/26646a22-47ec-4c75-a450-e9d9000191d2/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/c69c07f0-9b94-4479-91f0-6c57b0b5b4ab/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/26646a22-47ec-4c75-a450-e9d9000191d2/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/c69c07f0-9b94-4479-91f0-6c57b0b5b4ab/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/c69c07f0-9b94-4479-91f0-6c57b0b5b4ab/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/26646a22-47ec-4c75-a450-e9d9000191d2/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 551,
+    "name": "بوت جلد بني",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/aa276a23-c68e-48fb-9b2a-b29c6cc01596/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/0b3fd7a0-b220-46ac-a1a0-23a4999f8259/main.webp",
+      "https://media.lucerne-boutique.com/media/images/9f6339d5-f69f-4a0c-a2e0-d6c8ca818181/main.webp",
+      "https://media.lucerne-boutique.com/media/images/39a6ae8f-9987-4119-96c0-a75174beac76/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/aa276a23-c68e-48fb-9b2a-b29c6cc01596/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/0b3fd7a0-b220-46ac-a1a0-23a4999f8259/main.webp",
+          "https://media.lucerne-boutique.com/media/images/9f6339d5-f69f-4a0c-a2e0-d6c8ca818181/main.webp",
+          "https://media.lucerne-boutique.com/media/images/39a6ae8f-9987-4119-96c0-a75174beac76/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/0b3fd7a0-b220-46ac-a1a0-23a4999f8259/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/9f6339d5-f69f-4a0c-a2e0-d6c8ca818181/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/aa276a23-c68e-48fb-9b2a-b29c6cc01596/main.webp",
+            "type": "image",
+            "isPrimary": true
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/39a6ae8f-9987-4119-96c0-a75174beac76/main.webp",
+            "type": "image",
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/0b3fd7a0-b220-46ac-a1a0-23a4999f8259/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 550,
+    "name": "بوت كعب بيج",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/d5c892d2-e807-4e53-a7fd-7aa49d573e6f/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/e89ba9d4-caab-4fe0-b095-3db4def7fdaa/main.webp",
+      "https://media.lucerne-boutique.com/media/images/eeb9a069-31b2-42d3-87c4-b327b6c84d15/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/d5c892d2-e807-4e53-a7fd-7aa49d573e6f/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/e89ba9d4-caab-4fe0-b095-3db4def7fdaa/main.webp",
+          "https://media.lucerne-boutique.com/media/images/eeb9a069-31b2-42d3-87c4-b327b6c84d15/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/e89ba9d4-caab-4fe0-b095-3db4def7fdaa/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/eeb9a069-31b2-42d3-87c4-b327b6c84d15/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/d5c892d2-e807-4e53-a7fd-7aa49d573e6f/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/e89ba9d4-caab-4fe0-b095-3db4def7fdaa/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 549,
+    "name": "بوت جملي برباط",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/49cc1059-54ae-44c1-ba58-51d520b93739/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/efd9ae71-862c-4102-81e2-b4e29c115558/main.webp",
+      "https://media.lucerne-boutique.com/media/images/62d8001a-08ec-4875-845d-4ec8949c5df1/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "جملي",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/49cc1059-54ae-44c1-ba58-51d520b93739/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/efd9ae71-862c-4102-81e2-b4e29c115558/main.webp",
+          "https://media.lucerne-boutique.com/media/images/62d8001a-08ec-4875-845d-4ec8949c5df1/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/efd9ae71-862c-4102-81e2-b4e29c115558/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/62d8001a-08ec-4875-845d-4ec8949c5df1/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/49cc1059-54ae-44c1-ba58-51d520b93739/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 548,
+    "name": "بوت بني كاحل",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/96daad9d-c886-42e6-80ac-3cb67b8b8f2b/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/8de1b9e9-8b53-429d-a8ed-8613c64b03aa/main.webp",
+      "https://media.lucerne-boutique.com/media/images/7909f439-4313-4ed2-8977-a11eae1f8373/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/96daad9d-c886-42e6-80ac-3cb67b8b8f2b/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/8de1b9e9-8b53-429d-a8ed-8613c64b03aa/main.webp",
+          "https://media.lucerne-boutique.com/media/images/7909f439-4313-4ed2-8977-a11eae1f8373/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/8de1b9e9-8b53-429d-a8ed-8613c64b03aa/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/7909f439-4313-4ed2-8977-a11eae1f8373/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/96daad9d-c886-42e6-80ac-3cb67b8b8f2b/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 547,
+    "name": "بوت جلد أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/69403f4f-7e8d-488f-8e09-bd19f4bd355f/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/7049d50e-8736-4131-b950-aa7ada6310e3/main.webp",
+      "https://media.lucerne-boutique.com/media/images/976c0ca7-2304-4428-9de9-7b28b5de74e9/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/69403f4f-7e8d-488f-8e09-bd19f4bd355f/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/7049d50e-8736-4131-b950-aa7ada6310e3/main.webp",
+          "https://media.lucerne-boutique.com/media/images/976c0ca7-2304-4428-9de9-7b28b5de74e9/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/7049d50e-8736-4131-b950-aa7ada6310e3/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/976c0ca7-2304-4428-9de9-7b28b5de74e9/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/69403f4f-7e8d-488f-8e09-bd19f4bd355f/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/7049d50e-8736-4131-b950-aa7ada6310e3/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 546,
+    "name": "بوت كعب عريض",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/9f25fbff-d51d-404a-b139-56367e230d7e/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/79162a49-e19c-47a4-b398-9095a52883fb/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/9f25fbff-d51d-404a-b139-56367e230d7e/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/79162a49-e19c-47a4-b398-9095a52883fb/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/79162a49-e19c-47a4-b398-9095a52883fb/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/9f25fbff-d51d-404a-b139-56367e230d7e/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 545,
+    "name": "بوت كعب عريض",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/12af2931-d27a-479e-8d96-dbf8fea02038/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/3bf2988f-d7b0-46a2-8d5e-d5d532e96b33/main.webp",
+      "https://media.lucerne-boutique.com/media/images/49f277c8-a0c5-4c07-9cf9-904df9c859a2/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/12af2931-d27a-479e-8d96-dbf8fea02038/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/3bf2988f-d7b0-46a2-8d5e-d5d532e96b33/main.webp",
+          "https://media.lucerne-boutique.com/media/images/49f277c8-a0c5-4c07-9cf9-904df9c859a2/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/3bf2988f-d7b0-46a2-8d5e-d5d532e96b33/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/49f277c8-a0c5-4c07-9cf9-904df9c859a2/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/12af2931-d27a-479e-8d96-dbf8fea02038/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/3bf2988f-d7b0-46a2-8d5e-d5d532e96b33/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 544,
+    "name": "بوت أسود لامع",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/03a29b51-a8df-4c28-9c0d-5dd41086fa11/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/b8575d8d-e374-420f-92e3-01aa232616c3/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/03a29b51-a8df-4c28-9c0d-5dd41086fa11/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/b8575d8d-e374-420f-92e3-01aa232616c3/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/b8575d8d-e374-420f-92e3-01aa232616c3/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/03a29b51-a8df-4c28-9c0d-5dd41086fa11/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 543,
+    "name": "بوت أسود مربوط",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/acd93a41-d0a2-461c-904a-dc25499ab235/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/92f6081c-112c-457d-b6fb-d958afe203e8/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/acd93a41-d0a2-461c-904a-dc25499ab235/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/92f6081c-112c-457d-b6fb-d958afe203e8/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/92f6081c-112c-457d-b6fb-d958afe203e8/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/acd93a41-d0a2-461c-904a-dc25499ab235/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 542,
+    "name": "بوت طويل أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/0dcea77a-2528-4030-909a-13cf25a41eba/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/7d8c32a6-77ea-48fa-9f20-fa4cc7ebe966/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/0dcea77a-2528-4030-909a-13cf25a41eba/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/7d8c32a6-77ea-48fa-9f20-fa4cc7ebe966/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/7d8c32a6-77ea-48fa-9f20-fa4cc7ebe966/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/0dcea77a-2528-4030-909a-13cf25a41eba/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 541,
+    "name": "بوت أسود لامع",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/b6baf99e-9eb6-4d04-b63b-04d45c0e59e8/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/dd28bfe3-1cd6-47af-990d-b2291308d1cd/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/b6baf99e-9eb6-4d04-b63b-04d45c0e59e8/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/dd28bfe3-1cd6-47af-990d-b2291308d1cd/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/dd28bfe3-1cd6-47af-990d-b2291308d1cd/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/b6baf99e-9eb6-4d04-b63b-04d45c0e59e8/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 540,
+    "name": "بوت أسود برباط",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/ebdf90b1-d278-4d00-b444-db2eb240b777/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/1c90be4f-bb1e-4875-ab4b-e3a7eab68d1a/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/ebdf90b1-d278-4d00-b444-db2eb240b777/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/1c90be4f-bb1e-4875-ab4b-e3a7eab68d1a/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/1c90be4f-bb1e-4875-ab4b-e3a7eab68d1a/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ebdf90b1-d278-4d00-b444-db2eb240b777/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 539,
+    "name": "بوت جلد أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/d543c5a0-106c-49c9-942a-2120ebc8f0e9/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/434ed59d-6869-4286-ab2d-d8dc8fd3cefa/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/d543c5a0-106c-49c9-942a-2120ebc8f0e9/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/434ed59d-6869-4286-ab2d-d8dc8fd3cefa/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/434ed59d-6869-4286-ab2d-d8dc8fd3cefa/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/d543c5a0-106c-49c9-942a-2120ebc8f0e9/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 538,
+    "name": "بوت كعب عريض",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/9bd68f4a-d501-4be6-8943-faa2131d556b/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/3550997a-0c0d-483b-93cf-2428098b05c2/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/9bd68f4a-d501-4be6-8943-faa2131d556b/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/3550997a-0c0d-483b-93cf-2428098b05c2/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/3550997a-0c0d-483b-93cf-2428098b05c2/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/9bd68f4a-d501-4be6-8943-faa2131d556b/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 537,
+    "name": "جزمة جلد طبيعي بني",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/d1feeb69-fd70-49bb-97a7-a53519a19ef6/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/7d95c836-f12b-467f-bf92-a983dcb1d245/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/d1feeb69-fd70-49bb-97a7-a53519a19ef6/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/7d95c836-f12b-467f-bf92-a983dcb1d245/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/7d95c836-f12b-467f-bf92-a983dcb1d245/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/d1feeb69-fd70-49bb-97a7-a53519a19ef6/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 536,
+    "name": "بوت طويل أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/7bf2e046-b18a-465e-bc68-9ef07dafc3c1/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/d8e161ee-648a-4603-b7a1-758067537096/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/7bf2e046-b18a-465e-bc68-9ef07dafc3c1/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/d8e161ee-648a-4603-b7a1-758067537096/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/d8e161ee-648a-4603-b7a1-758067537096/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/7bf2e046-b18a-465e-bc68-9ef07dafc3c1/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 535,
+    "name": "بوت طويل أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/ab08cc43-fabe-4e07-a29f-2fb73e4f6819/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/5354ef65-0556-4d9b-9c7a-d29aa93bb67e/main.webp",
+      "https://media.lucerne-boutique.com/media/images/d176616e-ab15-4741-b84f-be3cde4ccc88/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/ab08cc43-fabe-4e07-a29f-2fb73e4f6819/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/5354ef65-0556-4d9b-9c7a-d29aa93bb67e/main.webp",
+          "https://media.lucerne-boutique.com/media/images/d176616e-ab15-4741-b84f-be3cde4ccc88/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/5354ef65-0556-4d9b-9c7a-d29aa93bb67e/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/d176616e-ab15-4741-b84f-be3cde4ccc88/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ab08cc43-fabe-4e07-a29f-2fb73e4f6819/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/5354ef65-0556-4d9b-9c7a-d29aa93bb67e/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 534,
+    "name": "بوت جلد أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/5ff9b668-5850-4847-9325-24d181069858/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/03d43afd-b502-4a09-a4ce-a356d5a077a6/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/5ff9b668-5850-4847-9325-24d181069858/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/03d43afd-b502-4a09-a4ce-a356d5a077a6/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/03d43afd-b502-4a09-a4ce-a356d5a077a6/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/5ff9b668-5850-4847-9325-24d181069858/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 533,
+    "name": "بوت طويل بني",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/f20e7f66-8acc-4954-bed0-346bdcd754df/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/e1982c35-9282-41fe-97e3-bd6bab7ee02f/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/f20e7f66-8acc-4954-bed0-346bdcd754df/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/e1982c35-9282-41fe-97e3-bd6bab7ee02f/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/e1982c35-9282-41fe-97e3-bd6bab7ee02f/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/f20e7f66-8acc-4954-bed0-346bdcd754df/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 532,
+    "name": "بوت طويل بيج",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/981f3627-2af5-4168-8ab7-61cea63c07d3/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/331f6040-79c3-4a36-bfb0-24aead8f490b/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/981f3627-2af5-4168-8ab7-61cea63c07d3/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/331f6040-79c3-4a36-bfb0-24aead8f490b/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/331f6040-79c3-4a36-bfb0-24aead8f490b/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/981f3627-2af5-4168-8ab7-61cea63c07d3/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 531,
+    "name": "بوت طويل جملي",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/1eb3e67e-47f9-4519-a256-823a2c65c4ed/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/a399f363-f9e6-4866-bd2c-4ce4e97c0029/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "جملي",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/1eb3e67e-47f9-4519-a256-823a2c65c4ed/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/a399f363-f9e6-4866-bd2c-4ce4e97c0029/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/a399f363-f9e6-4866-bd2c-4ce4e97c0029/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/1eb3e67e-47f9-4519-a256-823a2c65c4ed/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 530,
+    "name": "بوت جلد بيج",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/a103fdca-1a2a-4c36-b508-2a8aa8cd6b5d/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/3540d5ab-bc00-4ed8-a257-6ed2dcae7e79/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/a103fdca-1a2a-4c36-b508-2a8aa8cd6b5d/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/3540d5ab-bc00-4ed8-a257-6ed2dcae7e79/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/3540d5ab-bc00-4ed8-a257-6ed2dcae7e79/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/a103fdca-1a2a-4c36-b508-2a8aa8cd6b5d/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 529,
+    "name": "بوت طويل أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/2ac56e63-6c63-4f3b-9327-9d4816776f5d/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/09d2ae8e-c3d1-479e-be9b-7fcd42ec4c6a/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/2ac56e63-6c63-4f3b-9327-9d4816776f5d/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/09d2ae8e-c3d1-479e-be9b-7fcd42ec4c6a/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/09d2ae8e-c3d1-479e-be9b-7fcd42ec4c6a/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/2ac56e63-6c63-4f3b-9327-9d4816776f5d/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 528,
+    "name": "بوت جلد أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/c422b00e-c95a-497e-a03f-2dfce3f3481c/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/411804a0-ef16-4622-a559-f8a4db98dd51/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/c422b00e-c95a-497e-a03f-2dfce3f3481c/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/411804a0-ef16-4622-a559-f8a4db98dd51/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/411804a0-ef16-4622-a559-f8a4db98dd51/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/c422b00e-c95a-497e-a03f-2dfce3f3481c/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 527,
+    "name": "بوت أسود برباط",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/78ff858c-dee4-49b3-a312-a8a92dea659b/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/c923931a-7189-4363-b39c-963e0ba616eb/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/78ff858c-dee4-49b3-a312-a8a92dea659b/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/c923931a-7189-4363-b39c-963e0ba616eb/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/c923931a-7189-4363-b39c-963e0ba616eb/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/78ff858c-dee4-49b3-a312-a8a92dea659b/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 526,
+    "name": "بوت جلد أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/00e174c9-f170-4b44-8e27-fe797827db50/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/280acf27-a1af-46d0-8de0-77c1d4b7829b/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/00e174c9-f170-4b44-8e27-fe797827db50/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/280acf27-a1af-46d0-8de0-77c1d4b7829b/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/280acf27-a1af-46d0-8de0-77c1d4b7829b/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/00e174c9-f170-4b44-8e27-fe797827db50/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 525,
+    "name": "بوت أسود بكعب",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/f308a9e3-b0de-47ae-9e38-bb7116c9ebc9/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/484bb576-5399-45d9-9953-1b3773de4167/main.webp",
+      "https://media.lucerne-boutique.com/media/images/622d4939-9c3f-432a-97c9-353018052a86/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/f308a9e3-b0de-47ae-9e38-bb7116c9ebc9/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/484bb576-5399-45d9-9953-1b3773de4167/main.webp",
+          "https://media.lucerne-boutique.com/media/images/622d4939-9c3f-432a-97c9-353018052a86/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/484bb576-5399-45d9-9953-1b3773de4167/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/622d4939-9c3f-432a-97c9-353018052a86/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/f308a9e3-b0de-47ae-9e38-bb7116c9ebc9/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/484bb576-5399-45d9-9953-1b3773de4167/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 524,
+    "name": "بوت شمواه بيج",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/689c478e-70ef-44fb-a6e5-e46dea64f042/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/d3595019-8d40-4ae1-85b0-db5b1e24ed5d/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/689c478e-70ef-44fb-a6e5-e46dea64f042/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/d3595019-8d40-4ae1-85b0-db5b1e24ed5d/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/d3595019-8d40-4ae1-85b0-db5b1e24ed5d/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/689c478e-70ef-44fb-a6e5-e46dea64f042/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 523,
+    "name": "بوت جلد طبيعي أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/366f8d8f-2d83-4ea7-b302-b760af4c60a2/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/6be433ab-f9d3-4cc1-92fa-f0541cbf386d/main.webp",
+      "https://media.lucerne-boutique.com/media/images/a3214d7b-950c-4cf4-b227-32fa8d44362d/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/366f8d8f-2d83-4ea7-b302-b760af4c60a2/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/6be433ab-f9d3-4cc1-92fa-f0541cbf386d/main.webp",
+          "https://media.lucerne-boutique.com/media/images/a3214d7b-950c-4cf4-b227-32fa8d44362d/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/6be433ab-f9d3-4cc1-92fa-f0541cbf386d/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/a3214d7b-950c-4cf4-b227-32fa8d44362d/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/366f8d8f-2d83-4ea7-b302-b760af4c60a2/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 522,
+    "name": "جزمة جلد طبيعي",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/d9c0ba2c-7d03-4028-82f3-9be9802d3e18/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/ae6a597d-436b-469a-ada1-7d4fcf256d83/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/d9c0ba2c-7d03-4028-82f3-9be9802d3e18/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/ae6a597d-436b-469a-ada1-7d4fcf256d83/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ae6a597d-436b-469a-ada1-7d4fcf256d83/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/d9c0ba2c-7d03-4028-82f3-9be9802d3e18/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 521,
+    "name": "بوت كعب أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/2c1bfa18-70a6-4467-ba4d-115e46ff6925/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/a4aeaf5f-01e8-42c5-aedb-75ed0f43da74/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/2c1bfa18-70a6-4467-ba4d-115e46ff6925/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/a4aeaf5f-01e8-42c5-aedb-75ed0f43da74/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/a4aeaf5f-01e8-42c5-aedb-75ed0f43da74/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/2c1bfa18-70a6-4467-ba4d-115e46ff6925/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 520,
+    "name": "بوت جلد أسود",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/aeec53a2-0685-412f-bfd6-257a4cf45d34/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/02e96865-2ac3-4d6e-aa43-67f5c2dcb44b/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/aeec53a2-0685-412f-bfd6-257a4cf45d34/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/02e96865-2ac3-4d6e-aa43-67f5c2dcb44b/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/02e96865-2ac3-4d6e-aa43-67f5c2dcb44b/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/aeec53a2-0685-412f-bfd6-257a4cf45d34/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 519,
+    "name": "بوت أسود قصير",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/72e35ecc-b438-43f1-9361-32e32c4c6674/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/fb5eca71-725d-4942-8ab7-c9c4f9838e53/main.webp",
+      "https://media.lucerne-boutique.com/media/images/e52185f6-711d-470d-b54f-58d08a2e6a21/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/72e35ecc-b438-43f1-9361-32e32c4c6674/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/fb5eca71-725d-4942-8ab7-c9c4f9838e53/main.webp",
+          "https://media.lucerne-boutique.com/media/images/e52185f6-711d-470d-b54f-58d08a2e6a21/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/fb5eca71-725d-4942-8ab7-c9c4f9838e53/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/e52185f6-711d-470d-b54f-58d08a2e6a21/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/72e35ecc-b438-43f1-9361-32e32c4c6674/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 518,
+    "name": "بوت جلد",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/8aadedfa-4043-415a-979b-c51f93b793c7/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/ff475816-2ff0-4d8a-bf98-1a8ecfd56ac0/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/8aadedfa-4043-415a-979b-c51f93b793c7/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/ff475816-2ff0-4d8a-bf98-1a8ecfd56ac0/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ff475816-2ff0-4d8a-bf98-1a8ecfd56ac0/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/8aadedfa-4043-415a-979b-c51f93b793c7/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/c8612166-a816-4a99-97a6-78059190197c/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/5ef4a56f-8534-4ec7-a9b4-509059cd6ba9/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/5ef4a56f-8534-4ec7-a9b4-509059cd6ba9/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/c8612166-a816-4a99-97a6-78059190197c/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 517,
+    "name": "بوت طويل",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/679da81d-4505-4cb0-a3ff-81ea6184d09e/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/25e58034-9fd0-4b20-8c5c-eb0581a63202/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/679da81d-4505-4cb0-a3ff-81ea6184d09e/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/25e58034-9fd0-4b20-8c5c-eb0581a63202/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/25e58034-9fd0-4b20-8c5c-eb0581a63202/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/679da81d-4505-4cb0-a3ff-81ea6184d09e/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/efcb2962-d39c-4c93-8fb9-462adb904295/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/8358d07e-64fc-4389-84f0-6df22b64c419/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/8358d07e-64fc-4389-84f0-6df22b64c419/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/efcb2962-d39c-4c93-8fb9-462adb904295/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 516,
+    "name": "بوت  جلد طبيعي طويل",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/f0c0ca06-c6c5-4ed3-8211-6785e694b062/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/0cfbc94e-9dbd-4d17-9d67-5aac759174d5/main.webp",
+      "https://media.lucerne-boutique.com/media/images/031f222e-7cc8-4b98-bbca-f1381320deea/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/f0c0ca06-c6c5-4ed3-8211-6785e694b062/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/0cfbc94e-9dbd-4d17-9d67-5aac759174d5/main.webp",
+          "https://media.lucerne-boutique.com/media/images/031f222e-7cc8-4b98-bbca-f1381320deea/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/0cfbc94e-9dbd-4d17-9d67-5aac759174d5/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/031f222e-7cc8-4b98-bbca-f1381320deea/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/f0c0ca06-c6c5-4ed3-8211-6785e694b062/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/0cfbc94e-9dbd-4d17-9d67-5aac759174d5/main.webp"
+      },
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/372fb358-1330-4978-8712-4b2fc79ac940/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/3050e70e-e27f-46e9-b7b7-380be5e08a12/main.webp",
+          "https://media.lucerne-boutique.com/media/images/ce68b68a-7774-49a2-9ce9-f4117337e81f/main.webp",
+          "https://media.lucerne-boutique.com/media/images/a331e6fe-c681-4f64-8beb-56d1cc07adba/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/3050e70e-e27f-46e9-b7b7-380be5e08a12/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ce68b68a-7774-49a2-9ce9-f4117337e81f/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/a331e6fe-c681-4f64-8beb-56d1cc07adba/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/372fb358-1330-4978-8712-4b2fc79ac940/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/3050e70e-e27f-46e9-b7b7-380be5e08a12/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 515,
+    "name": "بوت طويل",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/c6748dd6-4e19-48a9-8fe2-51cfe7b9341a/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/ea30a9ef-6748-41ca-b077-0f219c76377e/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/c6748dd6-4e19-48a9-8fe2-51cfe7b9341a/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/ea30a9ef-6748-41ca-b077-0f219c76377e/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ea30a9ef-6748-41ca-b077-0f219c76377e/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/c6748dd6-4e19-48a9-8fe2-51cfe7b9341a/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/940c5ef5-a540-47e9-a2f3-0d4f7c8fbbfa/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/b8135e24-9a9b-49b6-9cd4-257329d5dc2c/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/b8135e24-9a9b-49b6-9cd4-257329d5dc2c/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/940c5ef5-a540-47e9-a2f3-0d4f7c8fbbfa/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 514,
+    "name": "بوت",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/dbfe81cf-8f4b-423f-9c1a-11f6fff82d07/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/ee3275bf-3e2e-4ac5-9094-551219f0b33c/main.webp",
+      "https://media.lucerne-boutique.com/media/images/c08fdc98-1dea-4792-b63c-f3ecbd93f29d/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أوف وايت",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/dbfe81cf-8f4b-423f-9c1a-11f6fff82d07/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/ee3275bf-3e2e-4ac5-9094-551219f0b33c/main.webp",
+          "https://media.lucerne-boutique.com/media/images/c08fdc98-1dea-4792-b63c-f3ecbd93f29d/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/ee3275bf-3e2e-4ac5-9094-551219f0b33c/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/c08fdc98-1dea-4792-b63c-f3ecbd93f29d/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/dbfe81cf-8f4b-423f-9c1a-11f6fff82d07/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/042421f9-1614-4335-aabe-e37f4e4f869f/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/a206ec9b-9687-42aa-96d2-1a06a177a813/main.webp",
+          "https://media.lucerne-boutique.com/media/images/77785846-5d74-4a94-8662-29af3bc72502/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/a206ec9b-9687-42aa-96d2-1a06a177a813/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/77785846-5d74-4a94-8662-29af3bc72502/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/042421f9-1614-4335-aabe-e37f4e4f869f/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 513,
+    "name": "بوت جلد طبيعي",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/3ce5a11f-984e-4548-b2d2-130c4ae1d54f/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/b70e53b6-8230-4907-b48d-961611b76020/main.webp",
+      "https://media.lucerne-boutique.com/media/images/35e4d750-5d05-41be-9497-f51d29485e0e/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/3ce5a11f-984e-4548-b2d2-130c4ae1d54f/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/b70e53b6-8230-4907-b48d-961611b76020/main.webp",
+          "https://media.lucerne-boutique.com/media/images/35e4d750-5d05-41be-9497-f51d29485e0e/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/b70e53b6-8230-4907-b48d-961611b76020/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/35e4d750-5d05-41be-9497-f51d29485e0e/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/3ce5a11f-984e-4548-b2d2-130c4ae1d54f/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "بني",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/e1f980ba-31ba-4b5f-9225-be8373f2dff6/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/4ddfc66d-f802-484b-870d-0532351324be/main.webp",
+          "https://media.lucerne-boutique.com/media/images/425faaf3-a951-4195-b7fa-4f5e5e809f42/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/4ddfc66d-f802-484b-870d-0532351324be/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/425faaf3-a951-4195-b7fa-4f5e5e809f42/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/e1f980ba-31ba-4b5f-9225-be8373f2dff6/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 512,
+    "name": "بوت جلد طبيعي",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/320fcf82-7441-4c1f-8bc7-c8ca236ae8e2/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/4de52186-f468-44be-9f3b-c786c598b63b/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/320fcf82-7441-4c1f-8bc7-c8ca236ae8e2/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/4de52186-f468-44be-9f3b-c786c598b63b/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/4de52186-f468-44be-9f3b-c786c598b63b/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/320fcf82-7441-4c1f-8bc7-c8ca236ae8e2/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "أوف وايت",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/aa9cb5c3-cf44-405f-856a-0bdff1047106/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/f228e37e-b2c8-45ac-b416-09efb5fc1b6a/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/f228e37e-b2c8-45ac-b416-09efb5fc1b6a/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/aa9cb5c3-cf44-405f-856a-0bdff1047106/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/fcc4ebde-a0a8-4314-85eb-ba752aab72f5/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/dedd4b27-cdb8-4107-88bb-e2e592ec9356/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/dedd4b27-cdb8-4107-88bb-e2e592ec9356/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/fcc4ebde-a0a8-4314-85eb-ba752aab72f5/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 511,
+    "name": "جزمة برباط طويل",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/56159371-fced-4b9c-9bb7-617d9c2c69b0/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/9da85a77-9fcb-448e-9f77-8958ba7c46cb/main.webp",
+      "https://media.lucerne-boutique.com/media/images/c07dd25c-f39c-4785-b58e-3ecf181e0148/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/56159371-fced-4b9c-9bb7-617d9c2c69b0/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/9da85a77-9fcb-448e-9f77-8958ba7c46cb/main.webp",
+          "https://media.lucerne-boutique.com/media/images/c07dd25c-f39c-4785-b58e-3ecf181e0148/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/9da85a77-9fcb-448e-9f77-8958ba7c46cb/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/c07dd25c-f39c-4785-b58e-3ecf181e0148/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/56159371-fced-4b9c-9bb7-617d9c2c69b0/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/9da85a77-9fcb-448e-9f77-8958ba7c46cb/main.webp"
+      },
+      {
+        "name": "أوف وايت",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/67945fcf-2074-4fd1-a9f4-a3885f5a79ae/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/27041861-e861-4821-a04c-e8e1b87e346b/main.webp",
+          "https://media.lucerne-boutique.com/media/images/aae0376c-7845-409b-bb61-4776b145fc64/main.webp",
+          "https://media.lucerne-boutique.com/media/images/1f5c182c-49de-47ab-bbc0-cbea39a054cf/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/27041861-e861-4821-a04c-e8e1b87e346b/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/aae0376c-7845-409b-bb61-4776b145fc64/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/1f5c182c-49de-47ab-bbc0-cbea39a054cf/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/67945fcf-2074-4fd1-a9f4-a3885f5a79ae/main.webp",
+            "type": "image",
+            "isPrimary": true,
+            "aiGenerated": true
+          }
+        ],
+        "originalImage": "https://media.lucerne-boutique.com/media/images/27041861-e861-4821-a04c-e8e1b87e346b/main.webp"
+      }
+    ]
+  },
+  {
+    "id": 510,
+    "name": "بوت برباط",
+    "mainImage": "https://media.lucerne-boutique.com/media/images/586aaf05-7513-4c51-af40-8a1136a1a36e/main.webp",
+    "images": [
+      "https://media.lucerne-boutique.com/media/images/6e86a067-3d21-462b-9a20-d7d5b24f4feb/main.webp"
+    ],
+    "colorVariants": [
+      {
+        "name": "بيج",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/586aaf05-7513-4c51-af40-8a1136a1a36e/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/6e86a067-3d21-462b-9a20-d7d5b24f4feb/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/6e86a067-3d21-462b-9a20-d7d5b24f4feb/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/586aaf05-7513-4c51-af40-8a1136a1a36e/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "جملي",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/8fe21975-0587-41f3-964c-ec7419a2cdd6/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/edc5b632-b645-4b16-9864-0a935a90fa3c/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/edc5b632-b645-4b16-9864-0a935a90fa3c/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/8fe21975-0587-41f3-964c-ec7419a2cdd6/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      },
+      {
+        "name": "أسود",
+        "mainImage": "https://media.lucerne-boutique.com/media/images/cd41c44c-aa9b-4d5d-8952-d27070025a27/main.webp",
+        "images": [
+          "https://media.lucerne-boutique.com/media/images/4f929052-846b-4396-bf0b-6db7f251a38c/main.webp"
+        ],
+        "media": [
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/4f929052-846b-4396-bf0b-6db7f251a38c/main.webp",
+            "type": "image"
+          },
+          {
+            "url": "https://media.lucerne-boutique.com/media/images/cd41c44c-aa9b-4d5d-8952-d27070025a27/main.webp",
+            "type": "image",
+            "isPrimary": true
+          }
+        ]
+      }
+    ]
+  }
+]

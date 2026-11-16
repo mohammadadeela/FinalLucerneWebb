@@ -130,3 +130,32 @@ assert.deepEqual(historyQuery.params, urls);
 assert.match(historyQuery.sql, /WITH RECURSIVE/);
 assert.doesNotMatch(historyQuery.sql, /UNION ALL/);
 console.log("AI history: 10 flagged photos expanded to 440 recorded photos across 44 products / 88 colors; legacy arrays, lineage, cycles and selection boundaries passed.");
+
+// Public storefront snapshot from the user's exact 44-product selection.
+// Pre-provenance generation appended photos after the source without AI flags.
+const { readFile } = await import("node:fs/promises");
+const actualLegacyProducts = JSON.parse(await readFile(new URL("./fixtures/legacy-winter-shoe-photos.json", import.meta.url), "utf8"));
+assert.equal(actualLegacyProducts.length, 44);
+assert.equal(actualLegacyProducts.flatMap((p: any) => p.colorVariants.flatMap((v: any) => v.media)).filter((m: any) => m.aiGenerated).length, 10);
+const actualRecovered = selectAiPhotoHistory(actualLegacyProducts, []);
+assert.equal(actualRecovered.length, 76);
+assert.equal(new Set(actualRecovered.map((p) => p.productId)).size, 44);
+for (const product of actualLegacyProducts) {
+  for (const variant of product.colorVariants) {
+    const source = variant.originalImage || variant.media[0].url;
+    assert.ok(!actualRecovered.some((photo) => photo.productId === product.id && photo.url === source));
+    for (const output of variant.media.slice(1)) {
+      assert.ok(actualRecovered.some((photo) => photo.productId === product.id && photo.url === output.url),
+        `Missing repeated generation for product ${product.id}, color ${variant.name}`);
+    }
+  }
+}
+const { legacyGeneratedPhotoUrls } = await import("../server/productPhotoSelection");
+assert.equal(legacyGeneratedPhotoUrls({ mainImage: "https://x/source", media: [
+  { type: "image", url: "https://x/source" }, { type: "image", url: "https://x/other" },
+] }).size, 0, "Ordinary source-primary galleries must not be reclassified");
+assert.deepEqual([...legacyGeneratedPhotoUrls({ mainImage: "https://x/output", media: [
+  { type: "image", url: "https://x/source" }, { type: "image", url: "https://x/original2", aiGenerated: false },
+  { type: "image", url: "https://x/output" },
+] })], ["https://x/output"]);
+console.log("Exact public selection: recovered 76 photos for all 44 products / 55 colors instead of 10; originals excluded and every repeated generation retained.");
