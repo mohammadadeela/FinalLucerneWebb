@@ -1,4 +1,4 @@
-import { users, categories, subcategories, products, orders, orderItems, wishlist, cartItems, reviews, discountCodes, siteSettings, posOrders, productEvents, exchangeRequests, notifications, productGroups, type User, type InsertUser, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type Product, type InsertProduct, type Order, type InsertOrder, type OrderItem, type InsertOrderItem, type Wishlist, type InsertWishlist, type CartItemRow, type InsertCartItem, type Review, type InsertReview, type DiscountCode, type InsertDiscountCode, type SiteSetting, type PosOrder, type InsertPosOrder, type InsertProductEvent, type ExchangeRequest, type InsertExchangeRequest, type Notification, type InsertNotification, type ProductGroup } from "@shared/schema";
+import { users, categories, subcategories, products, orders, orderItems, wishlist, cartItems, reviews, discountCodes, siteSettings, posOrders, productEvents, exchangeRequests, notifications, productGroups, type User, type InsertUser, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type Product, type InsertProduct, type ColorVariant, type Order, type InsertOrder, type OrderItem, type InsertOrderItem, type Wishlist, type InsertWishlist, type CartItemRow, type InsertCartItem, type Review, type InsertReview, type DiscountCode, type InsertDiscountCode, type SiteSetting, type PosOrder, type InsertPosOrder, type InsertProductEvent, type ExchangeRequest, type InsertExchangeRequest, type Notification, type InsertNotification, type ProductGroup } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
 
@@ -505,6 +505,8 @@ export class DatabaseStorage implements IStorage {
         isVerified: users.isVerified,
         isBlocked: users.isBlocked,
         verificationCode: users.verificationCode,
+        points: users.points,
+        credit: users.credit,
         createdAt: users.createdAt,
         lastLoginAt: users.lastLoginAt,
         orderCount: sql<number>`cast(count(${orders.id}) as int)`,
@@ -933,7 +935,7 @@ export class DatabaseStorage implements IStorage {
       const product = (lockResult as any).rows?.[0] ?? (lockResult as any)[0];
       if (!product) return;
 
-      const colorVariants = ((product.color_variants) || []) as Array<{ name: string; sizeInventory: Record<string, number> }>;
+      const colorVariants = ((product.color_variants) || []) as ColorVariant[];
 
       if (colorVariants.length > 0 && color) {
         const variantIdx = colorVariants.findIndex((v) => v.name === color);

@@ -77,7 +77,7 @@ export function PageHero({
           <img
             src={image}
             alt={title}
-            fetchpriority="high"
+            fetchPriority="high"
             loading="eager"
             decoding="async"
             className="w-full h-full object-cover"

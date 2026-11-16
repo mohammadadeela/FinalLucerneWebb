@@ -278,7 +278,7 @@ export default function CategoryReportDetail() {
                 <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `₪${v}`} width={70} />
                 <Tooltip
                   formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")]}
-                  labelFormatter={(_, payload) => (payload && payload[0] ? (payload[0].payload as any).full : "")}
+                  labelFormatter={(label) => monthlyData.find((row) => row.label === String(label))?.full ?? ""}
                   contentStyle={{ borderRadius: 8, fontSize: 13, border: "1px solid hsl(var(--border))" }}
                 />
                 <Legend formatter={(val) => val === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")} />
@@ -305,7 +305,7 @@ export default function CategoryReportDetail() {
                 <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `₪${v}`} width={70} />
                 <Tooltip
                   formatter={(val: number, name: string) => [`₪${val.toFixed(2)}`, name === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")]}
-                  labelFormatter={(_, payload) => (payload && payload[0] ? (payload[0].payload as any).full : "")}
+                  labelFormatter={(label) => dailyData.find((row) => row.label === String(label))?.full ?? ""}
                   contentStyle={{ borderRadius: 8, fontSize: 13, border: "1px solid hsl(var(--border))" }}
                 />
                 <Legend formatter={(val) => val === "website" ? (isAr ? "الموقع" : "Website") : (isAr ? "نقطة البيع" : "POS")} />

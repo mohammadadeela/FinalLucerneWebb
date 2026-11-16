@@ -2890,7 +2890,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
     try {
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(req.file.buffer);
+      await workbook.xlsx.load(Buffer.from(req.file.buffer));
       const worksheet = workbook.worksheets[0];
       if (!worksheet) return res.status(400).json({ message: "The Excel file has no worksheet" });
 
@@ -3460,7 +3460,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
               const product = await storage.getProduct(item.productId);
               if (!product) continue;
 
-              const catMatch = hasCatFilter && discount.categoryIds!.includes(product.categoryId);
+              const catMatch = hasCatFilter && product.categoryId != null && discount.categoryIds!.includes(product.categoryId);
               const productSubIds: number[] = Array.isArray((product as any).subcategoryIds) ? (product as any).subcategoryIds : [];
               const allSubIds = product.subcategoryId != null
                 ? Array.from(new Set([...productSubIds, product.subcategoryId]))
@@ -3473,7 +3473,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
                 ? (catMatch || subCatMatch)
                 : true;
 
-              const excludedByCategory = hasCatExcludeFilter && discount.categoryExcludeIds!.includes(product.categoryId);
+              const excludedByCategory = hasCatExcludeFilter && product.categoryId != null && discount.categoryExcludeIds!.includes(product.categoryId);
               const excludedBySubcategory = hasSubCatExcludeFilter &&
                 allSubIds.some((id) => discount.subcategoryExcludeIds!.includes(id));
 
@@ -4268,7 +4268,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
             for (const item of input.items) {
               const product = await storage.getProduct(item.productId);
               if (!product) continue;
-              const catMatch = hasCatFilter2 && discount.categoryIds!.includes(product.categoryId);
+              const catMatch = hasCatFilter2 && product.categoryId != null && discount.categoryIds!.includes(product.categoryId);
               const productSubIds2: number[] = Array.isArray((product as any).subcategoryIds) ? (product as any).subcategoryIds : [];
               const allSubIds2 = product.subcategoryId != null
                 ? Array.from(new Set([...productSubIds2, product.subcategoryId]))

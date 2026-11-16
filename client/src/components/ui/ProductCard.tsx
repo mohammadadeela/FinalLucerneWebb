@@ -286,7 +286,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                 alt={product.name}
                 width={600}
                 height={800}
-                fetchpriority={priority ? "high" : "low"}
+                fetchPriority={priority ? "high" : "low"}
                 loading={priority ? "eager" : "lazy"}
                 decoding={priority ? "sync" : "async"}
                 className="absolute inset-0 object-cover w-full h-full transition-opacity duration-300 group-hover:opacity-90"
@@ -331,7 +331,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                       alt={product.name}
                       width={600}
                       height={800}
-                      fetchpriority={priority && idx === 0 ? "high" : "low"}
+                      fetchPriority={priority && idx === 0 ? "high" : "low"}
                       loading={priority && idx === 0 ? "eager" : "lazy"}
                       decoding={priority && idx === 0 ? "sync" : "async"}
                       onLoad={() => { if (idx === 0) setImageReady(true); }}

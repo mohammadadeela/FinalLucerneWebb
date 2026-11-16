@@ -103,7 +103,7 @@ function BannerImage({
         alt={alt}
         className={className}
         style={style}
-        fetchpriority={fetchpriority}
+        fetchPriority={fetchpriority}
         loading={loading}
         decoding="async"
         onLoad={() => setReady(true)}
@@ -446,7 +446,7 @@ export default function Home() {
                   alt="Hero Fashion"
                   className="w-full h-full object-cover"
                   style={{ objectPosition: heroImagePosition }}
-                  fetchpriority="high"
+                  fetchPriority="high"
                   decoding="async"
                   onLoad={() => setHeroImgReady(true)}
                   onError={() => setHeroImgReady(true)}
@@ -917,7 +917,7 @@ export default function Home() {
                       <BannerImage
                         src={tl.img}
                         alt={language === "ar" ? tl.labelAr : tl.labelEn}
-                        fetchpriority="high"
+                        fetchPriority="high"
                         loading="eager"
                         width={400}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -952,7 +952,7 @@ export default function Home() {
                         <BannerImage
                           src={centerImage}
                           alt="editorial"
-                          fetchpriority="high"
+                          fetchPriority="high"
                           loading="eager"
                           width={800}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -996,7 +996,7 @@ export default function Home() {
                       <BannerImage
                         src={tr.img}
                         alt={language === "ar" ? tr.labelAr : tr.labelEn}
-                        fetchpriority="high"
+                        fetchPriority="high"
                         loading="eager"
                         width={400}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"

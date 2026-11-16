@@ -458,7 +458,7 @@ export default function Checkout() {
     const hasSubCatExcludeFilter = appliedDiscount.subcategoryExcludeIds && appliedDiscount.subcategoryExcludeIds.length > 0;
     if (!hasCatFilter && !hasSubCatFilter && !hasCatExcludeFilter && !hasSubCatExcludeFilter) return subtotal;
     return items.reduce((acc, item) => {
-      const catMatch = hasCatFilter && appliedDiscount.categoryIds!.includes(item.product.categoryId);
+      const catMatch = hasCatFilter && item.product.categoryId != null && appliedDiscount.categoryIds!.includes(item.product.categoryId);
       const productSubIds: number[] = Array.isArray((item.product as any).subcategoryIds)
         ? (item.product as any).subcategoryIds
         : [];
@@ -467,7 +467,7 @@ export default function Checkout() {
         : productSubIds;
       const subCatMatch = hasSubCatFilter && allSubIds.some((id) => appliedDiscount.subcategoryIds!.includes(id));
       const matchesInclude = hasCatFilter || hasSubCatFilter ? (catMatch || subCatMatch) : true;
-      const excludedByCategory = hasCatExcludeFilter && appliedDiscount.categoryExcludeIds!.includes(item.product.categoryId);
+      const excludedByCategory = hasCatExcludeFilter && item.product.categoryId != null && appliedDiscount.categoryExcludeIds!.includes(item.product.categoryId);
       const excludedBySubcategory = hasSubCatExcludeFilter &&
         allSubIds.some((id) => appliedDiscount.subcategoryExcludeIds!.includes(id));
       if (!matchesInclude || excludedByCategory || excludedBySubcategory) return acc;

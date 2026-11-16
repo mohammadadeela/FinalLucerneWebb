@@ -56,7 +56,7 @@ const productSelectSchema = z.object({
   isFeatured: z.boolean().nullable(),
   isNewArrival: z.boolean().nullable(),
   isBestSeller: z.boolean().nullable(),
-  createdAt: z.string().nullable(),
+  createdAt: z.coerce.date().nullable(),
 });
 
 const categorySelectSchema = z.object({

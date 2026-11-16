@@ -1383,7 +1383,7 @@ aria-hidden
 className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
 videoReady ? "opacity-0 pointer-events-none" : "opacity-100"
 }`}
-fetchpriority={isThumbnail ? "low" : "high"}
+fetchPriority={isThumbnail ? "low" : "high"}
 decoding="async"
 onLoad={() => setPosterReady(true)}
 onError={() => setPosterReady(true)}
@@ -2289,7 +2289,7 @@ product.mainImage,
 ) || product.mainImage
 }
 alt={product.name}
-fetchpriority="high"
+fetchPriority="high"
 decoding="async"
 width={800}
 height={1067}
@@ -2849,7 +2849,7 @@ data-testid="button-share"
 >
 {shareCopied ? (
 <Check className="w-4 h-4" />
-) : navigator.share ? (
+) : typeof navigator !== "undefined" && typeof navigator.share === "function" ? (
 <Share className="w-4 h-4" />
 ) : (
 <Link2 className="w-4 h-4" />

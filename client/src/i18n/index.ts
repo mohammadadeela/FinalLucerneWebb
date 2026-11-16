@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { en } from "./en";
 import { ar } from "./ar";
 
-export type Translations = typeof en;
+export type Translations = Omit<typeof en, "dir"> & { dir: "ltr" | "rtl" };
 export type Language = "ar" | "en";
 
 interface LanguageStore {

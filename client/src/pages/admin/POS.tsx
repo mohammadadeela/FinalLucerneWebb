@@ -120,7 +120,7 @@ const PosProductImage = memo(function PosProductImage({
         src={optimized}
         alt={alt}
         loading={priority ? "eager" : "lazy"}
-        fetchpriority={priority ? "high" : "low"}
+        fetchPriority={priority ? "high" : "low"}
         decoding="async"
         className={`w-full h-full object-cover transition-opacity duration-500 ${isSoldOut ? "grayscale" : ""} ${ready ? "opacity-100" : "opacity-0"}`}
         onLoad={() => setReady(true)}
@@ -7251,7 +7251,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                   data-testid="input-exchange-search"
                 />
                 <button
-                  onClick={searchExchange}
+                  onClick={() => void searchExchange()}
                   className="px-4 py-2 bg-foreground text-background hover:bg-foreground/90 font-medium text-sm transition-colors rounded"
                   data-testid="button-exchange-search"
                 >
@@ -8295,7 +8295,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                   data-testid="input-return-search"
                 />
                 <button
-                  onClick={searchReturn}
+                  onClick={() => void searchReturn()}
                   className="px-4 py-2 bg-foreground text-background hover:bg-foreground/90 font-medium text-sm transition-colors rounded"
                 >
                   {ar ? "بحث" : "Search"}
