@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n";
 import { useState } from "react";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { AdminUndoButton } from "@/components/admin/AdminUndoButton";
 
 export function AdminLayout({
   children,
@@ -219,6 +220,7 @@ export function AdminLayout({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {isAdmin && <AdminUndoButton />}
             <Button
               variant="outline"
               size="sm"

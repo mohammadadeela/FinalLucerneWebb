@@ -29,6 +29,8 @@ import { SITE_URL } from "./seo";
 import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCategoryReportResponse, parseMonthParam } from "./reports";
 import { getEnvEmployees } from "./staff-env";
 import { auditMiddleware, registerAuditRoutes } from "./audit";
+import { adminUndoMiddleware, registerAdminUndoRoutes } from "./adminUndo";
+import { registerProductPhotoExportRoutes, trackAiProductPhoto } from "./photoExport";
 import {
   PICKUP_REGION, PICKUP_ADDRESS_PLACEHOLDER, PICKUP_CITY_PLACEHOLDER,
   isGuestCheckoutEnabled, isOnlinePickupEnabled, guestOrderToken, verifyGuestOrderToken,
@@ -385,6 +387,7 @@ function normalizeMediaArray(value: unknown, field: string): any[] {
       url,
       poster: cleanOptionalString(raw.poster) || (raw.type === "video" ? derivePosterFromVideoUrl(url) : undefined),
       isPrimary: raw.isPrimary === true || undefined,
+      aiGenerated: raw.type === "image" && raw.aiGenerated === true || undefined,
     });
   }
   let primaryIndex = media.findIndex((item) => item.type === "image" && item.isPrimary);
@@ -579,8 +582,11 @@ export async function registerRoutes(
 
   // Audit trail: every staff action on a mutating /api route is recorded
   // (see server/audit.ts). Registered before the routes so it sees them all.
+  app.use(adminUndoMiddleware);
   app.use(auditMiddleware);
   registerAuditRoutes(app);
+  registerAdminUndoRoutes(app);
+  registerProductPhotoExportRoutes(app);
 
   // ── SEO: sitemap.xml + robots.txt ────────────────────────────────────────
   // Dynamically generated so new products/categories are picked up
@@ -6746,6 +6752,8 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
         !!isFootwear,
       );
       const url = await uploadToCloudinary(buffer, "ai-generated-photo.png");
+      try { await trackAiProductPhoto(url); }
+      catch (error) { console.error("[ai-photo] Could not record AI image provenance", error); }
       res.json({ url });
     } catch (err: any) {
       console.error("[ai-generate-photo]", err?.message || err);

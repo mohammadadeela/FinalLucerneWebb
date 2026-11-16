@@ -48,6 +48,7 @@ export interface MediaItem {
   url: string;
   isPrimary?: boolean;
   poster?: string;
+  aiGenerated?: boolean;
 }
 
 export interface ColorVariant {

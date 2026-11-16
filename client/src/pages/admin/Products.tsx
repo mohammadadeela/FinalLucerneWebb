@@ -1318,11 +1318,17 @@ export default function Products() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [videoUploading, setVideoUploading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<number | "">("");
-  const [subcategoryFilter, setSubcategoryFilter] = useState<number | "">("");
-  const [showUncategorized, setShowUncategorized] = useState(false);
-  const [showNoSubcategory, setShowNoSubcategory] = useState(false);
+  // Remember the admin's choices when they refresh or navigate elsewhere.
+  const savedFilters = useMemo((): Record<string, any> => {
+    if (typeof window === "undefined") return {};
+    try { return JSON.parse(localStorage.getItem("lucerne.admin.productFilters.v1") || "{}"); }
+    catch { return {}; }
+  }, []);
+  const [search, setSearch] = useState<string>(() => typeof savedFilters.search === "string" ? savedFilters.search : "");
+  const [categoryFilter, setCategoryFilter] = useState<number | "">(() => Number.isInteger(savedFilters.categoryFilter) && savedFilters.categoryFilter > 0 ? savedFilters.categoryFilter : "");
+  const [subcategoryFilter, setSubcategoryFilter] = useState<number | "">(() => Number.isInteger(savedFilters.subcategoryFilter) && savedFilters.subcategoryFilter > 0 ? savedFilters.subcategoryFilter : "");
+  const [showUncategorized, setShowUncategorized] = useState(() => savedFilters.showUncategorized === true);
+  const [showNoSubcategory, setShowNoSubcategory] = useState(() => savedFilters.showNoSubcategory === true);
   const [viewMode, setViewMode] = useState<"table" | "grid" | "bulk-upload">("table");
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   // Tracks the true (uploaded) pixel dimensions of each photo, read once the
@@ -1403,6 +1409,8 @@ export default function Products() {
   // ── Main product photo download + bulk AI autofill state ──
   const [downloadingPhotoIds, setDownloadingPhotoIds] = useState<Set<number>>(new Set());
   const [bulkPhotoDownloading, setBulkPhotoDownloading] = useState(false);
+  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+  const [photoDownloadProgress, setPhotoDownloadProgress] = useState("");
   const [isBulkAutofillOpen, setIsBulkAutofillOpen] = useState(false);
   const [autofillFields, setAutofillFields] = useState({
     name: true,
@@ -1516,9 +1524,18 @@ export default function Products() {
 
   // A product is considered low stock only when 2 units or fewer remain.
   const LOW_STOCK_MAX = 2;
-  const [showLowStock, setShowLowStock] = useState(false);
-  const [lowStockCategoryFilter, setLowStockCategoryFilter] = useState<number | "">("");
-  const [lowStockSubcategoryFilter, setLowStockSubcategoryFilter] = useState<number | "">("");
+  const [showLowStock, setShowLowStock] = useState(() => savedFilters.showLowStock === true);
+  const [lowStockCategoryFilter, setLowStockCategoryFilter] = useState<number | "">(() => Number.isInteger(savedFilters.lowStockCategoryFilter) && savedFilters.lowStockCategoryFilter > 0 ? savedFilters.lowStockCategoryFilter : "");
+  const [lowStockSubcategoryFilter, setLowStockSubcategoryFilter] = useState<number | "">(() => Number.isInteger(savedFilters.lowStockSubcategoryFilter) && savedFilters.lowStockSubcategoryFilter > 0 ? savedFilters.lowStockSubcategoryFilter : "");
+  useEffect(() => {
+    try {
+      localStorage.setItem("lucerne.admin.productFilters.v1", JSON.stringify({
+        search, categoryFilter, subcategoryFilter, showUncategorized, showNoSubcategory,
+        showLowStock, lowStockCategoryFilter, lowStockSubcategoryFilter,
+      }));
+    } catch { /* Storage disabled: keep the current in-memory filters. */ }
+  }, [search, categoryFilter, subcategoryFilter, showUncategorized, showNoSubcategory,
+      showLowStock, lowStockCategoryFilter, lowStockSubcategoryFilter]);
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const [discountPercent, setDiscountPercent] = useState("");
   const [discountApplying, setDiscountApplying] = useState(false);
@@ -2016,10 +2033,17 @@ export default function Products() {
       m.get(sid)!.push(prod);
     }
 
+    const createdTime = (prod: Product) => {
+      const stamp = new Date(String(prod.createdAt || "")).getTime();
+      return Number.isFinite(stamp) ? stamp : 0;
+    };
+    const newestInGroup = (groups: Map<number, Product[]>) =>
+      Math.max(0, ...Array.from(groups.values()).flatMap((group) => group.map(createdTime)));
     const catIds = Array.from(byCat.keys()).sort((a, b) => {
       if (a === 0) return 1;
       if (b === 0) return -1;
-      return (catOrder.get(a) ?? 1e9) - (catOrder.get(b) ?? 1e9);
+      return newestInGroup(byCat.get(b)!) - newestInGroup(byCat.get(a)!)
+        || (catOrder.get(a) ?? 1e9) - (catOrder.get(b) ?? 1e9);
     });
 
     const rows: GroupedRow[] = [];
@@ -2031,14 +2055,16 @@ export default function Products() {
       const subIds = Array.from(m.keys()).sort((a, b) => {
         if (a === 0) return 1;
         if (b === 0) return -1;
-        return (subOrder.get(a) ?? 1e9) - (subOrder.get(b) ?? 1e9);
+        return Math.max(0, ...(m.get(b) || []).map(createdTime))
+          - Math.max(0, ...(m.get(a) || []).map(createdTime))
+          || (subOrder.get(a) ?? 1e9) - (subOrder.get(b) ?? 1e9);
       });
       // Only show a subcategory header when the category actually has
       // subcategories to split by — a single "no subcategory" bucket under
       // a category with no subcategories at all would just be noise.
       const showSubHeaders = subIds.some((id) => id !== 0) || subs.some((sb: any) => sb.categoryId === cid);
       for (const sid of subIds) {
-        const prods = m.get(sid)!;
+        const prods = m.get(sid)!.slice().sort((a, b) => createdTime(b) - createdTime(a) || b.id - a.id);
         if (showSubHeaders) {
           const sb = subById.get(sid);
           rows.push({ kind: "subcategory", key: `sub-${cid}-${sid}`, label: sb ? catName(sb) : noSubLabel, count: prods.length });
@@ -3055,9 +3081,9 @@ export default function Products() {
           ? variant.media
           : [...variant.media, { type: "image" as const, url: sourceUrl }];
         const additions: MediaItem[] = [];
-        if (productUrl) additions.push({ type: "image", url: productUrl });
+        if (productUrl) additions.push({ type: "image", url: productUrl, aiGenerated: true });
         // Model shot added last and marked primary so it becomes the main photo.
-        if (modelUrl) additions.push({ type: "image", url: modelUrl });
+        if (modelUrl) additions.push({ type: "image", url: modelUrl, aiGenerated: true });
         const primaryUrl = modelUrl || productUrl;
         const newMedia = [...baseMedia, ...additions].map((m) => ({
           ...m,
@@ -3092,60 +3118,66 @@ export default function Products() {
    * selected products. The server exports clean, unwatermarked JPEG files
    * directly at the root of a single ZIP (no product/color subfolders).
    */
-  const handleDownloadMainPhotos = async (ids: number[]) => {
-    if (ids.length === 0) return;
+  type PhotoExportMode = "main" | "all" | "ai";
+  const handleDownloadMainPhotos = async (ids: number[], mode: PhotoExportMode = "main") => {
+    if (!ids.length) return;
     const single = ids.length === 1 ? ids[0] : null;
-    if (single !== null) {
-      setDownloadingPhotoIds((prev) => new Set(prev).add(single));
-    } else {
-      setBulkPhotoDownloading(true);
-    }
+    setDownloadMenuOpen(false);
+    if (single !== null) setDownloadingPhotoIds((prev) => new Set(prev).add(single));
+    else setBulkPhotoDownloading(true);
+    let included = 0;
+    let failed = 0;
+    let offset = 0;
+    let part = 1;
     try {
-      const res = await fetch("/api/admin/products/main-photos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ ids }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `Download failed (${res.status})`);
+      while (true) {
+        setPhotoDownloadProgress(language === "ar" ? `جاري تجهيز الجزء ${part}...` : `Preparing part ${part}...`);
+        const res = await fetch("/api/admin/products/photo-export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ ids, mode, offset }),
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => ({}));
+          throw new Error(error.message || `Download failed (${res.status})`);
+        }
+        const blob = await res.blob();
+        const fileUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = fileUrl;
+        anchor.download = `lucerne-${single === null ? ids.length + "-products" : "product-" + single}-${mode}-photos-part-${part}.zip`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(fileUrl), 60000);
+        included += Number(res.headers.get("X-Photos-Included") || 0);
+        failed += Number(res.headers.get("X-Photos-Failed") || 0);
+        const next = Number(res.headers.get("X-Photos-Next-Offset") || 0);
+        if (!Number.isInteger(next) || next <= offset) break;
+        offset = next;
+        part++;
       }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download =
-        single !== null
-          ? `lucerne-product-${single}-main-photos.zip`
-          : `lucerne-${ids.length}-products-main-photos.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      const included = res.headers.get("X-Photos-Included");
       toast({
-        title:
-          language === "ar"
-            ? `تم تحميل ${included || ""} صورة رئيسية بدون علامة مائية`
-            : `Downloaded ${included || ""} main photo(s) without watermark`,
+        title: language === "ar" ? `تم تجهيز تحميل ${included} صورة` : `Prepared ${included} photo(s) for download`,
+        description: part > 1
+          ? (language === "ar" ? `تم تقسيم الصور إلى ${part} ملفات ZIP` : `Split into ${part} ZIP files`)
+          : failed ? `${failed} photo(s) could not be processed` : undefined,
       });
     } catch (err: any) {
       toast({
-        title: language === "ar" ? "فشل التحميل" : "Download failed",
-        description: err.message,
+        title: language === "ar" ? "فشل تحميل الصور" : "Photo download failed",
+        description: err.message + (included ? ` (${included} photos already downloaded)` : ""),
         variant: "destructive",
       });
     } finally {
-      if (single !== null) {
-        setDownloadingPhotoIds((prev) => {
-          const next = new Set(prev);
-          next.delete(single);
-          return next;
-        });
-      } else {
-        setBulkPhotoDownloading(false);
-      }
+      setPhotoDownloadProgress("");
+      if (single !== null) setDownloadingPhotoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(single);
+        return next;
+      });
+      else setBulkPhotoDownloading(false);
     }
   };
 
@@ -3323,8 +3355,8 @@ export default function Products() {
         ? existingMedia
         : [...existingMedia, { type: "image" as const, url: sourceUrl }];
       const additions: MediaItem[] = [];
-      if (productUrl) additions.push({ type: "image", url: productUrl });
-      if (modelUrl) additions.push({ type: "image", url: modelUrl });
+      if (productUrl) additions.push({ type: "image", url: productUrl, aiGenerated: true });
+      if (modelUrl) additions.push({ type: "image", url: modelUrl, aiGenerated: true });
       const primaryUrl = modelUrl || productUrl;
       const newMedia = [...baseMedia, ...additions].map((m) => ({
         ...m,
@@ -5579,20 +5611,37 @@ export default function Products() {
             <Bot className="w-4 h-4" />
             {language === "ar" ? "تعبئة AI (اسم/وصف/ألوان)" : "AI Autofill (Name/Desc/Colors)"}
           </Button>
-          <Button
-            size="sm"
-            disabled={bulkPhotoDownloading}
-            onClick={() => handleDownloadMainPhotos(Array.from(selectedIds))}
-            className="rounded bg-slate-700 hover:bg-slate-800 text-white gap-1.5"
-            data-testid="button-bulk-download-main-photos"
-          >
-            {bulkPhotoDownloading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            {language === "ar" ? "تحميل الصور الرئيسية" : "Download Main Photos"}
-          </Button>
+          <Popover open={downloadMenuOpen} onOpenChange={setDownloadMenuOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" type="button" disabled={bulkPhotoDownloading}
+                className="rounded bg-slate-700 hover:bg-slate-800 text-white gap-1.5"
+                data-testid="button-bulk-download-main-photos">
+                {bulkPhotoDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {bulkPhotoDownloading ? photoDownloadProgress : (language === "ar" ? "تحميل الصور" : "Download Photos")}
+                {!bulkPhotoDownloading && <ChevronDown className="w-3.5 h-3.5" />}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-64 p-1.5 space-y-1">
+              <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
+                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "main")}
+                data-testid="download-selected-main-photos">
+                <ImageIcon className="w-4 h-4 shrink-0 me-2" />
+                {language === "ar" ? "الصور الرئيسية للمنتجات" : "Main product photos"}
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
+                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "all")}
+                data-testid="download-selected-all-photos">
+                <Images className="w-4 h-4 shrink-0 me-2" />
+                {language === "ar" ? "جميع صور المنتجات" : "All product photos"}
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
+                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "ai")}
+                data-testid="download-selected-ai-photos">
+                <Wand2 className="w-4 h-4 shrink-0 me-2" />
+                {language === "ar" ? "صور المنتجات المولّدة بالذكاء الاصطناعي" : "AI-generated product photos"}
+              </Button>
+            </PopoverContent>
+          </Popover>
           <Button
             variant="destructive"
             size="sm"

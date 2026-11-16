@@ -300,8 +300,8 @@ export default function AdminCategories() {
         </div>
       ) : (
         <div className="space-y-3">
-          {categories?.map((cat) => {
-            const catSubs = (subcategoriesData || []).filter(s => s.categoryId === cat.id);
+          {categories?.slice().sort((a, b) => b.id - a.id).map((cat) => {
+            const catSubs = (subcategoriesData || []).filter(s => s.categoryId === cat.id).sort((a, b) => b.id - a.id);
             const isExpanded = expandedCat === cat.id;
             const displayName = isAr ? ((cat as any).nameAr || cat.name) : cat.name;
             const secondaryName = isAr ? cat.name : ((cat as any).nameAr || "");
