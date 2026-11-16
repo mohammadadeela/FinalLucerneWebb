@@ -1414,6 +1414,43 @@ export default function Products() {
   const [bulkPhotoDownloading, setBulkPhotoDownloading] = useState(false);
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
   const [photoDownloadProgress, setPhotoDownloadProgress] = useState("");
+  const [photoCounts, setPhotoCounts] = useState<{
+    selection: string; main: number; all: number; ai: number;
+  } | null>(null);
+  const [photoCountsError, setPhotoCountsError] = useState(false);
+  const selectedPhotoIdsKey = Array.from(selectedIds).sort((a, b) => a - b).join(",");
+  useEffect(() => {
+    if (!downloadMenuOpen || !selectedPhotoIdsKey) return;
+    const controller = new AbortController();
+    setPhotoCounts(null);
+    setPhotoCountsError(false);
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/products/photo-export/counts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ ids: selectedPhotoIdsKey.split(",").map(Number) }),
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error("Photo count failed");
+        const counts = await response.json();
+        if (!(["main", "all", "ai"] as const).every(
+          (mode) => Number.isSafeInteger(counts[mode]) && counts[mode] >= 0,
+        )) throw new Error("Invalid photo counts");
+        if (!controller.signal.aborted) {
+          setPhotoCounts({ selection: selectedPhotoIdsKey, ...counts });
+        }
+      } catch {
+        if (!controller.signal.aborted) setPhotoCountsError(true);
+      }
+    })();
+    return () => controller.abort();
+  }, [downloadMenuOpen, selectedPhotoIdsKey]);
+  const selectedPhotoCount = (mode: PhotoExportMode) =>
+    photoCounts?.selection === selectedPhotoIdsKey
+      ? photoCounts[mode]
+      : photoCountsError ? "—" : "…";
   const [isBulkAutofillOpen, setIsBulkAutofillOpen] = useState(false);
   const [autofillFields, setAutofillFields] = useState({
     name: true,
@@ -5630,19 +5667,22 @@ export default function Products() {
                 onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "main")}
                 data-testid="download-selected-main-photos">
                 <ImageIcon className="w-4 h-4 shrink-0 me-2" />
-                {language === "ar" ? "الصور الرئيسية للمنتجات" : "Main product photos"}
+                <span className="min-w-0 flex-1">{language === "ar" ? "الصور الرئيسية للمنتجات" : "Main product photos"}</span>
+                <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-main-photos">{selectedPhotoCount("main")}</span>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
                 onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "all")}
                 data-testid="download-selected-all-photos">
                 <Images className="w-4 h-4 shrink-0 me-2" />
-                {language === "ar" ? "جميع صور المنتجات" : "All product photos"}
+                <span className="min-w-0 flex-1">{language === "ar" ? "جميع صور المنتجات" : "All product photos"}</span>
+                <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-all-photos">{selectedPhotoCount("all")}</span>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
                 onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "ai")}
                 data-testid="download-selected-ai-photos">
                 <Wand2 className="w-4 h-4 shrink-0 me-2" />
-                {language === "ar" ? "صور المنتجات المولّدة بالذكاء الاصطناعي" : "AI-generated product photos"}
+                <span className="min-w-0 flex-1">{language === "ar" ? "صور المنتجات المولّدة بالذكاء الاصطناعي" : "AI-generated product photos"}</span>
+                <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-ai-photos">{selectedPhotoCount("ai")}</span>
               </Button>
             </PopoverContent>
           </Popover>
