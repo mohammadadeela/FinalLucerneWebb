@@ -275,16 +275,7 @@ export function Navbar() {
       shownNotifIds.current.add(n.id);
       const body = language === "ar" ? n.messageAr : n.message;
       const link = n.link || "/profile";
-      const newsItems = newsBarText.split("|").map((item) => item.trim()).filter(Boolean);
-  useEffect(() => {
-    setNewsIndex(0);
-  }, [newsBarText]);
-  useEffect(() => {
-    if (!showNewsBar || newsItems.length < 2) return;
-    const timer = window.setInterval(() => setNewsIndex((index) => (index + 1) % newsItems.length), 5500);
-    return () => window.clearInterval(timer);
-  }, [showNewsBar, newsItems.length]);
-  const isAr = language === "ar";
+      const isAr = language === "ar";
 
       // Derive toast appearance from notification type
       const type = n.type as string | undefined;
@@ -351,6 +342,15 @@ export function Navbar() {
   const seasonInfo = season ? SEASONS[season] : null;
   const newsBarText = season ? seasonBarText(siteSettings, season, language === "ar" ? "ar" : "en") : baseNewsBarText;
   const showNewsBar = season ? newsBarText.trim().length > 0 : newsBarEnabled && newsBarText.trim().length > 0;
+  const newsItems: string[] = newsBarText.split("|").map((item) => item.trim()).filter(Boolean);
+  useEffect(() => {
+    setNewsIndex(0);
+  }, [newsBarText]);
+  useEffect(() => {
+    if (!showNewsBar || newsItems.length < 2) return;
+    const timer = window.setInterval(() => setNewsIndex((index) => (index + 1) % newsItems.length), 5500);
+    return () => window.clearInterval(timer);
+  }, [showNewsBar, newsItems.length]);
   const isAr = language === "ar";
 
   const { data: allProducts } = useProducts();
