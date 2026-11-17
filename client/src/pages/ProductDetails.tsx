@@ -2043,7 +2043,7 @@ return { p, minDist };
 
 if (isLoading && !product)
 return (
-<div className="lucerne-store min-h-screen flex flex-col pt-navbar">
+<div className="min-h-screen flex flex-col pt-navbar">
 <Navbar />
 </div>
 );
@@ -2149,7 +2149,7 @@ currentMedia?.url || product.mainImage,
 );
 
 return (
-<div className="lucerne-store min-h-screen flex flex-col pt-navbar">
+<div className="min-h-screen flex flex-col pt-navbar">
 <Navbar />
 <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8">
 <div className="max-w-6xl mx-auto">

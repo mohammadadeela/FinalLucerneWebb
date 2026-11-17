@@ -171,7 +171,7 @@ export default function Shop() {
     (filters.priceRange[0] > minPrice || filters.priceRange[1] < maxPrice ? 1 : 0);
 
   return (
-    <div className="lucerne-store min-h-screen flex flex-col pt-navbar">
+    <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="max-w-5xl mx-auto">

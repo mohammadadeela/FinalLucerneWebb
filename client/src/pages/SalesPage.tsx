@@ -263,7 +263,7 @@ export default function SalesPage() {
   };
 
   return (
-    <div className="lucerne-store lucerne-sales-page min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
 
       <PageHero

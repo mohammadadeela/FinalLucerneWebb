@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import "./styles/lucerne-editorial.css";
 import { useLanguage } from "./i18n";
 
 const lang = useLanguage.getState().language;

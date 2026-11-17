@@ -34,7 +34,7 @@ import {
 
 function ProductGrid({ products }: { products: any[] }) {
   return (
-    <div className="lucerne-product-grid grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
       {products.map((product, index) => (
         <ProductCard key={product.id} product={product} priority={index < 4} />
       ))}
@@ -129,7 +129,7 @@ function SectionHeading({
 }) {
   const isRed = accentColor === "red";
   return (
-    <div className="lucerne-section-heading text-start">
+    <div className="text-center">
       {accent && (
         <>
           <span
@@ -138,7 +138,7 @@ function SectionHeading({
             {Icon && <Icon className="w-3 h-3" />}
             {accent}
           </span>
-          <div className="flex justify-start mb-3">
+          <div className="flex justify-center mb-3">
             <span
               className={`block h-px w-8 ${isRed ? "bg-red-700" : "bg-foreground"}`}
             />
@@ -146,7 +146,7 @@ function SectionHeading({
         </>
       )}
       <h2
-        className="font-display text-3xl sm:text-5xl font-semibold"
+        className="font-display text-2xl sm:text-4xl font-semibold"
         data-testid={testId || "section-title"}
       >
         {title}
@@ -202,8 +202,6 @@ export default function Home() {
   const [bsAtStart, setBsAtStart] = useState(true);
   const [bsAtEnd, setBsAtEnd] = useState(false);
   const [heroImgReady, setHeroImgReady] = useState(false);
-  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
-  const [heroPaused, setHeroPaused] = useState(false);
   const scrollBsCarousel = (dir: "prev" | "next") => {
     const el = bsCarouselRef.current;
     if (!el) return;
@@ -241,57 +239,6 @@ export default function Home() {
     language === "ar"
       ? getSetting(siteSettings, "home_hero_subtitle_ar")
       : getSetting(siteSettings, "home_hero_subtitle_en");
-
-
-  // The existing admin-controlled home hero remains the first slide.
-  // Subsequent slides are built only from media already configured for the store.
-  const editorialImage = getSetting(siteSettings, "editorial_center_image");
-  const editorialVideo = getSetting(siteSettings, "editorial_center_video");
-  const shoesCategory = (categoriesList || []).find((c: any) => c.slug === "shoes" && c.image);
-  const heroSlides = [
-    {
-      image: heroImage || "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1600&q=85",
-      video: heroVideo,
-      position: heroImagePosition,
-      videoPosition: heroVideoPosition,
-      tag: heroTag || (language === "ar" ? "لوسيرن بوتيك" : "LUCERNE BOUTIQUE"),
-      title: heroTitle || (language === "ar" ? "ستايلك، قصتك" : "Your style, your story."),
-      subtitle: heroSubtitle || (language === "ar" ? "اكتشفي التشكيلة الجديدة" : "Discover the new collection"),
-      href: "/shop",
-      button: language === "ar" ? "تسوقي الجديد" : "Shop New In",
-    },
-    ...(editorialImage || editorialVideo ? [{
-      image: editorialImage || heroImage,
-      video: editorialVideo,
-      position: "center",
-      videoPosition: "center",
-      tag: language === "ar" ? "مختارة لإطلالتك" : "THE NEW SEASON",
-      title: getSetting(siteSettings, language === "ar" ? "editorial_headline_ar" : "editorial_headline_en") || (language === "ar" ? "تشكيلة الموسم الجديد" : "The New Season Collection"),
-      subtitle: language === "ar" ? "قطع مميزة لكل يوم" : "Effortless pieces for every day",
-      href: "/shop",
-      button: language === "ar" ? "اكتشفي التشكيلة" : "Discover Collection",
-    }] : []),
-    ...(shoesCategory ? [{
-      image: shoesCategory.image,
-      video: "",
-      position: "center",
-      videoPosition: "center",
-      tag: language === "ar" ? "إطلالتك تبدأ من هنا" : "STEP INTO STYLE",
-      title: language === "ar" ? "أحذية لكل إطلالة" : "Your perfect pair.",
-      subtitle: language === "ar" ? "اكتشفي أحدث الأحذية" : "Find the shoes you'll love",
-      href: "/shoes",
-      button: language === "ar" ? "تسوقي الأحذية" : "Shop Shoes",
-    }] : []),
-  ];
-  const currentHero = heroSlides[heroSlideIndex % heroSlides.length];
-  useEffect(() => {
-    if (heroPaused || heroSlides.length < 2) return;
-    const timer = window.setInterval(() => setHeroSlideIndex((i) => (i + 1) % heroSlides.length), 6500);
-    return () => window.clearInterval(timer);
-  }, [heroPaused, heroSlides.length]);
-  const changeHero = (direction: number) => {
-    setHeroSlideIndex((i) => (i + direction + heroSlides.length) % heroSlides.length);
-  };
 
   // Inject <link rel="preload"> for hero media as soon as URL is known so the
   // browser starts fetching it in parallel with JS execution — before React
@@ -381,7 +328,7 @@ export default function Home() {
       ? g("section_on_sale_subtitle_ar")
       : g("section_on_sale_subtitle_en")) || t.home.salesSubtitle;
 
-  const featured = featuredProducts?.length ? featuredProducts : (newArrivalsData?.length ? newArrivalsData : (allProductsData || []).slice(0, 8));
+  const featured = featuredProducts || [];
   const newArrivals = newArrivalsData || [];
   const bestSellers = bestSellersData || [];
   const onSale = onSaleData || [];
@@ -448,151 +395,446 @@ export default function Home() {
   );
 
   return (
-    <div className="lucerne-store lucerne-home min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
 
       <main className="flex-1">
-
-        {/* Editorial split hero with real admin media and accessible slide controls */}
+        {/* Hero — 3D parallax */}
         <section
-          className="lucerne-editorial-hero"
-          aria-roledescription="carousel"
-          aria-label={language === "ar" ? "تشكيلات لوسيرن" : "Lucerne collections"}
-          onMouseEnter={() => setHeroPaused(true)}
-          onMouseLeave={() => setHeroPaused(false)}
-          onFocus={() => setHeroPaused(true)}
-          onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setHeroPaused(false); }}
+          className="relative h-[65vh] sm:h-[78vh] flex items-center justify-center overflow-hidden bg-black"
+          onMouseMove={handleHeroMouseMove}
+          onMouseLeave={handleHeroMouseLeave}
         >
-          <div className="lucerne-hero-stage" key={heroSlideIndex}>
-            <div className="lucerne-hero-media">
-              {currentHero.video ? (
-                <AutoplayVideo
-                  src={optimizeCloudinaryVideoUrl(currentHero.video, 1440) || currentHero.video}
-                  preload="auto"
-                  poster={optimizeCloudinaryUrl(currentHero.image, 1440) || currentHero.image || undefined}
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: currentHero.videoPosition }}
-                />
-              ) : (
-                <BannerImage
-                  src={currentHero.image}
-                  alt={currentHero.title}
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: currentHero.position }}
-                  width={1440}
-                  fetchPriority={heroSlideIndex === 0 ? "high" : "auto"}
-                  loading="eager"
-                />
-              )}
-            </div>
-            <div className="lucerne-hero-copy">
-              <span className="lucerne-hero-eyebrow">{currentHero.tag}</span>
-              <h1 className="lucerne-hero-title" data-testid="text-hero-title">
-                {currentHero.title.split(/[,،]/).length > 1 ? (
-                  <>
-                    {currentHero.title.split(/[,،]/)[0]}{language === "ar" ? "،" : ","}
-                    <br />
-                    <em>{currentHero.title.split(/[,،]/).slice(1).join(language === "ar" ? "،" : ",").trim()}</em>
-                  </>
-                ) : currentHero.title}
-              </h1>
-              <p className="lucerne-hero-description" data-testid="text-hero-subtitle">{currentHero.subtitle}</p>
-              <div className="lucerne-hero-actions">
-                <Link href={currentHero.href} className="lucerne-hero-primary" data-testid="button-shop-collection">
-                  {currentHero.button}<Arrow className="w-4 h-4" aria-hidden="true" />
-                </Link>
-                <Link href="/shoes" className="lucerne-hero-secondary">
-                  {language === "ar" ? "اكتشفي الأحذية" : "Explore Shoes"}
-                </Link>
-              </div>
-            </div>
-          </div>
-          {heroSlides.length > 1 && (
-            <>
-              <button type="button" className="lucerne-hero-arrow lucerne-hero-prev" onClick={() => changeHero(-1)} aria-label={language === "ar" ? "السابق" : "Previous slide"}>
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button type="button" className="lucerne-hero-arrow lucerne-hero-next" onClick={() => changeHero(1)} aria-label={language === "ar" ? "التالي" : "Next slide"}>
-                <ChevronRight className="w-5 h-5" />
-              </button>
-              <div className="lucerne-hero-dots" aria-label={language === "ar" ? "اختر شريحة" : "Choose slide"}>
-                {heroSlides.map((slide, index) => (
-                  <button
-                    type="button"
-                    key={slide.href + index}
-                    onClick={() => setHeroSlideIndex(index)}
-                    className={index === heroSlideIndex % heroSlides.length ? "is-active" : ""}
-                    aria-label={language === "ar" ? `الشريحة ${index + 1}` : `Slide ${index + 1}`}
-                    aria-current={index === heroSlideIndex % heroSlides.length ? "true" : undefined}
+          {/* Parallax + Ken Burns media (video takes priority) */}
+          <motion.div
+            className="absolute z-0 will-change-transform"
+            style={{ inset: "-7%", x: heroImgX, y: heroImgY }}
+            animate={
+              heroVideo ? undefined : { scale: [1.0, 1.07, 1.03, 1.08, 1.0] }
+            }
+            transition={
+              heroVideo
+                ? undefined
+                : { duration: 22, repeat: Infinity, ease: "easeInOut" }
+            }
+          >
+            {heroVideo ? (
+              <AutoplayVideo
+                src={optimizeCloudinaryVideoUrl(heroVideo, 1440)}
+                preload="auto"
+                poster={optimizeCloudinaryUrl(heroImage, 1440) || undefined}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: heroVideoPosition,
+                }}
+              />
+            ) : (
+              <>
+                {blurCloudinaryUrl(heroImage) && (
+                  <img
+                    src={blurCloudinaryUrl(heroImage) as string}
+                    aria-hidden
+                    className={`absolute inset-0 w-full h-full object-cover pointer-events-none transition-opacity duration-700 scale-110 ${heroImgReady ? "opacity-0" : "opacity-100"}`}
+                    style={{ objectPosition: heroImagePosition }}
                   />
-                ))}
-              </div>
-            </>
-          )}
+                )}
+                <img
+                  src={optimizeCloudinaryUrl(heroImage, 1440) || heroImage}
+                  alt="Hero Fashion"
+                  className="w-full h-full object-cover"
+                  style={{ objectPosition: heroImagePosition }}
+                  fetchPriority="high"
+                  decoding="async"
+                  onLoad={() => setHeroImgReady(true)}
+                  onError={() => setHeroImgReady(true)}
+                />
+              </>
+            )}
+          </motion.div>
+
+          {/* Layered depth gradients */}
+          <div
+            className="absolute inset-0 z-[1] pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 60%, transparent 30%, rgba(0,0,0,0.25) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 z-[1] pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.04) 50%, transparent 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-0 z-[1] pointer-events-none"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, transparent 30%)",
+            }}
+          />
+
+          {/* Moving glare */}
+          <motion.div
+            className="absolute z-[2] pointer-events-none"
+            style={{
+              width: 600,
+              height: 600,
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 68%)",
+              left: heroGlareX,
+              top: heroGlareY,
+              translateX: "-50%",
+              translateY: "-50%",
+            }}
+          />
+
+          {/* Decorative rotating rings */}
+          <div className="absolute inset-0 z-[2] overflow-hidden pointer-events-none">
+            <motion.div
+              className="absolute rounded-full"
+              style={{
+                width: 420,
+                height: 420,
+                border: "1px solid rgba(255,255,255,0.08)",
+                right: -100,
+                top: -120,
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.div
+              className="absolute rounded-full"
+              style={{
+                width: 240,
+                height: 240,
+                border: "1px solid rgba(255,255,255,0.06)",
+                right: -20,
+                top: -50,
+              }}
+              animate={{ rotate: -360 }}
+              transition={{ duration: 38, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.div
+              className="absolute rounded-full"
+              style={{
+                width: 280,
+                height: 280,
+                border: "1px solid rgba(255,255,255,0.05)",
+                left: -70,
+                bottom: -80,
+              }}
+              animate={{ rotate: 360 }}
+              transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+            />
+            {/* Horizontal shimmer line */}
+            <motion.div
+              className="absolute h-px"
+              style={{
+                background:
+                  "linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent)",
+                left: "8%",
+                right: "8%",
+                bottom: "22%",
+              }}
+              initial={{ scaleX: 0, opacity: 0 }}
+              animate={{ scaleX: 1, opacity: 1 }}
+              transition={{
+                duration: 1.4,
+                delay: 0.5,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            />
+          </div>
+
+          {/* Seasonal decorations (Christmas / Eid) — renders nothing unless the admin turned a season on */}
+          <SeasonalHeroOverlay />
+
+          {/* 3D floating text content */}
+          <motion.div
+            className="relative z-10 text-center text-white px-4"
+            style={{ x: heroTextX, y: heroTextY }}
+          >
+            {heroTag && (
+              <motion.span
+                className="block text-[10px] sm:text-xs uppercase tracking-[0.4em] mb-4 font-light"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 0.8, y: 0 }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                style={{ textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}
+              >
+                {heroTag}
+              </motion.span>
+            )}
+            <motion.h1
+              className="font-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold mb-4 sm:mb-6 tracking-tight text-balance select-none"
+              data-testid="text-hero-title"
+              initial={{ opacity: 0, y: 40, rotateX: "20deg" }}
+              animate={{ opacity: 1, y: 0, rotateX: "0deg" }}
+              transition={{
+                duration: 0.85,
+                delay: 0.08,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              style={{
+                textShadow: [
+                  "0 1px 0 rgba(255,255,255,0.15)",
+                  "0 2px 6px rgba(0,0,0,0.5)",
+                  "0 8px 24px rgba(0,0,0,0.35)",
+                  "0 16px 48px rgba(0,0,0,0.2)",
+                ].join(", "),
+              }}
+            >
+              {heroTitle}
+            </motion.h1>
+            <motion.p
+              className="text-lg md:text-xl font-light mb-10 tracking-wide max-w-2xl mx-auto opacity-90"
+              data-testid="text-hero-subtitle"
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 0.9, y: 0 }}
+              transition={{
+                duration: 0.8,
+                delay: 0.2,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              style={{ textShadow: "0 2px 10px rgba(0,0,0,0.55)" }}
+            >
+              {heroSubtitle}
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.7,
+                delay: 0.32,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Link href="/shop">
+                <span
+                  className="group relative inline-flex min-h-12 items-center gap-3 px-6 sm:px-10 py-3.5 sm:py-4 text-xs sm:text-sm uppercase tracking-[0.2em] sm:tracking-widest border border-white overflow-hidden cursor-pointer rounded-full"
+                  data-testid="button-shop-collection"
+                >
+                  <span className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />
+                  <span className="relative z-10 text-white group-hover:text-black transition-colors duration-300 font-semibold">
+                    {language === "ar" ? "تسوقي الان" : t.home.shopCollection}
+                  </span>
+                  <Arrow className="relative z-10 w-4 h-4 text-white group-hover:text-black transition-all duration-300 group-hover:translate-x-1" />
+                </span>
+              </Link>
+            </motion.div>
+          </motion.div>
         </section>
 
+        {/* Category Circles */}
+        <section className="py-14 sm:py-20 w-full px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-xs sm:text-sm text-foreground/50 mb-2">
+              {language === "ar" ? "تسوق حسب الفئة" : "Shop by Category"}
+            </p>
+            <h2 className="font-display text-2xl sm:text-4xl font-semibold">
+              {language === "ar" ? "أصنافنا" : "Explore Collections"}
+            </h2>
+          </div>
 
-        {/* Shop-by-category: horizontal editorial cards on desktop, round shortcuts on mobile */}
-        <section className="lucerne-categories" aria-label={language === "ar" ? "التسوق حسب الفئة" : "Shop by category"}>
           {(() => {
-            const visibleCategories = (categoriesList || []).filter((c: any) => c.showOnHome);
-            const primaryCategories = visibleCategories.length ? visibleCategories : categoriesList || [];
-            const categoryHref = (c: any) => ["dresses", "shoes", "clothes"].includes(c.slug) ? `/${c.slug}` : `/category/${c.slug}`;
-            const categories = primaryCategories.map((c: any) => ({
-              href: categoryHref(c), title: language === "ar" ? c.nameAr || c.name : c.name,
-              image: c.image || "", id: `category-${c.id}`,
+            const showOnHomeCats = (categoriesList || []).filter(
+              (c: any) => c.showOnHome,
+            );
+            const homeCatsRaw =
+              showOnHomeCats.length > 0 ? showOnHomeCats : categoriesList || [];
+            const homeCats = homeCatsRaw.map((c: any) => ({
+              href: ["dresses", "shoes", "clothes"].includes(c.slug)
+                ? `/${c.slug}`
+                : `/category/${c.slug}`,
+              labelAr: c.nameAr || c.name,
+              labelEn: c.name,
+              img: c.image || "",
+              testId: `link-category-home-${c.id}`,
+              isSubcategory: false,
+              slug: c.slug,
+              categoryId: c.id,
             }));
-            const subcategories = homeSubcategories.map((s: any) => {
-              const parent = categoryMap[s.categoryId];
-              return { href: parent ? `${categoryHref(parent)}?sub=${s.id}` : "/shop",
-                title: language === "ar" ? s.nameAr || s.name : s.name,
-                image: s.image || "", id: `sub-${s.id}` };
+            const DEDICATED: Record<string, string> = {
+              dresses: "/dresses",
+              shoes: "/shoes",
+              clothes: "/clothes",
+            };
+            const subItems = homeSubcategories.map((sub: any) => {
+              const parentCat = categoryMap[sub.categoryId];
+              const parentSlug = parentCat?.slug || "";
+              const base = DEDICATED[parentSlug] ?? `/category/${parentSlug}`;
+              return {
+                href: `${base}?sub=${sub.id}`,
+                labelAr: sub.nameAr || sub.name,
+                labelEn: sub.name,
+                img: sub.image || "",
+                testId: `link-subcategory-home-${sub.id}`,
+                isSubcategory: true,
+                slug: "",
+                subcategoryId: sub.id,
+              };
             });
+            const allItems = [...homeCats, ...subItems];
             return (
-              <div className="lucerne-category-track">
-                {[...categories, ...subcategories].map((item) => (
-                  <Link href={item.href} className="lucerne-category-card" key={item.id}>
-                    <div className="lucerne-category-image">
-                      <BannerImage src={item.image || "/placeholder-product.svg"} alt={item.title} className="w-full h-full object-cover" width={320}/>
-                    </div>
-                    <span className="lucerne-category-name">{item.title}</span>
-                    <Arrow className="lucerne-category-arrow w-4 h-4" aria-hidden="true" />
-                  </Link>
-                ))}
+              <div className="flex flex-wrap justify-center gap-x-2 gap-y-4 sm:gap-x-4 sm:gap-y-6 md:gap-x-5 md:gap-y-8 max-w-7xl mx-auto px-2 [&>*]:basis-[calc((100%-4*0.5rem)/5)] sm:[&>*]:basis-[calc((100%-8*1rem)/9)] md:[&>*]:basis-[calc((100%-8*1.25rem)/9)]">
+                {allItems.map((item) => {
+                  const count = !item.isSubcategory
+                    ? (products || []).filter(
+                        (p: any) => p.categoryId === (item as any).categoryId,
+                      ).length
+                    : (products || []).filter((p: any) => {
+                        const ids: number[] = Array.isArray(p.subcategoryIds)
+                          ? p.subcategoryIds
+                          : [];
+                        const target = (item as any).subcategoryId;
+                        return (
+                          ids.includes(target) || p.subcategoryId === target
+                        );
+                      }).length;
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <motion.div
+                        whileHover={{
+                          rotateY: 12,
+                          rotateX: -8,
+                          scale: 1.06,
+                          y: -8,
+                        }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                        style={{
+                          perspective: "700px",
+                          transformStyle: "preserve-3d",
+                        }}
+                        className="group flex flex-col items-center gap-1.5 sm:gap-3 cursor-pointer"
+                        data-testid={item.testId}
+                      >
+                        <motion.div
+                          className="relative mx-auto w-[56px] h-[56px] sm:w-[90px] sm:h-[90px] md:w-[110px] md:h-[110px]"
+                          style={{ transformStyle: "preserve-3d" }}
+                          animate={{ y: [0, -6, 0] }}
+                          transition={{
+                            duration:
+                              4 +
+                              (((item as any).categoryId ??
+                                (item as any).subcategoryId ??
+                                0) %
+                                3) *
+                                0.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay:
+                              (((item as any).categoryId ??
+                                (item as any).subcategoryId ??
+                                0) %
+                                5) *
+                              0.3,
+                          }}
+                        >
+                          {count > 0 && (
+                            <span className="absolute top-0 start-0 z-20 min-w-[16px] h-[16px] sm:min-w-[22px] sm:h-[22px] px-1 sm:px-1.5 rounded-full bg-foreground text-background text-[9px] sm:text-[11px] font-bold flex items-center justify-center shadow">
+                              {count}
+                            </span>
+                          )}
+
+                          {/* Slow rotating conic-gradient ring (idle shimmer) */}
+                          <motion.div
+                            className="absolute -inset-[3px] rounded-full pointer-events-none opacity-70"
+                            style={{
+                              background:
+                                "conic-gradient(from 0deg, rgba(0,0,0,0.0) 0deg, rgba(0,0,0,0.18) 80deg, rgba(0,0,0,0.0) 160deg, rgba(0,0,0,0.0) 360deg)",
+                              filter: "blur(2px)",
+                            }}
+                            animate={{ rotate: 360 }}
+                            transition={{
+                              duration: 14,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                          />
+                          {/* Pulsing ambient glow (idle) */}
+                          <motion.div
+                            className="absolute inset-0 rounded-full pointer-events-none"
+                            animate={{
+                              boxShadow: [
+                                "0 0 0px 0px rgba(0,0,0,0.00)",
+                                "0 0 22px 2px rgba(0,0,0,0.10)",
+                                "0 0 0px 0px rgba(0,0,0,0.00)",
+                              ],
+                            }}
+                            transition={{
+                              duration: 3.2,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          />
+                          {/* Hover shadow boost */}
+                          <motion.div
+                            className="absolute inset-0 rounded-full pointer-events-none"
+                            style={{ boxShadow: "0 0 0 0px rgba(0,0,0,0)" }}
+                            whileHover={{
+                              boxShadow:
+                                "0 20px 60px rgba(0,0,0,0.28), 0 8px 20px rgba(0,0,0,0.18)",
+                            }}
+                            transition={{ duration: 0.35 }}
+                          />
+                          <div
+                            className="w-full h-full rounded-full overflow-hidden relative"
+                            style={{
+                              boxShadow:
+                                "0 6px 24px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.10)",
+                            }}
+                          >
+                            <BannerImage
+                              src={item.img || "/placeholder-product.svg"}
+                              alt={
+                                language === "ar" ? item.labelAr : item.labelEn
+                              }
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              width={120}
+                            />
+                            {/* Diagonal sheen sweep (idle, slow) */}
+                            <motion.div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                background:
+                                  "linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%)",
+                                mixBlendMode: "overlay",
+                              }}
+                              animate={{ x: ["-120%", "120%"] }}
+                              transition={{
+                                duration: 5.5,
+                                repeat: Infinity,
+                                repeatDelay: 3,
+                                ease: "easeInOut",
+                                delay:
+                                  (((item as any).categoryId ??
+                                    (item as any).subcategoryId ??
+                                    0) %
+                                    7) *
+                                  0.4,
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                        <div className="text-center">
+                          <p className="font-semibold text-[10px] sm:text-base tracking-wide group-hover:text-foreground/70 transition-colors duration-200 leading-tight">
+                            {language === "ar" ? item.labelAr : item.labelEn}
+                          </p>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  );
+                })}
               </div>
             );
           })()}
         </section>
-
-        {/* Featured */}
-        {featured.length > 0 && (
-          <section className="lucerne-featured py-12 sm:py-24 bg-muted/30">
-            <div className="w-full px-4 sm:px-6 lg:px-8">
-              <div className="relative mb-10 sm:mb-14 flex flex-col items-center">
-                <SectionHeading
-                  title={secFeaturedTitle}
-                  accent="TRENDING NOW"
-                  icon={Flame}
-                />
-                <div className="absolute end-0 top-1/2 -translate-y-1/2 hidden md:block">
-                  <ViewAllLink
-                    href="/shop"
-                    label={t.home.viewAll}
-                    Arrow={Arrow}
-                  />
-                </div>
-              </div>
-              <ProductGrid products={featured} />
-              <div className="mt-10 md:hidden flex justify-center">
-                <ViewAllLink
-                  href="/shop"
-                  label={t.home.viewAll}
-                  Arrow={Arrow}
-                />
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* Editorial Category Grid */}
         {(() => {
@@ -658,8 +900,8 @@ export default function Home() {
           });
           const [tl, tr, bl, br] = tiles;
           return (
-            <section className="lucerne-editorial-mosaic w-full overflow-hidden">
-              <div className="lucerne-mosaic-grid grid grid-cols-[1fr_1.4fr_1fr] grid-rows-2 gap-1 sm:gap-1.5 h-[340px] sm:h-[440px] lg:h-[520px]">
+            <section className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-background">
+              <div className="grid grid-cols-[1fr_1.4fr_1fr] grid-rows-2 gap-1 sm:gap-1.5 h-[340px] sm:h-[440px] lg:h-[520px] rounded-2xl overflow-hidden">
                 {/* Top-left tile */}
                 <Link href={tl.href}>
                   <div className="relative overflow-hidden group cursor-pointer h-full bg-muted">
@@ -1049,6 +1291,36 @@ export default function Home() {
                 </div>
               )}
 
+              <div className="mt-10 md:hidden flex justify-center">
+                <ViewAllLink
+                  href="/shop"
+                  label={t.home.viewAll}
+                  Arrow={Arrow}
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Featured */}
+        {featured.length > 0 && (
+          <section className="py-12 sm:py-24 bg-muted/30">
+            <div className="w-full px-4 sm:px-6 lg:px-8">
+              <div className="relative mb-10 sm:mb-14 flex flex-col items-center">
+                <SectionHeading
+                  title={secFeaturedTitle}
+                  accent="TRENDING NOW"
+                  icon={Flame}
+                />
+                <div className="absolute end-0 top-1/2 -translate-y-1/2 hidden md:block">
+                  <ViewAllLink
+                    href="/shop"
+                    label={t.home.viewAll}
+                    Arrow={Arrow}
+                  />
+                </div>
+              </div>
+              <ProductGrid products={featured} />
               <div className="mt-10 md:hidden flex justify-center">
                 <ViewAllLink
                   href="/shop"
