@@ -212,7 +212,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
   return (
     <div
-      className="group block cursor-pointer"
+      className="lucerne-product-card group block cursor-pointer"
       data-testid={`card-product-${product.id}`}
       onMouseEnter={() => { setIsCardHovered(true); handlePrefetchIntent(); }}
       onMouseLeave={() => setIsCardHovered(false)}
@@ -266,7 +266,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             <div className="absolute top-3 end-3 z-20">
               <span
                 className="w-10 h-10 rounded-full text-white text-[10px] font-bold uppercase tracking-wide flex items-center justify-center leading-none shadow"
-                style={{ backgroundColor: "#FF0000" }}
+                style={{ backgroundColor: "#A33B5B" }}
                 data-testid={`badge-sale-${product.id}`}
               >
                 {t.product.sale}
@@ -380,7 +380,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                 : t.wishlist.addToWishlist
             }
             data-testid={`button-wishlist-${product.id}`}
-            className={`absolute bottom-3 group-hover:bottom-12 end-3 z-30 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 focus:opacity-100 ${wishlisted ? "opacity-100 bg-white" : "opacity-0 group-hover:opacity-100 bg-white/80"}`}
+            className={`absolute bottom-3 md:group-hover:bottom-12 end-3 z-30 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 focus:opacity-100 ${wishlisted ? "opacity-100 bg-white" : "opacity-100 md:opacity-0 md:group-hover:opacity-100 bg-white/85"}`}
           >
             <Heart
               className={`w-4 h-4 transition-all duration-200 ${wishlisted ? "fill-rose-500 stroke-rose-500" : "stroke-foreground fill-transparent"}`}
@@ -483,7 +483,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             <>
               <span
                 className={`font-bold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
-                style={isSoldOut ? undefined : { color: "#9B1C1C" }}
+                style={isSoldOut ? undefined : { color: "#A33B5B" }}
                 data-testid={`text-discount-price-${product.id}`}
               >
                 ₪{discountPrice}

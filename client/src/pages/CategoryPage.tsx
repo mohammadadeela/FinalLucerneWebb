@@ -190,7 +190,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
   const clearAll = () => setFilters({ sort: null, sizes: [], colors: [], brands: [], priceRange: [minPrice, maxPrice], inStockOnly: false, newArrivals: false, onSale: false });
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="lucerne-store lucerne-category-page min-h-screen flex flex-col">
       <Navbar />
 
       {heroImage || heroVideo ? (

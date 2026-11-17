@@ -174,7 +174,7 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col pt-navbar">
+      <div className="lucerne-store min-h-screen flex flex-col pt-navbar">
         <Navbar />
         <main className="flex-1 flex flex-col items-center justify-center p-4">
           <h1 className="font-display text-4xl mb-6" data-testid="text-cart-empty">{t.cart.empty}</h1>
@@ -189,7 +189,7 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col pt-navbar">
+    <div className="lucerne-store min-h-screen flex flex-col pt-navbar">
       <Navbar />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="font-display text-3xl sm:text-4xl mb-8 sm:mb-12" data-testid="text-cart-title">{t.cart.title}</h1>

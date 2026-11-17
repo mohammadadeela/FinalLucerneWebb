@@ -212,6 +212,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [newsIndex, setNewsIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
     try {
@@ -274,7 +275,16 @@ export function Navbar() {
       shownNotifIds.current.add(n.id);
       const body = language === "ar" ? n.messageAr : n.message;
       const link = n.link || "/profile";
-      const isAr = language === "ar";
+      const newsItems = newsBarText.split("|").map((item) => item.trim()).filter(Boolean);
+  useEffect(() => {
+    setNewsIndex(0);
+  }, [newsBarText]);
+  useEffect(() => {
+    if (!showNewsBar || newsItems.length < 2) return;
+    const timer = window.setInterval(() => setNewsIndex((index) => (index + 1) % newsItems.length), 5500);
+    return () => window.clearInterval(timer);
+  }, [showNewsBar, newsItems.length]);
+  const isAr = language === "ar";
 
       // Derive toast appearance from notification type
       const type = n.type as string | undefined;
@@ -592,91 +602,34 @@ export function Navbar() {
         @keyframes icon-rubber { 0%{transform:scale(1,1)} 20%{transform:scale(1.3,0.75)} 40%{transform:scale(0.75,1.25)} 60%{transform:scale(1.1,0.9)} 80%{transform:scale(0.95,1.05)} 100%{transform:scale(1,1)} }
       `}</style>
 
-      {showNewsBar &&
-        (() => {
-          const items = newsBarText
-            .split("|")
-            .map((s) => s.trim())
-            .filter(Boolean);
-          // The strip below repeats this items list 4x per group to keep
-          // it filling ultra-wide screens with no gaps, and the animation
-          // moves exactly one group's width (50%) per cycle — so a fixed
-          // duration made the scroll speed up the more text an admin
-          // configured (more items = more distance covered in the same
-          // time). Scaling the duration to the total text length keeps a
-          // comfortable, constant reading pace no matter how much text is
-          // in the bar, with a floor so a short message never rushes by.
-          const newsBarCharCount =
-            items.reduce((sum, s) => sum + s.length, 0) || 1;
-          const newsBarDuration = Math.max(20, newsBarCharCount * 0.45);
-          return (
-            <div
-              ref={newsBarRef}
-              className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-foreground text-background"}`}
-              style={seasonInfo ? { background: seasonInfo.barBg, color: seasonInfo.barText } : undefined}
-              data-testid="news-bar"
-              data-season={season ?? undefined}
-            >
-              {/* Fade edges */}
-              <div
-                className="pointer-events-none absolute top-0 start-0 bottom-0 w-14 z-10"
-                style={{
-                  background: seasonInfo
-                  ? `linear-gradient(to right, ${seasonInfo.barEdge}, transparent)`
-                  : "linear-gradient(to right, hsl(var(--foreground)), transparent)",
-                }}
-              />
-              <div
-                className="pointer-events-none absolute top-0 end-0 bottom-0 w-14 z-10"
-                style={{
-                  background: seasonInfo
-                  ? `linear-gradient(to left, ${seasonInfo.barEdge}, transparent)`
-                  : "linear-gradient(to left, hsl(var(--foreground)), transparent)",
-                }}
-              />
 
-              <motion.div
-                className="flex items-center gap-10 whitespace-nowrap py-2.5"
-                style={{ width: "max-content" }}
-                animate={{
-                  x: language === "ar" ? ["0%", "50%"] : ["0%", "-50%"],
-                }}
-                transition={{ repeat: Infinity, duration: newsBarDuration, ease: "linear" }}
-              >
-                {[0, 1].map((g) => (
-                  <span
-                    key={g}
-                    className="flex items-center gap-10"
-                    aria-hidden={g > 0 || undefined}
-                  >
-                    {Array.from({ length: 4 }).map((_, rep) =>
-                      items.map((item, i) => (
-                        <span
-                          key={`${rep}-${i}`}
-                          className="inline-flex items-center gap-10"
-                        >
-                          <span className={`text-xs sm:text-sm tracking-[0.25em] uppercase ${seasonInfo ? "font-medium" : "font-light text-background/80"}`}>
-                          {item}
-                          </span>
-                          <span className={seasonInfo ? "text-[10px]" : "text-background/30 text-[8px]"} style={seasonInfo ? { color: seasonInfo.accent } : undefined}>
-                          {seasonInfo ? seasonInfo.sep : "✦"}
-                          </span>
-                        </span>
-                      )),
-                    )}
-                  </span>
+      {showNewsBar && (
+        <div
+          ref={newsBarRef}
+          className="lucerne-news-bar fixed top-0 w-full z-[51]"
+          data-testid="news-bar"
+          data-season={season ?? undefined}
+          style={seasonInfo ? { background: seasonInfo.barBg, color: seasonInfo.barText } : undefined}
+        >
+          <div className="lucerne-news-inner">
+            <span className="lucerne-news-ornament" aria-hidden="true">✦</span>
+            <span key={newsIndex} className="lucerne-news-message">{newsItems[newsIndex % newsItems.length]}</span>
+            {newsItems.length > 1 && (
+              <div className="lucerne-news-dots" aria-label={language === "ar" ? "رسائل المتجر" : "Store announcements"}>
+                {newsItems.slice(0, 6).map((item, i) => (
+                  <button key={i} type="button" onClick={() => setNewsIndex(i)}
+                    aria-label={language === "ar" ? `رسالة ${i + 1}` : `Announcement ${i + 1}`}
+                    aria-current={i === newsIndex % newsItems.length ? "true" : undefined}
+                    className={i === newsIndex % newsItems.length ? "active" : ""} />
                 ))}
-              </motion.div>
-            </div>
-          );
-        })()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <header
-        className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled || location !== "/"
-            ? "bg-background/95 backdrop-blur-md border-b"
-            : "bg-transparent text-white"
-        }`}
+        className="lucerne-navbar fixed w-full z-50 transition-all duration-300 bg-background/95 backdrop-blur-md border-b"
         style={{ top: `var(--news-bar-offset, 0px)` }}
       >
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -741,6 +694,10 @@ export function Navbar() {
               </Link>
             </nav>
 
+            <button type="button" className="lucerne-header-search hidden 2xl:flex items-center gap-2" onClick={() => setSearchOpen(true)} aria-label={language === "ar" ? "بحث عن المنتجات" : "Search products"}>
+              <Search className="h-4 w-4" />
+              <span>{language === "ar" ? "ابحثي عن منتجات..." : "Search clothing, shoes, bags..."}</span>
+            </button>
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Admin/Employee dashboard — rubber stretch */}
               {(user?.role === "admin" || user?.role === "employee") && (
