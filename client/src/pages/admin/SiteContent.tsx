@@ -1518,6 +1518,107 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
   );
 }
 
+/** Finds the products in a photo taken on a flat background and returns just that area
+ *  (with a little breathing room) plus the background colour, so the row can be fitted
+ *  into the banner at full size with no empty space and no visible edges. */
+async function trimRowPhoto(file: File): Promise<{ file: File; bg: string }> {
+  const bmp = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = bmp.width;
+  canvas.height = bmp.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bmp, 0, 0);
+  const { data, width: W, height: H } = ctx.getImageData(0, 0, bmp.width, bmp.height);
+  // Background = average of the four corners.
+  let r = 0, g = 0, b = 0, n = 0;
+  const k = Math.max(4, Math.round(Math.min(W, H) * 0.02));
+  for (const [x0, y0] of [[0, 0], [W - k, 0], [0, H - k], [W - k, H - k]]) {
+    for (let y = y0; y < y0 + k; y++) for (let x = x0; x < x0 + k; x++) {
+      const i = (y * W + x) * 4;
+      r += data[i]; g += data[i + 1]; b += data[i + 2]; n++;
+    }
+  }
+  r /= n; g /= n; b /= n;
+  let minX = W, minY = H, maxX = -1, maxY = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    const d = Math.hypot(data[i] - r, data[i + 1] - g, data[i + 2] - b);
+    if (d > 26) {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+  const hex = "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+  if (maxX < 0) return { file, bg: hex };
+  const padX = Math.round((maxX - minX) * 0.03);
+  const padY = Math.round((maxY - minY) * 0.1);
+  const x = Math.max(0, minX - padX), y = Math.max(0, minY - padY);
+  const w = Math.min(W, maxX + padX) - x, h = Math.min(H, maxY + padY) - y;
+  const out = document.createElement("canvas");
+  out.width = w;
+  out.height = h;
+  out.getContext("2d")!.drawImage(canvas, x, y, w, h, 0, 0, w, h);
+  const blob: Blob = await new Promise((res, rej) => out.toBlob((bl) => (bl ? res(bl) : rej(new Error("empty"))), "image/png"));
+  return { file: new File([blob], file.name.replace(/\.[^.]+$/, "") + "-row.png", { type: "image/png" }), bg: hex };
+}
+
+function RowPhotoUpload({ value, bg, onChange }: { value: string; bg: string; onChange: (url: string, bg: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true);
+    try {
+      const trimmed = await trimRowPhoto(file);
+      const formData = new FormData();
+      formData.append("images", trimmed.file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.urls?.[0]) onChange(data.urls[0], trimmed.bg);
+    } catch {
+      toast({ title: "فشل رفع الصورة", variant: "destructive" });
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+  return (
+    <div className="space-y-3">
+      {value ? (
+        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3" data-testid="row-previews">
+          <p className="text-[11px] font-semibold text-muted-foreground text-right">كيف تظهر للعميلة</p>
+          {[{ label: "كمبيوتر", aspect: 15, width: "100%" }, { label: "هاتف", aspect: 4.6, width: "60%" }].map((v) => (
+            <div key={v.label} style={{ width: v.width }} className="ms-auto">
+              <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: String(v.aspect), backgroundColor: bg || "#fff" }}>
+                <img src={value} alt="" className="absolute inset-0 m-auto max-h-[82%] max-w-[94%]" />
+              </div>
+              <p className="mt-1 text-center text-[10px] text-muted-foreground">{v.label}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex h-20 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/20 text-xs text-muted-foreground">لا توجد صورة</div>
+      )}
+      <div className="flex justify-end gap-2">
+        {value && (
+          <Button type="button" variant="outline" size="sm" onClick={() => onChange("", "")} className="h-9 px-3 text-destructive hover:bg-destructive/10" data-testid="button-clear-row">
+            <X className="w-4 h-4" />
+          </Button>
+        )}
+        <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={busy} className="h-9 gap-2 px-3" data-testid="button-upload-row">
+          {busy ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
+          <span className="text-xs">{value ? "تغيير الصورة" : "رفع صورة الصف"}</span>
+        </Button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      </div>
+    </div>
+  );
+}
+
 function CategoryStripBannersCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
   const [open, setOpen] = useState(false);
   const { data: categories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
@@ -1534,38 +1635,24 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
         </div>
         <div className="text-right">
           <p className="font-semibold text-sm">بانرات الفئات في الصفحة الرئيسية</p>
-          <p className="text-xs text-muted-foreground">Home category strip banners</p>
+          <p className="text-xs text-muted-foreground">Home category banners</p>
         </div>
       </button>
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            الشريط الذي يظهر فوق منتجات كل فئة في الصفحة الرئيسية (يفتح الفئة عند الضغط). مقاس الشريط 15:1 (مثلاً 1560×104 بكسل) — أداة القص تفتح بهذا المقاس والمعاينة هنا بنفس الشكل. على الهاتف لا تُقص الصورة: إما صورة الهاتف الخاصة، أو تتحرك الصورة العريضة ببطء لتظهر كاملة. إذا تُركت الصورة فارغة يبقى الشريط أبيض. تظهر في الصفحة الرئيسية فقط الفئات المفعّل لها «إظهار في الرئيسية».
+            الشريط فوق منتجات كل فئة: صف من صور المنتجات الحقيقية على خلفية بلون واحد. ارفعي الصورة كما هي (مثلاً 5 قطع في صف على خلفية وردية) — الموقع يقصّ الفراغ حول القطع تلقائياً، ويأخذ لون الخلفية للشريط، ويعرض الصف كاملاً وواضحاً على الكمبيوتر والهاتف بدون أي قص. كلما كانت القطع أكبر في الصورة كانت أوضح. فئة الأحذية لها صف جاهز يظهر تلقائياً إلى أن ترفعي غيره.
           </p>
           {categories.map((c: any) => (
             <div key={c.id} className="rounded-xl border border-border p-4 space-y-3">
               <p className="text-sm font-semibold text-right">{c.nameAr || c.name}</p>
-              <ImageUploadField
-                value={values[`home_cat_banner_${c.id}_image`] ?? ""}
-                position={values[`home_cat_banner_${c.id}_image_position`] ?? "center"}
-                onChangeImage={(url) => onChange(`home_cat_banner_${c.id}_image`, url)}
-                onChangePosition={(pos) => onChange(`home_cat_banner_${c.id}_image_position`, pos)}
-                withCrop
-                shape={SLOT_SHAPES.strip}
-                originalValue={values[`home_cat_banner_${c.id}_image_original`] ?? ""}
-                onChangeOriginal={(url) => onChange(`home_cat_banner_${c.id}_image_original`, url)}
-              />
-              <p className="pt-2 text-xs font-semibold text-right">صورة الهاتف (اختياري)</p>
-              <p className="text-[11px] text-muted-foreground text-right">صورة خاصة بالهاتف بمقاس 4.6:1 (مثلاً 1380×300 بكسل) تظهر كاملة بدون قص. إذا تُركت فارغة تُعرض صورة الكمبيوتر على الهاتف بارتفاعها الكامل وتتحرك ببطء من طرف إلى طرف حتى تظهر كلها.</p>
-              <ImageUploadField
-                value={values[`home_cat_banner_${c.id}_image_phone`] ?? ""}
-                position="center"
-                onChangeImage={(url) => onChange(`home_cat_banner_${c.id}_image_phone`, url)}
-                onChangePosition={() => {}}
-                withCrop
-                shape={SLOT_SHAPES.stripPhone}
-                originalValue={values[`home_cat_banner_${c.id}_image_phone_original`] ?? ""}
-                onChangeOriginal={(url) => onChange(`home_cat_banner_${c.id}_image_phone_original`, url)}
+              <RowPhotoUpload
+                value={values[`home_cat_banner_${c.id}_row`] ?? ""}
+                bg={values[`home_cat_banner_${c.id}_row_bg`] ?? ""}
+                onChange={(url, bg) => {
+                  onChange(`home_cat_banner_${c.id}_row`, url);
+                  onChange(`home_cat_banner_${c.id}_row_bg`, bg);
+                }}
               />
             </div>
           ))}

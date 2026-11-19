@@ -318,6 +318,13 @@ function bannerPosition(pos?: string) {
   return `${x}% ${y}%`;
 }
 
+/** Ready-made product rows that ship with the site, used until the admin uploads their own. */
+function defaultCategoryRow(category: { name?: string | null; nameAr?: string | null; slug?: string | null }) {
+  const t = `${category.name || ""} ${category.slug || ""} ${category.nameAr || ""}`.toLowerCase();
+  if (/shoe|heel|boot|sneaker|sandal|حذ|شوز|كعب|جزم/.test(t)) return { src: "/banners/shoes-row.webp", bg: "#F7D5E6" };
+  return null;
+}
+
 function Section({
   children,
   className = "",
@@ -1384,64 +1391,65 @@ export default function Home() {
               key={section.category.id}
               className=""
             >
-              {/* The category banner, at its original size, with no text or icon; tapping it opens the
-                  category. Blank until the admin uploads a strip photo for it (Content → Home). */}
-              <Link
-                href={section.href}
-                aria-label={catName(section.category)}
-                className="relative mb-4 block overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
-                data-testid={`link-view-all-${section.href}`}
-              >
-                {(() => {
-                  const wide = g(`home_cat_banner_${section.category.id}_image`);
-                  const phone = g(`home_cat_banner_${section.category.id}_image_phone`);
-                  if (!wide && !phone) return null;
-                  const wideSrc = optimizeCloudinaryUrl(wide, 1600) || wide;
-                  return (
-                    <>
-                      {/* Desktop and tablet: the strip photo fills the banner */}
-                      {wide && (
-                        <img
-                          src={wideSrc}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          className={`absolute inset-0 h-full w-full object-cover hidden sm:block`}
-                          style={{ objectPosition: bannerPosition(g(`home_cat_banner_${section.category.id}_image_position`)) }}
-                        />
-                      )}
-                      {/* Phones: never cut. The admin's phone photo is shown whole; without one the
-                          wide strip is shown at full height and glides from side to side, so all of
-                          it is seen. */}
-                      {phone ? (
-                        <img
-                          src={optimizeCloudinaryUrl(phone, 800) || phone}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          className="absolute inset-0 h-full w-full object-cover sm:hidden"
-                        />
-                      ) : (
-                        <img
-                          src={wideSrc}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          className="strip-pan absolute inset-y-0 left-0 h-full w-auto max-w-none sm:hidden"
-                        />
-                      )}
-                    </>
-                  );
-                })()}
-                <div className="invisible relative min-w-0 ps-12 sm:ps-24" aria-hidden="true">
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">
-                    {pick("من أقسامنا", "From our collections")}
-                  </p>
-                  <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">
-                    {catName(section.category)}
-                  </p>
-                </div>
-              </Link>
+              {/* The category banner: a row of real product photos, centred on its own flat colour.
+                  The admin uploads one photo of the row (Content → Home); the admin page trims the
+                  empty background away, so here the whole row is simply fitted inside the banner —
+                  sharp, and never cut on any screen. Shoes ship with a ready-made row. */}
+              {(() => {
+                const id = section.category.id;
+                const builtIn = defaultCategoryRow(section.category);
+                const row = g(`home_cat_banner_${id}_row`) || builtIn?.src || "";
+                const rowBg = g(`home_cat_banner_${id}_row`) ? g(`home_cat_banner_${id}_row_bg`) : builtIn?.bg;
+                const wide = g(`home_cat_banner_${id}_image`);
+                const phone = g(`home_cat_banner_${id}_image_phone`);
+                const wideSrc = optimizeCloudinaryUrl(wide, 1600) || wide;
+                return (
+                  <Link
+                    href={section.href}
+                    aria-label={catName(section.category)}
+                    className="group relative mb-4 block overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
+                    style={row && rowBg ? { backgroundColor: rowBg } : undefined}
+                    data-testid={`link-view-all-${section.href}`}
+                  >
+                    {row ? (
+                      <img
+                        src={optimizeCloudinaryUrl(row, 1200) || row}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 m-auto max-h-[82%] max-w-[94%] transition-transform duration-500 group-hover:scale-105"
+                        data-testid={`img-category-row-${id}`}
+                      />
+                    ) : wide || phone ? (
+                      <>
+                        {wide && (
+                          <img
+                            src={wideSrc}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 hidden h-full w-full object-cover sm:block"
+                            style={{ objectPosition: bannerPosition(g(`home_cat_banner_${id}_image_position`)) }}
+                          />
+                        )}
+                        {phone ? (
+                          <img src={optimizeCloudinaryUrl(phone, 800) || phone} alt="" loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover sm:hidden" />
+                        ) : (
+                          <img src={wideSrc} alt="" loading="lazy" decoding="async" className="strip-pan absolute inset-y-0 left-0 h-full w-auto max-w-none sm:hidden" />
+                        )}
+                      </>
+                    ) : null}
+                    <div className="invisible relative min-w-0 ps-12 sm:ps-24" aria-hidden="true">
+                      <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">
+                        {pick("من أقسامنا", "From our collections")}
+                      </p>
+                      <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">
+                        {catName(section.category)}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })()}
               <ProductRail
                 products={section.products}
                 testId={`rail-category-${section.category.id}`}
