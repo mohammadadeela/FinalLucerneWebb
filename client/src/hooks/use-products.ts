@@ -87,6 +87,19 @@ export function useBestSellers(limit = 8) {
   });
 }
 
+/** Products ranked by real recent orders (see GET /api/products/most-ordered). */
+export function useMostOrderedProducts(limit = 8, days = 30) {
+  return useQuery({
+    queryKey: ["/api/products/most-ordered", limit, days],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const res = await fetch(`/api/products/most-ordered?limit=${limit}&days=${days}`);
+      if (!res.ok) throw new Error("Failed to fetch most ordered products");
+      return unwrapApiResponse<any[]>(await res.json());
+    },
+  });
+}
+
 export function useFeaturedProducts(limit = 8) {
   return useQuery({
     queryKey: ["/api/products/featured", limit],

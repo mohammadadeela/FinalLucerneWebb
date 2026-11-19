@@ -1,6 +1,6 @@
 import { users, categories, subcategories, products, orders, orderItems, wishlist, cartItems, reviews, discountCodes, siteSettings, posOrders, productEvents, exchangeRequests, notifications, productGroups, type User, type InsertUser, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type Product, type InsertProduct, type ColorVariant, type Order, type InsertOrder, type OrderItem, type InsertOrderItem, type Wishlist, type InsertWishlist, type CartItemRow, type InsertCartItem, type Review, type InsertReview, type DiscountCode, type InsertDiscountCode, type SiteSetting, type PosOrder, type InsertPosOrder, type InsertProductEvent, type ExchangeRequest, type InsertExchangeRequest, type Notification, type InsertNotification, type ProductGroup } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, ne, gte } from "drizzle-orm";
 
 function quotePgIdentifier(value: string): string {
   return `"${String(value).replace(/"/g, '""')}"`;
@@ -350,6 +350,7 @@ export interface IStorage {
   // Product
   getProducts(categoryIds?: number[]): Promise<Product[]>;
   getBestSellers(limit?: number): Promise<Product[]>;
+  getMostOrdered(limit?: number, days?: number): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
@@ -603,6 +604,9 @@ export class DatabaseStorage implements IStorage {
         totalSold: sql<number>`cast(sum(${orderItems.quantity}) as int)`,
       })
       .from(orderItems)
+      .innerJoin(orders, eq(orderItems.orderId, orders.id))
+      // A cancelled order was never a sale, so it must not push a product up the list.
+      .where(ne(orders.status, "Cancelled"))
       .groupBy(orderItems.productId)
       .orderBy(desc(sql`sum(${orderItems.quantity})`))
       .limit(limit);
@@ -645,6 +649,56 @@ export class DatabaseStorage implements IStorage {
     // Fallback: isFeatured products
     const fallback = await db.select().from(products).where(eq(products.isFeatured, true)).limit(limit);
     return fallback.map((product) => sanitizeProductMedia(product as any) as Product);
+  }
+
+  /**
+   * "Most ordered" — what customers are actually ordering right now.
+   * Ranked by quantity ordered in the last `days` days (cancelled orders excluded),
+   * in-stock products only. If recent orders are too few to fill the row it is topped
+   * up from the all-time ranking, and then from the admin's featured picks, so a new
+   * or quiet shop still shows a full, honest row.
+   */
+  async getMostOrdered(limit = 8, days = 30): Promise<Product[]> {
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const rank = (recentOnly: boolean) =>
+      db
+        .select({ productId: orderItems.productId })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(
+          recentOnly
+            ? and(ne(orders.status, "Cancelled"), gte(orders.createdAt, since))
+            : ne(orders.status, "Cancelled"),
+        )
+        .groupBy(orderItems.productId)
+        .orderBy(desc(sql`sum(${orderItems.quantity})`))
+        .limit(limit * 3);
+
+    const [recent, allTime, featuredRows] = await Promise.all([
+      rank(true),
+      rank(false),
+      db.select({ id: products.id }).from(products).where(eq(products.isFeatured, true)).orderBy(desc(products.createdAt)).limit(limit * 2),
+    ]);
+
+    const orderedIds: number[] = [];
+    const seen = new Set<number>();
+    for (const id of [...recent.map((r) => r.productId), ...allTime.map((r) => r.productId), ...featuredRows.map((r) => r.id)]) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        orderedIds.push(id);
+      }
+    }
+    if (orderedIds.length === 0) return [];
+
+    const rows = await db.select().from(products).where(inArray(products.id, orderedIds));
+    const byId = new Map(rows.map((p) => [p.id, p]));
+    const result: Product[] = [];
+    for (const id of orderedIds) {
+      const p = byId.get(id);
+      if (p && (p.stockQuantity ?? 0) > 0) result.push(p);
+      if (result.length >= limit) break;
+    }
+    return result.map((product) => sanitizeProductMedia(product as any) as Product);
   }
 
   async getProduct(id: number): Promise<Product | undefined> {

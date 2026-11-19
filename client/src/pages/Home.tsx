@@ -10,6 +10,7 @@ import { PromoSlider, type PromoSlide } from "@/components/home/PromoSlider";
 import {
   useBestSellers,
   useFeaturedProducts,
+  useMostOrderedProducts,
   useNewArrivalsProducts,
   useOnSaleProducts,
   useHomeCategoryProducts,
@@ -301,6 +302,8 @@ export default function Home() {
   const catName = (c: any) => (isAr ? c?.nameAr || c?.name : c?.name) || "";
 
   const featured = featuredProducts || [];
+  const { data: mostOrderedData } = useMostOrderedProducts(10, 30);
+  const mostOrdered = mostOrderedData || [];
   const newArrivals = newArrivalsData || [];
   const bestSellers = bestSellersData || [];
   const onSale = onSaleData || [];
@@ -476,13 +479,15 @@ export default function Home() {
     href: categoryHref(c),
   }));
 
-  // "Trending" shows the admin's featured picks; falls back to best sellers so the row is never empty.
-  const trending = featured.length > 0 ? featured : bestSellers.slice(0, 10);
-  const trendingIds = new Set(trending.map((p: any) => p.id));
+  // "الأكثر طلباً" is driven by real orders from the last 30 days (the server tops the list up
+  // with the all-time ranking and the admin's featured picks when recent orders are few).
+  // The older lists are only a safety net if that request fails.
+  const trending =
+    mostOrdered.length > 0 ? mostOrdered : featured.length > 0 ? featured : bestSellers.slice(0, 10);
   const podiumIds = new Set(hasPodium ? podiumProducts.map((p: any) => p.id) : []);
   // The rest of the list, without repeating the three podium pieces (or the trending row when it is a fallback).
   const bestSellerRest = bestSellers.filter(
-    (p: any) => !podiumIds.has(p.id) && (featured.length > 0 || !trendingIds.has(p.id)),
+    (p: any) => !podiumIds.has(p.id),
   );
 
   // The original category circles (categories + featured subcategories).

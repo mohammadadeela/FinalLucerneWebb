@@ -2111,6 +2111,20 @@ Sitemap: ${SITE_URL}/sitemap.xml
     }
   });
 
+  // "Most ordered" row on the landing page — ranked by real, recent, non-cancelled orders.
+  app.get("/api/products/most-ordered", async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(String(req.query.limit || "8")) || 8, 24);
+      const days = Math.min(Math.max(parseInt(String(req.query.days || "30")) || 30, 1), 365);
+      const items = await storage.getMostOrdered(limit, days);
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+      return successResponse(res, items);
+    } catch (err: any) {
+      logProductError("products.most-ordered", err);
+      return failureResponse(res, 500, err?.message || "Failed to fetch most ordered products", err);
+    }
+  });
+
   // Targeted small fetches for the Home page. Use storage.getProducts() so
   // legacy media/video fields are normalized consistently before returning.
   app.get("/api/products/featured", async (req, res) => {
@@ -2147,7 +2161,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
     try {
       const limit = Math.min(parseInt(String(req.query.limit || "8")), 24);
       const items = (await storage.getProducts())
-        .filter((item: any) => item.discountPrice !== null && item.discountPrice !== undefined && Number(item.discountPrice) > 0)
+        .filter((item: any) => item.discountPrice !== null && item.discountPrice !== undefined && Number(item.discountPrice) > 0 && Number(item.discountPrice) < Number(item.price))
         .sort((a: any, b: any) => +new Date(b.createdAt || 0) - +new Date(a.createdAt || 0))
         .slice(0, limit);
       res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
