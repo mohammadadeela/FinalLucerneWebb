@@ -1261,6 +1261,90 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
   );
 }
 
+function HomePillsCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const { data: categories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
+  const { data: subcategories = [] } = useQuery<any[]>({ queryKey: ["/api/subcategories"] });
+  const field = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary disabled:opacity-60";
+  return (
+    <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-home-pills">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-5 py-4 bg-muted/30 hover:bg-muted/60 transition-colors"
+        onClick={() => setOpen(!open)}
+        data-testid="toggle-section-home-pills"
+      >
+        <div className="flex items-center gap-3">
+          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-sm">أزرار الأقسام تحت السلايدر الرئيسي</p>
+          <p className="text-xs text-muted-foreground">Category buttons under the main slider</p>
+        </div>
+      </button>
+      {open && (
+        <div className="p-5 space-y-5 bg-background">
+          <p className="text-xs text-muted-foreground text-right">
+            حتى 5 أزرار. لكل زر اختاري الفئة، ويمكن اختيار تصنيف فرعي منها ليفتح الزر عليه مباشرة، ثم ضعي صورة الزر. إذا تُركت الصورة فارغة تُستخدم صورة التصنيف أو الفئة. الزر بدون فئة لا يظهر، وإذا تُركت كل الأزرار فارغة يعرض الموقع الفئات المفعّل لها «إظهار في الرئيسية» تلقائياً.
+          </p>
+          {[1, 2, 3, 4, 5].map((n) => {
+            const catId = values[`home_pill_${n}_category_id`] ?? "";
+            const subId = values[`home_pill_${n}_subcategory_id`] ?? "";
+            const subs = catId ? subcategories.filter((s: any) => String(s.categoryId) === catId) : [];
+            return (
+              <div key={n} className="rounded-xl border border-border p-4 space-y-3">
+                <p className="text-sm font-semibold text-right">الزر {n}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <select
+                    dir="rtl"
+                    className={field}
+                    value={catId}
+                    onChange={(e) => {
+                      onChange(`home_pill_${n}_category_id`, e.target.value);
+                      onChange(`home_pill_${n}_subcategory_id`, "");
+                    }}
+                    data-testid={`select-home-pill-${n}-category`}
+                  >
+                    <option value="">— بدون (لا يظهر) —</option>
+                    {categories.map((c: any) => (
+                      <option key={c.id} value={String(c.id)}>
+                        {c.nameAr || c.name} ({c.name})
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    dir="rtl"
+                    className={field}
+                    value={subId}
+                    disabled={!catId || subs.length === 0}
+                    onChange={(e) => onChange(`home_pill_${n}_subcategory_id`, e.target.value)}
+                    data-testid={`select-home-pill-${n}-subcategory`}
+                  >
+                    <option value="">
+                      {catId && subs.length === 0 ? "— لا توجد تصنيفات فرعية —" : "— الفئة كاملة —"}
+                    </option>
+                    {subs.map((s: any) => (
+                      <option key={s.id} value={String(s.id)}>
+                        {s.nameAr || s.name} ({s.name})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <SimpleImageUpload
+                  value={values[`home_pill_${n}_image`] ?? ""}
+                  onChange={(url) => onChange(`home_pill_${n}_image`, url)}
+                  label="صورة الزر"
+                  withCrop
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PromoSliderCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
   const [open, setOpen] = useState(false);
   const field = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
@@ -2160,6 +2244,7 @@ const SEARCH_INDEX: { id: string; tab: TabId; labelAr: string; labelEn: string; 
   { id: "bestsellers", tab: "home", labelAr: "الأكثر مبيعاً", labelEn: "Best sellers" },
   { id: "headings", tab: "home", labelAr: "عناوين الأقسام", labelEn: "Section headings" },
   { id: "editorial", tab: "home", labelAr: "شبكة التحرير", labelEn: "Editorial grid" },
+  { id: "pills", tab: "home", labelAr: "أزرار الأقسام تحت السلايدر", labelEn: "Home category buttons", extra: "pills أقسام فئات تصنيف فرعي صورة أزرار" },
   { id: "promo", tab: "home", labelAr: "سلايدر الصور", labelEn: "Home photo slider", extra: "slider سلايدر صور شرائح" },
   { id: "page-home", tab: "home", labelAr: "بانر الصفحة الرئيسية", labelEn: "Home hero banner", extra: "صورة فيديو عنوان" },
   { id: "page-dresses", tab: "dresses", labelAr: "صفحة الفساتين", labelEn: "Dresses page" },
@@ -2256,6 +2341,7 @@ export default function SiteContent() {
       case "bestsellers": return <BestSellersCard values={merged} onChange={handleChange} />;
       case "headings": return <SectionHeadingsCard values={merged} onChange={handleChange} />;
       case "editorial": return <EditorialGridCard values={merged} onChange={handleChange} />;
+      case "pills": return <HomePillsCard values={merged} onChange={handleChange} />;
       case "promo": return <PromoSliderCard values={merged} onChange={handleChange} />;
       case "support": return <SupportPagesCard values={merged} onChange={handleChange} />;
       default: {
@@ -2269,7 +2355,7 @@ export default function SiteContent() {
   };
   const cardsForTab: Record<TabId, string[]> = {
     overview: [],
-    home: ["page-home", "bestsellers", "headings", "editorial", "promo"],
+    home: ["page-home", "pills", "bestsellers", "headings", "editorial", "promo"],
     dresses: ["page-dresses"],
     clothes: ["page-clothes"],
     shoes: ["page-shoes"],

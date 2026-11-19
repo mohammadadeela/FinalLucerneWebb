@@ -31,7 +31,7 @@ import {
   optimizeCloudinaryVideoUrl,
   blurCloudinaryUrl,
 } from "@/lib/utils";
-import { categoryHref } from "@/lib/storefront";
+import { categoryHref, subcategoryHref } from "@/lib/storefront";
 
 /* ────────────────────────────── small building blocks ───────────────────────────── */
 
@@ -435,7 +435,7 @@ export default function Home() {
       }, {} as Record<number, any>),
     [categoriesList],
   );
-  const catTiles = homeCats.map((c: any) => ({
+  const autoCatTiles = homeCats.map((c: any) => ({
     key: `c-${c.id}`,
     href: categoryHref(c),
     label: catName(c),
@@ -443,6 +443,31 @@ export default function Home() {
     img: c.image || "",
     testId: `link-category-home-${c.id}`,
   }));
+  // The admin can choose each pill (a category or one of its subcategories) and its photo.
+  // Until any pill is chosen, the categories marked "show on home" fill the row.
+  const adminCatTiles = [1, 2, 3, 4, 5]
+    .map((n) => {
+      const cat = (categoriesList || []).find(
+        (c: any) => String(c.id) === g(`home_pill_${n}_category_id`),
+      );
+      if (!cat) return null;
+      const subId = g(`home_pill_${n}_subcategory_id`);
+      const sub = subId
+        ? (allSubcategories || []).find(
+            (s: any) => String(s.id) === subId && String(s.categoryId) === String(cat.id),
+          )
+        : null;
+      return {
+        key: `pill-${n}`,
+        href: sub ? subcategoryHref(cat, sub.id) : categoryHref(cat),
+        label: sub ? pick(sub.nameAr || sub.name, sub.name || sub.nameAr) : catName(cat),
+        category: cat,
+        img: g(`home_pill_${n}_image`) || sub?.image || cat.image || "",
+        testId: sub ? `link-subcategory-pill-${sub.id}` : `link-category-home-${cat.id}`,
+      };
+    })
+    .filter(Boolean) as typeof autoCatTiles;
+  const catTiles = adminCatTiles.length > 0 ? adminCatTiles : autoCatTiles;
 
   // Photo slider: the admin's own slides; until some are set, the categories' photos fill in.
   const adminSlides = [1, 2, 3, 4]
