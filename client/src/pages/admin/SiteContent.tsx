@@ -2470,11 +2470,14 @@ const TABS: { id: TabId; labelAr: string; labelEn: string; icon: any; hintAr: st
 ];
 
 /** Which sub-page a saved setting belongs to (for the "unsaved changes" dots). */
-function tabForKey(key: string): TabId {
+function tabForKey(key: string): string {
   if (key.startsWith("dresses_")) return "dresses";
   if (key.startsWith("clothes_")) return "clothes";
   if (key.startsWith("shoes_")) return "shoes";
   if (key.startsWith("sales_")) return "sales";
+  // Page settings of a category the admin added: "<slug>_hero_…" lives on that category's own tab.
+  const hero = key.match(/^(.+)_hero_(image|video|subtitle|title|tag)/);
+  if (hero && hero[1] !== "home") return `cat:${hero[1]}`;
   if (key === "shipping_zones") return "overview";
   if (/^(faq_|shipping_details|returns_details|shipping_note|contact_|location_)/.test(key)) return "support";
   if (/(_enabled$|^news_bar|^seasonal_|^exchange_)/.test(key)) return "overview";
@@ -2542,7 +2545,25 @@ export default function SiteContent() {
     queryKey: ["/api/site-settings"],
   });
 
-  const [tab, setTab] = useState<TabId>("overview");
+  const [tab, setTab] = useState<string>("overview");
+  // Categories the admin added get their own page tab, exactly like dresses / clothes / shoes.
+  const { data: allCategories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
+  const extraCategories = allCategories.filter(
+    (c: any) => c && c.slug && !["dresses", "clothes", "shoes"].includes(c.slug),
+  );
+  const extraTabs = extraCategories.map((c: any) => ({
+    id: `cat:${c.slug}`,
+    labelAr: c.nameAr || c.name,
+    labelEn: c.name,
+    icon: Shirt,
+    hintAr: `صورة وعنوان صفحة ${c.nameAr || c.name}`,
+  }));
+  const salesAt = TABS.findIndex((t) => t.id === "sales");
+  const allTabs: { id: string; labelAr: string; labelEn: string; icon: any; hintAr: string }[] = [
+    ...TABS.slice(0, salesAt),
+    ...extraTabs,
+    ...TABS.slice(salesAt),
+  ];
   const [search, setSearch] = useState("");
   const [toggleStatus, setToggleStatus] = useState<StatusFilter>("all");
   const [local, setLocal] = useState<Record<string, string>>({});
@@ -2578,9 +2599,22 @@ export default function SiteContent() {
   const searching = q.length > 0;
   const hits = searching ? SEARCH_INDEX.filter((e) => sectionMatches(q, e.labelAr, `${e.labelEn} ${e.extra ?? ""}`)) : [];
   const toggleHits = searching ? QUICK_TOGGLES.filter((t) => `${t.titleAr} ${t.titleEn} ${t.descAr}`.toLowerCase().includes(q.toLowerCase())) : [];
-  const tabLabel = (id: TabId) => TABS.find((t) => t.id === id)?.labelAr ?? id;
+  const tabLabel = (id: string) => allTabs.find((t) => t.id === id)?.labelAr ?? id;
 
-  const pageSection = (id: string) => PAGE_SECTIONS.find((s) => s.id === id);
+  const pageSection = (id: string): PageSection | undefined => {
+    const fixed = PAGE_SECTIONS.find((s) => s.id === id);
+    if (fixed) return fixed;
+    const c = extraCategories.find((x: any) => x.slug === id);
+    if (!c) return undefined;
+    return {
+      id: c.slug,
+      labelAr: `صفحة ${c.nameAr || c.name}`,
+      labelEn: `${c.name} Page`,
+      hasTitle: false,
+      hasTag: false,
+      keys: ["image", "image_position", "video", "video_position", "subtitle_ar", "subtitle_en"].map((k) => `${c.slug}_hero_${k}`),
+    };
+  };
   const renderCard = (id: string) => {
     switch (id) {
       case "seasonal": return <SeasonalThemeCard values={merged} onChange={handleChange} />;
@@ -2604,7 +2638,8 @@ export default function SiteContent() {
       }
     }
   };
-  const cardsForTab: Record<TabId, string[]> = {
+  const cardsForTab: Record<string, string[]> = {
+    ...Object.fromEntries(extraCategories.map((c: any) => [`cat:${c.slug}`, [`page-${c.slug}`]])),
     overview: [],
     home: ["page-home", "pills", "bestsellers", "headings", "editorial", "promo", "homebanners", "catstrips", "menuphotos"],
     dresses: ["page-dresses"],
@@ -2658,7 +2693,7 @@ export default function SiteContent() {
         {/* Sub-page navigation */}
         {!searching && (
           <nav className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="صفحات الإعدادات" data-testid="admin-tabs">
-            {TABS.map((t) => {
+            {allTabs.map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
               const dots = changedByTab[t.id] || 0;
@@ -2722,8 +2757,8 @@ export default function SiteContent() {
           </div>
         ) : (
           <div className="space-y-4" data-testid={`page-${tab}`}>
-            <p className="text-xs text-muted-foreground text-right">{TABS.find((t) => t.id === tab)?.hintAr}</p>
-            {cardsForTab[tab].map((id) => <div key={id}>{renderCard(id)}</div>)}
+            <p className="text-xs text-muted-foreground text-right">{allTabs.find((t) => t.id === tab)?.hintAr}</p>
+            {(cardsForTab[tab] || []).map((id) => <div key={id}>{renderCard(id)}</div>)}
           </div>
         )}
       </div>

@@ -226,13 +226,6 @@ function HighlightMatch({ text, query }: { text?: string; query: string }) {
   );
 }
 
-const QUICK_CATS = [
-  { href: "/dresses", labelEn: "Dresses", labelAr: "فساتين", icon: "👗" },
-  { href: "/clothes", labelEn: "Clothes", labelAr: "ملابس", icon: "👚" },
-  { href: "/shoes", labelEn: "Shoes", labelAr: "شوزات", icon: "👠" },
-  { href: "/sales", labelEn: "Sales", labelAr: "تخفيضات", icon: "🏷️" },
-];
-
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1343,15 +1336,17 @@ export function Navbar() {
                           {isAr ? "تصفحي حسب القسم" : "Browse by category"}
                         </p>
                         <div className="flex flex-wrap gap-2">
-                          {QUICK_CATS.map((cat) => (
+                          {[
+                            ...navCategories.map((c: any) => ({ href: categoryHref(c), label: catLabel(c) })),
+                            { href: "/sales", label: t.nav.sales },
+                          ].map((cat) => (
                             <Link
                               key={cat.href}
                               href={cat.href}
                               onClick={() => setSearchOpen(false)}
                               className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-muted/40 hover:bg-muted text-sm font-medium transition-colors"
                             >
-                              <span>{cat.icon}</span>
-                              <span>{isAr ? cat.labelAr : cat.labelEn}</span>
+                              {cat.label}
                             </Link>
                           ))}
                         </div>

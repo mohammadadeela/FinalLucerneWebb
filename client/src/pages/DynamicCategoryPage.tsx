@@ -4,12 +4,14 @@ import CategoryPage from "@/pages/CategoryPage";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useLanguage } from "@/i18n";
+import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
 import { Footprints, ShoppingBag, Gem, Shirt } from "lucide-react";
 
 export default function DynamicCategoryPage() {
   const { slug } = useParams<{ slug: string }>();
   const { data: categories, isLoading } = useCategories();
   const { language } = useLanguage();
+  const { data: siteSettings } = useSiteSettings();
 
   if (isLoading) {
     return (
@@ -59,12 +61,27 @@ export default function DynamicCategoryPage() {
     ? Gem
     : Shirt;
 
+  // Same page settings as the built-in category pages (Content → this category's tab):
+  // banner photo or video, their position and the subtitle. The category photo is the fallback.
+  const slugKey = category.slug || "";
+  const heroImage = getSetting(siteSettings, `${slugKey}_hero_image`) || category.image || "";
+  const heroImagePosition = getSetting(siteSettings, `${slugKey}_hero_image_position`) || "center";
+  const heroVideo = getSetting(siteSettings, `${slugKey}_hero_video`);
+  const heroVideoPosition = getSetting(siteSettings, `${slugKey}_hero_video_position`) || "50% 50%";
+  const subtitle =
+    language === "ar"
+      ? getSetting(siteSettings, `${slugKey}_hero_subtitle_ar`)
+      : getSetting(siteSettings, `${slugKey}_hero_subtitle_en`);
+
   return (
     <CategoryPage
       title={title}
-      subtitle=""
+      subtitle={subtitle}
       categoryIds={[category.id]}
-      heroImage={category.image || ""}
+      heroImage={heroImage}
+      heroImagePosition={heroImagePosition}
+      heroVideo={heroVideo}
+      heroVideoPosition={heroVideoPosition}
       icon={categoryIcon}
       defaultSizes={isShoeCategory ? ["36", "37", "38", "39", "40", "41", "42"] : undefined}
     />
