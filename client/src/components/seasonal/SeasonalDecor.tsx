@@ -394,7 +394,7 @@ function HeroInner({ season, countdownDate }: { season: SeasonalTheme; countdown
   const ar = language === "ar";
   const cd = countdownParts(daysUntil(countdownDate), info, ar);
   // The art sits below the navigation, so it never covers a menu link or the logo.
-  const stage = { top: "calc(var(--news-bar-offset, 0px) + 5rem)" } as const;
+  const stage = { top: "calc(var(--news-bar-offset, 0px) + var(--navbar-h, 5rem))" } as const;
   const lift = season === "eid_adha" ? "bottom-10 sm:bottom-14" : season === "eid_fitr" ? "bottom-9 sm:bottom-12" : "bottom-5 sm:bottom-8";
 
   return (

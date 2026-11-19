@@ -634,10 +634,10 @@ export default function Checkout() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => { setSoldOutItems([]); setLocation("/"); }}
+                  onClick={() => { setSoldOutItems([]); setLocation("/cart"); }}
                   className="rounded-xl h-11 px-6"
                 >
-                  {ar ? "الصفحة الرئيسية" : "Back to home"}
+                  {ar ? "العودة إلى السلة" : "Back to cart"}
                 </Button>
               </div>
             </div>

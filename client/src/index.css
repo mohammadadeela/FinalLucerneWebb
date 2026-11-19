@@ -9,37 +9,73 @@
   --font-sans: 'Jost', sans-serif;
   --font-arabic: 'Noto Sans Arabic', sans-serif;
   --news-bar-offset: 0px;
+  --navbar-h: 4rem;
 
-  /* Clean, luxury monochrome palette */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 10%;
-  
-  --card: 0 0% 98%;
-  --card-foreground: 0 0% 10%;
-  
+  /* Storefront palette — warm cream, berry rose and soft sage.
+     The admin area keeps its neutral monochrome palette (see html.admin-theme). */
+  --background: 30 50% 97%;
+  --foreground: 340 16% 14%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 340 16% 14%;
+
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  
-  --primary: 0 0% 12%;
-  --primary-foreground: 0 0% 98%;
-  
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 15%;
-  
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 45%;
-  
-  --accent: 0 0% 94%;
-  --accent-foreground: 0 0% 10%;
-  
+  --popover-foreground: 340 16% 14%;
+
+  --primary: 342 49% 42%;
+  --primary-foreground: 30 60% 98%;
+
+  --secondary: 12 48% 93%;
+  --secondary-foreground: 340 18% 18%;
+
+  --muted: 28 36% 93%;
+  --muted-foreground: 340 7% 40%;
+
+  --accent: 96 20% 88%;
+  --accent-foreground: 340 16% 14%;
+
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  
+
+  --border: 24 30% 88%;
+  --input: 24 26% 84%;
+  --ring: 342 49% 42%;
+
+  /* Named storefront tints used by the landing page */
+  --berry: 342 49% 42%;
+  --berry-deep: 342 52% 33%;
+  --blush: 8 62% 91%;
+  --sage: 96 20% 84%;
+  --sand: 30 42% 91%;
+
+  --radius: 0rem;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --navbar-h: 5rem;
+  }
+}
+
+/* Admin, POS and reports keep the original clean monochrome palette. */
+html.admin-theme {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 98%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 0 0% 12%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 15%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 94%;
+  --accent-foreground: 0 0% 10%;
   --border: 0 0% 90%;
   --input: 0 0% 90%;
   --ring: 0 0% 12%;
-  
-  --radius: 0rem; /* Sharp edges for high fashion feel */
 }
 
 .dark {
@@ -175,7 +211,12 @@
 }
 
 .pt-navbar {
-  padding-top: calc(5rem + var(--news-bar-offset, 0px));
+  padding-top: calc(var(--navbar-h) + var(--news-bar-offset, 0px));
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -190,11 +231,80 @@
 }
 
 @media (max-width: 767px) {
-  .pt-navbar {
-    padding-top: calc(5rem + var(--news-bar-offset, 0px));
-  }
-
   [data-radix-popper-content-wrapper] {
     max-width: calc(100vw - 1rem);
   }
+}
+
+/* ── Storefront landing helpers ─────────────────────────────── */
+
+/* Diagonal edge between a hero photo and its text panel. The cut always
+   faces the text side, so it is mirrored for Arabic (RTL). */
+@media (min-width: 640px) {
+  .hero-cut {
+    clip-path: polygon(0 0, 100% 0, calc(100% - var(--hero-cut, 7rem)) 100%, 0 100%);
+  }
+  [dir="rtl"] .hero-cut {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, var(--hero-cut, 7rem) 100%);
+  }
+}
+
+.hero-progress {
+  transform-origin: left center;
+  animation: hero-progress linear forwards;
+}
+[dir="rtl"] .hero-progress {
+  transform-origin: right center;
+}
+@keyframes hero-progress {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes news-rise {
+  0%   { opacity: 0; transform: translateY(70%); }
+  12%  { opacity: 1; transform: translateY(0); }
+  88%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-70%); }
+}
+.news-rise {
+  animation: news-rise 4.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes soft-float {
+  0%, 100% { transform: translateY(0) rotate(var(--float-rot, 0deg)); }
+  50%      { transform: translateY(-8px) rotate(var(--float-rot, 0deg)); }
+}
+.soft-float {
+  animation: soft-float 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .news-rise,
+  .soft-float,
+  .hero-progress {
+    animation: none !important;
+  }
+  .hero-progress {
+    transform: scaleX(1);
+  }
+}
+
+/* Latin wordmark / display text that must keep its serif face and spacing
+   even inside the Arabic (RTL) layout, where letter-spacing is otherwise
+   reset so joined Arabic letters never break apart. */
+.display-latin {
+  font-family: var(--font-display);
+}
+.keep-tracking,
+[dir="rtl"] .keep-tracking {
+  letter-spacing: var(--tracking, 0.12em) !important;
+}
+
+/* Display face for non-heading elements: serif in English, Arabic face in RTL. */
+.font-heading {
+  font-family: var(--font-display);
+}
+[dir="rtl"] .font-heading {
+  font-family: var(--font-arabic);
 }

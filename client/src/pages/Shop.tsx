@@ -29,6 +29,10 @@ export default function Shop() {
     return family ? family.key : urlColor;
   }, [urlColor]);
 
+  // "New In" / sale deep-links from the navbar and landing page: /shop?new=1, /shop?sale=1
+  const urlNew  = new URLSearchParams(searchParams).get("new") === "1";
+  const urlSale = new URLSearchParams(searchParams).get("sale") === "1";
+
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -39,9 +43,17 @@ export default function Shop() {
     brands: [],
     priceRange: [0, 99999],
     inStockOnly: false,
-    newArrivals: false,
-    onSale: false,
+    newArrivals: urlNew,
+    onSale: urlSale,
   });
+
+  useEffect(() => {
+    setFilters((prev) =>
+      prev.newArrivals === urlNew && prev.onSale === urlSale
+        ? prev
+        : { ...prev, newArrivals: urlNew, onSale: urlSale },
+    );
+  }, [urlNew, urlSale]);
 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const sentinelRef = useRef<HTMLDivElement>(null);

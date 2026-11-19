@@ -42,7 +42,7 @@ export default function Wishlist() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="min-h-screen pt-[calc(var(--navbar-h)+var(--news-bar-offset,0px)+1.5rem)] pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex items-center gap-3 mb-8">
           <Heart className="w-6 h-6 fill-rose-500 stroke-rose-500" />
           <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-wide">

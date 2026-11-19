@@ -44,6 +44,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   </head>
   <body>
+    <script>
+      // Pick the admin (monochrome) palette before first paint so the dashboard never flashes cream.
+      if (location.pathname.indexOf("/admin") === 0) document.documentElement.classList.add("admin-theme");
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

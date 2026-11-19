@@ -1,5 +1,8 @@
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { GiButterfly } from "react-icons/gi";
 import { AutoplayVideo } from "@/components/ui/AutoplayVideo";
+import { useLanguage } from "@/i18n";
+import { splitAccent } from "@/lib/storefront";
 
 interface PageHeroProps {
   image: string;
@@ -12,6 +15,26 @@ interface PageHeroProps {
   videoPosition?: string;
 }
 
+/* Each page gets its own soft panel colour, picked from its title so it is
+   stable between visits (shoes stay blush, clothes stay sage, …). */
+const TINTS = [
+  "linear-gradient(120deg, hsl(var(--sand)) 0%, hsl(var(--blush) / 0.8) 100%)",
+  "linear-gradient(120deg, hsl(var(--background)) 0%, hsl(var(--sage) / 0.9) 100%)",
+  "linear-gradient(120deg, hsl(var(--blush) / 0.65) 0%, hsl(var(--sand)) 100%)",
+  "linear-gradient(120deg, hsl(var(--sage) / 0.55) 0%, hsl(var(--sand)) 100%)",
+];
+function tintFor(title: string) {
+  let h = 0;
+  for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) >>> 0;
+  return TINTS[h % TINTS.length];
+}
+
+/**
+ * Category / sale page banner — the same split, lookbook-style composition as
+ * the landing page hero: the admin's photo or video on the start side behind a
+ * diagonal cut, and a calm tinted panel carrying the title on the other.
+ * The photo drifts gently with the pointer and settles in with a slow zoom.
+ */
 export function PageHero({
   image,
   imagePosition = "center",
@@ -22,199 +45,133 @@ export function PageHero({
   video,
   videoPosition = "50% 50%",
 }: PageHeroProps) {
+  const { language } = useLanguage();
+  const isAr = language === "ar";
+
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
-
   const smoothX = useSpring(mouseX, { stiffness: 50, damping: 18 });
   const smoothY = useSpring(mouseY, { stiffness: 50, damping: 18 });
-
-  const imgX = useTransform(smoothX, [0, 1], ["2%", "-2%"]);
-  const imgY = useTransform(smoothY, [0, 1], ["1.5%", "-1.5%"]);
-
-  const textX = useTransform(smoothX, [0, 1], ["-7px", "7px"]);
-  const textY = useTransform(smoothY, [0, 1], ["-4px", "4px"]);
-
-  const glareX = useTransform(smoothX, [0, 1], ["15%", "85%"]);
-  const glareY = useTransform(smoothY, [0, 1], ["15%", "85%"]);
+  const imgX = useTransform(smoothX, [0, 1], ["1.5%", "-1.5%"]);
+  const imgY = useTransform(smoothY, [0, 1], ["1.2%", "-1.2%"]);
+  const flyX = useTransform(smoothX, [0, 1], ["-10px", "10px"]);
+  const flyY = useTransform(smoothY, [0, 1], ["-8px", "8px"]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     mouseX.set((e.clientX - rect.left) / rect.width);
     mouseY.set((e.clientY - rect.top) / rect.height);
   };
-
   const handleMouseLeave = () => {
     mouseX.set(0.5);
     mouseY.set(0.5);
   };
 
+  const { lead, accent, tail } = splitAccent(title);
+  const ease = [0.22, 1, 0.36, 1] as const;
+
   return (
     <section
-      className="relative h-[320px] md:h-[520px] flex items-center justify-center overflow-hidden"
+      className="relative isolate overflow-hidden pt-navbar"
+      style={{ background: tintFor(title) }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Parallax media layer — video takes priority over image */}
-      <motion.div
-        className="absolute z-0 will-change-transform"
-        style={{
-          inset: "-7%",
-          x: imgX,
-          y: imgY,
-        }}
-        animate={video ? undefined : { scale: [1.0, 1.07, 1.03, 1.08, 1.0] }}
-        transition={video ? undefined : { duration: 22, repeat: Infinity, ease: "easeInOut" }}
-      >
-        {video ? (
-          <AutoplayVideo
-            src={video}
-            preload="auto"
-            poster={image || undefined}
-            className="w-full h-full object-cover"
-            style={{ objectPosition: videoPosition }}
-          />
-        ) : (
-          <img
-            src={image}
-            alt={title}
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-            className="w-full h-full object-cover"
-            style={{ objectPosition: imagePosition }}
-          />
-        )}
-      </motion.div>
-
-      {/* Depth gradient layers */}
-      <div
-        className="absolute inset-0 z-[1] pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 60%, transparent 30%, rgba(0,0,0,0.28) 100%)",
-        }}
-      />
-      <div
-        className="absolute inset-0 z-[1] pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.42) 0%, rgba(0,0,0,0.05) 50%, transparent 100%)",
-        }}
-      />
-      <div
-        className="absolute inset-0 z-[1] pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.22) 0%, transparent 35%)",
-        }}
-      />
-
-      {/* Animated glare that follows the mouse */}
-      <motion.div
-        className="absolute z-[2] pointer-events-none"
-        style={{
-          width: 480,
-          height: 480,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 68%)",
-          left: glareX,
-          top: glareY,
-          translateX: "-50%",
-          translateY: "-50%",
-        }}
-      />
-
-      {/* Decorative rotating rings for depth */}
-      <div className="absolute inset-0 z-[2] overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 340,
-            height: 340,
-            border: "1px solid rgba(255,255,255,0.09)",
-            right: -80,
-            top: -100,
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 200,
-            height: 200,
-            border: "1px solid rgba(255,255,255,0.07)",
-            right: -20,
-            top: -40,
-          }}
-          animate={{ rotate: -360 }}
-          transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
-        />
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 220,
-            height: 220,
-            border: "1px solid rgba(255,255,255,0.06)",
-            left: -60,
-            bottom: -60,
-          }}
-          animate={{ rotate: 360 }}
-          transition={{ duration: 42, repeat: Infinity, ease: "linear" }}
-        />
-        {/* Horizontal rule lines */}
-        <motion.div
-          className="absolute h-px"
-          style={{
-            background:
-              "linear-gradient(to right, transparent, rgba(255,255,255,0.12), transparent)",
-            left: "10%",
-            right: "10%",
-            bottom: "28%",
-          }}
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ duration: 1.2, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        />
-      </div>
-
-      {/* 3D floating text with mouse tracking */}
-      <motion.div
-        className="relative z-10 text-center text-white px-4"
-        style={{ x: textX, y: textY }}
-      >
-        <motion.h1
-          className="font-display text-3xl sm:text-4xl md:text-6xl font-bold mb-3 tracking-tight select-none"
-          data-testid={titleTestId}
-          initial={{ opacity: 0, y: 40, rotateX: "25deg" }}
-          animate={{ opacity: 1, y: 0, rotateX: "0deg" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            textShadow: [
-              "0 1px 0 rgba(255,255,255,0.18)",
-              "0 2px 6px rgba(0,0,0,0.5)",
-              "0 6px 20px rgba(0,0,0,0.35)",
-              "0 12px 40px rgba(0,0,0,0.2)",
-            ].join(", "),
-          }}
-        >
-          {title}
-        </motion.h1>
-
-        {subtitle && (
-          <motion.p
-            className="text-sm sm:text-base md:text-lg font-light opacity-90 max-w-xl mx-auto"
-            data-testid={subtitleTestId}
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            style={{ textShadow: "0 2px 10px rgba(0,0,0,0.55)" }}
+      <div className="relative h-[13.5rem] sm:h-[clamp(15rem,23vw,23rem)]">
+        {/* Media — full-bleed on phones, start side with a diagonal cut from sm up */}
+        <div className="hero-cut absolute inset-0 overflow-hidden [--hero-cut:4rem] sm:inset-y-0 sm:end-auto sm:start-0 sm:w-[58%] lg:[--hero-cut:7rem]">
+          <motion.div
+            className="absolute will-change-transform"
+            style={{ inset: "-5%", x: imgX, y: imgY }}
+            initial={{ scale: 1.08 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 2.2, ease }}
           >
-            {subtitle}
-          </motion.p>
-        )}
-      </motion.div>
+            {video ? (
+              <AutoplayVideo
+                src={video}
+                preload="auto"
+                poster={image || undefined}
+                className="h-full w-full object-cover"
+                style={{ objectPosition: videoPosition }}
+              />
+            ) : (
+              <img
+                src={image}
+                alt={title}
+                fetchPriority="high"
+                loading="eager"
+                decoding="async"
+                className="h-full w-full object-cover"
+                style={{ objectPosition: imagePosition }}
+              />
+            )}
+          </motion.div>
+        </div>
+
+        {/* Phones: fade the photo into the page colour on the text side */}
+        <div
+          className="absolute inset-0 sm:hidden"
+          style={{
+            background: `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.9) 38%, hsl(var(--background) / 0.5) 56%, transparent 76%)`,
+          }}
+        />
+
+        {/* Decoration */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute -top-3 end-2 hidden sm:block lg:end-10"
+          style={{ x: flyX, y: flyY }}
+        >
+          <GiButterfly className="soft-float h-28 w-28 text-primary/[0.08] lg:h-44 lg:w-44" />
+        </motion.div>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-20 end-[14%] hidden h-48 w-48 rounded-full bg-white/50 blur-3xl sm:block"
+        />
+
+        {/* Copy */}
+        <div className="absolute inset-y-0 end-0 flex w-[58%] items-center pe-4 ps-1 sm:w-[44%] sm:justify-center sm:pe-8 lg:pe-14">
+          <div className="w-full max-w-[28rem]">
+            <motion.p
+              className="mb-2 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-primary sm:mb-3 sm:text-xs"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease }}
+            >
+              <motion.span
+                className="block h-px w-6 origin-left bg-primary/60 rtl:origin-right sm:w-9"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.8, delay: 0.15, ease }}
+              />
+              Lucerne Boutique
+            </motion.p>
+            <motion.h1
+              className="text-balance text-[2rem] font-medium leading-[1.04] text-foreground sm:text-[clamp(2.2rem,4vw,4rem)] rtl:leading-[1.3]"
+              data-testid={titleTestId}
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.06, ease }}
+            >
+              {lead}
+              {accent && <em className="text-primary ltr:italic rtl:not-italic">{accent}</em>}
+              {tail}
+            </motion.h1>
+            {subtitle && (
+              <motion.p
+                className="font-heading mt-2 line-clamp-3 text-[13px] leading-snug text-foreground/75 sm:mt-3.5 sm:text-[clamp(0.95rem,1.25vw,1.2rem)] sm:leading-relaxed"
+                data-testid={subtitleTestId}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.16, ease }}
+              >
+                {subtitle}
+              </motion.p>
+            )}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

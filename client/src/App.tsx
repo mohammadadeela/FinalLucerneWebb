@@ -197,6 +197,16 @@ function PageScaleController() {
   return null;
 }
 
+/* The storefront uses the cream / berry palette; the admin area, POS and
+   reports keep their neutral monochrome one (see html.admin-theme in index.css). */
+function ThemeController() {
+  const [location] = useLocation();
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle("admin-theme", location.startsWith("/admin"));
+  }, [location]);
+  return null;
+}
+
 function InstagramButton({
   dismissed,
   onDismiss,
@@ -432,6 +442,7 @@ function App() {
         <TooltipProvider>
           <ScrollToTop />
           <PageScaleController />
+          <ThemeController />
           <SessionWatcher />
           <AbandonedCartReminder />
           <ProductImagePreloader />
