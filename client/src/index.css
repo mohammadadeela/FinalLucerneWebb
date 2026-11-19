@@ -340,3 +340,14 @@ html.admin-theme {
 @media (prefers-reduced-motion: reduce) {
   .curve-arrow, .curve-arrow path { animation: none; }
 }
+
+/* Category showcase strip: a slow, endless row of that category's pieces. */
+@keyframes strip-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.strip-marquee { animation: strip-marquee var(--strip-dur, 40s) linear infinite; }
+.strip-marquee:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .strip-marquee { animation: none; }
+}

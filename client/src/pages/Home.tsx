@@ -318,6 +318,75 @@ function bannerPosition(pos?: string) {
   return `${x}% ${y}%`;
 }
 
+/** The banner above each category row: a pink strip, drawn by the site so it is sharp on every
+ *  screen, with the category name and a slow endless row of that category's pieces.
+ *  The pieces are the admin's own cut-out photos (white or transparent background — they blend
+ *  into the pink); until some are uploaded, the category's subcategory and product photos are
+ *  shown as small rounded thumbnails. The whole strip opens the category. */
+function CategoryShowcase({
+  href,
+  name,
+  cutouts,
+  photos,
+}: {
+  href: string;
+  name: string;
+  cutouts: string[];
+  photos: string[];
+}) {
+  const useCutouts = cutouts.length > 0;
+  const base = useCutouts ? cutouts : photos;
+  // Repeat the pieces until one lap is long enough to fill the widest screen, then double it
+  // so the loop is seamless.
+  const lap: string[] = [];
+  while (base.length > 0 && lap.length < 14) lap.push(...base);
+  const track = [...lap, ...lap];
+  return (
+    <Link
+      href={href}
+      aria-label={name}
+      className="relative mb-4 block overflow-hidden rounded-[1.5rem] bg-blush px-4 py-3.5 transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
+      data-testid={`link-view-all-${href}`}
+    >
+      {/* Invisible copy of the old banner text, so the height stays exactly the same */}
+      <div className="invisible" aria-hidden="true">
+        <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">أ</p>
+        <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">أ</p>
+      </div>
+      {track.length > 0 && (
+        <div className="absolute inset-0 flex items-center overflow-hidden" dir="ltr" aria-hidden="true">
+          <div
+            className="strip-marquee flex w-max shrink-0 items-center"
+            style={{ ["--strip-dur" as any]: `${lap.length * 3.2}s` }}
+          >
+            {track.map((src, i) => (
+              <span key={i} className="flex shrink-0 items-center justify-center px-3 sm:px-5">
+                <img
+                  src={optimizeCloudinaryUrl(src, 400) || src}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className={
+                    useCutouts
+                      ? "h-[3.4rem] w-auto max-w-[7rem] object-contain mix-blend-multiply sm:h-[4.6rem] sm:max-w-[9rem]"
+                      : "h-12 w-12 rounded-full object-cover ring-2 ring-white sm:h-[4.25rem] sm:w-[4.25rem]"
+                  }
+                />
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* The name stays put at the start edge; the row slides under a soft pink fade */}
+      <div className="pointer-events-none absolute inset-y-0 start-0 flex items-center bg-gradient-to-r from-blush from-60% to-transparent pe-12 ps-4 rtl:bg-gradient-to-l sm:pe-20 sm:ps-8">
+        <h2 className="m-0 text-xl font-semibold leading-none text-berry-deep sm:text-[1.9rem] rtl:leading-snug">
+          {name}
+        </h2>
+      </div>
+    </Link>
+  );
+}
+
 function Section({
   children,
   className = "",
@@ -1384,33 +1453,19 @@ export default function Home() {
               key={section.category.id}
               className=""
             >
-              {/* The category banner, at its original size, with no text or icon; tapping it opens the
-                  category. Blank until the admin uploads a strip photo for it (Content → Home). */}
-              <Link
+              <CategoryShowcase
                 href={section.href}
-                aria-label={catName(section.category)}
-                className="relative mb-4 block overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
-                data-testid={`link-view-all-${section.href}`}
-              >
-                {g(`home_cat_banner_${section.category.id}_image`) && (
-                  <img
-                    src={optimizeCloudinaryUrl(g(`home_cat_banner_${section.category.id}_image`), 1600) || g(`home_cat_banner_${section.category.id}_image`)}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover"
-                    style={{ objectPosition: bannerPosition(g(`home_cat_banner_${section.category.id}_image_position`)) }}
-                  />
-                )}
-                <div className="invisible relative min-w-0 ps-12 sm:ps-24" aria-hidden="true">
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">
-                    {pick("من أقسامنا", "From our collections")}
-                  </p>
-                  <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">
-                    {catName(section.category)}
-                  </p>
-                </div>
-              </Link>
+                name={catName(section.category)}
+                cutouts={[1, 2, 3, 4, 5, 6, 7, 8]
+                  .map((n) => g(`home_cat_banner_${section.category.id}_item_${n}`))
+                  .filter(Boolean)}
+                photos={[
+                  ...(allSubcategories || [])
+                    .filter((sub: any) => sub.categoryId === section.category.id && sub.isActive !== false && sub.image)
+                    .map((sub: any) => sub.image as string),
+                  ...section.products.map((p: any) => p.mainImage as string).filter(Boolean),
+                ].slice(0, 10)}
+              />
               <ProductRail
                 products={section.products}
                 testId={`rail-category-${section.category.id}`}
