@@ -100,7 +100,7 @@ function SectionHeader({
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
   const sale = tone === "sale";
   return (
-    <div className="mb-4 flex items-end justify-between gap-4 sm:mb-5">
+    <div className="mb-3 flex items-end justify-between gap-4 sm:mb-4">
       <div className="min-w-0">
         {eyebrow && (
           <p
@@ -223,8 +223,8 @@ function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className={`w-full px-4 py-5 sm:px-6 sm:py-7 lg:px-10 ${className}`}>
-      <div className="mx-auto w-full max-w-[1560px]">{children}</div>
+    <section id={id} className={`w-full px-4 py-3.5 sm:px-6 sm:py-5 lg:px-10 ${className}`}>
+      <div className="mx-auto w-full max-w-[1280px]">{children}</div>
     </section>
   );
 }
@@ -461,16 +461,11 @@ export default function Home() {
     (p: any) => !podiumIds.has(p.id) && (featured.length > 0 || !trendingIds.has(p.id)),
   );
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-
-      <main className="flex-1">
-        <HeroSlider slides={slides} isAr={isAr} />
-
-        {/* Category Circles */}
-        <section className="py-7 sm:py-9 w-full px-4 sm:px-6 lg:px-8 bg-background">
-          <div className="text-center mb-6 sm:mb-8">
+  // The original category circles (categories + featured subcategories).
+  const categoryCircles = (
+    <>
+        <section className="py-5 sm:py-6 w-full px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="text-center mb-4 sm:mb-6">
             <p className="text-xs sm:text-sm text-foreground/50 mb-2">
               {language === "ar" ? "تسوق حسب الفئة" : "Shop by Category"}
             </p>
@@ -672,6 +667,53 @@ export default function Home() {
             );
           })()}
         </section>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+
+      <main className="flex-1">
+        <HeroSlider slides={slides} isAr={isAr} />
+
+        {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
+        {catTiles.length > 0 && (
+          <Section className="hidden sm:block !pt-5 !pb-1">
+            <Rail scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
+              {catTiles.map((item, i) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  role="listitem"
+                  className="group relative flex aspect-[2.44/1] w-[78%] flex-none snap-start overflow-hidden rounded-[2.5rem] bg-sand transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
+                  data-testid={`pill-${item.testId}`}
+                >
+                  <span
+                    className="relative block h-full w-[56%] shrink-0 overflow-hidden"
+                    style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
+                  >
+                    <BannerImage
+                      src={item.img || "/placeholder-product.svg"}
+                      alt={item.label}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      width={400}
+                    />
+                  </span>
+                  <span className="flex min-w-0 flex-1 items-center justify-center gap-2.5 px-3">
+                    <span className="font-heading block min-w-0 truncate text-lg font-medium leading-tight lg:text-[1.35rem]">
+                      {item.label}
+                    </span>
+                    <Arrow className="h-[18px] w-[18px] shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+                  </span>
+                </Link>
+              ))}
+            </Rail>
+          </Section>
+        )}
+
+        {/* Category circles — phones: right under the hero, as in the design */}
+        <div className="sm:hidden">{categoryCircles}</div>
 
         {/* ── Trending now ── */}
         {(isFeaturedLoading || trending.length > 0) && (
@@ -688,9 +730,17 @@ export default function Home() {
               <ProductRail
                 products={trending}
                 testId="rail-trending"
+                compact
                 more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
               />
             )}
+          </Section>
+        )}
+
+        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
+        {promoSlides.length > 0 && (
+          <Section className="!py-3 sm:!py-4">
+            <PromoSlider slides={promoSlides} isAr={isAr} />
           </Section>
         )}
 
@@ -712,12 +762,8 @@ export default function Home() {
           </Section>
         )}
 
-        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
-        {promoSlides.length > 0 && (
-          <Section className="!py-3 sm:!py-4">
-            <PromoSlider slides={promoSlides} isAr={isAr} />
-          </Section>
-        )}
+        {/* Category circles — larger screens */}
+        <div className="hidden sm:block">{categoryCircles}</div>
 
         {/* Editorial Category Grid */}
         {(() => {
@@ -783,8 +829,8 @@ export default function Home() {
           });
           const [tl, tr, bl, br] = tiles;
           return (
-            <section className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-background">
-              <div className="grid grid-cols-[1fr_1.4fr_1fr] grid-rows-2 gap-1 sm:gap-1.5 h-[340px] sm:h-[440px] lg:h-[520px] rounded-2xl overflow-hidden">
+            <section className="w-full px-4 sm:px-6 lg:px-10 py-3.5 sm:py-5 bg-background">
+              <div className="mx-auto max-w-[1280px] grid grid-cols-[1fr_1.4fr_1fr] grid-rows-2 gap-1 sm:gap-1.5 h-[340px] sm:h-[440px] lg:h-[520px] rounded-2xl overflow-hidden">
                 {/* Top-left tile */}
                 <Link href={tl.href}>
                   <div className="relative overflow-hidden group cursor-pointer h-full bg-muted">
@@ -1104,45 +1150,6 @@ export default function Home() {
                 )}
               </>
             )}
-          </Section>
-        )}
-
-        {/* ── Shop by category: pills with the category's icon behind its name ── */}
-        {catTiles.length > 0 && (
-          <Section className="!pb-2">
-            <SectionHeader
-              title={pick("تسوقي حسب القسم", "Shop by Category")}
-              testId="section-title-categories"
-            />
-            <Rail scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
-              {catTiles.map((item, i) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  role="listitem"
-                  className="group relative flex aspect-[2.44/1] w-[78%] flex-none snap-start overflow-hidden rounded-[2.5rem] bg-sand transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
-                  data-testid={`pill-${item.testId}`}
-                >
-                  <span
-                    className="relative block h-full w-[56%] shrink-0 overflow-hidden"
-                    style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
-                  >
-                    <BannerImage
-                      src={item.img || "/placeholder-product.svg"}
-                      alt={item.label}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      width={400}
-                    />
-                  </span>
-                  <span className="flex min-w-0 flex-1 items-center justify-center gap-2.5 px-3">
-                    <span className="font-heading block min-w-0 truncate text-lg font-medium leading-tight lg:text-[1.35rem]">
-                      {item.label}
-                    </span>
-                    <Arrow className="h-[18px] w-[18px] shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-                  </span>
-                </Link>
-              ))}
-            </Rail>
           </Section>
         )}
 

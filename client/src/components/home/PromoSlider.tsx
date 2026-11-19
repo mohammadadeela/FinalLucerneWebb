@@ -47,7 +47,7 @@ export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: bool
       }}
       data-testid="promo-slider"
     >
-      <div className="relative aspect-[4/3] sm:aspect-[21/8]">
+      <div className="relative aspect-[16/9] sm:aspect-[4/1]">
         {slides.map((slide, n) => (
           <Link
             key={slide.key}

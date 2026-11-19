@@ -120,7 +120,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
       }}
       data-testid="hero-slider"
     >
-      <div className="relative h-[92vw] max-h-[470px] min-h-[340px] sm:h-[clamp(380px,37vw,580px)] sm:max-h-none">
+      <div className="relative h-[80vw] max-h-[400px] min-h-[310px] sm:h-[clamp(320px,30.5vw,470px)] sm:max-h-none">
         {slides.map((slide, i) => {
           const active = i === safeIndex;
           const showMedia = i === 0 || loadAll || active;
@@ -221,7 +221,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                     </p>
                   )}
                   <TitleTag
-                    className="text-balance text-[1.85rem] font-medium leading-[1.04] text-foreground sm:text-[clamp(2.1rem,4.2vw,4.25rem)] rtl:leading-[1.3]"
+                    className="text-balance text-[1.85rem] font-medium leading-[1.04] text-foreground sm:text-[clamp(2rem,3.9vw,3.75rem)] rtl:leading-[1.3]"
                     data-testid={i === 0 ? "text-hero-title" : undefined}
                     style={skin ? { color: skin.ink } : undefined}
                   >
