@@ -1240,14 +1240,14 @@ resizeObserver.disconnect();
 
 return (
 <section
-className="mt-16 sm:mt-24"
+className="mt-5 sm:mt-6"
 style={{
 marginLeft: "calc(-50vw + 50%)",
 marginRight: "calc(-50vw + 50%)",
 }}
 data-testid="section-related-products"
 >
-<div className="flex items-center justify-between mb-6 sm:mb-8 px-4 sm:px-6 lg:px-8">
+<div className="flex items-center justify-between mb-3 sm:mb-4 px-4 sm:px-6 lg:px-8">
 <div>
 {accent && (
 <span
@@ -2833,40 +2833,13 @@ data-testid="button-share"
 </button>
 </div>
 
-{!isSoldOut && selectedSize && availableStock > 0 && (
-<p
-className="text-xs text-muted-foreground mb-4"
-data-testid="text-size-stock"
->
-{t.product.availableInSize} {selectedSize}: {availableStock}{" "}
-{t.product.pieces}
-</p>
-)}
-
-<div className="border-t border-border pt-6 mt-5 space-y-4 text-sm">
-<div className="flex justify-between">
-<span className="text-muted-foreground">
-{t.product.availability}
-</span>
-<span
-className={isSoldOut ? "font-semibold text-foreground" : availableStock > 0 ? "text-green-600" : "text-destructive"}
-data-testid="text-availability"
->
-{isSoldOut
-? t.product.soldOut
-: hasSizes && !selectedSize
-? t.product.selectSizeFirst
-: availableStock > 0
-? t.product.inStock
-: t.product.outOfStock}
-</span>
-</div>
-<div className="flex justify-between">
-<span className="flex items-center gap-1.5 text-muted-foreground">
-<Truck className="w-3.5 h-3.5 flex-shrink-0" />
+<div className="border-t border-border pt-4 mt-4 text-sm">
+<div className="flex items-start gap-3 rounded-2xl bg-muted/50 px-3.5 py-3" data-testid="row-delivery">
+<span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-muted-foreground">
+<Truck className="w-4 h-4 flex-shrink-0" />
 {t.product.shipping}
 </span>
-<span>{t.product.freeDelivery}</span>
+<span className="min-w-0 flex-1 text-end text-[13px] leading-snug sm:text-sm">{t.product.freeDelivery}</span>
 </div>
 </div>
 </div>

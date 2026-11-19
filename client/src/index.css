@@ -332,15 +332,3 @@ html.admin-theme {
 @media (prefers-reduced-motion: reduce) {
   .bar-glide, .bar-bob { animation: none; display: none; }
 }
-
-/* Phone tab bar: keep page content and the floating chat / Instagram buttons clear of it. */
-@media (max-width: 1023px) {
-  html.has-tabbar body {
-    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom));
-  }
-  html.has-tabbar [data-testid="instagram-widget"],
-  html.has-tabbar div[style*="position: fixed"]:has(> .lb-fab),
-  html.has-tabbar div[style*="position: fixed"]:has(.lb-fab) {
-    translate: 0 -3.75rem;
-  }
-}

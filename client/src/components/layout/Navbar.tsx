@@ -643,21 +643,6 @@ export function Navbar() {
 
   const [expandedCat, setExpandedCat] = useState<number | null>(null);
 
-  // The app-style tab bar shows on browsing pages only — never over checkout, cart or a product's own buy bar.
-  const showTabBar =
-    currentPath === "/" ||
-    currentPath === "/shop" ||
-    currentPath === "/sales" ||
-    currentPath === "/wishlist" ||
-    currentPath === "/dresses" ||
-    currentPath === "/shoes" ||
-    currentPath === "/clothes" ||
-    currentPath.startsWith("/category/");
-  useEffect(() => {
-    document.documentElement.classList.toggle("has-tabbar", showTabBar);
-    return () => document.documentElement.classList.remove("has-tabbar");
-  }, [showTabBar]);
-
   // Lock page scroll while the mobile drawer is open, and close it on navigation.
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -1080,301 +1065,224 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* ── Mobile menu ── a full-height sheet: greeting and search on a berry header,
-          quick actions, categories as photo tiles, then account and settings. */}
+      {/* ── Phone menu ── a full-screen category browser, the way shopping apps do it:
+          categories down one side, the chosen category's sections as photo tiles beside it,
+          search on top and account / location / language along the bottom. */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
-            <motion.div
-              className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setMobileMenuOpen(false)}
-              aria-hidden="true"
-            />
-            <motion.aside
-              className="absolute inset-y-0 start-0 flex w-[88%] max-w-[380px] flex-col overflow-hidden bg-[#faf7f4] text-foreground shadow-2xl"
-              initial={{ x: isAr ? "100%" : "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: isAr ? "100%" : "-100%" }}
-              transition={{ type: "tween", duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              data-testid="mobile-menu"
-            >
-              {/* Header */}
-              <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-berry to-berry-deep px-5 pb-9 pt-5 text-white">
-                <LucerneLogo className="pointer-events-none absolute -end-6 -top-6 h-36 w-auto text-white/10" />
-                <div className="relative flex items-center justify-between">
-                  <span className="flex items-end gap-1.5" dir="ltr">
-                    <span
-                      className="display-latin keep-tracking text-[1.45rem] font-medium leading-none"
-                      style={{ ["--tracking" as any]: "0.12em" }}
-                    >
-                      LUCERNE
-                    </span>
-                    <LucerneLogo className="h-5 w-auto text-white/90" />
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25"
-                    aria-label="Close"
-                    data-testid="button-mobile-menu-close"
-                  >
-                    <X className="h-5 w-5" strokeWidth={1.6} />
-                  </button>
-                </div>
-                <p className="relative mt-5 text-[13px] text-white/80">
-                  {user
-                    ? isAr ? "أهلاً بعودتكِ" : "Welcome back"
-                    : isAr ? "أهلاً بكِ في لوسيرن" : "Welcome to Lucerne"}
-                </p>
-                <p className="font-heading relative mt-0.5 text-2xl font-medium leading-tight">
-                  {isAr ? "ماذا تبحثين اليوم؟" : "What are you looking for?"}
-                </p>
-              </div>
+          <motion.div
+            className="fixed inset-0 z-[60] flex flex-col bg-background text-foreground lg:hidden"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            role="dialog"
+            aria-modal="true"
+            data-testid="mobile-menu"
+          >
+            {/* Top: close + search */}
+            <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border/70 px-3">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted"
+                aria-label="Close"
+                data-testid="button-mobile-menu-close"
+              >
+                <X className="h-[18px] w-[18px]" strokeWidth={1.7} />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setSearchOpen(true);
+                }}
+                className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-full bg-muted px-3.5 text-start text-[13px] text-muted-foreground"
+              >
+                <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={1.7} />
+                <span className="truncate">{isAr ? "ابحثي عن ملابس، أحذية، حقائب..." : "Search for clothing, shoes, bags..."}</span>
+              </button>
+            </div>
 
-              <div className="relative -mt-6 flex-1 overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-[#faf7f4] px-4 pb-8 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setSearchOpen(true);
-                  }}
-                  className="flex h-12 w-full items-center gap-2.5 rounded-full border border-border bg-white px-4 text-start text-sm text-muted-foreground shadow-sm"
-                >
-                  <Search className="h-4 w-4 text-foreground/70" strokeWidth={1.7} />
-                  {isAr ? "ابحثي عن ملابس، أحذية، حقائب..." : "Search for clothing, shoes, bags..."}
-                </button>
-
-                {/* Quick actions */}
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <Link
-                    href="/shop"
-                    className="flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-[12.5px] font-medium ring-1 ring-black/[0.05]"
-                    data-testid="link-shop-mobile"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sage/70">
-                      <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                    </span>
-                    {isAr ? "كل المنتجات" : "Shop All"}
-                  </Link>
-                  <Link
-                    href="/sales"
-                    className="flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-[12.5px] font-semibold ring-1 ring-black/[0.05]"
-                    style={{ color: "#9B1C1C" }}
-                    data-testid="link-sales-mobile"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
-                      <BadgePercent className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                    </span>
-                    {t.nav.sales}
-                  </Link>
-                  <Link
-                    href={user ? "/wishlist" : "/auth"}
-                    className="relative flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-[12.5px] font-medium ring-1 ring-black/[0.05]"
-                    data-testid="link-wishlist-mobile"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blush">
-                      <Heart className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    </span>
-                    {t.wishlist.navLabel}
-                  </Link>
-                </div>
-
-                {/* Categories */}
-                <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  {isAr ? "الأقسام" : "Categories"}
-                </p>
-                <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05]">
-                  {navCategories.map((c: any, idx: number) => {
-                    const href = categoryHref(c);
-                    const open = expandedCat === c.id;
-                    return (
-                      <div key={c.id} className={idx > 0 ? "border-t border-border/70" : ""}>
-                        <div className="flex items-center">
-                          <Link
-                            href={href}
-                            className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[15px] font-medium"
-                            data-testid={`link-${c.slug}-mobile`}
-                          >
-                            <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-sand">
-                              {c.image ? (
-                                <img
-                                  src={optimizeCloudinaryUrl(c.image, 160) || c.image}
-                                  alt=""
-                                  loading="lazy"
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <span className="flex h-full w-full items-center justify-center text-berry">
-                                  <MenuGlyph category={c} />
-                                </span>
-                              )}
-                            </span>
-                            <span className="truncate">{catLabel(c)}</span>
-                          </Link>
-                          {c.subs.length > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => setExpandedCat(open ? null : c.id)}
-                              className="flex h-12 w-12 shrink-0 items-center justify-center text-muted-foreground"
-                              aria-expanded={open}
-                              aria-label={catLabel(c)}
-                            >
-                              <ChevronDown className={`h-5 w-5 transition-transform duration-300 ${open ? "rotate-180 text-berry" : ""}`} />
-                            </button>
-                          ) : (
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center text-muted-foreground/60">
-                              <ChevronDown className="h-4 w-4 -rotate-90 rtl:rotate-90" />
-                            </span>
-                          )}
-                        </div>
-                        <AnimatePresence initial={false}>
-                          {open && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.22 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="flex flex-wrap gap-2 px-3 pb-3 pt-0.5">
-                                <Link
-                                  href={href}
-                                  className="rounded-full bg-foreground px-3.5 py-1.5 text-[13px] font-medium text-background"
-                                >
-                                  {isAr ? "الكل" : "All"}
-                                </Link>
-                                {c.subs.map((s: any) => (
-                                  <Link
-                                    key={s.id}
-                                    href={`${href}?sub=${s.id}`}
-                                    className="rounded-full border border-border bg-background px-3.5 py-1.5 text-[13px] text-foreground/85"
-                                  >
-                                    {isAr ? s.nameAr || s.name : s.name}
-                                  </Link>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Account and settings */}
-                <div className="mt-5 overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05]">
-                  <Link
-                    href={user ? "/profile" : "/auth"}
-                    className="flex items-center gap-3 border-b border-border/70 px-4 py-3.5 text-sm"
-                    data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
-                  >
-                    <User className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    <span className="flex-1">{user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}</span>
-                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground rtl:rotate-90" />
-                  </Link>
-                  <Link
-                    href="/our-location"
-                    className="flex items-center gap-3 border-b border-border/70 px-4 py-3.5 text-sm"
-                    data-testid="link-our-location"
-                  >
-                    <MapPin className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    <span className="flex-1">{t.nav.ourLocation}</span>
-                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground rtl:rotate-90" />
-                  </Link>
-                  <div className="flex items-center gap-3 px-4 py-3 text-sm">
-                    <Globe className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    <span className="flex-1">{isAr ? "اللغة" : "Language"}</span>
-                    <span className="flex rounded-full bg-muted p-0.5 text-[12.5px]" data-testid="button-language-toggle-mobile">
-                      {(["ar", "en"] as const).map((lng) => (
+            {(() => {
+              const active = navCategories.find((c: any) => c.id === expandedCat) ?? navCategories[0];
+              const activeHref = active ? categoryHref(active) : "/shop";
+              return (
+                <div className="flex min-h-0 flex-1">
+                  {/* Category rail */}
+                  <div className="scrollbar-hide w-[5.25rem] shrink-0 overflow-y-auto bg-muted/70">
+                    {navCategories.map((c: any) => {
+                      const on = active && c.id === active.id;
+                      return (
                         <button
-                          key={lng}
+                          key={c.id}
                           type="button"
-                          onClick={() => setLanguage(lng)}
-                          className={`rounded-full px-3 py-1 transition-colors ${language === lng ? "bg-foreground text-background" : "text-muted-foreground"}`}
+                          onClick={() => setExpandedCat(c.id)}
+                          className={`relative flex w-full flex-col items-center gap-1.5 px-1.5 py-3 text-center text-[11.5px] leading-tight transition-colors ${on ? "bg-background font-medium text-berry" : "text-foreground/75"}`}
+                          data-testid={`menu-rail-${c.slug}`}
                         >
-                          {lng === "ar" ? "العربية" : "English"}
+                          {on && <span className="absolute inset-y-3 start-0 w-[3px] rounded-full bg-berry" />}
+                          <span className={`h-12 w-12 overflow-hidden rounded-full bg-sand ${on ? "ring-2 ring-berry ring-offset-2 ring-offset-background" : ""}`}>
+                            {c.image ? (
+                              <img
+                                src={optimizeCloudinaryUrl(c.image, 160) || c.image}
+                                alt=""
+                                loading="lazy"
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center text-berry">
+                                <MenuGlyph category={c} />
+                              </span>
+                            )}
+                          </span>
+                          <span className="line-clamp-2">{catLabel(c)}</span>
                         </button>
-                      ))}
-                    </span>
+                      );
+                    })}
+                    <Link
+                      href="/sales"
+                      className="flex w-full flex-col items-center gap-1.5 px-1.5 py-3 text-center text-[11.5px] font-medium leading-tight"
+                      style={{ color: "#9B1C1C" }}
+                      data-testid="link-sales-mobile"
+                    >
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+                        <BadgePercent className="h-5 w-5" strokeWidth={1.6} />
+                      </span>
+                      {t.nav.sales}
+                    </Link>
+                  </div>
+
+                  {/* The chosen category */}
+                  <div className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4 pt-3">
+                    {active && (
+                      <>
+                        <Link
+                          href={activeHref}
+                          className="relative mb-3 flex h-24 items-end overflow-hidden rounded-2xl bg-sand"
+                          data-testid={`link-${active.slug}-mobile`}
+                        >
+                          {active.image && (
+                            <img
+                              src={optimizeCloudinaryUrl(active.image, 600) || active.image}
+                              alt=""
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                          )}
+                          <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                          <span className="relative flex w-full items-center justify-between px-3 pb-2.5 text-white">
+                            <span className="font-heading text-xl font-medium leading-none">{catLabel(active)}</span>
+                            <span className="inline-flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-[11.5px] font-medium text-foreground">
+                              {isAr ? "عرض الكل" : "View all"}
+                              <ChevronDown className="h-3.5 w-3.5 -rotate-90 rtl:rotate-90" />
+                            </span>
+                          </span>
+                        </Link>
+                        {active.subs.length > 0 && (
+                          <div className="grid grid-cols-3 gap-x-2 gap-y-3">
+                            {active.subs.map((s: any) => (
+                              <Link
+                                key={s.id}
+                                href={`${activeHref}?sub=${s.id}`}
+                                className="flex flex-col items-center gap-1.5 text-center text-[11.5px] leading-tight text-foreground/85"
+                              >
+                                <span className="aspect-square w-full overflow-hidden rounded-2xl bg-sand">
+                                  {s.image && (
+                                    <img
+                                      src={optimizeCloudinaryUrl(s.image, 240) || s.image}
+                                      alt=""
+                                      loading="lazy"
+                                      className="h-full w-full object-cover"
+                                    />
+                                  )}
+                                </span>
+                                <span className="line-clamp-2">{isAr ? s.nameAr || s.name : s.name}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <Link
+                      href="/shop"
+                      className="mt-4 flex h-10 items-center justify-center gap-2 rounded-full bg-foreground text-[13px] font-medium text-background"
+                      data-testid="link-shop-mobile"
+                    >
+                      <ShoppingBag className="h-4 w-4" strokeWidth={1.7} />
+                      {isAr ? "كل المنتجات" : "Shop All"}
+                    </Link>
                   </div>
                 </div>
+              );
+            })()}
 
-                {(user?.role === "admin" || user?.role === "employee") && (
-                  <Link
-                    href="/admin"
-                    className="mt-3 flex items-center gap-2.5 rounded-2xl bg-foreground px-4 py-3.5 text-sm font-medium text-background"
-                  >
-                    <LayoutDashboard className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                    {t.nav.adminDashboard}
-                  </Link>
-                )}
-
-                {user && (
-                  <button
-                    onClick={() => {
-                      logout.mutate();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="dark-red-zone mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-sm font-medium text-muted-foreground hover:border-destructive/40 hover:text-destructive"
-                    data-testid="button-logout-mobile"
-                  >
-                    <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={1.6} />
-                    {t.profile.logout}
-                  </button>
-                )}
+            {/* Bottom: account, wishlist, location, language */}
+            <div
+              className="shrink-0 border-t border-border/70 bg-background px-2 pt-1.5"
+              style={{ paddingBottom: "max(0.375rem, env(safe-area-inset-bottom))" }}
+            >
+              <div className="grid grid-cols-4">
+                <Link
+                  href={user ? "/profile" : "/auth"}
+                  className="flex flex-col items-center gap-1 py-1.5 text-[10.5px] text-foreground/80"
+                  data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
+                >
+                  <User className="h-5 w-5" strokeWidth={1.6} />
+                  <span className="max-w-full truncate px-1">{user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}</span>
+                </Link>
+                <Link
+                  href={user ? "/wishlist" : "/auth"}
+                  className="flex flex-col items-center gap-1 py-1.5 text-[10.5px] text-foreground/80"
+                  data-testid="link-wishlist-mobile"
+                >
+                  <Heart className="h-5 w-5" strokeWidth={1.6} />
+                  <span className="max-w-full truncate px-1">{t.wishlist.navLabel}</span>
+                </Link>
+                <Link
+                  href="/our-location"
+                  className="flex flex-col items-center gap-1 py-1.5 text-[10.5px] text-foreground/80"
+                  data-testid="link-our-location"
+                >
+                  <MapPin className="h-5 w-5" strokeWidth={1.6} />
+                  <span className="max-w-full truncate px-1">{t.nav.ourLocation}</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={toggleLanguage}
+                  className="flex flex-col items-center gap-1 py-1.5 text-[10.5px] text-foreground/80"
+                  data-testid="button-language-toggle-mobile"
+                >
+                  <Globe className="h-5 w-5" strokeWidth={1.6} />
+                  <span className="max-w-full truncate px-1">{t.langLabel}</span>
+                </button>
               </div>
-            </motion.aside>
-          </div>
+              {(user?.role === "admin" || user?.role === "employee" || user) && (
+                <div className="flex items-center justify-center gap-4 pb-1 pt-0.5 text-[11.5px]">
+                  {(user?.role === "admin" || user?.role === "employee") && (
+                    <Link href="/admin" className="inline-flex items-center gap-1.5 font-medium text-foreground">
+                      <LayoutDashboard className="h-3.5 w-3.5" strokeWidth={1.7} />
+                      {t.nav.adminDashboard}
+                    </Link>
+                  )}
+                  {user && (
+                    <button
+                      onClick={() => {
+                        logout.mutate();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="dark-red-zone inline-flex items-center gap-1.5 text-muted-foreground hover:text-destructive"
+                      data-testid="button-logout-mobile"
+                    >
+                      <LogOut className="h-3.5 w-3.5" strokeWidth={1.7} />
+                      {t.profile.logout}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
-
-      {/* ── Phone tab bar ── the app-style bottom bar: shop, categories, search, wishlist, bag */}
-      {showTabBar && (
-        <nav
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-white/95 backdrop-blur-md lg:hidden"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-          aria-label="Quick navigation"
-          data-testid="mobile-tabbar"
-        >
-          <div className="mx-auto grid h-[3.75rem] max-w-md grid-cols-5">
-            {[
-              { key: "home", label: isAr ? "لوسيرن" : "Lucerne", href: "/", active: currentPath === "/", icon: <LucerneLogo className="h-[22px] w-auto [&_g]:stroke-current [&_g]:[stroke-width:60]" /> },
-              { key: "cats", label: isAr ? "الأقسام" : "Categories", onClick: () => setMobileMenuOpen(true), active: false, icon: <Menu className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
-              { key: "search", label: isAr ? "بحث" : "Search", onClick: () => setSearchOpen(true), active: false, icon: <Search className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
-              { key: "wish", label: t.wishlist.navLabel, href: user ? "/wishlist" : "/auth", active: currentPath === "/wishlist", badge: wishlistCount, icon: <Heart className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
-              { key: "bag", label: t.nav.cart, href: "/cart", active: currentPath === "/cart", badge: itemCount, icon: <ShoppingBag className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
-            ].map((tab) => {
-              const inner = (
-                <span className={`relative flex h-full flex-col items-center justify-center gap-1 text-[10.5px] transition-colors ${tab.active ? "text-berry" : "text-foreground/70"}`}>
-                  <span className="relative">
-                    {tab.icon}
-                    {!!tab.badge && (
-                      <span className="absolute -end-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-berry px-1 text-[9px] font-bold text-white">
-                        {tab.badge}
-                      </span>
-                    )}
-                  </span>
-                  <span className="max-w-full truncate px-1">{tab.label}</span>
-                  {tab.active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-berry" />}
-                </span>
-              );
-              return tab.href ? (
-                <Link key={tab.key} href={tab.href} className="block h-full" data-testid={`tab-${tab.key}`}>
-                  {inner}
-                </Link>
-              ) : (
-                <button key={tab.key} type="button" onClick={tab.onClick} className="h-full" data-testid={`tab-${tab.key}`}>
-                  {inner}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-      )}
 
       {/* ── Search Overlay ── */}
       <AnimatePresence>
