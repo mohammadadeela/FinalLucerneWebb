@@ -64,13 +64,13 @@ export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: bool
               className={`h-full w-full object-cover transition-transform duration-[6000ms] ease-out ${n === i ? "scale-100" : "scale-105"}`}
             />
             <span className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
-            <span className="absolute inset-x-3.5 bottom-8 flex items-end justify-between gap-3 text-white sm:inset-x-9 sm:bottom-12">
-              {slide.title && (
-                <span className="font-heading min-w-0 text-2xl font-medium leading-tight sm:text-4xl">
-                  {slide.title}
-                </span>
-              )}
-              <span className="ms-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-medium text-foreground transition-colors duration-300 group-hover:bg-berry group-hover:text-white sm:h-11 sm:px-6 sm:text-sm">
+            {slide.title && (
+              <span className="font-heading absolute bottom-8 start-3.5 max-w-[34%] truncate text-xl font-medium leading-tight text-white sm:bottom-12 sm:start-9 sm:text-4xl">
+                {slide.title}
+              </span>
+            )}
+            <span className="absolute inset-x-0 bottom-8 flex justify-center sm:bottom-12">
+              <span className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-medium text-foreground transition-colors duration-300 group-hover:bg-berry group-hover:text-white sm:h-11 sm:px-6 sm:text-sm">
                 {isAr ? "تسوقي الآن" : "Shop now"}
                 <Arrow className="h-4 w-4" />
               </span>

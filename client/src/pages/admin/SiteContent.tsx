@@ -1347,7 +1347,9 @@ function HomePillsCard({ values, onChange }: { values: Record<string, string>; o
 
 function PromoSliderCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
   const [open, setOpen] = useState(false);
-  const field = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  const { data: categories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
+  const { data: subcategories = [] } = useQuery<any[]>({ queryKey: ["/api/subcategories"] });
+  const field = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary disabled:opacity-60";
   return (
     <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-promo-slider">
       <button
@@ -1367,11 +1369,50 @@ function PromoSliderCard({ values, onChange }: { values: Record<string, string>;
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            حتى 4 شرائح. كل شريحة: صورة عريضة، عنوان، ورابط الصفحة التي تفتحها (مثال: /sales أو /shop أو /dresses). الشريحة بدون صورة لا تظهر. إذا تُركت كلها فارغة يعرض الموقع صور الأقسام تلقائياً.
+            حتى 4 شرائح. لكل شريحة يمكن اختيار فئة أو تصنيف فرعي لتفتح الشريحة عليه، مع صورة عريضة وعنوان. إذا تُرك العنوان أو الصورة فارغاً يُستخدم اسم وصورة الفئة/التصنيف. بدون فئة يُستخدم الرابط المكتوب (مثال: /sales أو /shop). الشريحة بدون صورة لا تظهر. إذا تُركت كلها فارغة يعرض الموقع صور الأقسام تلقائياً.
           </p>
-          {[1, 2, 3, 4].map((n) => (
+          {[1, 2, 3, 4].map((n) => {
+            const catId = values[`promo_slide_${n}_category_id`] ?? "";
+            const subs = catId ? subcategories.filter((s: any) => String(s.categoryId) === catId) : [];
+            return (
             <div key={n} className="rounded-xl border border-border p-4 space-y-3">
               <p className="text-sm font-semibold text-right">الشريحة {n}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <select
+                  dir="rtl"
+                  className={field}
+                  value={catId}
+                  onChange={(e) => {
+                    onChange(`promo_slide_${n}_category_id`, e.target.value);
+                    onChange(`promo_slide_${n}_subcategory_id`, "");
+                  }}
+                  data-testid={`select-promo-${n}-category`}
+                >
+                  <option value="">— بدون فئة (استخدام الرابط) —</option>
+                  {categories.map((c: any) => (
+                    <option key={c.id} value={String(c.id)}>
+                      {c.nameAr || c.name} ({c.name})
+                    </option>
+                  ))}
+                </select>
+                <select
+                  dir="rtl"
+                  className={field}
+                  value={values[`promo_slide_${n}_subcategory_id`] ?? ""}
+                  disabled={!catId || subs.length === 0}
+                  onChange={(e) => onChange(`promo_slide_${n}_subcategory_id`, e.target.value)}
+                  data-testid={`select-promo-${n}-subcategory`}
+                >
+                  <option value="">
+                    {catId && subs.length === 0 ? "— لا توجد تصنيفات فرعية —" : "— الفئة كاملة —"}
+                  </option>
+                  {subs.map((s: any) => (
+                    <option key={s.id} value={String(s.id)}>
+                      {s.nameAr || s.name} ({s.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
               <SimpleImageUpload
                 value={values[`promo_slide_${n}_image`] ?? ""}
                 onChange={(url) => onChange(`promo_slide_${n}_image`, url)}
@@ -1400,12 +1441,14 @@ function PromoSliderCard({ values, onChange }: { values: Record<string, string>;
                 dir="ltr"
                 className={field}
                 placeholder="/shop"
+                disabled={!!catId}
                 value={values[`promo_slide_${n}_link`] ?? ""}
                 onChange={(e) => onChange(`promo_slide_${n}_link`, e.target.value)}
                 data-testid={`input-promo-${n}-link`}
               />
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

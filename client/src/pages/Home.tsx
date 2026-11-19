@@ -471,12 +471,32 @@ export default function Home() {
 
   // Photo slider: the admin's own slides; until some are set, the categories' photos fill in.
   const adminSlides = [1, 2, 3, 4]
-    .map((n) => ({
-      key: `promo-${n}`,
-      image: g(`promo_slide_${n}_image`),
-      title: pick(g(`promo_slide_${n}_title_ar`), g(`promo_slide_${n}_title_en`)),
-      href: g(`promo_slide_${n}_link`) || "/shop",
-    }))
+    .map((n) => {
+      // A slide can point at a category or subcategory the admin picked; its name, photo and
+      // page are then used wherever the admin left the title, photo or link empty.
+      const cat = (categoriesList || []).find(
+        (c: any) => String(c.id) === g(`promo_slide_${n}_category_id`),
+      );
+      const subId = g(`promo_slide_${n}_subcategory_id`);
+      const sub =
+        cat && subId
+          ? (allSubcategories || []).find(
+              (s: any) => String(s.id) === subId && String(s.categoryId) === String(cat.id),
+            )
+          : null;
+      const target = sub ? subcategoryHref(cat, sub.id) : cat ? categoryHref(cat) : "";
+      const targetName = sub
+        ? pick(sub.nameAr || sub.name, sub.name || sub.nameAr)
+        : cat
+          ? catName(cat)
+          : "";
+      return {
+        key: `promo-${n}`,
+        image: g(`promo_slide_${n}_image`) || sub?.image || cat?.image || "",
+        title: pick(g(`promo_slide_${n}_title_ar`), g(`promo_slide_${n}_title_en`)) || targetName,
+        href: target || g(`promo_slide_${n}_link`) || "/shop",
+      };
+    })
     .filter((slide) => slide.image);
   const promoSlides: PromoSlide[] =
     adminSlides.length > 0
@@ -1277,17 +1297,17 @@ export default function Home() {
               key={section.category.id}
               className=""
             >
-              <div className="relative mb-4 flex items-center justify-between gap-4 overflow-hidden rounded-[1.5rem] bg-white px-5 py-4 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5">
+              <div className="relative mb-4 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 sm:gap-3 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5">
                 <CategoryGlyph
                   category={section.category}
                   className="pointer-events-none absolute -bottom-5 start-3 h-24 w-24 -rotate-6 text-berry/[0.1] sm:start-6 sm:h-32 sm:w-32"
                 />
-                <div className="relative min-w-0 ps-12 sm:ps-24">
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] text-berry sm:text-[11px]">
+                <div className="relative min-w-0 sm:ps-24">
+                  <p className="mb-1 hidden text-[10px] sm:block font-medium uppercase tracking-[0.26em] text-berry sm:text-[11px]">
                     {pick("من أقسامنا", "From our collections")}
                   </p>
                   <h2
-                    className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug"
+                    className="truncate text-xl font-medium leading-none sm:text-[2rem] rtl:leading-snug"
                     data-testid={`section-title-category-${section.category.id}`}
                   >
                     {catName(section.category)}
@@ -1295,12 +1315,13 @@ export default function Home() {
                 </div>
                 <Link
                   href={section.href}
-                  className="group relative inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-colors duration-300 hover:bg-berry sm:h-11 sm:px-6 sm:text-sm"
+                  className="group relative inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-foreground px-3.5 text-[12.5px] font-medium text-background transition-colors duration-300 hover:bg-berry sm:h-11 sm:px-6 sm:text-sm"
                   data-testid={`link-view-all-${section.href}`}
                 >
                   {t.home.viewAll}
                   <Arrow className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
                 </Link>
+                <span aria-hidden="true" />
               </div>
               <ProductRail
                 products={section.products}
