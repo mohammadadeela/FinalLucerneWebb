@@ -722,25 +722,6 @@ export function Navbar() {
           role="status"
           aria-live="off"
         >
-          {/* The everyday bar is alive too: two small butterflies drift across it */}
-          {!seasonInfo && (
-            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-              {[
-                { top: "8%", dur: "26s", delay: "-4s", size: "h-4" },
-                { top: "46%", dur: "34s", delay: "-19s", size: "h-3" },
-              ].map((b, i) => (
-                <span
-                  key={i}
-                  className="bar-glide absolute left-0 block"
-                  style={{ top: b.top, animationDuration: b.dur, animationDelay: b.delay }}
-                >
-                  <span className="bar-bob block [&_g]:stroke-current [&_g]:[stroke-width:70]">
-                    <LucerneLogo className={`${b.size} w-auto text-white/55`} />
-                  </span>
-                </span>
-              ))}
-            </div>
-          )}
           {/* All messages side by side — wide screens, 3 messages or fewer */}
           {newsItems.length <= 1 && (
             <div className="hidden md:flex h-9 items-center justify-center gap-5 px-6 text-[13px]">

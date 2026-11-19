@@ -317,18 +317,4 @@ html.admin-theme {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
 }
-
-/* News bar butterflies: a slow glide across the bar with a gentle wing beat. */
-@keyframes bar-glide {
-  from { transform: translate3d(-8vw, 0, 0); }
-  to   { transform: translate3d(108vw, 0, 0); }
-}
-@keyframes bar-bob {
-  0%, 100% { transform: translateY(-3px) rotate(-6deg) scaleX(1); }
-  50%      { transform: translateY(3px) rotate(6deg) scaleX(0.72); }
-}
-.bar-glide { animation: bar-glide linear infinite; }
-.bar-bob   { animation: bar-bob 0.9s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .bar-glide, .bar-bob { animation: none; display: none; }
 }
