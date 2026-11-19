@@ -1201,9 +1201,6 @@ export default function Home() {
                                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                               />
                             </span>
-                            <span className="font-heading w-7 shrink-0 text-center text-3xl font-medium leading-none text-berry/35 transition-colors group-hover:text-berry">
-                              {i + 4}
-                            </span>
                             <span className="min-w-0 flex-1">
                               <span className="line-clamp-2 block text-[15px] font-medium leading-snug transition-colors group-hover:text-berry">
                                 {product.name}
