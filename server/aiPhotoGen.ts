@@ -623,7 +623,12 @@ export async function generateVideoFromPrompt(subject: string, imageUrl?: string
   } else {
     input.push({
       type: "text",
-      text: `A short, smooth clip for a women's fashion web store banner. Subject: ${subject}. Real studio footage on a plain soft pink background, the subject centred with empty background around it, soft diffused light, elegant and feminine. ${motion}`,
+      text: `A short, smooth clip for a women's fashion web store banner. Subject: ${subject}. Show it as: ${pickOne([
+        "one hero piece turning slowly on an invisible stand",
+        "a small styled group of two or three pieces, with a slow glide across them",
+        "a piece on a slim gold hanger swaying very gently",
+        "an elegant woman wearing the piece, moving slowly and gracefully, modest classy styling",
+      ])}. Real studio footage on a plain, soft, solid ${pickOne(THEME_BACKGROUNDS)} background with no props or scenery, the subject centred with empty background around it, soft diffused light, elegant and feminine, colours from cream, beige, camel, soft pink, burgundy and black. ${motion}`,
     });
   }
 

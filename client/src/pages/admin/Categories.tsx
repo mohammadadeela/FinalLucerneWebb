@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import ImageCropDialog from "@/components/admin/ImageCropDialog";
 import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
+import BulkAIGenerate from "@/components/admin/BulkAIGenerate";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { FolderTree } from "lucide-react";
@@ -293,6 +294,39 @@ export default function AdminCategories() {
           </Button>
         }
       />
+
+      {/* Generate the photos of every category and subcategory in one go (untick any to skip) */}
+      <div className="mb-4">
+        <BulkAIGenerate
+          label={isAr ? "توليد صور كل الفئات والتصنيفات بالذكاء الاصطناعي" : "Generate all category photos with AI"}
+          note="كل صورة تُحفظ مباشرة."
+          items={[
+            ...(categories ?? []).map((c: any) => ({
+              key: `cat-${c.id}`,
+              label: c.nameAr || c.name,
+              prompt: `women's ${c.name || c.nameAr || ""}`,
+              slot: "circle",
+              aspect: "square" as const,
+              apply: async (d: { url: string }) => {
+                await updateCat.mutateAsync({ id: c.id, image: d.url });
+              },
+            })),
+            ...((subcategoriesData as any[]) ?? []).map((sub: any) => {
+              const parent = (categories ?? []).find((c: any) => c.id === sub.categoryId) as any;
+              return {
+                key: `sub-${sub.id}`,
+                label: `${parent ? (parent.nameAr || parent.name) + " ← " : ""}${sub.nameAr || sub.name}`,
+                prompt: `women's ${sub.name || sub.nameAr || ""}${parent?.name ? ` (a kind of ${parent.name})` : ""}`,
+                slot: "circle",
+                aspect: "square" as const,
+                apply: async (d: { url: string }) => {
+                  await updateSub.mutateAsync({ id: sub.id, image: d.url });
+                },
+              };
+            }),
+          ]}
+        />
+      </div>
 
       {catLoading || subLoading ? (
         <div className="py-12 flex justify-center">

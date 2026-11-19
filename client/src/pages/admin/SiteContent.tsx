@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import BulkAIGenerate from "@/components/admin/BulkAIGenerate";
 import ImageCropDialog from "@/components/admin/ImageCropDialog";
 import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -465,7 +466,7 @@ function VideoUploadField({
   onChangePosition?: (pos: string) => void;
   /** Enables "generate video": what the clip is about. */
   aiSubject?: string;
-  /** The slot's current photo — the clip is made from it, so it keeps the same look. */
+  /** Unused: clips are always generated fresh, not from the slot's photo. */
   aiImage?: string;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -476,7 +477,8 @@ function VideoUploadField({
       const start = await fetch("/api/admin/ai-generate-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: aiSubject, imageUrl: aiImage || "" }),
+        // Always a brand-new clip made from the description — never built from the current photo.
+        body: JSON.stringify({ prompt: aiSubject }),
       });
       const started = await start.json().catch(() => ({}));
       if (!start.ok || !started.jobId) {
@@ -684,9 +686,7 @@ function VideoUploadField({
           <span className="text-xs">
             {generating
               ? "جاري توليد الفيديو… قد يستغرق دقيقة أو أكثر"
-              : aiImage
-                ? "توليد فيديو من الصورة الحالية بالذكاء الاصطناعي"
-                : "توليد فيديو بالذكاء الاصطناعي"}
+              : "توليد فيديو جديد بالذكاء الاصطناعي"}
           </span>
         </Button>
       )}
@@ -1297,6 +1297,31 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
 
       {open && (
         <div className="p-5 space-y-6 bg-background">
+          <BulkAIGenerate
+            label="توليد كل صور الشبكة بالذكاء الاصطناعي"
+            note="بعد التوليد راجعي الصور ثم اضغطي حفظ."
+            items={[
+              {
+                key: "editorial-center",
+                label: "الصورة المركزية",
+                prompt: "the new collection: a satin dress with a coat, a handbag and heels",
+                slot: "editorialCenter",
+                apply: (d) => onChange("editorial_center_image", d.url),
+              },
+              ...[1, 2, 3, 4].map((n) => {
+                const cat = categories.find((c: any) => String(c.id) === (values[`editorial_tile_${n}_category_id`] ?? ""));
+                const sub = subcategories.find((x: any) => String(x.id) === (values[`editorial_tile_${n}_subcategory_id`] ?? ""));
+                const name = sub?.name || sub?.nameAr || cat?.name || cat?.nameAr || "";
+                return {
+                  key: `editorial-tile-${n}`,
+                  label: `الخانة ${n}${name ? ` — ${sub?.nameAr || cat?.nameAr || name}` : ""}`,
+                  prompt: name ? `women's ${name}` : "an elegant women's fashion piece",
+                  slot: "editorialTile",
+                  apply: (d: { url: string }) => onChange(`editorial_tile_${n}_image`, d.url),
+                };
+              }),
+            ]}
+          />
           {/* Headline text */}
           <div>
             <Label className="mb-2 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">العنوان (سطر واحد أو سطرين بفاصل سطر جديد)</Label>
@@ -1486,6 +1511,22 @@ function HomePillsCard({ values, onChange }: { values: Record<string, string>; o
           <p className="text-xs text-muted-foreground text-right">
             حتى 5 أزرار. لكل زر اختاري الفئة، ويمكن اختيار تصنيف فرعي منها ليفتح الزر عليه مباشرة، ثم ضعي صورة الزر. إذا تُركت الصورة فارغة تُستخدم صورة التصنيف أو الفئة. الزر بدون فئة لا يظهر، وإذا تُركت كل الأزرار فارغة يعرض الموقع الفئات المفعّل لها «إظهار في الرئيسية» تلقائياً.
           </p>
+          <BulkAIGenerate
+            label="توليد صور كل الأزرار بالذكاء الاصطناعي"
+            note="تظهر هنا الأزرار التي اخترتِ لها فئة فقط. بعد التوليد اضغطي حفظ."
+            items={[1, 2, 3, 4, 5].flatMap((n) => {
+              const cat = categories.find((c: any) => String(c.id) === (values[`home_pill_${n}_category_id`] ?? ""));
+              if (!cat) return [];
+              const sub = subcategories.find((x: any) => String(x.id) === (values[`home_pill_${n}_subcategory_id`] ?? ""));
+              return [{
+                key: `pill-${n}`,
+                label: `الزر ${n} — ${sub?.nameAr || sub?.name || cat.nameAr || cat.name}`,
+                prompt: `women's ${sub?.name || sub?.nameAr || cat.name || cat.nameAr}`,
+                slot: "pill",
+                apply: (d: { url: string }) => onChange(`home_pill_${n}_image`, d.url),
+              }];
+            })}
+          />
           {[1, 2, 3, 4, 5].map((n) => {
             const catId = values[`home_pill_${n}_category_id`] ?? "";
             const subId = values[`home_pill_${n}_subcategory_id`] ?? "";
@@ -1799,6 +1840,21 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
           <p className="text-xs text-muted-foreground text-right">
             الشريط فوق منتجات كل فئة: صف من صور المنتجات الحقيقية على خلفية بلون واحد. ارفعي الصورة كما هي (مثلاً 5 قطع في صف على خلفية وردية) — الموقع يقصّ الفراغ حول القطع تلقائياً، ويأخذ لون الخلفية للشريط، ويعرض الصف كاملاً وواضحاً على الكمبيوتر والهاتف بدون أي قص. كلما كانت القطع أكبر في الصورة كانت أوضح. فئة الأحذية لها صف جاهز يظهر تلقائياً إلى أن ترفعي غيره. زر «توليد الصف تلقائياً» يصنع صورة الصف للفئة بالذكاء الاصطناعي ويجهّزها مباشرة — راجعي المعاينة ثم اضغطي حفظ، وإن لم تعجبك اضغطي «توليد صورة أخرى».
           </p>
+          <BulkAIGenerate
+            label="توليد صفوف كل الفئات بالذكاء الاصطناعي"
+            note="بعد التوليد راجعي المعاينات ثم اضغطي حفظ."
+            items={categories.map((c: any) => ({
+              key: `row-${c.id}`,
+              label: c.nameAr || c.name,
+              prompt: rowProductsFor(c),
+              style: "row" as const,
+              apply: (d: { url: string; bg?: string; ar?: number }) => {
+                onChange(`home_cat_banner_${c.id}_row`, d.url);
+                onChange(`home_cat_banner_${c.id}_row_bg`, d.bg || "");
+                onChange(`home_cat_banner_${c.id}_row_ar`, d.ar ? String(d.ar) : "");
+              },
+            }))}
+          />
           {categories.map((c: any) => (
             <div key={c.id} className="rounded-xl border border-border p-4 space-y-3">
               <p className="text-sm font-semibold text-right">{c.nameAr || c.name}</p>
@@ -1844,8 +1900,20 @@ function MenuPhotosCard({ values, onChange }: { values: Record<string, string>; 
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            صورة كل فئة داخل قائمة الهاتف. إذا تُركت فارغة تُستخدم صورة الفئة نفسها. يفضّل صورة عرضية.
+            صورة كل فئة داخل قائمة الهاتف. إذا تُركت فارغة تُستخدم صورة الفئة نفسها.
           </p>
+          <BulkAIGenerate
+            label="توليد صور القائمة لكل الفئات بالذكاء الاصطناعي"
+            note="بعد التوليد راجعي الصور ثم اضغطي حفظ."
+            items={categories.map((c: any) => ({
+              key: `menu-${c.id}`,
+              label: c.nameAr || c.name,
+              prompt: `women's ${c.name || c.nameAr || ""}`,
+              slot: "menu",
+              aspect: "square" as const,
+              apply: (d: { url: string }) => onChange(`menu_photo_${c.id}`, d.url),
+            }))}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {categories.map((c: any) => (
               <div key={c.id} className="rounded-xl border border-border p-4 space-y-3">
@@ -1893,6 +1961,22 @@ function PromoSliderCard({ values, onChange }: { values: Record<string, string>;
           <p className="text-xs text-muted-foreground text-right">
             حتى 4 شرائح. لكل شريحة يمكن اختيار فئة أو تصنيف فرعي لتفتح الشريحة عليه، مع صورة عريضة وعنوان. إذا تُرك العنوان أو الصورة فارغاً يُستخدم اسم وصورة الفئة/التصنيف. بدون فئة يُستخدم الرابط المكتوب (مثال: /sales أو /shop). الشريحة بدون صورة لا تظهر. إذا تُركت كلها فارغة يعرض الموقع صور الأقسام تلقائياً.
           </p>
+          <BulkAIGenerate
+            label="توليد صور كل الشرائح بالذكاء الاصطناعي"
+            note="بعد التوليد راجعي الصور ثم اضغطي حفظ."
+            items={[1, 2, 3, 4].map((n) => {
+              const cat = categories.find((c: any) => String(c.id) === (values[`promo_slide_${n}_category_id`] ?? ""));
+              const sub = subcategories.find((x: any) => String(x.id) === (values[`promo_slide_${n}_subcategory_id`] ?? ""));
+              const name = sub?.name || sub?.nameAr || cat?.name || cat?.nameAr || values[`promo_slide_${n}_title_en`] || "";
+              return {
+                key: `promo-${n}`,
+                label: `الشريحة ${n}${name ? ` — ${sub?.nameAr || cat?.nameAr || name}` : ""}`,
+                prompt: name ? `women's ${name}` : "women's fashion: dresses, shoes and bags",
+                slot: "promo",
+                apply: (d: { url: string }) => onChange(`promo_slide_${n}_image`, d.url),
+              };
+            })}
+          />
           {[1, 2, 3, 4].map((n) => {
             const catId = values[`promo_slide_${n}_category_id`] ?? "";
             const subs = catId ? subcategories.filter((s: any) => String(s.categoryId) === catId) : [];

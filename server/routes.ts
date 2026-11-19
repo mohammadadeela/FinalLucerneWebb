@@ -6880,8 +6880,9 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
     for (const [id, job] of aiVideoJobs) if (Date.now() - job.at > 60 * 60 * 1000) aiVideoJobs.delete(id);
     const jobId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
     aiVideoJobs.set(jobId, { status: "running", at: Date.now() });
-    let source = typeof imageUrl === "string" && imageUrl.trim() ? imageUrl.trim() : "";
-    if (source.startsWith("/")) source = `${req.protocol}://${req.get("host")}${source}`;
+    // Banner clips are always generated fresh from the description, never from an existing photo.
+    void imageUrl;
+    const source = "";
     (async () => {
       try {
         const { generateVideoFromPrompt } = await import("./aiPhotoGen");
