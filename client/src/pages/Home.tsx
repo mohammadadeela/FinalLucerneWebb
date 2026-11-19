@@ -704,31 +704,13 @@ export default function Home() {
         {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
         {catTiles.length > 0 && (
           <Section>
-            <div className="grid grid-cols-2 gap-2.5 sm:hidden">
-              {catTiles.map((item, i) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className="group relative flex aspect-[2.3/1] overflow-hidden rounded-[1.6rem] bg-sand"
-                  data-testid={`pill-m-${item.testId}`}
-                >
-                  <span className="relative block h-full w-[52%] shrink-0 overflow-hidden" style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}>
-                    <BannerImage src={item.img || "/placeholder-product.svg"} alt={item.label} className="h-full w-full object-cover" width={300} />
-                  </span>
-                  <span className="flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2">
-                    <span className="font-heading block min-w-0 truncate text-[15px] font-medium leading-tight">{item.label}</span>
-                    <Arrow className="h-3.5 w-3.5 shrink-0" />
-                  </span>
-                </Link>
-              ))}
-            </div>
-            <Rail className="hidden sm:block" scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
+            <Rail scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
               {catTiles.map((item, i) => (
                 <Link
                   key={item.key}
                   href={item.href}
                   role="listitem"
-                  className="group relative flex aspect-[2.44/1] w-[78%] flex-none snap-start overflow-hidden rounded-[2.5rem] bg-sand transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
+                  className="group relative flex aspect-[2.44/1] w-[58%] flex-none snap-start overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-blush/80 via-blush/45 to-sand/70 ring-1 ring-berry/10 transition-all sm:rounded-[2.5rem] duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
                   data-testid={`pill-${item.testId}`}
                 >
                   <span
@@ -742,11 +724,11 @@ export default function Home() {
                       width={400}
                     />
                   </span>
-                  <span className="flex min-w-0 flex-1 items-center justify-center gap-2.5 px-3">
-                    <span className="font-heading block min-w-0 truncate text-lg font-medium leading-tight lg:text-[1.35rem]">
+                  <span className="flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2 sm:gap-2.5 sm:px-3">
+                    <span className="font-heading block min-w-0 truncate text-[15px] font-medium leading-tight sm:text-lg lg:text-[1.35rem]">
                       {item.label}
                     </span>
-                    <Arrow className="h-[18px] w-[18px] shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+                    <Arrow className="h-4 w-4 shrink-0 text-berry transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 sm:h-[18px] sm:w-[18px]" />
                   </span>
                 </Link>
               ))}
