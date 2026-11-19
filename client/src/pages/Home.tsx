@@ -238,6 +238,21 @@ function RailSkeleton() {
   );
 }
 
+/** A blank banner, the same size as the category banners. Decorative only — not a link. */
+function EmptyBanner() {
+  return (
+    <div
+      aria-hidden="true"
+      className="relative mb-4 overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5"
+    >
+      <div className="invisible">
+        <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">أ</p>
+        <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">أ</p>
+      </div>
+    </div>
+  );
+}
+
 function Section({
   children,
   className = "",
@@ -878,13 +893,7 @@ export default function Home() {
         {/* ── New arrivals ── */}
         {newArrivals.length > 0 && (
           <Section>
-            <SectionHeader
-              title={secNewArrivalsTitle}
-              eyebrow={pick("وصل للتو", "Just landed")}
-              href="/shop"
-              linkLabel={t.home.viewAll}
-              testId="section-title-new-arrivals"
-            />
+            <EmptyBanner />
             <ProductRail
               products={newArrivals}
               testId="rail-new-arrivals"
@@ -904,14 +913,6 @@ export default function Home() {
         {/* ── On sale ── */}
         {onSale.length > 0 && (
           <Section>
-            <SectionHeader
-              title={secOnSaleTitle}
-              eyebrow={pick("أسعار مخفّضة", "Marked down")}
-              href="/sales"
-              linkLabel={t.home.viewAll}
-              tone="sale"
-              testId="text-sales-title"
-            />
             <ProductRail
               products={onSale}
               testId="rail-on-sale"
@@ -1155,13 +1156,7 @@ export default function Home() {
         {/* ── Best sellers ── */}
         {bestSellers.length > 0 && (
           <Section>
-            <SectionHeader
-              title={secBestSellersTitle}
-              eyebrow={pick("اختيار عميلاتنا", "Customer favourites")}
-              href="/shop"
-              linkLabel={t.home.viewAll}
-              testId="section-title-bestsellers"
-            />
+            <EmptyBanner />
 
             {isBestSellersLoading ? (
               <RailSkeleton />
