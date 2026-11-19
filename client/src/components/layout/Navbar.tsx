@@ -1042,13 +1042,13 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* ── Phone menu ── a side sheet (the page stays visible beside it): search,
-          categories as photo tiles with their subcategories, sale, then account and settings. */}
+      {/* ── Phone menu ── a text-only side sheet, the way large fashion sites do it:
+          big category names, subcategories on demand, sale, then a few small links. */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
             <motion.div
-              className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-black/45"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1057,207 +1057,145 @@ export function Navbar() {
               aria-hidden="true"
             />
             <motion.aside
-              className="absolute inset-y-0 start-0 flex w-[88%] max-w-[400px] flex-col overflow-hidden rounded-e-[2rem] bg-background text-foreground shadow-2xl"
+              className="absolute inset-y-0 start-0 flex w-[84%] max-w-[380px] flex-col overflow-hidden bg-white text-foreground shadow-2xl"
               initial={{ x: isAr ? "100%" : "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: isAr ? "100%" : "-100%" }}
               transition={{ type: "tween", duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               data-testid="mobile-menu"
             >
-              {/* Search + close */}
-              <div className="flex shrink-0 items-center gap-2 px-4 pb-3 pt-4">
+              <div className="flex shrink-0 items-center justify-between gap-3 px-6 pb-2 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     setSearchOpen(true);
                   }}
-                  className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-muted/70 px-4 text-start text-sm text-muted-foreground"
+                  className="h-11 min-w-0 flex-1 border-b border-foreground/25 text-start text-[15px] text-muted-foreground"
                   data-testid="button-search-mobile-menu"
                 >
-                  <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={1.7} />
-                  <span className="truncate">{isAr ? "ابحثي عن ملابس، أحذية، حقائب..." : "Search for clothing, shoes, bags..."}</span>
+                  {isAr ? "بحث" : "Search"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted/70"
+                  className="-me-2.5 flex h-11 w-11 shrink-0 items-center justify-center"
                   aria-label={isAr ? "إغلاق" : "Close"}
                   data-testid="button-mobile-menu-close"
                 >
-                  <X className="h-5 w-5" strokeWidth={1.6} />
+                  <X className="h-6 w-6" strokeWidth={1.3} />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  {isAr ? "الأقسام" : "Categories"}
-                </p>
-                <div className="grid grid-flow-dense grid-cols-2 gap-2.5">
-                  {navCategories.map((c: any, idx: number) => {
-                    const href = categoryHref(c);
-                    const open = expandedCat === c.id;
-                    const wide = navCategories.length % 2 === 1 && idx === navCategories.length - 1;
-                    return (
-                      <div key={c.id} className="contents">
-                        <div className={`relative ${wide ? "col-span-2" : ""}`}>
-                          <Link
-                            href={href}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`group relative block overflow-hidden rounded-2xl bg-sand ${wide ? "aspect-[8/3]" : "aspect-[4/3]"} ${open ? "ring-2 ring-berry ring-offset-2 ring-offset-background" : ""}`}
-                            data-testid={`link-${c.slug}-mobile`}
-                          >
-                            {c.image && (
-                              <img
-                                src={optimizeCloudinaryUrl(c.image, 400) || c.image}
-                                alt=""
-                                loading="lazy"
-                                className="absolute inset-0 h-full w-full object-cover"
-                              />
-                            )}
-                            <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                            <span className="absolute start-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground">
-                              <MenuGlyph category={c} />
-                            </span>
-                            <span className="font-heading absolute inset-x-3 bottom-2.5 truncate text-lg font-medium leading-tight text-white">
-                              {catLabel(c)}
-                            </span>
-                          </Link>
-                          {c.subs.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setExpandedCat(open ? null : c.id)}
-                              className="absolute end-0 top-0 flex h-12 w-12 items-center justify-center"
-                              aria-expanded={open}
-                              aria-label={`${catLabel(c)} — ${isAr ? "التصنيفات الفرعية" : "subcategories"}`}
-                              data-testid={`button-subs-${c.slug}-mobile`}
-                            >
-                              <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${open ? "bg-berry text-white" : "bg-white/90 text-foreground"}`}>
-                                <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
-                              </span>
-                            </button>
-                          )}
-                        </div>
-                        {open && c.subs.length > 0 && (
+              <nav className="flex-1 overflow-y-auto overscroll-contain px-6 pb-6 pt-3">
+                {navCategories.map((c: any) => {
+                  const href = categoryHref(c);
+                  const open = expandedCat === c.id;
+                  const hasSubs = c.subs.length > 0;
+                  return (
+                    <div key={c.id}>
+                      {hasSubs ? (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedCat(open ? null : c.id)}
+                          aria-expanded={open}
+                          className="flex min-h-[3.25rem] w-full items-center justify-between gap-4 text-start"
+                          data-testid={`link-${c.slug}-mobile`}
+                        >
+                          <span className="text-[1.45rem] font-medium leading-tight">{catLabel(c)}</span>
+                          <span className="w-4 text-center text-xl font-light leading-none text-foreground/55" aria-hidden="true">
+                            {open ? "−" : "+"}
+                          </span>
+                        </button>
+                      ) : (
+                        <Link
+                          href={href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex min-h-[3.25rem] items-center text-[1.45rem] font-medium leading-tight"
+                          data-testid={`link-${c.slug}-mobile`}
+                        >
+                          {catLabel(c)}
+                        </Link>
+                      )}
+                      <AnimatePresence initial={false}>
+                        {open && hasSubs && (
                           <motion.div
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="col-span-2 flex flex-wrap gap-1.5 rounded-2xl bg-blush/50 p-2.5"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.22 }}
+                            className="overflow-hidden"
                           >
-                            <Link
-                              href={href}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="inline-flex h-9 items-center rounded-full bg-foreground px-3.5 text-[13px] font-medium text-background"
-                            >
-                              {isAr ? `كل ${catLabel(c)}` : `All ${catLabel(c)}`}
-                            </Link>
-                            {c.subs.map((sub: any) => (
+                            <div className="flex flex-col pb-3 ps-4">
                               <Link
-                                key={sub.id}
-                                href={`${href}?sub=${sub.id}`}
+                                href={href}
                                 onClick={() => setMobileMenuOpen(false)}
-                                className="inline-flex h-9 items-center rounded-full bg-white px-3.5 text-[13px] font-medium ring-1 ring-black/[0.06]"
-                                data-testid={`link-sub-${sub.id}-mobile`}
+                                className="flex min-h-11 items-center text-[15px] font-medium"
+                                data-testid={`link-all-${c.slug}-mobile`}
                               >
-                                {isAr ? sub.nameAr || sub.name : sub.name}
+                                {isAr ? "عرض الكل" : "View all"}
                               </Link>
-                            ))}
+                              {c.subs.map((sub: any) => (
+                                <Link
+                                  key={sub.id}
+                                  href={`${href}?sub=${sub.id}`}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="flex min-h-11 items-center text-[15px] text-foreground/75"
+                                  data-testid={`link-sub-${sub.id}-mobile`}
+                                >
+                                  {isAr ? sub.nameAr || sub.name : sub.name}
+                                </Link>
+                              ))}
+                            </div>
                           </motion.div>
                         )}
-                      </div>
-                    );
-                  })}
-                  <Link
-                    href="/sales"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="col-span-2 flex h-12 items-center justify-between gap-3 rounded-2xl bg-berry px-4 text-white"
-                    data-testid="link-sales-mobile"
-                  >
-                    <span className="flex items-center gap-2.5 text-[15px] font-medium">
-                      <BadgePercent className="h-5 w-5 shrink-0" strokeWidth={1.6} />
-                      {t.nav.sales}
-                    </span>
-                    <ArrowUpRight className="h-[18px] w-[18px] rtl:-scale-x-100" strokeWidth={1.8} />
-                  </Link>
-                </div>
-              </div>
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+                <Link
+                  href="/sales"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex min-h-[3.25rem] items-center text-[1.45rem] font-medium leading-tight"
+                  style={{ color: "#9B1C1C" }}
+                  data-testid="link-sales-mobile"
+                >
+                  {t.nav.sales}
+                </Link>
 
-              {/* Account and settings — pinned to the bottom of the sheet */}
-              <div className="shrink-0 border-t border-black/[0.06] bg-background px-4 pb-4 pt-3">
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={user ? "/profile" : "/auth"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-4 text-[14px] font-medium text-background"
-                    data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
-                  >
-                    <User className="h-[18px] w-[18px] shrink-0" strokeWidth={1.6} />
-                    <span className="truncate">{user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}</span>
+                <div className="mt-5 flex flex-col border-t border-foreground/10 pt-3 text-[14.5px] text-foreground/80">
+                  <Link href={user ? "/profile" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center" data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}>
+                    {user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}
                   </Link>
-                  <span className="flex h-11 shrink-0 rounded-full bg-muted/70 p-1 text-[12.5px] font-medium" data-testid="button-language-toggle-mobile">
-                    {(["ar", "en"] as const).map((lng) => (
-                      <button
-                        key={lng}
-                        type="button"
-                        onClick={() => setLanguage(lng)}
-                        aria-pressed={language === lng}
-                        className={`rounded-full px-3 transition-colors ${language === lng ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
-                      >
-                        {lng === "ar" ? "عربي" : "EN"}
-                      </button>
-                    ))}
-                  </span>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <Link
-                    href={user ? "/wishlist" : "/auth"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-11 items-center justify-center gap-2 rounded-full bg-blush/60 text-[13.5px] font-medium"
-                    data-testid="link-wishlist-mobile"
-                  >
-                    <Heart className="h-[17px] w-[17px] text-berry" strokeWidth={1.7} />
+                  <Link href={user ? "/wishlist" : "/auth"} onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center" data-testid="link-wishlist-mobile">
                     {t.wishlist.navLabel}
                   </Link>
-                  <Link
-                    href="/our-location"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-11 items-center justify-center gap-2 rounded-full bg-sand/70 text-[13.5px] font-medium"
-                    data-testid="link-our-location"
-                  >
-                    <MapPin className="h-[17px] w-[17px] text-berry" strokeWidth={1.7} />
+                  <Link href="/our-location" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center" data-testid="link-our-location">
                     {t.nav.ourLocation}
                   </Link>
-                </div>
-                {user && (
-                  <div className="mt-1.5 flex items-center justify-between gap-2">
-                    {user.role === "admin" || user.role === "employee" ? (
-                      <Link
-                        href="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex h-11 items-center gap-2 rounded-full px-2 text-[13px] font-medium"
-                      >
-                        <LayoutDashboard className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                        {t.nav.adminDashboard}
-                      </Link>
-                    ) : (
-                      <span />
-                    )}
+                  <button type="button" onClick={toggleLanguage} className="flex min-h-11 items-center text-start" data-testid="button-language-toggle-mobile">
+                    {t.langLabel}
+                  </button>
+                  {(user?.role === "admin" || user?.role === "employee") && (
+                    <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex min-h-11 items-center font-medium text-foreground">
+                      {t.nav.adminDashboard}
+                    </Link>
+                  )}
+                  {user && (
                     <button
                       type="button"
                       onClick={() => {
                         logout.mutate();
                         setMobileMenuOpen(false);
                       }}
-                      className="dark-red-zone flex h-11 items-center gap-2 rounded-full px-2 text-[13px] font-medium text-muted-foreground"
+                      className="dark-red-zone flex min-h-11 items-center text-start text-muted-foreground"
                       data-testid="button-logout-mobile"
                     >
-                      <LogOut className="h-[18px] w-[18px]" strokeWidth={1.6} />
                       {t.profile.logout}
                     </button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </nav>
             </motion.aside>
           </div>
         )}
