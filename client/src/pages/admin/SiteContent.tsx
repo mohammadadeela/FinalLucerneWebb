@@ -1345,6 +1345,49 @@ function HomePillsCard({ values, onChange }: { values: Record<string, string>; o
   );
 }
 
+function MenuPhotosCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const { data: categories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
+  return (
+    <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-menu-photos">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-5 py-4 bg-muted/30 hover:bg-muted/60 transition-colors"
+        onClick={() => setOpen(!open)}
+        data-testid="toggle-section-menu-photos"
+      >
+        <div className="flex items-center gap-3">
+          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-sm">صور قائمة الهاتف</p>
+          <p className="text-xs text-muted-foreground">Phone menu photos</p>
+        </div>
+      </button>
+      {open && (
+        <div className="p-5 space-y-5 bg-background">
+          <p className="text-xs text-muted-foreground text-right">
+            صورة كل فئة داخل قائمة الهاتف. إذا تُركت فارغة تُستخدم صورة الفئة نفسها. يفضّل صورة عرضية.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {categories.map((c: any) => (
+              <div key={c.id} className="rounded-xl border border-border p-4 space-y-3">
+                <p className="text-sm font-semibold text-right">{c.nameAr || c.name}</p>
+                <SimpleImageUpload
+                  value={values[`menu_photo_${c.id}`] ?? ""}
+                  onChange={(url) => onChange(`menu_photo_${c.id}`, url)}
+                  label="صورة القائمة"
+                  withCrop
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PromoSliderCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
   const [open, setOpen] = useState(false);
   const { data: categories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
@@ -2288,6 +2331,7 @@ const SEARCH_INDEX: { id: string; tab: TabId; labelAr: string; labelEn: string; 
   { id: "headings", tab: "home", labelAr: "عناوين الأقسام", labelEn: "Section headings" },
   { id: "editorial", tab: "home", labelAr: "شبكة التحرير", labelEn: "Editorial grid" },
   { id: "pills", tab: "home", labelAr: "أزرار الأقسام تحت السلايدر", labelEn: "Home category buttons", extra: "pills أقسام فئات تصنيف فرعي صورة أزرار" },
+  { id: "menuphotos", tab: "home", labelAr: "صور قائمة الهاتف", labelEn: "Phone menu photos", extra: "menu mobile قائمة هاتف موبايل صور فئات" },
   { id: "promo", tab: "home", labelAr: "سلايدر الصور", labelEn: "Home photo slider", extra: "slider سلايدر صور شرائح" },
   { id: "page-home", tab: "home", labelAr: "بانر الصفحة الرئيسية", labelEn: "Home hero banner", extra: "صورة فيديو عنوان" },
   { id: "page-dresses", tab: "dresses", labelAr: "صفحة الفساتين", labelEn: "Dresses page" },
@@ -2385,6 +2429,7 @@ export default function SiteContent() {
       case "headings": return <SectionHeadingsCard values={merged} onChange={handleChange} />;
       case "editorial": return <EditorialGridCard values={merged} onChange={handleChange} />;
       case "pills": return <HomePillsCard values={merged} onChange={handleChange} />;
+      case "menuphotos": return <MenuPhotosCard values={merged} onChange={handleChange} />;
       case "promo": return <PromoSliderCard values={merged} onChange={handleChange} />;
       case "support": return <SupportPagesCard values={merged} onChange={handleChange} />;
       default: {
@@ -2398,7 +2443,7 @@ export default function SiteContent() {
   };
   const cardsForTab: Record<TabId, string[]> = {
     overview: [],
-    home: ["page-home", "pills", "bestsellers", "headings", "editorial", "promo"],
+    home: ["page-home", "pills", "bestsellers", "headings", "editorial", "promo", "menuphotos"],
     dresses: ["page-dresses"],
     clothes: ["page-clothes"],
     shoes: ["page-shoes"],

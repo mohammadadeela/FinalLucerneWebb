@@ -1042,8 +1042,8 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* ── Phone menu ── a side sheet (the page stays visible beside it): search,
-          categories as photo tiles with their subcategories, sale, then account and settings. */}
+      {/* ── Phone menu ── a side sheet (the page stays visible beside it): the wordmark, search,
+          every category as a photo tile sized so they all fit without scrolling, sale, account. */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
@@ -1064,124 +1064,111 @@ export function Navbar() {
               transition={{ type: "tween", duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               data-testid="mobile-menu"
             >
-              {/* Search + close */}
-              <div className="flex shrink-0 items-center gap-2 px-4 pb-3 pt-4">
+              {/* Wordmark + close */}
+              <div className="relative flex h-[4.5rem] shrink-0 items-center justify-center border-b border-black/[0.06] bg-gradient-to-b from-blush/50 to-transparent px-4">
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex flex-col items-center leading-none" aria-label="Lucerne Boutique">
+                  <span className="flex items-end gap-1.5" dir="ltr">
+                    <span
+                      className="display-latin keep-tracking text-[1.75rem] font-medium leading-none"
+                      style={{ ["--tracking" as any]: "0.14em" }}
+                    >
+                      LUCERNE
+                    </span>
+                    <BrandButterfly className="-mb-0.5 h-8 w-auto" />
+                  </span>
+                  <span className="mt-1.5 flex items-center gap-2" dir="ltr">
+                    <span className="h-px w-5 bg-berry/60" />
+                    <span
+                      className="keep-tracking text-[9px] font-medium uppercase text-foreground/70"
+                      style={{ ["--tracking" as any]: "0.42em", fontFamily: "var(--font-sans)" }}
+                    >
+                      Boutique
+                    </span>
+                    <span className="h-px w-5 bg-berry/60" />
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="absolute end-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 ring-1 ring-black/[0.06]"
+                  aria-label={isAr ? "إغلاق" : "Close"}
+                  data-testid="button-mobile-menu-close"
+                >
+                  <X className="h-[18px] w-[18px]" strokeWidth={1.7} />
+                </button>
+              </div>
+
+              <div className="shrink-0 px-4 pb-3 pt-3">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     setSearchOpen(true);
                   }}
-                  className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-muted/70 px-4 text-start text-sm text-muted-foreground"
+                  className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-full bg-muted/70 px-4 text-start text-sm text-muted-foreground"
                   data-testid="button-search-mobile-menu"
                 >
                   <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={1.7} />
                   <span className="truncate">{isAr ? "ابحثي عن ملابس، أحذية، حقائب..." : "Search for clothing, shoes, bags..."}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted/70"
-                  aria-label={isAr ? "إغلاق" : "Close"}
-                  data-testid="button-mobile-menu-close"
-                >
-                  <X className="h-5 w-5" strokeWidth={1.6} />
-                </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-                <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                  {isAr ? "الأقسام" : "Categories"}
-                </p>
-                <div className="grid grid-flow-dense grid-cols-2 gap-2.5">
-                  {navCategories.map((c: any, idx: number) => {
-                    const href = categoryHref(c);
-                    const open = expandedCat === c.id;
-                    const wide = navCategories.length % 2 === 1 && idx === navCategories.length - 1;
-                    return (
-                      <div key={c.id} className="contents">
-                        <div className={`relative ${wide ? "col-span-2" : ""}`}>
-                          <Link
-                            href={href}
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`group relative block overflow-hidden rounded-2xl bg-sand ${wide ? "aspect-[8/3]" : "aspect-[4/3]"} ${open ? "ring-2 ring-berry ring-offset-2 ring-offset-background" : ""}`}
-                            data-testid={`link-${c.slug}-mobile`}
-                          >
-                            {c.image && (
-                              <img
-                                src={optimizeCloudinaryUrl(c.image, 400) || c.image}
-                                alt=""
-                                loading="lazy"
-                                className="absolute inset-0 h-full w-full object-cover"
-                              />
-                            )}
-                            <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                            <span className="absolute start-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground">
-                              <MenuGlyph category={c} />
-                            </span>
-                            <span className="font-heading absolute inset-x-3 bottom-2.5 truncate text-lg font-medium leading-tight text-white">
-                              {catLabel(c)}
-                            </span>
-                          </Link>
-                          {c.subs.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => setExpandedCat(open ? null : c.id)}
-                              className="absolute end-0 top-0 flex h-12 w-12 items-center justify-center"
-                              aria-expanded={open}
-                              aria-label={`${catLabel(c)} — ${isAr ? "التصنيفات الفرعية" : "subcategories"}`}
-                              data-testid={`button-subs-${c.slug}-mobile`}
-                            >
-                              <span className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${open ? "bg-berry text-white" : "bg-white/90 text-foreground"}`}>
-                                <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
-                              </span>
-                            </button>
-                          )}
-                        </div>
-                        {open && c.subs.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="col-span-2 flex flex-wrap gap-1.5 rounded-2xl bg-blush/50 p-2.5"
-                          >
-                            <Link
-                              href={href}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="inline-flex h-9 items-center rounded-full bg-foreground px-3.5 text-[13px] font-medium text-background"
-                            >
-                              {isAr ? `كل ${catLabel(c)}` : `All ${catLabel(c)}`}
-                            </Link>
-                            {c.subs.map((sub: any) => (
-                              <Link
-                                key={sub.id}
-                                href={`${href}?sub=${sub.id}`}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="inline-flex h-9 items-center rounded-full bg-white px-3.5 text-[13px] font-medium ring-1 ring-black/[0.06]"
-                                data-testid={`link-sub-${sub.id}-mobile`}
-                              >
-                                {isAr ? sub.nameAr || sub.name : sub.name}
-                              </Link>
-                            ))}
-                          </motion.div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <Link
-                    href="/sales"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="col-span-2 flex h-12 items-center justify-between gap-3 rounded-2xl bg-berry px-4 text-white"
-                    data-testid="link-sales-mobile"
+              {/* Categories: the rows share the height that is left, so nothing needs scrolling */}
+              {(() => {
+                const cols = navCategories.length > 8 ? 3 : 2;
+                const rows = Math.ceil(navCategories.length / cols);
+                const spare = cols - (navCategories.length % cols || cols);
+                return (
+                  <div
+                    className="grid min-h-0 flex-1 gap-2 overflow-y-auto overscroll-contain px-4 pb-3"
+                    style={{
+                      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${rows}, minmax(3.25rem, 11.5rem)) 3rem`,
+                    }}
                   >
-                    <span className="flex items-center gap-2.5 text-[15px] font-medium">
-                      <BadgePercent className="h-5 w-5 shrink-0" strokeWidth={1.6} />
-                      {t.nav.sales}
-                    </span>
-                    <ArrowUpRight className="h-[18px] w-[18px] rtl:-scale-x-100" strokeWidth={1.8} />
-                  </Link>
-                </div>
-              </div>
+                    {navCategories.map((c: any, idx: number) => {
+                      const photo = getSetting(siteSettings, `menu_photo_${c.id}`) || c.image || "";
+                      const last = idx === navCategories.length - 1;
+                      return (
+                        <Link
+                          key={c.id}
+                          href={categoryHref(c)}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="relative block min-h-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush to-sand"
+                          style={last && spare > 0 ? { gridColumn: `span ${spare + 1}` } : undefined}
+                          data-testid={`link-${c.slug}-mobile`}
+                        >
+                          {photo && (
+                            <img
+                              src={optimizeCloudinaryUrl(photo, 500) || photo}
+                              alt=""
+                              loading="lazy"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                          )}
+                          <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                          <span className="font-heading absolute inset-x-3 bottom-2 truncate text-[17px] font-medium leading-tight text-white">
+                            {catLabel(c)}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                    <Link
+                      href="/sales"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-berry px-4 text-white"
+                      style={{ gridColumn: "1 / -1" }}
+                      data-testid="link-sales-mobile"
+                    >
+                      <span className="flex items-center gap-2.5 text-[15px] font-medium">
+                        <BadgePercent className="h-5 w-5 shrink-0" strokeWidth={1.6} />
+                        {t.nav.sales}
+                      </span>
+                      <ArrowUpRight className="h-[18px] w-[18px] rtl:-scale-x-100" strokeWidth={1.8} />
+                    </Link>
+                  </div>
+                );
+              })()}
 
               {/* Account and settings — pinned to the bottom of the sheet */}
               <div className="shrink-0 border-t border-black/[0.06] bg-background px-4 pb-4 pt-3">
@@ -1195,48 +1182,29 @@ export function Navbar() {
                     <User className="h-[18px] w-[18px] shrink-0" strokeWidth={1.6} />
                     <span className="truncate">{user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}</span>
                   </Link>
-                  <span className="flex h-11 shrink-0 rounded-full bg-muted/70 p-1 text-[12.5px] font-medium" data-testid="button-language-toggle-mobile">
-                    {(["ar", "en"] as const).map((lng) => (
-                      <button
-                        key={lng}
-                        type="button"
-                        onClick={() => setLanguage(lng)}
-                        aria-pressed={language === lng}
-                        className={`rounded-full px-3 transition-colors ${language === lng ? "bg-white text-foreground shadow-sm" : "text-muted-foreground"}`}
-                      >
-                        {lng === "ar" ? "عربي" : "EN"}
-                      </button>
-                    ))}
-                  </span>
-                </div>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <Link
-                    href={user ? "/wishlist" : "/auth"}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-11 items-center justify-center gap-2 rounded-full bg-blush/60 text-[13.5px] font-medium"
-                    data-testid="link-wishlist-mobile"
-                  >
-                    <Heart className="h-[17px] w-[17px] text-berry" strokeWidth={1.7} />
-                    {t.wishlist.navLabel}
-                  </Link>
                   <Link
                     href="/our-location"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-11 items-center justify-center gap-2 rounded-full bg-sand/70 text-[13.5px] font-medium"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sand/80"
+                    aria-label={t.nav.ourLocation}
                     data-testid="link-our-location"
                   >
-                    <MapPin className="h-[17px] w-[17px] text-berry" strokeWidth={1.7} />
-                    {t.nav.ourLocation}
+                    <MapPin className="h-[18px] w-[18px] text-berry" strokeWidth={1.7} />
                   </Link>
+                  <button
+                    type="button"
+                    onClick={toggleLanguage}
+                    className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-muted/70 px-3.5 text-[13px] font-medium"
+                    data-testid="button-language-toggle-mobile"
+                  >
+                    <Globe className="h-[17px] w-[17px]" strokeWidth={1.6} />
+                    {isAr ? "EN" : "عربي"}
+                  </button>
                 </div>
                 {user && (
                   <div className="mt-1.5 flex items-center justify-between gap-2">
                     {user.role === "admin" || user.role === "employee" ? (
-                      <Link
-                        href="/admin"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex h-11 items-center gap-2 rounded-full px-2 text-[13px] font-medium"
-                      >
+                      <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex h-11 items-center gap-2 rounded-full px-2 text-[13px] font-medium">
                         <LayoutDashboard className="h-[18px] w-[18px]" strokeWidth={1.6} />
                         {t.nav.adminDashboard}
                       </Link>
