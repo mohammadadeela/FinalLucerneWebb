@@ -93,18 +93,19 @@ function SectionHeader({
   eyebrow?: string;
   href?: string;
   linkLabel?: string;
-  tone?: "default" | "sale";
+  tone?: "default" | "sale" | "light";
   testId?: string;
 }) {
   const { language } = useLanguage();
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
   const sale = tone === "sale";
+  const light = tone === "light";
   return (
     <div className="mb-3 flex items-end justify-between gap-4 sm:mb-4">
       <div className="min-w-0">
         {eyebrow && (
           <p
-            className={`mb-1.5 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px] ${sale ? "text-[#9B1C1C]" : "text-berry"}`}
+            className={`mb-1.5 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px] ${light ? "text-white/80" : sale ? "text-[#9B1C1C]" : "text-berry"}`}
           >
             {eyebrow}
           </p>
@@ -116,13 +117,13 @@ function SectionHeader({
           {title}
         </h2>
         <span
-          className={`mt-2 block h-[2px] w-10 rounded-full ${sale ? "bg-[#9B1C1C]/70" : "bg-berry/70"}`}
+          className={`mt-2 block h-[2px] w-10 rounded-full ${light ? "bg-white/70" : sale ? "bg-[#9B1C1C]/70" : "bg-berry/70"}`}
         />
       </div>
       {href && (
         <Link
           href={href}
-          className={`group inline-flex shrink-0 items-center gap-2 pb-1 text-[13px] transition-colors sm:text-sm ${sale ? "text-[#9B1C1C]" : "text-foreground hover:text-berry"}`}
+          className={`group inline-flex shrink-0 items-center gap-2 text-[13px] transition-colors sm:text-sm ${light ? "h-10 rounded-full bg-white px-4 font-medium text-foreground hover:bg-sand" : sale ? "pb-1 text-[#9B1C1C]" : "pb-1 text-foreground hover:text-berry"}`}
           data-testid={`link-view-all-${href}`}
         >
           <span className="underline-offset-4 group-hover:underline">{linkLabel}</span>
@@ -134,7 +135,7 @@ function SectionHeader({
 }
 
 const RAIL_ITEM =
-  "flex-none snap-start w-[46%] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-(var(--cols)-1)*1rem)/var(--cols))]";
+  "flex-none snap-start w-[43%] sm:w-[calc((100%-1.5rem)/3)] md:w-[calc((100%-2.25rem)/4)] lg:w-[calc((100%-(var(--cols)-1)*0.75rem)/var(--cols))]";
 
 /**
  * A row of product cards. `lead` puts a cover tile first (used by category rows)
@@ -146,7 +147,7 @@ function ProductRail({
   testId,
   lead,
   more,
-  compact,
+  compact = true,
 }: {
   products: any[];
   testId?: string;
@@ -156,11 +157,10 @@ function ProductRail({
 }) {
   const { language } = useLanguage();
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
-  const total = products.length + (lead ? 1 : 0) + (more ? 1 : 0);
   const sale = more?.tone === "sale";
   return (
     <Rail
-      scrollClassName={`gap-3 sm:gap-4 pb-3 ${total >= 5 ? "[--cols:5]" : "[--cols:4]"}`}
+      scrollClassName={`gap-2.5 sm:gap-3 pb-2 [--cols:5] xl:[--cols:6]`}
       testId={testId}
     >
       {lead && (
@@ -201,7 +201,7 @@ function ProductRail({
 
 function RailSkeleton() {
   return (
-    <div className="flex gap-3 overflow-hidden sm:gap-4">
+    <div className="flex gap-2.5 overflow-hidden sm:gap-3">
       {[...Array(5)].map((_, i) => (
         <div key={i} className={`${RAIL_ITEM} [--cols:5] animate-pulse`}>
           <div className="mb-3 aspect-[3/4] rounded-2xl bg-muted" />
@@ -213,18 +213,32 @@ function RailSkeleton() {
   );
 }
 
+const PANEL_TONES = {
+  sand: "bg-sand/60",
+  blush: "bg-blush/50",
+  sage: "bg-sage/45",
+  berry: "bg-gradient-to-br from-berry to-berry-deep text-white",
+} as const;
+
+/** A block of the landing page. `tone` puts it on a soft coloured panel instead of plain white. */
 function Section({
   children,
   className = "",
   id,
+  tone,
 }: {
   children: ReactNode;
   className?: string;
   id?: string;
+  tone?: keyof typeof PANEL_TONES;
 }) {
   return (
-    <section id={id} className={`w-full px-4 py-3.5 sm:px-6 sm:py-5 lg:px-10 ${className}`}>
-      <div className="mx-auto w-full max-w-[1280px]">{children}</div>
+    <section id={id} className={`w-full px-3 py-2 sm:px-6 sm:py-2.5 lg:px-10 ${className}`}>
+      <div
+        className={`mx-auto w-full max-w-[1320px] ${tone ? `overflow-hidden rounded-[1.5rem] p-3.5 sm:rounded-[1.75rem] sm:p-5 ${PANEL_TONES[tone]}` : "py-1.5"}`}
+      >
+        {children}
+      </div>
     </section>
   );
 }
@@ -438,6 +452,28 @@ export default function Home() {
             title: catName(c),
             href: categoryHref(c),
           }));
+
+  // Shop by price: every active subcategory that has products, with its lowest current price.
+  const priceTiles = (allSubcategories || [])
+    .filter((sub: any) => sub.isActive !== false)
+    .map((sub: any) => {
+      const items = allProducts.filter((p: any) => {
+        const ids: number[] = Array.isArray(p.subcategoryIds) ? p.subcategoryIds : [];
+        return (ids.includes(sub.id) || p.subcategoryId === sub.id) && (p.stockQuantity ?? 0) > 0;
+      });
+      if (items.length === 0) return null;
+      const min = Math.min(...items.map((p: any) => parseFloat(String(p.discountPrice ?? p.price))));
+      const cheapest = items.find((p: any) => parseFloat(String(p.discountPrice ?? p.price)) === min);
+      return {
+        key: `price-${sub.id}`,
+        href: `${categoryHref(categoryMap[sub.categoryId])}?sub=${sub.id}`,
+        label: isAr ? sub.nameAr || sub.name : sub.name,
+        img: sub.image || cheapest?.mainImage || "",
+        min: Number.isInteger(min) ? String(min) : min.toFixed(2),
+      };
+    })
+    .filter((tile: any) => tile && tile.img)
+    .slice(0, 14) as { key: string; href: string; label: string; img: string; min: string }[];
 
   // Names the restored category circles + editorial grid expect.
   const products = allProducts;
@@ -717,7 +753,7 @@ export default function Home() {
 
         {/* ── Trending now ── */}
         {(isFeaturedLoading || trending.length > 0) && (
-          <Section>
+          <Section tone="sand">
             <SectionHeader
               title={secFeaturedTitle}
               href="/shop"
@@ -994,22 +1030,79 @@ export default function Home() {
           );
         })()}
 
-        {/* ── On sale ── */}
+        {/* ── Deals of the day: the sale pieces on a berry band with a moving ribbon ── */}
         {onSale.length > 0 && (
-          <Section className="bg-[hsl(var(--blush)/0.45)]">
+          <Section tone="berry">
             <SectionHeader
               title={secOnSaleTitle}
-              eyebrow={pick("أسعار مخفّضة", "Marked down")}
+              eyebrow={pick("عروض اليوم", "Deals of the day")}
               href="/sales"
-              linkLabel={t.home.viewAll}
-              tone="sale"
+              linkLabel={pick("كل العروض", "Shop deals")}
+              tone="light"
               testId="text-sales-title"
             />
+            <div className="-mx-3.5 mb-3 overflow-hidden bg-sand py-1.5 text-berry-deep sm:-mx-5 sm:mb-4" aria-hidden="true">
+              <div className="deal-ribbon flex w-max items-center gap-6 whitespace-nowrap text-[12px] font-semibold sm:text-[13px]">
+                {Array.from({ length: 16 }).map((_, i) => (
+                  <span key={i} className="inline-flex items-center gap-6">
+                    {pick("لا تفوّتي العرض", "Don't miss out")}
+                    <span className="h-1.5 w-1.5 rounded-full bg-berry" />
+                  </span>
+                ))}
+              </div>
+            </div>
             <ProductRail
               products={onSale}
               testId="rail-on-sale"
               more={{ href: "/sales", label: pick("كل التخفيضات", "All sale pieces"), tone: "sale" }}
             />
+          </Section>
+        )}
+
+        {/* ── Shop by price: one tile per subcategory with its lowest price, worked out from the products ── */}
+        {priceTiles.length >= 3 && (
+          <Section tone="blush">
+            <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="hidden shrink-0 rounded-md bg-berry px-2.5 py-1 text-[12px] font-bold text-white sm:inline-block sm:text-sm">
+                  {pick("أسعار تبدأ من", "Prices from")}
+                </span>
+                <h2 className="truncate text-xl font-medium leading-none sm:text-[1.75rem] rtl:leading-snug">
+                  {pick("تسوقي حسب السعر", "Shop by price")}
+                </h2>
+              </div>
+              <Link
+                href="/shop"
+                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-colors hover:bg-berry sm:px-5"
+              >
+                {pick("تسوقي الكل", "Shop all")}
+                <Arrow className="h-4 w-4" />
+              </Link>
+            </div>
+            <Rail scrollClassName="gap-2.5 sm:gap-3 pb-1" testId="rail-price-tiles">
+              {priceTiles.map((tile) => (
+                <Link
+                  key={tile.key}
+                  href={tile.href}
+                  role="listitem"
+                  className="group flex w-[38%] flex-none snap-start flex-col items-center rounded-[1.5rem] bg-white p-2.5 text-center transition-shadow duration-300 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)] sm:w-[calc((100%-3rem)/5)] lg:w-[calc((100%-4.5rem)/7)]"
+                  data-testid={`price-tile-${tile.key}`}
+                >
+                  <span className="relative block aspect-square w-full overflow-hidden rounded-[1.1rem] bg-sand">
+                    <BannerImage
+                      src={tile.img}
+                      alt={tile.label}
+                      width={300}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </span>
+                  <span className="ltr-num mt-2 text-[15px] font-bold leading-tight text-berry sm:text-base">
+                    {pick("من", "From")} ₪{tile.min}
+                  </span>
+                  <span className="mt-0.5 line-clamp-1 text-[13px] text-foreground/80">{tile.label}</span>
+                </Link>
+              ))}
+            </Rail>
           </Section>
         )}
 
@@ -1159,7 +1252,7 @@ export default function Home() {
           .map((section, idx) => (
             <Section
               key={section.category.id}
-              className={idx % 2 === 0 ? "bg-[hsl(var(--sand)/0.45)]" : ""}
+              tone={idx % 2 === 0 ? "sand" : "sage"}
             >
               <div className="relative mb-4 flex items-center justify-between gap-4 overflow-hidden rounded-[1.5rem] bg-white px-5 py-4 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5">
                 <CategoryGlyph

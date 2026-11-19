@@ -262,6 +262,20 @@ html.admin-theme {
   to   { transform: scaleX(1); }
 }
 
+@keyframes deal-ribbon {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.deal-ribbon {
+  animation: deal-ribbon 40s linear infinite;
+}
+[dir="rtl"] .deal-ribbon {
+  animation-direction: reverse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .deal-ribbon { animation: none; }
+}
+
 @keyframes news-rise {
   0%   { opacity: 0; transform: translateY(70%); }
   12%  { opacity: 1; transform: translateY(0); }

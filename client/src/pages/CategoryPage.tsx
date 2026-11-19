@@ -217,7 +217,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
         const ar = language === "ar";
         return (
           <section className="w-full bg-background border-b border-border/40">
-            <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
               {/* Scroll container: horizontal scroll on mobile, centered wrap on desktop */}
               <div className="relative">
                 {/* Edge fade hint – mobile only, accounts for RTL */}
@@ -260,8 +260,8 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
         );
       })()}
 
-      <main ref={productsRef} className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-10">
+      <main ref={productsRef} className="flex-1 w-full max-w-[1368px] mx-auto px-3 sm:px-6 lg:px-10 py-4 sm:py-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex items-center gap-3">
             <p className="text-sm flex items-center gap-1.5" data-testid="text-product-count">
               {CategoryIcon && <CategoryIcon size={14} className="text-muted-foreground" />}
@@ -307,7 +307,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-2.5 gap-y-4 sm:gap-x-3 sm:gap-y-5">
             {filtered.map((product, index) => (
               <ProductCard key={product.id} product={product} priority={index < 4} />
             ))}
