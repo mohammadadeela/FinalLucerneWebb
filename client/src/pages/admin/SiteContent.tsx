@@ -1450,6 +1450,51 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
   );
 }
 
+function CategoryStripBannersCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const { data: categories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
+  return (
+    <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-category-strip-banners">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-5 py-4 bg-muted/30 hover:bg-muted/60 transition-colors"
+        onClick={() => setOpen(!open)}
+        data-testid="toggle-section-category-strip-banners"
+      >
+        <div className="flex items-center gap-3">
+          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-sm">بانرات الفئات في الصفحة الرئيسية</p>
+          <p className="text-xs text-muted-foreground">Home category strip banners</p>
+        </div>
+      </button>
+      {open && (
+        <div className="p-5 space-y-5 bg-background">
+          <p className="text-xs text-muted-foreground text-right">
+            الشريط الذي يظهر فوق منتجات كل فئة في الصفحة الرئيسية (يفتح الفئة عند الضغط). مقاس الشريط 15:1 (مثلاً 1560×104 بكسل) — أداة القص تفتح بهذا المقاس والمعاينة هنا بنفس الشكل. على الهاتف يظهر الجزء الأوسط فقط (نحو ثلث العرض). إذا تُركت الصورة فارغة يبقى الشريط أبيض. تظهر في الصفحة الرئيسية فقط الفئات المفعّل لها «إظهار في الرئيسية».
+          </p>
+          {categories.map((c: any) => (
+            <div key={c.id} className="rounded-xl border border-border p-4 space-y-3">
+              <p className="text-sm font-semibold text-right">{c.nameAr || c.name}</p>
+              <ImageUploadField
+                value={values[`home_cat_banner_${c.id}_image`] ?? ""}
+                position={values[`home_cat_banner_${c.id}_image_position`] ?? "center"}
+                onChangeImage={(url) => onChange(`home_cat_banner_${c.id}_image`, url)}
+                onChangePosition={(pos) => onChange(`home_cat_banner_${c.id}_image_position`, pos)}
+                withCrop
+                cropAspect={15}
+                originalValue={values[`home_cat_banner_${c.id}_image_original`] ?? ""}
+                onChangeOriginal={(url) => onChange(`home_cat_banner_${c.id}_image_original`, url)}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MenuPhotosCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
   const [open, setOpen] = useState(false);
   const { data: categories = [] } = useQuery<any[]>({ queryKey: ["/api/categories"] });
@@ -2446,6 +2491,7 @@ const SEARCH_INDEX: { id: string; tab: TabId; labelAr: string; labelEn: string; 
   { id: "editorial", tab: "home", labelAr: "شبكة التحرير", labelEn: "Editorial grid" },
   { id: "pills", tab: "home", labelAr: "أزرار الأقسام تحت السلايدر", labelEn: "Home category buttons", extra: "pills أقسام فئات تصنيف فرعي صورة أزرار" },
   { id: "homebanners", tab: "home", labelAr: "بانرات العناوين المتحركة", labelEn: "Home animated heading banners", extra: "banner بانر شريط وصل حديثا الأكثر مبيعا نص متحرك new arrivals best sellers" },
+  { id: "catstrips", tab: "home", labelAr: "بانرات الفئات في الصفحة الرئيسية", labelEn: "Home category strip banners", extra: "banner بانر شريط فئة فئات صورة category" },
   { id: "menuphotos", tab: "home", labelAr: "صور قائمة الهاتف", labelEn: "Phone menu photos", extra: "menu mobile قائمة هاتف موبايل صور فئات" },
   { id: "promo", tab: "home", labelAr: "سلايدر الصور", labelEn: "Home photo slider", extra: "slider سلايدر صور شرائح" },
   { id: "page-home", tab: "home", labelAr: "بانر الصفحة الرئيسية", labelEn: "Home hero banner", extra: "صورة فيديو عنوان" },
@@ -2545,6 +2591,7 @@ export default function SiteContent() {
       case "editorial": return <EditorialGridCard values={merged} onChange={handleChange} />;
       case "pills": return <HomePillsCard values={merged} onChange={handleChange} />;
       case "homebanners": return <HomeBannersCard values={merged} onChange={handleChange} />;
+      case "catstrips": return <CategoryStripBannersCard values={merged} onChange={handleChange} />;
       case "menuphotos": return <MenuPhotosCard values={merged} onChange={handleChange} />;
       case "promo": return <PromoSliderCard values={merged} onChange={handleChange} />;
       case "support": return <SupportPagesCard values={merged} onChange={handleChange} />;
@@ -2559,7 +2606,7 @@ export default function SiteContent() {
   };
   const cardsForTab: Record<TabId, string[]> = {
     overview: [],
-    home: ["page-home", "pills", "bestsellers", "headings", "editorial", "promo", "homebanners", "menuphotos"],
+    home: ["page-home", "pills", "bestsellers", "headings", "editorial", "promo", "homebanners", "catstrips", "menuphotos"],
     dresses: ["page-dresses"],
     clothes: ["page-clothes"],
     shoes: ["page-shoes"],

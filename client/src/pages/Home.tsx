@@ -309,6 +309,15 @@ function bannerTexts(value: string, fallback: string[]) {
   return list.length > 0 ? list : fallback;
 }
 
+/** Admin "position" values are keywords (center, top…) or an "x% y%" pair. */
+function bannerPosition(pos?: string) {
+  if (!pos) return "50% 50%";
+  if (pos.includes("%")) return pos;
+  const x = pos.includes("left") ? 0 : pos.includes("right") ? 100 : 50;
+  const y = pos.includes("top") ? 0 : pos.includes("bottom") ? 100 : 50;
+  return `${x}% ${y}%`;
+}
+
 function Section({
   children,
   className = "",
@@ -1374,14 +1383,24 @@ export default function Home() {
               key={section.category.id}
               className=""
             >
-              {/* The category banner, at its original size, with the text and icon removed
-                  (the name stays for screen readers); tapping it opens the category. */}
+              {/* The category banner, at its original size, with no text or icon; tapping it opens the
+                  category. Blank until the admin uploads a strip photo for it (Content → Home). */}
               <Link
                 href={section.href}
                 aria-label={catName(section.category)}
                 className="relative mb-4 block overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
                 data-testid={`link-view-all-${section.href}`}
               >
+                {g(`home_cat_banner_${section.category.id}_image`) && (
+                  <img
+                    src={optimizeCloudinaryUrl(g(`home_cat_banner_${section.category.id}_image`), 1600) || g(`home_cat_banner_${section.category.id}_image`)}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 h-full w-full object-cover"
+                    style={{ objectPosition: bannerPosition(g(`home_cat_banner_${section.category.id}_image_position`)) }}
+                  />
+                )}
                 <div className="invisible relative min-w-0 ps-12 sm:ps-24" aria-hidden="true">
                   <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">
                     {pick("من أقسامنا", "From our collections")}
