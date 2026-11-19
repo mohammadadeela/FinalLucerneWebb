@@ -263,7 +263,7 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
       <div className="absolute inset-0 flex items-center justify-center gap-2 px-3 sm:gap-5" dir="ltr">
         {!plain && <CurvedArrow flip />}
         <h2
-          className={`m-0 min-w-0 overflow-hidden text-center ${plain ? "rounded-full bg-white/70 px-6 py-2 ring-1 ring-berry/25 sm:px-12 sm:py-3" : ""}`}
+          className="m-0 min-w-0 overflow-hidden text-center"
         >
           <span
             key={`${idx}-${current}`}
