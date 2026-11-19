@@ -238,13 +238,23 @@ function RailSkeleton() {
   );
 }
 
-/** A blank banner, the same size as the category banners. Decorative only — not a link. */
-function EmptyBanner() {
+/** A decorative banner, the same size as the category banners — not a link, no text.
+ *  Blank until the admin uploads a photo for it (Content → Home). */
+function EmptyBanner({ image }: { image?: string }) {
   return (
     <div
       aria-hidden="true"
       className="relative mb-4 overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5"
     >
+      {image && (
+        <img
+          src={optimizeCloudinaryUrl(image, 1600) || image}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
       <div className="invisible">
         <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">أ</p>
         <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">أ</p>
@@ -893,7 +903,7 @@ export default function Home() {
         {/* ── New arrivals ── */}
         {newArrivals.length > 0 && (
           <Section>
-            <EmptyBanner />
+            <EmptyBanner image={g("home_banner_new_image")} />
             <ProductRail
               products={newArrivals}
               testId="rail-new-arrivals"
@@ -1156,7 +1166,7 @@ export default function Home() {
         {/* ── Best sellers ── */}
         {bestSellers.length > 0 && (
           <Section>
-            <EmptyBanner />
+            <EmptyBanner image={g("home_banner_best_image")} />
 
             {isBestSellersLoading ? (
               <RailSkeleton />
