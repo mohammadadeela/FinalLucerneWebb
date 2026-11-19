@@ -390,6 +390,16 @@ export default function AdminCategories() {
                         {isAr ? "حذف الفئة" : "Delete Category"}
                       </Button>
                       <div className="flex items-center gap-4 flex-wrap justify-end">
+                        {/* Generate this category's photo (same clean theme as the rest of the site) */}
+                        <AIGenerateImageButton
+                          getPrompt={() => `women's ${cat.name || (cat as any).nameAr || ""}`}
+                          onGenerated={async (url) => {
+                            await updateCat.mutateAsync({ id: cat.id, image: url });
+                          }}
+                          aspect="square"
+                          slot="circle"
+                          className="h-8 text-xs"
+                        />
                         {/* Show on Home toggle */}
                         <div className="flex items-center gap-2">
                           <button
