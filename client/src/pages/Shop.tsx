@@ -311,14 +311,14 @@ export default function Shop() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                   {visibleProducts.map((product, index) => (
                     <ProductCard key={product.id} product={product} priority={index < 4} />
                   ))}
                 </div>
 
                 {hasMore && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-8 mt-4 sm:mt-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-6">
                     {[...Array(Math.min(4, filteredProducts.length - visibleCount))].map((_, i) => (
                       <div key={i} className="animate-pulse">
                         <div className="bg-muted aspect-[3/4] mb-4"></div>

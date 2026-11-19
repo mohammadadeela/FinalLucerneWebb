@@ -2717,6 +2717,16 @@ className="underline hover:text-foreground"
 </div>
 )}
 
+{!isSoldOut && hasSizes && !selectedSize && (
+<div
+className="flex items-center gap-2 text-xs text-muted-foreground mb-4 ps-0.5"
+data-testid="text-select-size-prompt"
+>
+<span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 animate-pulse" />
+{t.product.selectSizePrompt}
+</div>
+)}
+
 {/* Qty + Add to cart — min 44px touch targets */}
 <div className="flex items-center gap-2.5 mb-4">
 {!isSoldOut && (

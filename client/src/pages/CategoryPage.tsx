@@ -307,7 +307,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
             {filtered.map((product, index) => (
               <ProductCard key={product.id} product={product} priority={index < 4} />
             ))}
