@@ -1046,7 +1046,7 @@ export function Navbar() {
           every category as a photo tile sized so they all fit without scrolling, sale, account. */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
+          <div className="fixed inset-x-0 top-0 z-[60] h-[100lvh] min-h-screen lg:hidden" role="dialog" aria-modal="true">
             <motion.div
               className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
               initial={{ opacity: 0 }}
@@ -1057,13 +1057,14 @@ export function Navbar() {
               aria-hidden="true"
             />
             <motion.aside
-              className="absolute inset-y-0 start-0 flex w-[88%] max-w-[400px] flex-col overflow-hidden rounded-e-[2rem] bg-background text-foreground shadow-2xl"
+              className="absolute inset-y-0 start-0 w-[88%] max-w-[400px] overflow-hidden bg-background text-foreground shadow-2xl"
               initial={{ x: isAr ? "100%" : "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: isAr ? "100%" : "-100%" }}
               transition={{ type: "tween", duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               data-testid="mobile-menu"
             >
+              <div className="flex h-[100dvh] max-h-full flex-col">
               {/* Wordmark + close */}
               <div className="relative flex h-[4.5rem] shrink-0 items-center justify-center border-b border-black/[0.06] bg-gradient-to-b from-blush/50 to-transparent px-4">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex flex-col items-center leading-none" aria-label="Lucerne Boutique">
@@ -1171,7 +1172,7 @@ export function Navbar() {
               })()}
 
               {/* Account and settings — pinned to the bottom of the sheet */}
-              <div className="shrink-0 border-t border-black/[0.06] bg-background px-4 pb-4 pt-3">
+              <div className="shrink-0 border-t border-black/[0.06] bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
                 <div className="flex items-center gap-2">
                   <Link
                     href={user ? "/profile" : "/auth"}
@@ -1225,6 +1226,7 @@ export function Navbar() {
                     </button>
                   </div>
                 )}
+              </div>
               </div>
             </motion.aside>
           </div>
