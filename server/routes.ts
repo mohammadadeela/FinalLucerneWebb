@@ -6802,15 +6802,46 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { prompt, aspect } = req.body as {
+    const { prompt, aspect, style } = req.body as {
       prompt?: string;
       aspect?: "square" | "portrait" | "landscape";
+      style?: "row";
     };
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
       return res.status(400).json({ message: "prompt required" });
     }
     try {
       const { generateImageFromPrompt } = await import("./aiPhotoGen");
+      // Category banner row: products on one flat colour. The empty background is trimmed
+      // here, so the storefront can fit the whole row into the banner on any screen.
+      if (style === "row") {
+        const { buildProductRowPrompt, ROW_BANNER_BG } = await import("./aiPhotoGen");
+        const { buffer: raw } = await generateImageFromPrompt(
+          prompt.trim().slice(0, 600),
+          "landscape",
+          buildProductRowPrompt(prompt.trim().slice(0, 600)),
+        );
+        const sharp = (await import("sharp")).default;
+        const corner = await sharp(raw).extract({ left: 0, top: 0, width: 8, height: 8 }).resize(1, 1).raw().toBuffer();
+        const bg =
+          corner.length >= 3
+            ? "#" + [corner[0], corner[1], corner[2]].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase()
+            : ROW_BANNER_BG;
+        let rowBuffer = raw;
+        try {
+          const trimmed = await sharp(raw).trim({ background: bg, threshold: 26 }).toBuffer({ resolveWithObject: true });
+          const padX = Math.round(trimmed.info.width * 0.03);
+          const padY = Math.round(trimmed.info.height * 0.1);
+          rowBuffer = await sharp(trimmed.data)
+            .extend({ top: padY, bottom: padY, left: padX, right: padX, background: bg })
+            .png()
+            .toBuffer();
+        } catch (trimErr: any) {
+          console.warn("[ai-generate-image] row trim skipped:", trimErr?.message || trimErr);
+        }
+        const rowUrl = await uploadToCloudinary(rowBuffer, "ai-category-row.png");
+        return res.json({ url: rowUrl, bg });
+      }
       const { buffer } = await generateImageFromPrompt(
         prompt.trim().slice(0, 300),
         aspect === "square" || aspect === "portrait" ? aspect : "landscape",

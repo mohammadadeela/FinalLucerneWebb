@@ -263,6 +263,8 @@ FINAL REMINDER — the single most important rule: every physical detail of the 
 export async function generateImageFromPrompt(
   description: string,
   aspect: "square" | "portrait" | "landscape" = "landscape",
+  /** When given, this exact prompt is sent instead of the editorial one built below. */
+  fullPrompt?: string,
 ): Promise<GeneratedPhoto> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -297,7 +299,7 @@ Generate only the image.`;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`;
 
   const body = {
-    contents: [{ parts: [{ text: prompt }] }],
+    contents: [{ parts: [{ text: fullPrompt || prompt }] }],
     generationConfig: {
       responseModalities: ["TEXT", "IMAGE"],
     },
@@ -484,4 +486,30 @@ export async function generateAiProductPhoto(
   }
 
   throw new Error("AI photo generation failed after retries");
+}
+
+
+/** Background colour of the ready-made category banner rows (matches the built-in shoes row). */
+export const ROW_BANNER_BG = "#F7D5E6";
+
+/**
+ * Prompt for a category banner: one straight row of real product photos on a single flat
+ * colour. The storefront trims the empty background and fits the row into the banner.
+ */
+export function buildProductRowPrompt(products: string): string {
+  return `Create one photorealistic studio product photograph for a women's fashion web store banner.
+
+Products: ${products}
+
+Rules:
+- Wide horizontal image.
+- Background: ONE perfectly flat colour, ${ROW_BANNER_BG}, edge to edge. No gradient, no texture, no floor line, no vignette, no backdrop shadows.
+- ONE single straight row of the products, side by side, centred vertically, spread across almost the full width with a small margin at the left and right edges.
+- All products the same height, standing on the same invisible baseline, evenly spaced, not touching each other. Shoes are seen from the side, all pointing the same way. Clothes hang on a slim gold hanger, seen from the front.
+- Real product photography: sharp, clean, true materials, soft even studio light. Never an illustration, icon, drawing or 3D render.
+- Each product a different colour from this palette: nude, beige, cream, camel, soft pink, burgundy, black, white, with small gold details.
+- Only a very small, faint shadow directly under each product.
+- Nothing else in the image: no text, no logos, no watermarks, no labels, no people.
+
+Generate only the image.`;
 }

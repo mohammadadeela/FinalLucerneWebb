@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import ImageCropDialog from "@/components/admin/ImageCropDialog";
 import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store, LayoutDashboard, House, Shirt, Footprints, BadgePercent, CircleHelp, MessageSquareText, ListFilter, Crop } from "lucide-react";
+import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store, LayoutDashboard, House, Shirt, Footprints, BadgePercent, CircleHelp, MessageSquareText, ListFilter, Crop, Bot } from "lucide-react";
  import { SEASONS, getActiveTheme } from "@/lib/seasonal";
 import SeasonalThemeCard from "@/components/admin/SeasonalThemeCard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -1564,8 +1564,50 @@ async function trimRowPhoto(file: File): Promise<{ file: File; bg: string }> {
   return { file: new File([blob], file.name.replace(/\.[^.]+$/, "") + "-row.png", { type: "image/png" }), bg: hex };
 }
 
-function RowPhotoUpload({ value, bg, onChange }: { value: string; bg: string; onChange: (url: string, bg: string) => void }) {
+/** What goes in each category's ready-made row, picked from the category's names. */
+function rowProductsFor(c: { name?: string; nameAr?: string; slug?: string }): string {
+  const t = `${c.name || ""} ${c.slug || ""} ${c.nameAr || ""}`.toLowerCase();
+  if (/shoe|heel|boot|sneaker|sandal|حذ|شوز|كعب|جزم/.test(t))
+    return "5 women's shoes: nude stiletto heel, white leather sneaker, burgundy block-heel pump, beige ballerina flat with a bow, tan ankle boot with a gold buckle.";
+  if (/abaya|عباي|عباء/.test(t))
+    return "7 abayas on slim gold hangers: beige embroidered, black with gold trim, burgundy, dusty mauve, brown, cream open abaya, olive.";
+  if (/belt|قشط|قشاط|حزام|أحزمة/.test(t))
+    return "6 women's leather belts with gold buckles, each neatly coiled: black, burgundy, tan, navy, brown, cream.";
+  if (/dress|فستان|فساتين/.test(t))
+    return "7 dresses on slim gold hangers: black midi, cream satin slip, burgundy long evening, soft pink short, beige long-sleeved maxi, black polka-dot, white lace.";
+  if (/bag|حقيب|شنط|حقائب/.test(t))
+    return "6 women's handbags: camel structured tote, black top-handle bag, burgundy shoulder bag, cream crossbody, soft pink clutch, beige bucket bag.";
+  if (/cloth|ملابس/.test(t))
+    return "6 women's clothing pieces on slim gold hangers: cream blazer, beige wide trousers, white blouse, olive pleated skirt, light blue shirt, black blazer.";
+  return `6 different women's fashion products from the category "${c.name || c.nameAr || ""}", each a different style and colour.`;
+}
+
+function RowPhotoUpload({ value, bg, onChange, products }: { value: string; bg: string; onChange: (url: string, bg: string) => void; products: string }) {
   const [busy, setBusy] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/admin/ai-generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: products, style: "row" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          data?.noKey ? "ميزة الذكاء الاصطناعي غير مفعّلة على السيرفر (مفتاح API غير موجود)" : data?.message || "فشل توليد الصورة",
+        );
+      }
+      if (!data.url) throw new Error("لم يتم إرجاع رابط الصورة");
+      onChange(data.url, data.bg || "");
+      toast({ title: "تم توليد صورة الصف — راجعي المعاينة ثم احفظي" });
+    } catch (err: any) {
+      toast({ title: "فشل التوليد", description: err?.message || "حاولي مرة أخرى", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1609,6 +1651,10 @@ function RowPhotoUpload({ value, bg, onChange }: { value: string; bg: string; on
             <X className="w-4 h-4" />
           </Button>
         )}
+        <Button type="button" variant="outline" size="sm" onClick={handleGenerate} disabled={generating || busy} className="h-9 gap-2 px-3 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary" data-testid="button-generate-row">
+          {generating ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Bot className="w-4 h-4" />}
+          <span className="text-xs">{generating ? "جاري التوليد…" : value ? "توليد صورة أخرى" : "توليد الصف تلقائياً"}</span>
+        </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={busy} className="h-9 gap-2 px-3" data-testid="button-upload-row">
           {busy ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Upload className="w-4 h-4" />}
           <span className="text-xs">{value ? "تغيير الصورة" : "رفع صورة الصف"}</span>
@@ -1641,7 +1687,7 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            الشريط فوق منتجات كل فئة: صف من صور المنتجات الحقيقية على خلفية بلون واحد. ارفعي الصورة كما هي (مثلاً 5 قطع في صف على خلفية وردية) — الموقع يقصّ الفراغ حول القطع تلقائياً، ويأخذ لون الخلفية للشريط، ويعرض الصف كاملاً وواضحاً على الكمبيوتر والهاتف بدون أي قص. كلما كانت القطع أكبر في الصورة كانت أوضح. فئة الأحذية لها صف جاهز يظهر تلقائياً إلى أن ترفعي غيره.
+            الشريط فوق منتجات كل فئة: صف من صور المنتجات الحقيقية على خلفية بلون واحد. ارفعي الصورة كما هي (مثلاً 5 قطع في صف على خلفية وردية) — الموقع يقصّ الفراغ حول القطع تلقائياً، ويأخذ لون الخلفية للشريط، ويعرض الصف كاملاً وواضحاً على الكمبيوتر والهاتف بدون أي قص. كلما كانت القطع أكبر في الصورة كانت أوضح. فئة الأحذية لها صف جاهز يظهر تلقائياً إلى أن ترفعي غيره. زر «توليد الصف تلقائياً» يصنع صورة الصف للفئة بالذكاء الاصطناعي ويجهّزها مباشرة — راجعي المعاينة ثم اضغطي حفظ، وإن لم تعجبك اضغطي «توليد صورة أخرى».
           </p>
           {categories.map((c: any) => (
             <div key={c.id} className="rounded-xl border border-border p-4 space-y-3">
@@ -1649,6 +1695,7 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
               <RowPhotoUpload
                 value={values[`home_cat_banner_${c.id}_row`] ?? ""}
                 bg={values[`home_cat_banner_${c.id}_row_bg`] ?? ""}
+                products={rowProductsFor(c)}
                 onChange={(url, bg) => {
                   onChange(`home_cat_banner_${c.id}_row`, url);
                   onChange(`home_cat_banner_${c.id}_row_bg`, bg);
