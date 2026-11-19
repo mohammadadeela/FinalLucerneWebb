@@ -17,26 +17,18 @@ import { Link } from "wouter";
 import {
   ArrowRight,
   ArrowLeft,
-  Truck,
-  RefreshCw,
-  CreditCard,
-  MapPin,
 } from "lucide-react";
-import { GiButterfly } from "react-icons/gi";
+import { motion } from "framer-motion";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLanguage } from "@/i18n";
-import {
-  useSiteSettings,
-  getSetting,
-  getShippingZones,
-} from "@/hooks/use-site-settings";
+import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
 import { useQuery } from "@tanstack/react-query";
 import {
   optimizeCloudinaryUrl,
   optimizeCloudinaryVideoUrl,
   blurCloudinaryUrl,
 } from "@/lib/utils";
-import { categoryHref, subcategoryHref } from "@/lib/storefront";
+import { categoryHref } from "@/lib/storefront";
 
 /* ────────────────────────────── small building blocks ───────────────────────────── */
 
@@ -110,7 +102,7 @@ function SectionHeader({
       <div className="min-w-0">
         {eyebrow && (
           <p
-            className={`mb-1.5 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px] ${sale ? "text-[#9B1C1C]" : "text-primary"}`}
+            className={`mb-1.5 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px] ${sale ? "text-[#9B1C1C]" : "text-berry"}`}
           >
             {eyebrow}
           </p>
@@ -122,13 +114,13 @@ function SectionHeader({
           {title}
         </h2>
         <span
-          className={`mt-3 block h-[2px] w-12 rounded-full ${sale ? "bg-[#9B1C1C]/70" : "bg-primary/70"}`}
+          className={`mt-3 block h-[2px] w-12 rounded-full ${sale ? "bg-[#9B1C1C]/70" : "bg-berry/70"}`}
         />
       </div>
       {href && (
         <Link
           href={href}
-          className={`group inline-flex shrink-0 items-center gap-2 pb-1 text-[13px] transition-colors sm:text-sm ${sale ? "text-[#9B1C1C]" : "text-foreground hover:text-primary"}`}
+          className={`group inline-flex shrink-0 items-center gap-2 pb-1 text-[13px] transition-colors sm:text-sm ${sale ? "text-[#9B1C1C]" : "text-foreground hover:text-berry"}`}
           data-testid={`link-view-all-${href}`}
         >
           <span className="underline-offset-4 group-hover:underline">{linkLabel}</span>
@@ -184,12 +176,12 @@ function ProductRail({
             className={`group flex h-full min-h-[14rem] flex-col items-center justify-center gap-4 rounded-[1.15rem] border border-dashed p-4 text-center transition-colors duration-300 ${
               sale
                 ? "border-[#9B1C1C]/35 bg-white/60 text-[#9B1C1C] hover:bg-white"
-                : "border-primary/35 bg-[hsl(var(--blush)/0.35)] text-foreground hover:bg-[hsl(var(--blush)/0.6)]"
+                : "border-berry/35 bg-[hsl(var(--blush)/0.35)] text-foreground hover:bg-[hsl(var(--blush)/0.6)]"
             }`}
             data-testid={testId ? `${testId}-more` : undefined}
           >
             <span
-              className={`flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform duration-300 group-hover:scale-110 ${sale ? "bg-[#9B1C1C]" : "bg-primary"}`}
+              className={`flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform duration-300 group-hover:scale-110 ${sale ? "bg-[#9B1C1C]" : "bg-berry"}`}
             >
               <Arrow className="h-5 w-5" />
             </span>
@@ -298,7 +290,6 @@ export default function Home() {
   const slides: HeroSlide[] = useMemo(() => {
     const list: HeroSlide[] = [];
     const firstCat = homeCats[0];
-    const hasNew = newArrivals.length > 0;
     list.push({
       key: "home",
       image: heroImage,
@@ -308,9 +299,7 @@ export default function Home() {
       tag: pick(g("home_hero_tag_ar"), g("home_hero_tag_en")),
       title: pick(g("home_hero_title_ar"), g("home_hero_title_en")),
       subtitle: pick(g("home_hero_subtitle_ar"), g("home_hero_subtitle_en")),
-      primary: hasNew
-        ? { label: pick("تسوقي الجديد", "Shop New In"), href: "/shop?new=1" }
-        : { label: pick("تسوقي الآن", t.home.shopCollection), href: "/shop" },
+      primary: { label: pick("تسوقي الآن", "Shop Now"), href: "/shop" },
       secondary: firstCat
         ? {
             label: pick(`اكتشفي ${catName(firstCat)}`, `Explore ${catName(firstCat)}`),
@@ -415,68 +404,19 @@ export default function Home() {
       }, {} as Record<number, any>),
     [categoriesList],
   );
-  const countFor = (item: { categoryId?: number; subcategoryId?: number }) =>
-    allProducts.filter((p: any) => {
-      if (item.subcategoryId != null) {
-        const ids: number[] = Array.isArray(p.subcategoryIds) ? p.subcategoryIds : [];
-        return ids.includes(item.subcategoryId) || p.subcategoryId === item.subcategoryId;
-      }
-      return p.categoryId === item.categoryId;
-    }).length;
-
   const catTiles = homeCats.map((c: any) => ({
     key: `c-${c.id}`,
     href: categoryHref(c),
     label: catName(c),
     img: c.image || "",
-    count: countFor({ categoryId: c.id }),
     testId: `link-category-home-${c.id}`,
   }));
-  const subTiles = (allSubcategories || [])
-    .filter((s: any) => s.showOnHome && s.isActive)
-    .map((s: any) => ({
-      key: `s-${s.id}`,
-      href: subcategoryHref(categoryMap[s.categoryId], s.id),
-      label: isAr ? s.nameAr || s.name : s.name,
-      img: s.image || "",
-      count: countFor({ subcategoryId: s.id }),
-      testId: `link-subcategory-home-${s.id}`,
-    }));
-  const allTiles = [...catTiles, ...subTiles];
 
-  /* ── "New season" banner + edit tiles — all admin-controlled (Content → Editorial) ── */
-  const seasonImage =
-    g("editorial_center_image") ||
-    "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=900&q=80";
-  const seasonVideo = g("editorial_center_video");
-  const seasonHeadline = pick(
-    g("editorial_headline_ar") || "تشكيلة جديدة\nبأسلوب راقٍ",
-    g("editorial_headline_en") || "New Collection\nRefined Style",
+  // Names the restored category circles + editorial grid expect.
+  const products = allProducts;
+  const homeSubcategories = (allSubcategories || []).filter(
+    (sub: any) => sub.showOnHome && sub.isActive,
   );
-  const [seasonLine1, ...seasonRest] = seasonHeadline.split("\n");
-  const seasonLine2 = seasonRest.join(" ").trim();
-
-  const editTiles = [0, 1, 2, 3]
-    .map((i) => {
-      const savedCatId = g(`editorial_tile_${i + 1}_category_id`);
-      const savedSubId = g(`editorial_tile_${i + 1}_subcategory_id`);
-      const cat = savedCatId
-        ? (categoriesList || []).find((c: any) => String(c.id) === savedCatId)
-        : homeCats[i];
-      const sub = savedSubId
-        ? (allSubcategories || []).find((s: any) => String(s.id) === savedSubId)
-        : null;
-      return {
-        key: `edit-${i}`,
-        img: g(`editorial_tile_${i + 1}_image`) || sub?.image || cat?.image || "",
-        video: g(`editorial_tile_${i + 1}_video`),
-        label: isAr
-          ? sub?.nameAr || sub?.name || cat?.nameAr || cat?.name || ""
-          : sub?.name || cat?.name || "",
-        href: cat ? (sub ? subcategoryHref(cat, sub.id) : categoryHref(cat)) : "/shop",
-      };
-    })
-    .filter((tile) => tile.label && (tile.img || tile.video));
 
   /* ── Per-category rails ── */
   const categorySections = showOnHomeCats.map((c: any, idx: number) => ({
@@ -484,42 +424,6 @@ export default function Home() {
     products: categoryProductsQueries[idx]?.data || [],
     href: categoryHref(c),
   }));
-
-  /* ── Service promises — derived from the shop's real settings ── */
-  const zones = getShippingZones(siteSettings);
-  const exchangesEnabled = g("exchanges_enabled") !== "false";
-  const exchangeDays = g("exchange_window_days");
-  const cardEnabled = g("card_payment_enabled") === "true";
-  const services = [
-    {
-      icon: Truck,
-      title: pick("توصيل لباب البيت", "Delivery to your door"),
-      text: zones.map((z) => (isAr ? z.nameAr : z.nameEn)).join(" · "),
-      href: "/shipping-returns",
-    },
-    exchangesEnabled && exchangeDays
-      ? {
-          icon: RefreshCw,
-          title: pick("تبديل سهل", "Easy exchange"),
-          text: pick(`خلال ${exchangeDays} أيام من الاستلام`, `Within ${exchangeDays} days of delivery`),
-          href: "/shipping-returns",
-        }
-      : null,
-    {
-      icon: CreditCard,
-      title: pick("دفع مريح", "Pay your way"),
-      text: cardEnabled
-        ? pick("بطاقة أو الدفع عند الاستلام", "Card or cash on delivery")
-        : pick("الدفع عند الاستلام", "Cash on delivery"),
-      href: "/faq",
-    },
-    {
-      icon: MapPin,
-      title: pick("زورينا في المتجر", "Visit the boutique"),
-      text: pick(g("contact_address_ar"), g("contact_address_en")),
-      href: "/our-location",
-    },
-  ].filter(Boolean) as { icon: any; title: string; text: string; href: string }[];
 
   // "Trending" shows the admin's featured picks; falls back to best sellers so the row is never empty.
   const trending = featured.length > 0 ? featured : bestSellers.slice(0, 10);
@@ -537,49 +441,17 @@ export default function Home() {
       <main className="flex-1">
         <HeroSlider slides={slides} isAr={isAr} />
 
-        {/* ── Shop by category ── */}
-        {allTiles.length > 0 && (
-          <Section className="!pb-4 sm:!pb-6">
-            <h2 className="sr-only">{pick("تسوقي حسب القسم", "Shop by category")}</h2>
-
-            {/* Phones: story-style circles */}
-            <Rail className="sm:hidden" scrollClassName="gap-3.5 pb-1" testId="rail-categories-mobile">
-              {allTiles.map((item, i) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  role="listitem"
-                  className="group flex w-[4.75rem] flex-none snap-start flex-col items-center gap-2"
-                  data-testid={item.testId}
-                >
-                  <span
-                    className="relative block h-[4.75rem] w-[4.75rem] overflow-hidden rounded-full ring-1 ring-black/[0.05] transition-transform duration-300 group-active:scale-95"
-                    style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
-                  >
-                    <BannerImage
-                      src={item.img || "/placeholder-product.svg"}
-                      alt={item.label}
-                      className="h-full w-full object-cover"
-                      loading={i < 5 ? "eager" : "lazy"}
-                      width={160}
-                    />
-                  </span>
-                  <span className="line-clamp-2 text-center text-[12px] leading-tight text-foreground">
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
-            </Rail>
-
-            {/* Larger screens: soft pills — photo on one side, name on the other */}
-            <Rail className="hidden sm:block" scrollClassName="gap-4 lg:gap-6 pb-2" testId="rail-categories">
+        {/* ── Shop by category: soft pills (photo on one side, name on the other) ── */}
+        {catTiles.length > 0 && (
+          <Section className="hidden sm:block !pb-0">
+            <Rail scrollClassName="gap-4 lg:gap-6 pb-2" testId="rail-categories">
               {catTiles.map((item, i) => (
                 <Link
                   key={item.key}
                   href={item.href}
                   role="listitem"
                   className="group relative flex h-[6.5rem] flex-none snap-start overflow-hidden rounded-[2.25rem] bg-[hsl(var(--sand))] ring-1 ring-black/[0.04] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(74,24,43,0.45)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:h-28 lg:w-[calc((100%-4.5rem)/4)]"
-                  data-testid={item.testId}
+                  data-testid={`pill-${item.testId}`}
                 >
                   <span
                     className="relative block h-full w-[46%] shrink-0 overflow-hidden"
@@ -594,51 +466,221 @@ export default function Home() {
                     />
                   </span>
                   <span className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 lg:px-5">
-                    <span className="min-w-0">
-                      <span className="font-heading block truncate text-lg font-medium leading-tight lg:text-xl">
-                        {item.label}
-                      </span>
-                      {item.count > 0 && (
-                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                          {item.count} {pick("قطعة", item.count === 1 ? "piece" : "pieces")}
-                        </span>
-                      )}
+                    <span className="font-heading block min-w-0 truncate text-lg font-medium leading-tight lg:text-xl">
+                      {item.label}
                     </span>
                     <Arrow className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
                   </span>
                 </Link>
               ))}
             </Rail>
-
-            {/* Larger screens: featured subcategories as quick chips */}
-            {subTiles.length > 0 && (
-              <Rail className="mt-4 hidden sm:block" scrollClassName="gap-2.5 pb-1" testId="rail-subcategories">
-                {subTiles.map((item, i) => (
-                  <Link
-                    key={item.key}
-                    href={item.href}
-                    role="listitem"
-                    className="group flex flex-none snap-start items-center gap-2.5 rounded-full border border-border/80 bg-card py-1.5 pe-4 ps-1.5 text-sm transition-colors duration-200 hover:border-primary/50 hover:text-primary"
-                    data-testid={item.testId}
-                  >
-                    <span
-                      className="relative block h-9 w-9 overflow-hidden rounded-full"
-                      style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
-                    >
-                      <BannerImage
-                        src={item.img || "/placeholder-product.svg"}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        width={100}
-                      />
-                    </span>
-                    <span className="whitespace-nowrap">{item.label}</span>
-                  </Link>
-                ))}
-              </Rail>
-            )}
           </Section>
         )}
+
+        {/* Category Circles */}
+        <section className="py-14 sm:py-20 w-full px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="text-center mb-10 sm:mb-14">
+            <p className="text-xs sm:text-sm text-foreground/50 mb-2">
+              {language === "ar" ? "تسوق حسب الفئة" : "Shop by Category"}
+            </p>
+            <h2 className="font-display text-2xl sm:text-4xl font-semibold">
+              {language === "ar" ? "أصنافنا" : "Explore Collections"}
+            </h2>
+          </div>
+
+          {(() => {
+            const showOnHomeCats = (categoriesList || []).filter(
+              (c: any) => c.showOnHome,
+            );
+            const homeCatsRaw =
+              showOnHomeCats.length > 0 ? showOnHomeCats : categoriesList || [];
+            const homeCats = homeCatsRaw.map((c: any) => ({
+              href: ["dresses", "shoes", "clothes"].includes(c.slug)
+                ? `/${c.slug}`
+                : `/category/${c.slug}`,
+              labelAr: c.nameAr || c.name,
+              labelEn: c.name,
+              img: c.image || "",
+              testId: `link-category-home-${c.id}`,
+              isSubcategory: false,
+              slug: c.slug,
+              categoryId: c.id,
+            }));
+            const DEDICATED: Record<string, string> = {
+              dresses: "/dresses",
+              shoes: "/shoes",
+              clothes: "/clothes",
+            };
+            const subItems = homeSubcategories.map((sub: any) => {
+              const parentCat = categoryMap[sub.categoryId];
+              const parentSlug = parentCat?.slug || "";
+              const base = DEDICATED[parentSlug] ?? `/category/${parentSlug}`;
+              return {
+                href: `${base}?sub=${sub.id}`,
+                labelAr: sub.nameAr || sub.name,
+                labelEn: sub.name,
+                img: sub.image || "",
+                testId: `link-subcategory-home-${sub.id}`,
+                isSubcategory: true,
+                slug: "",
+                subcategoryId: sub.id,
+              };
+            });
+            const allItems = [...homeCats, ...subItems];
+            return (
+              <div className="flex flex-wrap justify-center gap-x-2 gap-y-4 sm:gap-x-4 sm:gap-y-6 md:gap-x-5 md:gap-y-8 max-w-7xl mx-auto px-2 [&>*]:basis-[calc((100%-4*0.5rem)/5)] sm:[&>*]:basis-[calc((100%-8*1rem)/9)] md:[&>*]:basis-[calc((100%-8*1.25rem)/9)]">
+                {allItems.map((item) => {
+                  const count = !item.isSubcategory
+                    ? (products || []).filter(
+                        (p: any) => p.categoryId === (item as any).categoryId,
+                      ).length
+                    : (products || []).filter((p: any) => {
+                        const ids: number[] = Array.isArray(p.subcategoryIds)
+                          ? p.subcategoryIds
+                          : [];
+                        const target = (item as any).subcategoryId;
+                        return (
+                          ids.includes(target) || p.subcategoryId === target
+                        );
+                      }).length;
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <motion.div
+                        whileHover={{
+                          rotateY: 12,
+                          rotateX: -8,
+                          scale: 1.06,
+                          y: -8,
+                        }}
+                        transition={{ duration: 0.35, ease: "easeOut" }}
+                        style={{
+                          perspective: "700px",
+                          transformStyle: "preserve-3d",
+                        }}
+                        className="group flex flex-col items-center gap-1.5 sm:gap-3 cursor-pointer"
+                        data-testid={item.testId}
+                      >
+                        <motion.div
+                          className="relative mx-auto w-[56px] h-[56px] sm:w-[90px] sm:h-[90px] md:w-[110px] md:h-[110px]"
+                          style={{ transformStyle: "preserve-3d" }}
+                          animate={{ y: [0, -6, 0] }}
+                          transition={{
+                            duration:
+                              4 +
+                              (((item as any).categoryId ??
+                                (item as any).subcategoryId ??
+                                0) %
+                                3) *
+                                0.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay:
+                              (((item as any).categoryId ??
+                                (item as any).subcategoryId ??
+                                0) %
+                                5) *
+                              0.3,
+                          }}
+                        >
+                          {count > 0 && (
+                            <span className="absolute top-0 start-0 z-20 min-w-[16px] h-[16px] sm:min-w-[22px] sm:h-[22px] px-1 sm:px-1.5 rounded-full bg-foreground text-background text-[9px] sm:text-[11px] font-bold flex items-center justify-center shadow">
+                              {count}
+                            </span>
+                          )}
+
+                          {/* Slow rotating conic-gradient ring (idle shimmer) */}
+                          <motion.div
+                            className="absolute -inset-[3px] rounded-full pointer-events-none opacity-70"
+                            style={{
+                              background:
+                                "conic-gradient(from 0deg, rgba(0,0,0,0.0) 0deg, rgba(0,0,0,0.18) 80deg, rgba(0,0,0,0.0) 160deg, rgba(0,0,0,0.0) 360deg)",
+                              filter: "blur(2px)",
+                            }}
+                            animate={{ rotate: 360 }}
+                            transition={{
+                              duration: 14,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                          />
+                          {/* Pulsing ambient glow (idle) */}
+                          <motion.div
+                            className="absolute inset-0 rounded-full pointer-events-none"
+                            animate={{
+                              boxShadow: [
+                                "0 0 0px 0px rgba(0,0,0,0.00)",
+                                "0 0 22px 2px rgba(0,0,0,0.10)",
+                                "0 0 0px 0px rgba(0,0,0,0.00)",
+                              ],
+                            }}
+                            transition={{
+                              duration: 3.2,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                            }}
+                          />
+                          {/* Hover shadow boost */}
+                          <motion.div
+                            className="absolute inset-0 rounded-full pointer-events-none"
+                            style={{ boxShadow: "0 0 0 0px rgba(0,0,0,0)" }}
+                            whileHover={{
+                              boxShadow:
+                                "0 20px 60px rgba(0,0,0,0.28), 0 8px 20px rgba(0,0,0,0.18)",
+                            }}
+                            transition={{ duration: 0.35 }}
+                          />
+                          <div
+                            className="w-full h-full rounded-full overflow-hidden relative"
+                            style={{
+                              boxShadow:
+                                "0 6px 24px rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.10)",
+                            }}
+                          >
+                            <BannerImage
+                              src={item.img || "/placeholder-product.svg"}
+                              alt={
+                                language === "ar" ? item.labelAr : item.labelEn
+                              }
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              width={120}
+                            />
+                            {/* Diagonal sheen sweep (idle, slow) */}
+                            <motion.div
+                              className="absolute inset-0 pointer-events-none"
+                              style={{
+                                background:
+                                  "linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%)",
+                                mixBlendMode: "overlay",
+                              }}
+                              animate={{ x: ["-120%", "120%"] }}
+                              transition={{
+                                duration: 5.5,
+                                repeat: Infinity,
+                                repeatDelay: 3,
+                                ease: "easeInOut",
+                                delay:
+                                  (((item as any).categoryId ??
+                                    (item as any).subcategoryId ??
+                                    0) %
+                                    7) *
+                                  0.4,
+                              }}
+                            />
+                          </div>
+                        </motion.div>
+                        <div className="text-center">
+                          <p className="font-semibold text-[10px] sm:text-base tracking-wide group-hover:text-foreground/70 transition-colors duration-200 leading-tight">
+                            {language === "ar" ? item.labelAr : item.labelEn}
+                          </p>
+                        </div>
+                      </motion.div>
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </section>
 
         {/* ── Trending now ── */}
         {(isFeaturedLoading || trending.length > 0) && (
@@ -661,109 +703,252 @@ export default function Home() {
           </Section>
         )}
 
-        {/* ── New season banner ── */}
-        <section className="relative isolate overflow-hidden bg-[hsl(var(--sage))]">
-          <div className="mx-auto flex min-h-[11.5rem] w-full max-w-[1760px] items-stretch sm:min-h-[15rem] lg:min-h-[17rem]">
-            <div className="relative z-10 flex w-[58%] items-center gap-6 px-4 py-7 sm:w-[56%] sm:px-8 lg:gap-10 lg:px-14">
-              <GiButterfly
-                aria-hidden
-                className="soft-float hidden h-24 w-24 shrink-0 text-white/70 md:block lg:h-32 lg:w-32"
-                style={{ ["--float-rot" as any]: "-8deg" }}
-              />
-              <div className="min-w-0">
-                <p className="font-heading text-[1.6rem] font-medium leading-[1.05] text-foreground ltr:italic sm:text-4xl lg:text-5xl rtl:leading-snug">
-                  {seasonLine1}
-                </p>
-                {seasonLine2 && (
-                  <p className="font-heading mt-1.5 text-[15px] text-foreground/75 sm:mt-2.5 sm:text-xl lg:text-2xl">
-                    {seasonLine2}
-                  </p>
-                )}
-                <Link
-                  href={newArrivals.length > 0 ? "/shop?new=1" : "/shop"}
-                  className="group mt-4 inline-flex h-10 items-center gap-2.5 rounded-lg bg-primary px-4 text-[13px] font-medium text-primary-foreground shadow-[0_14px_30px_-14px_hsl(var(--berry)/0.9)] transition-colors hover:bg-[hsl(var(--berry-deep))] sm:mt-6 sm:h-12 sm:px-7 sm:text-sm"
-                  data-testid="button-season-banner"
-                >
-                  {pick("تسوقي المجموعة", "Shop the Collection")}
-                  <Arrow className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-                </Link>
-              </div>
-            </div>
-            <div className="absolute inset-y-0 end-0 w-[46%] overflow-hidden rounded-s-[5rem] sm:w-[47%] sm:rounded-s-[11rem]">
-              {seasonVideo ? (
-                <AutoplayVideo
-                  src={optimizeCloudinaryVideoUrl(seasonVideo) || seasonVideo}
-                  poster={optimizeCloudinaryUrl(seasonImage) || seasonImage || undefined}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <BannerImage
-                  src={seasonImage}
-                  alt={seasonLine1}
-                  width={1000}
-                  className="h-full w-full object-cover"
-                  style={{ objectPosition: g("editorial_center_image_position") || "center" }}
-                />
-              )}
-            </div>
-          </div>
-        </section>
-
         {/* ── New arrivals ── */}
         {newArrivals.length > 0 && (
           <Section>
             <SectionHeader
               title={secNewArrivalsTitle}
               eyebrow={pick("وصل للتو", "Just landed")}
-              href="/shop?new=1"
+              href="/shop"
               linkLabel={t.home.viewAll}
               testId="section-title-new-arrivals"
             />
             <ProductRail
               products={newArrivals}
               testId="rail-new-arrivals"
-              more={{ href: "/shop?new=1", label: pick("كل الجديد", "All new arrivals") }}
+              more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
             />
           </Section>
         )}
 
-        {/* ── The edit: four admin-picked tiles ── */}
-        {editTiles.length >= 2 && (
-          <Section className="!pt-2 sm:!pt-4 lg:!pb-16">
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-              {editTiles.map((tile, i) => (
-                <Link
-                  key={tile.key}
-                  href={tile.href}
-                  className={`group relative block aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-muted lg:aspect-[6/7] ${
-                    editTiles.length === 4 && (i === 1 || i === 2) ? "lg:translate-y-8" : ""
-                  }`}
-                  data-testid={`link-edit-tile-${i + 1}`}
-                >
-                  {tile.video ? (
-                    <AutoplayVideo
-                      src={optimizeCloudinaryVideoUrl(tile.video) || tile.video}
-                      poster={optimizeCloudinaryUrl(tile.img) || tile.img || undefined}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  ) : (
-                    <BannerImage
-                      src={tile.img}
-                      alt={tile.label}
-                      width={600}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                  )}
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
-                  <span className="absolute inset-x-2.5 bottom-2.5 flex items-center justify-between gap-2 rounded-full bg-white/90 px-3.5 py-2 text-[13px] font-medium text-foreground backdrop-blur-sm sm:inset-x-4 sm:bottom-4 sm:px-5 sm:py-2.5 sm:text-sm">
-                    <span className="truncate">{tile.label}</span>
-                    <Arrow className="h-4 w-4 shrink-0 text-primary transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-                  </span>
+        {/* Editorial Category Grid */}
+        {(() => {
+          const editorialCats = (categoriesList || [])
+            .filter((c: any) => c.showOnHome)
+            .slice(0, 4);
+          const fallbackCats =
+            editorialCats.length > 0
+              ? editorialCats
+              : (categoriesList || []).slice(0, 4);
+          if (fallbackCats.length < 1) return null;
+          const centerImage =
+            getSetting(siteSettings, "editorial_center_image") ||
+            "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=900&q=80";
+          const headlineAr =
+            getSetting(siteSettings, "editorial_headline_ar") ||
+            "تشكيلة جديدة\nبأسلوب راقٍ";
+          const headlineEn =
+            getSetting(siteSettings, "editorial_headline_en") ||
+            "New Collection\nRefined Style";
+          const headline = language === "ar" ? headlineAr : headlineEn;
+          const DEDICATED: Record<string, string> = {
+            dresses: "/dresses",
+            shoes: "/shoes",
+            clothes: "/clothes",
+          };
+          const tileLink = (c: any, subId?: string) => {
+            const base = DEDICATED[c.slug] ?? `/category/${c.slug}`;
+            return subId ? `${base}?sub=${subId}` : base;
+          };
+          const allCats = categoriesList || [];
+          const allSubs = allSubcategories || [];
+          const tiles = [0, 1, 2, 3].map((i) => {
+            const savedCatId = getSetting(
+              siteSettings,
+              `editorial_tile_${i + 1}_category_id`,
+            );
+            const savedSubId = getSetting(
+              siteSettings,
+              `editorial_tile_${i + 1}_subcategory_id`,
+            );
+            const cat = savedCatId
+              ? allCats.find((c: any) => String(c.id) === savedCatId)
+              : fallbackCats[i];
+            const sub = savedSubId
+              ? allSubs.find((s: any) => String(s.id) === savedSubId)
+              : null;
+            return {
+              img:
+                getSetting(siteSettings, `editorial_tile_${i + 1}_image`) ||
+                sub?.image ||
+                cat?.image ||
+                "",
+              video:
+                getSetting(siteSettings, `editorial_tile_${i + 1}_video`) || "",
+              labelAr:
+                sub?.nameAr || sub?.name || cat?.nameAr || cat?.name || "",
+              labelEn: sub?.name || cat?.name || "",
+              href: cat
+                ? tileLink(cat, sub ? String(sub.id) : undefined)
+                : "/shop",
+            };
+          });
+          const [tl, tr, bl, br] = tiles;
+          return (
+            <section className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 bg-background">
+              <div className="grid grid-cols-[1fr_1.4fr_1fr] grid-rows-2 gap-1 sm:gap-1.5 h-[340px] sm:h-[440px] lg:h-[520px] rounded-2xl overflow-hidden">
+                {/* Top-left tile */}
+                <Link href={tl.href}>
+                  <div className="relative overflow-hidden group cursor-pointer h-full bg-muted">
+                    {tl.video ? (
+                      <AutoplayVideo
+                        src={optimizeCloudinaryVideoUrl(tl.video) || tl.video}
+                        poster={
+                          optimizeCloudinaryUrl(tl.img) || tl.img || undefined
+                        }
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : tl.img ? (
+                      <BannerImage
+                        src={tl.img}
+                        alt={language === "ar" ? tl.labelAr : tl.labelEn}
+                        fetchPriority="high"
+                        loading="eager"
+                        width={400}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                    <span className="absolute bottom-2 start-3 sm:bottom-4 sm:start-4 text-white text-xs sm:text-sm font-semibold tracking-wide drop-shadow">
+                      {language === "ar" ? tl.labelAr : tl.labelEn}
+                    </span>
+                  </div>
                 </Link>
-              ))}
-            </div>
-          </Section>
-        )}
+                {/* Center panel — row-span-2 */}
+                {(() => {
+                  const centerVideo =
+                    getSetting(siteSettings, "editorial_center_video") || "";
+                  return (
+                    <div className="relative row-span-2 overflow-hidden group">
+                      {centerVideo ? (
+                        <AutoplayVideo
+                          src={
+                            optimizeCloudinaryVideoUrl(centerVideo) ||
+                            centerVideo
+                          }
+                          poster={
+                            optimizeCloudinaryUrl(centerImage) ||
+                            centerImage ||
+                            undefined
+                          }
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      ) : (
+                        <BannerImage
+                          src={centerImage}
+                          alt="editorial"
+                          fetchPriority="high"
+                          loading="eager"
+                          width={800}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/30" />
+                      <div
+                        className={`absolute top-4 sm:top-8 ${language === "ar" ? "right-4 sm:right-6 text-right" : "left-4 sm:left-6 text-left"} text-white`}
+                      >
+                        {headline.split("\n").map((line, i) => (
+                          <p
+                            key={i}
+                            className={`font-display font-bold leading-tight ${i === 0 ? "text-lg sm:text-3xl md:text-4xl" : "text-base sm:text-2xl md:text-3xl opacity-90"}`}
+                          >
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                      <Link href="/shop">
+                        <div className="absolute bottom-3 sm:bottom-5 inset-x-0 flex justify-center">
+                          <span className="bg-white/90 text-foreground text-[10px] sm:text-xs uppercase tracking-[0.2em] font-semibold px-3 py-1.5 sm:px-5 sm:py-2 hover:bg-white transition-colors cursor-pointer">
+                            {language === "ar" ? "تسوقي الآن" : "Shop Now"}
+                          </span>
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })()}
+                {/* Top-right tile */}
+                <Link href={tr.href}>
+                  <div className="relative overflow-hidden group cursor-pointer h-full bg-muted">
+                    {tr.video ? (
+                      <AutoplayVideo
+                        src={optimizeCloudinaryVideoUrl(tr.video) || tr.video}
+                        poster={
+                          optimizeCloudinaryUrl(tr.img) || tr.img || undefined
+                        }
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : tr.img ? (
+                      <BannerImage
+                        src={tr.img}
+                        alt={language === "ar" ? tr.labelAr : tr.labelEn}
+                        fetchPriority="high"
+                        loading="eager"
+                        width={400}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                    <span className="absolute bottom-2 start-3 sm:bottom-4 sm:start-4 text-white text-xs sm:text-sm font-semibold tracking-wide drop-shadow">
+                      {language === "ar" ? tr.labelAr : tr.labelEn}
+                    </span>
+                  </div>
+                </Link>
+                {/* Bottom-left tile */}
+                <Link href={bl.href}>
+                  <div className="relative overflow-hidden group cursor-pointer h-full bg-muted">
+                    {bl.video ? (
+                      <AutoplayVideo
+                        src={optimizeCloudinaryVideoUrl(bl.video) || bl.video}
+                        poster={
+                          optimizeCloudinaryUrl(bl.img) || bl.img || undefined
+                        }
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : bl.img ? (
+                      <BannerImage
+                        src={bl.img}
+                        alt={language === "ar" ? bl.labelAr : bl.labelEn}
+                        loading="lazy"
+                        width={400}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                    <span className="absolute bottom-2 start-3 sm:bottom-4 sm:start-4 text-white text-xs sm:text-sm font-semibold tracking-wide drop-shadow">
+                      {language === "ar" ? bl.labelAr : bl.labelEn}
+                    </span>
+                  </div>
+                </Link>
+                {/* Bottom-right tile */}
+                <Link href={br.href}>
+                  <div className="relative overflow-hidden group cursor-pointer h-full bg-muted">
+                    {br.video ? (
+                      <AutoplayVideo
+                        src={optimizeCloudinaryVideoUrl(br.video) || br.video}
+                        poster={
+                          optimizeCloudinaryUrl(br.img) || br.img || undefined
+                        }
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : br.img ? (
+                      <BannerImage
+                        src={br.img}
+                        alt={language === "ar" ? br.labelAr : br.labelEn}
+                        loading="lazy"
+                        width={400}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                    <span className="absolute bottom-2 start-3 sm:bottom-4 sm:start-4 text-white text-xs sm:text-sm font-semibold tracking-wide drop-shadow">
+                      {language === "ar" ? br.labelAr : br.labelEn}
+                    </span>
+                  </div>
+                </Link>
+              </div>
+            </section>
+          );
+        })()}
 
         {/* ── On sale ── */}
         {onSale.length > 0 && (
@@ -827,7 +1012,7 @@ export default function Home() {
                               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
                               <ProductWatermark size="lg" className="hidden sm:flex" />
                               <div className="absolute start-2 top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow sm:start-3 sm:top-3 sm:h-9 sm:w-9">
-                                <span className="text-[11px] font-bold leading-none text-primary sm:text-sm">
+                                <span className="text-[11px] font-bold leading-none text-berry sm:text-sm">
                                   {rank}
                                 </span>
                               </div>
@@ -878,11 +1063,11 @@ export default function Home() {
                                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                               />
                             </span>
-                            <span className="font-heading w-7 shrink-0 text-center text-3xl font-medium leading-none text-primary/35 transition-colors group-hover:text-primary">
+                            <span className="font-heading w-7 shrink-0 text-center text-3xl font-medium leading-none text-berry/35 transition-colors group-hover:text-berry">
                               {i + 4}
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="line-clamp-2 block text-[15px] font-medium leading-snug transition-colors group-hover:text-primary">
+                              <span className="line-clamp-2 block text-[15px] font-medium leading-snug transition-colors group-hover:text-berry">
                                 {product.name}
                               </span>
                               <span className="mt-1 flex items-baseline gap-2 text-sm">
@@ -974,32 +1159,6 @@ export default function Home() {
             </Section>
           ))}
 
-        {/* ── Service promises ── */}
-        <Section className="!py-7 sm:!py-9">
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-4">
-            {services.map((s) => (
-              <Link
-                key={s.title}
-                href={s.href}
-                className="group flex flex-col items-start gap-2.5 rounded-2xl border border-border/70 bg-card p-3.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_18px_40px_-26px_rgba(74,24,43,0.5)] sm:flex-row sm:items-center sm:gap-4 sm:p-5"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--blush)/0.7)] text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground sm:h-12 sm:w-12">
-                  <s.icon className="h-5 w-5" strokeWidth={1.5} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[13px] font-semibold leading-tight sm:text-[15px]">
-                    {s.title}
-                  </span>
-                  {s.text && (
-                    <span className="mt-1 line-clamp-2 block text-[11.5px] leading-snug text-muted-foreground sm:text-[13px]">
-                      {s.text}
-                    </span>
-                  )}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </Section>
       </main>
 
       <Footer />

@@ -16,14 +16,7 @@ import { ProductWatermark } from "@/components/ui/ProductWatermark";
 // into a "+N" link. Capping this keeps every card the same height — products
 // with many colors (10+) previously stretched their card taller than the rest
 // of the row and looked oversized in sliders.
-const MAX_VISIBLE_SWATCHES = 4;
-
-/** "299" for whole prices, "299.50" otherwise — keeps cards calm and easy to scan. */
-function formatPrice(value: unknown): string {
-  const n = parseFloat(String(value));
-  if (!Number.isFinite(n)) return "0";
-  return Number.isInteger(n) ? String(n) : n.toFixed(2);
-}
+const MAX_VISIBLE_SWATCHES = 5;
 
 export const ProductCard = memo(function ProductCard({ product, initialColorName, priority = false }: { product: Product; initialColorName?: string | null; priority?: boolean }) {
   const { t, language } = useLanguage();
@@ -48,15 +41,10 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
     toggle(product.id, activeColor ?? undefined);
   };
 
-  const price = formatPrice(product.price);
+  const price = parseFloat(product.price.toString()).toFixed(2);
   const discountPrice = product.discountPrice
-    ? formatPrice(product.discountPrice)
+    ? parseFloat(product.discountPrice.toString()).toFixed(2)
     : null;
-  const discountPercent = product.discountPrice
-    ? Math.round(
-        (1 - parseFloat(product.discountPrice.toString()) / parseFloat(product.price.toString())) * 100,
-      )
-    : 0;
   const isSoldOut = product.stockQuantity <= 0;
 
   const cv = (product as any).colorVariants as ColorVariant[] | undefined;
@@ -224,7 +212,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
   return (
     <div
-      className="group flex h-full cursor-pointer flex-col rounded-[1.15rem] bg-card p-1.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_22px_44px_-26px_rgba(74,24,43,0.5)] sm:p-2"
+      className="group block cursor-pointer"
       data-testid={`card-product-${product.id}`}
       onMouseEnter={() => { setIsCardHovered(true); handlePrefetchIntent(); }}
       onMouseLeave={() => setIsCardHovered(false)}
@@ -232,7 +220,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
     >
       {/* Image container */}
       <Link href={`/product/${product.id}`} className="block">
-        <div ref={nearViewportRef} className="relative aspect-[3/4] overflow-hidden bg-[hsl(var(--sand))] rounded-[0.85rem]">
+        <div ref={nearViewportRef} className="relative aspect-[3/4] overflow-hidden bg-white mb-3 rounded-2xl ring-1 ring-black/[0.06]">
           {/* Blur-up placeholder — shows a tiny blurred preview while the real image loads.
               For R2 images: a pre-generated tiny blur.webp fades out when the photo arrives.
               Legacy Cloudinary remains supported for rollback; other images use the shimmer. */}
@@ -242,11 +230,11 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               aria-hidden="true"
               width={600}
               height={800}
-              className={`absolute inset-0 z-30 w-full h-full object-cover rounded-[0.85rem] pointer-events-none transition-opacity duration-700 ${imageReady ? "opacity-0" : "opacity-100"}`}
+              className={`absolute inset-0 z-30 w-full h-full object-cover rounded-2xl pointer-events-none transition-opacity duration-700 ${imageReady ? "opacity-0" : "opacity-100"}`}
             />
           ) : (
             <div
-              className={`absolute inset-0 z-30 rounded-[0.85rem] bg-muted transition-opacity duration-500 pointer-events-none ${imageReady ? "opacity-0" : "animate-pulse opacity-100"}`}
+              className={`absolute inset-0 z-30 rounded-2xl bg-muted transition-opacity duration-500 pointer-events-none ${imageReady ? "opacity-0" : "animate-pulse opacity-100"}`}
             />
           )}
           {/* Stock status takes priority over promotional badges. Keep the photo and link visible. */}
@@ -261,34 +249,28 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             </div>
           )}
 
-          {/* Badges — soft pills stacked at the top start */}
-          {!isSoldOut && (product.isNewArrival || discountPrice || (product as any).isBestSeller) && (
-            <div className="absolute top-2 start-2 z-20 flex flex-col items-start gap-1.5 sm:top-2.5 sm:start-2.5">
-              {product.isNewArrival && (
-                <span
-                  className="rounded-full bg-[hsl(var(--sage))] px-2.5 py-1 text-[10px] font-medium leading-none text-foreground sm:text-[11px]"
-                  data-testid={`badge-new-${product.id}`}
-                >
-                  {t.product.new}
-                </span>
-              )}
-              {!product.isNewArrival && (product as any).isBestSeller && (
-                <span
-                  className="rounded-full bg-[hsl(var(--sand))] px-2.5 py-1 text-[10px] font-medium leading-none text-foreground sm:text-[11px]"
-                  data-testid={`badge-bestseller-${product.id}`}
-                >
-                  {language === "ar" ? "الأكثر مبيعاً" : "Bestseller"}
-                </span>
-              )}
-              {discountPrice && (
-                <span
-                  className="rounded-full px-2.5 py-1 text-[10px] font-semibold leading-none text-white sm:text-[11px]"
-                  style={{ backgroundColor: "#9B1C1C" }}
-                  data-testid={`badge-sale-${product.id}`}
-                >
-                  {discountPercent > 0 ? <span className="ltr-num">-{discountPercent}%</span> : t.product.sale}
-                </span>
-              )}
+          {/* NEW badge — top start */}
+          {!isSoldOut && product.isNewArrival && (
+            <div className="absolute top-3 start-3 z-20">
+              <span
+                className="bg-foreground text-background text-[10px] font-bold uppercase tracking-[0.15em] px-2.5 py-1 leading-none"
+                data-testid={`badge-new-${product.id}`}
+              >
+                {t.product.new}
+              </span>
+            </div>
+          )}
+
+          {/* SALE badge — circle, top end */}
+          {!isSoldOut && discountPrice && (
+            <div className="absolute top-3 end-3 z-20">
+              <span
+                className="w-10 h-10 rounded-full text-white text-[10px] font-bold uppercase tracking-wide flex items-center justify-center leading-none shadow"
+                style={{ backgroundColor: "#FF0000" }}
+                data-testid={`badge-sale-${product.id}`}
+              >
+                {t.product.sale}
+              </span>
             </div>
           )}
 
@@ -382,7 +364,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               e.stopPropagation();
               setLocation(`/product/${product.id}`);
             }}
-            className="absolute bottom-0 inset-x-0 z-30 hidden items-center justify-center gap-2 bg-primary/95 text-primary-foreground text-xs font-medium py-2.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out sm:flex"
+            className="absolute bottom-0 inset-x-0 z-30 flex items-center justify-center gap-2 bg-foreground/90 text-background text-xs font-semibold uppercase tracking-widest py-2.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"
             data-testid={`button-view-product-${product.id}`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />
@@ -398,7 +380,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                 : t.wishlist.addToWishlist
             }
             data-testid={`button-wishlist-${product.id}`}
-            className="absolute top-2 end-2 z-30 flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/95 shadow-sm transition-transform duration-200 hover:scale-110 active:scale-95 sm:top-2.5 sm:end-2.5"
+            className={`absolute bottom-3 group-hover:bottom-12 end-3 z-30 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 focus:opacity-100 ${wishlisted ? "opacity-100 bg-white" : "opacity-0 group-hover:opacity-100 bg-white/80"}`}
           >
             <Heart
               className={`w-4 h-4 transition-all duration-200 ${wishlisted ? "fill-rose-500 stroke-rose-500" : "stroke-foreground fill-transparent"}`}
@@ -408,7 +390,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
           {/* Carousel dots */}
           {allImages.length > 1 && effectiveColorIdx === null && (
-            <div className="absolute bottom-3 sm:group-hover:bottom-12 inset-x-0 flex justify-center gap-1.5 z-20 transition-all duration-300">
+            <div className="absolute bottom-3 group-hover:bottom-12 inset-x-0 flex justify-center gap-1.5 z-20 transition-all duration-300">
               {allImages.map((_, idx) => (
                 <span
                   key={idx}
@@ -425,50 +407,20 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
       </Link>
 
       {/* Info */}
-      <div className="flex flex-1 flex-col gap-1.5 px-1.5 pb-1.5 pt-2.5 sm:px-2 sm:pb-2 sm:pt-3">
-        {product.brand && (
-          <p className="text-[10px] text-muted-foreground/80 uppercase tracking-[0.18em] font-medium">
-            {product.brand}
-          </p>
-        )}
+      <div className="space-y-2 px-0.5">
+        <p className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.2em] font-medium">
+          {product.brand || "Lucerne Boutique"}
+        </p>
 
         <Link href={`/product/${product.id}`}>
-          <h3 className={`font-semibold text-[15px] sm:text-[17px] leading-tight rtl:text-[13px] rtl:sm:text-[15px] rtl:leading-snug line-clamp-2 transition-colors duration-200 ${isSoldOut ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
+          <h3 className={`font-semibold text-xs sm:text-sm leading-snug line-clamp-2 transition-colors duration-200 ${isSoldOut ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
             {product.name}
           </h3>
         </Link>
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 pt-0.5">
-        <div className="flex items-baseline gap-2">
-          {discountPrice ? (
-            <>
-              <span
-                className={`font-semibold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
-                style={isSoldOut ? undefined : { color: "#9B1C1C" }}
-                data-testid={`text-discount-price-${product.id}`}
-              >
-                <span className="ltr-num">₪ {discountPrice}</span>
-              </span>
-              <span
-                className="text-xs text-muted-foreground/70 line-through"
-                data-testid={`text-original-price-${product.id}`}
-              >
-                <span className="ltr-num">₪ {price}</span>
-              </span>
-            </>
-          ) : (
-            <span
-              className={`font-semibold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
-              data-testid={`text-price-${product.id}`}
-            >
-              <span className="ltr-num">₪ {price}</span>
-            </span>
-          )}
-        </div>
-
         {hasVariants && cv.length > 1 && (
           <div
-            className="flex gap-1 sm:gap-1.5 flex-nowrap items-center h-6 px-0.5"
+            className="flex gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide flex-nowrap py-0.5 h-6 sm:h-7 items-center"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             data-testid={`swatches-${product.id}`}
           >
@@ -481,7 +433,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                   onClick={(e) => handleSwatchClick(e, idx)}
                   onMouseEnter={(e) => !isSoldOut && handleSwatchHover(e, idx)}
                   onMouseLeave={(e) => !isSoldOut && handleSwatchHover(e, null)}
-                  className={`w-4 h-4 sm:w-[1.15rem] sm:h-[1.15rem] rounded-full border transition-all duration-200 overflow-hidden flex-shrink-0 ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 transition-all duration-200 overflow-hidden flex-shrink-0 ${
                     activeColorIdx === idx || hoveredColorIdx === idx
                       ? "border-foreground scale-125 shadow-md"
                       : autoColorIdx === idx
@@ -492,7 +444,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                   title={translateColorName(v.name, language === "ar" ? "ar" : "en")}
                   data-testid={`swatch-${product.id}-${idx}`}
                 >
-                  {v.mainImage && !swatchColors[0] ? (
+                  {v.mainImage ? (
                     <img
                       src={optimizeCloudinaryUrl(v.mainImage, 100) || v.mainImage}
                       alt={v.name}
@@ -515,7 +467,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               <Link
                 href={`/product/${product.id}`}
                 onClick={(e) => e.stopPropagation()}
-                className="h-4 sm:h-[1.15rem] min-w-4 px-1 rounded-full flex-shrink-0 flex items-center justify-center bg-muted text-[8px] sm:text-[9px] font-semibold text-muted-foreground hover:bg-muted-foreground/20 transition-colors"
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex-shrink-0 flex items-center justify-center bg-muted text-[8px] sm:text-[9px] font-semibold text-muted-foreground hover:bg-muted-foreground/20 transition-colors"
                 style={{ boxShadow: "0 0 0 1px rgba(0,0,0,0.15)" }}
                 title={translateColorName("", language === "ar" ? "ar" : "en")}
                 data-testid={`swatch-more-${product.id}`}
@@ -526,6 +478,31 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           </div>
         )}
 
+        <div className="flex items-center gap-2">
+          {discountPrice ? (
+            <>
+              <span
+                className={`font-bold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
+                style={isSoldOut ? undefined : { color: "#9B1C1C" }}
+                data-testid={`text-discount-price-${product.id}`}
+              >
+                ₪{discountPrice}
+              </span>
+              <span
+                className="text-xs text-muted-foreground/60 line-through"
+                data-testid={`text-original-price-${product.id}`}
+              >
+                ₪{price}
+              </span>
+            </>
+          ) : (
+            <span
+              className={`font-bold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
+              data-testid={`text-price-${product.id}`}
+            >
+              ₪{price}
+            </span>
+          )}
         </div>
       </div>
     </div>

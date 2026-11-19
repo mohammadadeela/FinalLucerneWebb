@@ -12,7 +12,6 @@ import {
   BadgePercent,
   MapPin,
   Truck,
-  Sparkles,
   RefreshCw,
   ChevronDown,
   ArrowUpRight,
@@ -139,6 +138,11 @@ export function HeelIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+/** The boutique butterfly as a news-bar icon (same call shape as the line icons). */
+function NewsButterfly({ className }: { className?: string; strokeWidth?: number }) {
+  return <LucerneLogo className={className} />;
+}
+
 function ClickIcon({
   children,
   animation = "pop",
@@ -614,10 +618,6 @@ export function Navbar() {
   const overflowNavCats = navCategories.slice(MAX_NAV_CATS);
   const catLabel = (c: any) => (isAr ? c.nameAr || c.name : c.name);
   const currentPath = location.split("?")[0];
-  const isNewInActive =
-    currentPath === "/shop" &&
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("new") === "1";
 
   const [expandedCat, setExpandedCat] = useState<number | null>(null);
 
@@ -659,16 +659,16 @@ export function Navbar() {
     if (/sale|off|%|خصم|تخفيض|تنزيلات|عرض|عروض/.test(s)) return BadgePercent;
     if (/exchange|return|تبديل|استبدال|إرجاع|ارجاع/.test(s)) return RefreshCw;
     if (/store|visit|location|فرع|متجر|زورونا|موقعنا/.test(s)) return MapPin;
-    return Sparkles;
+    return NewsButterfly;
   };
 
   const navLinkClass = (active: boolean) =>
-    `relative inline-flex items-center gap-1 py-2 text-[15px] transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-center after:bg-primary after:transition-transform after:duration-300 hover:text-primary hover:after:scale-x-100 ${
-      active ? "text-primary after:scale-x-100" : "text-foreground after:scale-x-0"
+    `relative inline-flex items-center gap-1 py-2 text-[15px] transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-center after:bg-berry after:transition-transform after:duration-300 hover:text-berry hover:after:scale-x-100 ${
+      active ? "text-berry after:scale-x-100" : "text-foreground after:scale-x-0"
     }`;
 
   const iconBtn =
-    "relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-secondary/70 hover:text-primary";
+    "relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-secondary/70 hover:text-berry";
 
   return (
     <>
@@ -689,7 +689,7 @@ export function Navbar() {
       {showNewsBar && newsItems.length > 0 && (
         <div
           ref={newsBarRef}
-          className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-primary text-primary-foreground"}`}
+          className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-berry text-white"}`}
           style={
             seasonInfo
               ? { background: seasonInfo.barBg, color: seasonInfo.barText }
@@ -789,30 +789,30 @@ export function Navbar() {
                   LUCERNE
                 </span>
                 <span className="relative inline-block -mb-0.5">
-                  <LucerneLogo className="h-6 w-auto sm:h-7 text-primary" />
+                  <LucerneLogo className="h-6 w-auto sm:h-7 text-berry" />
                   <SeasonalLogoAccent />
                 </span>
               </span>
               <span className="mt-1 flex items-center gap-2" dir="ltr">
-                <span className="h-px w-4 bg-primary/60" />
+                <span className="h-px w-4 bg-berry/60" />
                 <span
                   className="keep-tracking text-[8.5px] sm:text-[9.5px] font-medium uppercase text-foreground/70"
                   style={{ ["--tracking" as any]: "0.42em", fontFamily: "var(--font-sans)" }}
                 >
                   Boutique
                 </span>
-                <span className="h-px w-4 bg-primary/60" />
+                <span className="h-px w-4 bg-berry/60" />
               </span>
             </Link>
 
             {/* Desktop navigation */}
             <nav className="hidden lg:flex items-center gap-6 xl:gap-9" aria-label="Main">
               <Link
-                href="/shop?new=1"
-                className={navLinkClass(isNewInActive)}
-                data-testid="link-new-in"
+                href="/shop"
+                className={navLinkClass(currentPath === "/shop")}
+                data-testid="link-shop"
               >
-                {t.nav.newIn}
+                {isAr ? "كل المنتجات" : "Shop All"}
               </Link>
               {primaryNavCats.map((c: any) => {
                 const href = categoryHref(c);
@@ -837,7 +837,7 @@ export function Navbar() {
                               <Link
                                 key={s.id}
                                 href={`${href}?sub=${s.id}`}
-                                className="flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm text-foreground/85 transition-colors hover:bg-secondary/60 hover:text-primary"
+                                className="flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm text-foreground/85 transition-colors hover:bg-secondary/60 hover:text-berry"
                               >
                                 <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-secondary">
                                   {s.image && (
@@ -855,7 +855,7 @@ export function Navbar() {
                           </div>
                           <Link
                             href={href}
-                            className="mt-1 flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-secondary"
+                            className="mt-1 flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2.5 text-xs font-semibold text-berry transition-colors hover:bg-secondary"
                           >
                             {isAr ? `كل ${catLabel(c)}` : `All ${catLabel(c)}`}
                             <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" />
@@ -878,7 +878,7 @@ export function Navbar() {
                         <Link
                           key={c.id}
                           href={categoryHref(c)}
-                          className="block rounded-xl px-3 py-2 text-sm text-foreground/85 transition-colors hover:bg-secondary/60 hover:text-primary"
+                          className="block rounded-xl px-3 py-2 text-sm text-foreground/85 transition-colors hover:bg-secondary/60 hover:text-berry"
                         >
                           {catLabel(c)}
                         </Link>
@@ -903,7 +903,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="hidden lg:flex h-10 w-48 xl:w-64 items-center gap-2.5 rounded-full border border-border bg-card/70 px-4 text-start text-[13px] text-muted-foreground transition-colors hover:border-primary/50 hover:bg-card me-1"
+                className="hidden lg:flex h-10 w-48 xl:w-64 items-center gap-2.5 rounded-full border border-border bg-card/70 px-4 text-start text-[13px] text-muted-foreground transition-colors hover:border-berry/50 hover:bg-card me-1"
                 data-testid="button-search-open"
               >
                 <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={1.7} />
@@ -917,7 +917,7 @@ export function Navbar() {
                 <ClickIcon
                   animation="spin"
                   onClick={toggleLanguage}
-                  className="h-10 rounded-full px-2.5 text-[13px] transition-colors hover:bg-secondary/70 hover:text-primary bg-transparent border-none outline-none"
+                  className="h-10 rounded-full px-2.5 text-[13px] transition-colors hover:bg-secondary/70 hover:text-berry bg-transparent border-none outline-none"
                   testId="button-language-toggle"
                 >
                   <Globe className="w-4 h-4" strokeWidth={1.6} />
@@ -952,7 +952,7 @@ export function Navbar() {
                     <div className="rounded-2xl border border-border/70 bg-card p-1.5 shadow-[0_24px_60px_-24px_rgba(74,24,43,0.35)]">
                       <Link
                         href="/profile"
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-secondary/60 hover:text-primary"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-secondary/60 hover:text-berry"
                       >
                         <User className="h-4 w-4" strokeWidth={1.6} />
                         {t.profile.myAccount}
@@ -988,7 +988,7 @@ export function Navbar() {
                         animate={{ scale: 1 }}
                         exit={{ scale: 0 }}
                         transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                        className="absolute top-0.5 end-0.5 bg-primary text-primary-foreground text-[10px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center"
+                        className="absolute top-0.5 end-0.5 bg-berry text-white text-[10px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center"
                         data-testid="text-wishlist-count"
                       >
                         {wishlistCount}
@@ -1012,7 +1012,7 @@ export function Navbar() {
                     initial={{ scale: 0.6 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 20 }}
-                    className="absolute top-0.5 end-0.5 bg-primary text-primary-foreground text-[10px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center"
+                    className="absolute top-0.5 end-0.5 bg-berry text-white text-[10px] font-bold min-w-4 h-4 px-1 rounded-full flex items-center justify-center"
                     data-testid="text-cart-count"
                   >
                     {itemCount}
@@ -1054,7 +1054,7 @@ export function Navbar() {
                   >
                     LUCERNE
                   </span>
-                  <LucerneLogo className="h-5 w-auto text-primary" />
+                  <LucerneLogo className="h-5 w-auto text-berry" />
                 </span>
                 <button
                   type="button"
@@ -1081,14 +1081,14 @@ export function Navbar() {
                 </button>
 
                 <Link
-                  href="/shop?new=1"
+                  href="/shop"
                   className="flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-medium hover:bg-secondary/60"
-                  data-testid="link-new-in-mobile"
+                  data-testid="link-shop-mobile"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-foreground/80">
-                    <Sparkles className="h-[18px] w-[18px]" strokeWidth={1.6} />
+                    <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.6} />
                   </span>
-                  {t.nav.newIn}
+                  {isAr ? "كل المنتجات" : "Shop All"}
                 </Link>
 
                 {navCategories.map((c: any) => {
@@ -1142,7 +1142,7 @@ export function Navbar() {
                                 <Link
                                   key={s.id}
                                   href={`${href}?sub=${s.id}`}
-                                  className="rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] text-foreground/85 hover:border-primary/50 hover:text-primary"
+                                  className="rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] text-foreground/85 hover:border-berry/50 hover:text-berry"
                                 >
                                   {isAr ? s.nameAr || s.name : s.name}
                                 </Link>
@@ -1175,7 +1175,7 @@ export function Navbar() {
                     className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-sm"
                     data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
                   >
-                    <User className="h-[18px] w-[18px] text-primary" strokeWidth={1.6} />
+                    <User className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
                     <span className="truncate">
                       {user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}
                     </span>
@@ -1185,7 +1185,7 @@ export function Navbar() {
                     className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-sm"
                     data-testid="link-wishlist-mobile"
                   >
-                    <Heart className="h-[18px] w-[18px] text-primary" strokeWidth={1.6} />
+                    <Heart className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
                     <span className="truncate">{t.wishlist.navLabel}</span>
                   </Link>
                   <Link
@@ -1193,7 +1193,7 @@ export function Navbar() {
                     className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-sm"
                     data-testid="link-our-location"
                   >
-                    <MapPin className="h-[18px] w-[18px] text-primary" strokeWidth={1.6} />
+                    <MapPin className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
                     <span className="truncate">{t.nav.ourLocation}</span>
                   </Link>
                   <button
@@ -1202,7 +1202,7 @@ export function Navbar() {
                     className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-start text-sm"
                     data-testid="button-language-toggle-mobile"
                   >
-                    <Globe className="h-[18px] w-[18px] text-primary" strokeWidth={1.6} />
+                    <Globe className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
                     <span className="truncate">{t.langLabel}</span>
                   </button>
                 </div>

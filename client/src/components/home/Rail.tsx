@@ -56,7 +56,7 @@ export function Rail({
   };
 
   const arrow =
-    "hidden sm:flex absolute top-[38%] z-20 h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-card text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-primary hover:text-primary-foreground hover:border-primary";
+    "hidden sm:flex absolute top-[38%] z-20 h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-card text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-berry hover:text-white hover:border-berry";
 
   return (
     <div className={`relative ${className}`}>
@@ -88,7 +88,7 @@ export function Rail({
         role="list"
         aria-label={ariaLabel}
         data-testid={testId}
-        className={`scrollbar-hide flex snap-x snap-mandatory overflow-x-auto scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 scroll-px-4 sm:scroll-px-0 ${scrollClassName}`}
+        className={`scrollbar-hide flex snap-x snap-proximity overflow-x-auto scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 scroll-px-4 sm:scroll-px-0 ${scrollClassName}`}
       >
         {children}
       </div>

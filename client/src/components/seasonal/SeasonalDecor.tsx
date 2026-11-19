@@ -1,4 +1,5 @@
-import { useEffect, useId, useMemo, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, type ReactNode } from "react";
+import { BrandButterfly } from "@/components/ui/BrandButterfly";
 import { useLanguage } from "@/i18n";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { SEASONS, SEASON_FONT_URL, getActiveTheme, daysUntil, type SeasonalTheme, type SeasonInfo } from "@/lib/seasonal";
@@ -17,6 +18,11 @@ const CSS = `
 @keyframes sx-twinkle { 0%,100%{opacity:1} 50%{opacity:.18} }
 @keyframes sx-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 @keyframes sx-breathe { 0%,100%{opacity:.72;transform:scale(.95)} 50%{opacity:1;transform:scale(1.05)} }
+@keyframes sx-flake { 0%{transform:translate3d(0,0,0) rotate(0)} 100%{transform:translate3d(46px,640px,0) rotate(260deg)} }
+@keyframes sx-lift { 0%{transform:translate3d(0,0,0);opacity:0} 10%{opacity:.95} 82%{opacity:.8} 100%{transform:translate3d(28px,-620px,0);opacity:0} }
+@keyframes sx-run { from{transform:translate3d(-14vw,0,0)} to{transform:translate3d(112vw,0,0)} }
+@keyframes sx-hop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3.5px)} }
+@keyframes sx-leg { 0%,100%{transform:rotate(26deg)} 50%{transform:rotate(-26deg)} }
 @keyframes sx-rise { 0%{transform:translateY(0);opacity:0} 18%{opacity:.85} 100%{transform:translateY(-110px);opacity:0} }
 .sx-sway{transform-origin:50% 0;animation:sx-sway 5.5s ease-in-out infinite alternate}
 .sx-float{animation:sx-float 8s ease-in-out infinite}
@@ -376,103 +382,368 @@ function countdownParts(days: number | null, info: SeasonInfo, ar: boolean): { n
   return { num: String(days), text: ar ? `${days >= 11 ? "يوماً" : "أيام"} على ${ev}` : `days until ${ev}` };
 }
 
-/* ── Hero overlay ─────────────────────────────────────────────────────────── */
+/* ── Hero scene ───────────────────────────────────────────────────────────────
+   The landing hero and the category banners share one "scene" layer.
+   No season: the boutique's own butterflies drift across the banner.
+   Season on: the banner's text panel takes the season's night colours and the
+   butterflies hand over to that season's own moving pieces —
+     Christmas   — falling snow and snowflakes, swinging baubles, the star, a snowdrift
+     Eid al-Fitr — the hilal, swinging fanous lanterns, paper lanterns rising into the dusk
+     Eid al-Adha — a little flock of sheep trotting over the hills at sunrise            */
 
-/** Decorative layer for the home hero. Renders nothing when no season is active. */
-export function SeasonalHeroOverlay() {
+export interface SeasonSkin {
+  season: SeasonalTheme;
+  info: SeasonInfo;
+  /** Background of the banner's text panel. */
+  panel: string;
+  night: string;
+  ink: string;
+  sub: string;
+  accent: string;
+}
+
+/** Colours a banner should wear while a season is switched on (null = the normal look). */
+export function useSeasonSkin(): SeasonSkin | null {
   const { data: settings } = useSiteSettings();
   const season = getActiveTheme(settings);
   if (!season) return null;
-  return <HeroInner season={season} countdownDate={settings?.seasonal_countdown_date} />;
-}
-
-function HeroInner({ season, countdownDate }: { season: SeasonalTheme; countdownDate?: string }) {
-  const { language } = useLanguage();
-  useSeasonFont();
   const info = SEASONS[season];
   const p = info.palette;
-  const ar = language === "ar";
-  const cd = countdownParts(daysUntil(countdownDate), info, ar);
-  // The art sits below the navigation, so it never covers a menu link or the logo.
-  const stage = { top: "calc(var(--news-bar-offset, 0px) + var(--navbar-h, 5rem))" } as const;
-  const lift = season === "eid_adha" ? "bottom-10 sm:bottom-14" : season === "eid_fitr" ? "bottom-9 sm:bottom-12" : "bottom-5 sm:bottom-8";
+  return {
+    season,
+    info,
+    panel: `radial-gradient(120% 90% at 85% 0%, ${p.deep} 0%, ${p.night} 70%)`,
+    night: p.night,
+    ink: p.light,
+    sub: `${p.light}cc`,
+    accent: p.gold,
+  };
+}
+
+/* Butterflies: each follows its own slow wandering path (layered sines), turns to
+   face the way it flies and beats its wings with a soft 3D fold. One shared
+   animation frame drives them all; they stop while the tab is hidden. */
+interface Flyer { size: number; speed: number; opacity: number; cx: number; cy: number; ax: number; ay: number; f: [number, number, number, number]; ph: [number, number, number, number] }
+const FLYERS: Flyer[] = [
+  { size: 60, speed: 1.0, opacity: 0.95, cx: 62, cy: 40, ax: 26, ay: 26, f: [0.093, 0.221, 0.117, 0.263], ph: [1.4, 4.2, 0.6, 2.1] },
+  { size: 42, speed: 1.3, opacity: 0.85, cx: 34, cy: 34, ax: 24, ay: 22, f: [0.081, 0.197, 0.131, 0.241], ph: [3.9, 0.8, 2.7, 5.1] },
+  { size: 50, speed: 0.85, opacity: 0.9, cx: 78, cy: 62, ax: 16, ay: 22, f: [0.071, 0.183, 0.122, 0.251], ph: [0.2, 3.3, 1.8, 4.7] },
+  { size: 34, speed: 1.55, opacity: 0.8, cx: 48, cy: 66, ax: 30, ay: 18, f: [0.113, 0.207, 0.097, 0.229], ph: [2.6, 5.4, 3.5, 0.4] },
+  { size: 38, speed: 1.15, opacity: 0.82, cx: 18, cy: 58, ax: 13, ay: 24, f: [0.087, 0.191, 0.109, 0.237], ph: [4.8, 1.6, 5.9, 3.0] },
+];
+
+export function FlyingButterflies({ count = 5 }: { count?: number }) {
+  const flyers = FLYERS.slice(0, count);
+  const layerRef = useRef<HTMLDivElement | null>(null);
+  const wrapRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const midRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const flapRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    if (!layer) return;
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    let w = layer.clientWidth;
+    let h = layer.clientHeight;
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => { w = layer.clientWidth; h = layer.clientHeight; }) : null;
+    ro?.observe(layer);
+
+    const pos = (c: Flyer, t: number) => ({
+      x: c.cx + c.ax * Math.sin(t * c.f[0] + c.ph[0]) + c.ax * 0.33 * Math.sin(t * c.f[1] + c.ph[1]),
+      y: c.cy + c.ay * Math.sin(t * c.f[2] + c.ph[2]) + c.ay * 0.33 * Math.sin(t * c.f[3] + c.ph[3]),
+    });
+    const flap = flyers.map((_, i) => i * 1.7);
+    let raf = 0;
+    let last = performance.now();
+    const t0 = last;
+
+    const frame = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      if (!document.hidden) {
+        for (let i = 0; i < flyers.length; i++) {
+          const c = flyers[i];
+          const t = ((now - t0) / 1000) * c.speed + 40;
+          const p = pos(c, t);
+          const q = pos(c, t + 0.04);
+          const dx = q.x - p.x;
+          const dy = q.y - p.y;
+          const dir = dx >= 0 ? 1 : -1;
+          const tilt = Math.max(-15, Math.min(15, dy * 85));
+          flap[i] += 2 * Math.PI * (0.9 + 12 / c.size + Math.min(1.4, (Math.hypot(dx, dy) / 0.04) * 0.09)) * c.speed * dt;
+          const wrap = wrapRefs.current[i];
+          const mid = midRefs.current[i];
+          const fl = flapRefs.current[i];
+          if (wrap) wrap.style.transform = `translate3d(${(p.x / 100) * w - c.size / 2}px, ${(p.y / 100) * h - c.size / 2}px, 0)`;
+          if (mid) mid.style.transform = `scaleX(${dir}) rotate(${tilt}deg)`;
+          if (fl) fl.style.transform = `rotateY(${Math.sin(flap[i]) * 46 + 8}deg)`;
+        }
+      }
+      if (!still) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => { cancelAnimationFrame(raf); ro?.disconnect(); };
+  }, [flyers.length]);
 
   return (
-    <div className="absolute inset-0 z-[2] overflow-hidden pointer-events-none" aria-hidden="true" data-testid="seasonal-hero-overlay" data-season={season}>
-      <style>{CSS}</style>
-      <div className="absolute inset-0" style={{ background: info.heroTint }} />
-
-      <div className="absolute inset-x-0 bottom-0" style={stage}>
-        {season === "christmas" && (
-          <>
-            <Snow count={16} />
-            <Bokeh color={p.glow} />
-            <div className="absolute top-0 sm:top-3 start-0 opacity-95 w-[118px] sm:w-[250px] rtl:-scale-x-100">
-              <OliveBranch width={250} leafA="#5B9970" leafB="#2F6F54" berry={p.glow} fluid />
+    <div ref={layerRef} className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true" data-testid="hero-butterflies">
+      {flyers.map((c, i) => (
+        <div key={i} ref={(el) => { wrapRefs.current[i] = el; }} className={`absolute left-0 top-0 will-change-transform ${i > 2 ? "hidden sm:block" : ""}`} style={{ opacity: c.opacity }}>
+          <div ref={(el) => { midRefs.current[i] = el; }} style={{ perspective: 300 }} className="[zoom:.6] sm:[zoom:1]">
+            <div ref={(el) => { flapRefs.current[i] = el; }} style={{ width: c.size, height: c.size * 0.78, filter: `drop-shadow(0 ${c.size * 0.14}px ${c.size * 0.18}px rgba(74,24,43,.18))` }}>
+              <BrandButterfly className="h-full w-full" />
             </div>
-            <div className="absolute top-8 start-0 opacity-80 hidden sm:block rtl:-scale-x-100">
-              <OliveBranch width={160} leafA="#4C8761" leafB="#265E47" berry={p.glow} />
-            </div>
-            <div className="absolute -top-2 sm:top-1 end-[2%] sm:end-[9%] sx-float">
-              {/* scale lives on an inner wrapper: the float animation owns `transform` on the outer one */}
-              <div className="scale-[.46] sm:scale-100 origin-top"><BethlehemStar size={132} glow={p.glow} core={p.gold} /></div>
-            </div>
-          </>
-        )}
-
-        {season === "eid_fitr" && (
-          <>
-            <Twinkles count={11} color={p.glow} />
-            <div className="absolute top-1 end-[4%] sm:end-[8%] sx-float">
-              <div className="scale-[.62] sm:scale-100 origin-top"><Hilal size={104} gold={p.gold} glow={p.glow} /></div>
-            </div>
-            <Hanging className="start-[1%] sm:start-[4%]" chain={34} delay="-1.1s" gold={p.gold}><div className="scale-[.62] sm:scale-100 origin-top"><Fanous size={42} gold={p.gold} glow={p.glow} /></div></Hanging>
-            <Hanging className="start-[12%] hidden sm:flex" chain={8} delay="-2.7s" gold={p.gold}><Fanous size={28} gold={p.gold} glow={p.glow} /></Hanging>
-            <Hanging className="start-[19%] hidden md:flex" chain={52} delay="-.5s" gold={p.gold}><Fanous size={32} gold={p.gold} glow={p.glow} /></Hanging>
-            <KhatamBand gold={p.gold} />
-          </>
-        )}
-
-        {season === "eid_adha" && (
-          <>
-            <SunDisc glow={p.glow} gold={p.gold} />
-            <Motes color={p.glow} />
-            <Skyline back="rgba(14,92,79,.62)" front="rgba(5,47,42,.9)" edge={p.gold} />
-          </>
-        )}
-      </div>
-      {season === "eid_adha" && (
-        <div className="absolute inset-x-0" style={stage}>
-          <Arcade gold={p.gold} glow={p.glow} height={56} />
-        </div>
-      )}
-
-      <div className={`absolute ${lift} inset-x-0 flex flex-col items-center gap-2 sm:gap-2.5 px-4 text-center`}>
-        <div data-testid="seasonal-greeting" className="flex flex-col items-center">
-          <div
-            className={`${ar ? "sx-ar text-[26px] sm:text-[40px] leading-[1.25]" : "sx-en text-[26px] sm:text-[40px] leading-[1.1]"}`}
-            style={{ color: p.light, textShadow: "0 2px 20px rgba(0,0,0,.6)" }}
-          >
-            {ar ? info.titleAr : info.titleEn}
-          </div>
-          <div className="hidden sm:block my-1.5"><Flourish color={p.gold} /></div>
-          <div className="text-[11px] sm:text-sm mt-1 sm:mt-0 tracking-wide" style={{ color: p.gold, textShadow: "0 1px 12px rgba(0,0,0,.6)" }}>
-            {ar ? info.subAr : info.subEn}
           </div>
         </div>
-        {cd && (
-          <div
-            className="inline-flex items-baseline gap-1.5 rounded-full px-4 py-1 text-[11px] sm:text-xs font-medium border backdrop-blur-sm"
-            style={{ color: p.light, background: `${p.night}8c`, borderColor: `${p.gold}66` }}
-            data-testid="seasonal-countdown"
-          >
-            {cd.num && <b className="text-base sm:text-lg leading-none font-semibold ltr-num" style={{ color: p.gold }}>{cd.num}</b>}
-            <span>{cd.text}</span>
-          </div>
-        )}
-      </div>
+      ))}
     </div>
   );
+}
+
+/* ── Christmas pieces ── */
+
+function Bauble({ size, color, shine }: { size: number; color: string; shine: string }) {
+  const id = uid();
+  return (
+    <svg width={size} height={size * 1.25} viewBox="0 0 40 50" aria-hidden style={{ overflow: "visible" }}>
+      <defs>
+        <radialGradient id={`b${id}`} cx="35%" cy="32%" r="75%">
+          <stop offset="0" stopColor={shine} />
+          <stop offset=".45" stopColor={color} />
+          <stop offset="1" stopColor={color} stopOpacity=".82" />
+        </radialGradient>
+      </defs>
+      <rect x="16" y="2" width="8" height="7" rx="1.5" fill="#E8C777" />
+      <circle cx="20" cy="29" r="18" fill={`url(#b${id})`} />
+      <path d="M4 26 Q20 34 36 26" fill="none" stroke="#fff" strokeOpacity=".35" strokeWidth="1.2" />
+      <path d="M5 32 Q20 40 35 32" fill="none" stroke="#fff" strokeOpacity=".2" strokeWidth="1" />
+      <ellipse cx="13" cy="21" rx="4" ry="6" fill="#fff" opacity=".35" transform="rotate(-28 13 21)" />
+    </svg>
+  );
+}
+
+function Snowflakes({ count }: { count: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => {
+        const size = 12 + (i % 3) * 6;
+        return (
+          <svg
+            key={i}
+            className="sx-anim absolute"
+            width={size}
+            height={size}
+            viewBox="-12 -12 24 24"
+            aria-hidden
+            style={{ left: `${(i * 23 + 9) % 96}%`, top: -24, opacity: 0.55 + (i % 3) * 0.15, animation: `sx-flake ${11 + ((i * 5) % 8)}s linear ${-((i * 3.7) % 14)}s infinite` }}
+          >
+            <g stroke="#fff" strokeWidth="1.3" strokeLinecap="round" fill="none">
+              {[0, 60, 120].map((a) => (
+                <g key={a} transform={`rotate(${a})`}>
+                  <path d="M0 -10 V10 M-3 -7 L0 -4 L3 -7 M-3 7 L0 4 L3 7" />
+                </g>
+              ))}
+            </g>
+          </svg>
+        );
+      })}
+    </>
+  );
+}
+
+function SnowDrift() {
+  return (
+    <svg className="absolute inset-x-0 bottom-0 h-7 w-full sm:h-10" viewBox="0 0 1200 40" preserveAspectRatio="none" aria-hidden>
+      <path d="M0 40 V22 Q120 4 260 18 T520 14 T800 20 T1040 10 T1200 18 V40Z" fill="#fff" opacity=".55" />
+      <path d="M0 40 V30 Q160 14 330 26 T640 22 T930 28 T1200 22 V40Z" fill="#fff" />
+    </svg>
+  );
+}
+
+/* ── Eid al-Fitr pieces ── */
+
+/** Small paper lanterns let go into the evening sky. */
+function SkyLanterns({ glow, gold }: { glow: string; gold: string }) {
+  return (
+    <>
+      {Array.from({ length: 7 }).map((_, i) => {
+        const size = 14 + (i % 3) * 6;
+        return (
+          <svg
+            key={i}
+            className={`sx-anim absolute ${i > 3 ? "hidden sm:block" : ""}`}
+            width={size}
+            height={size * 1.3}
+            viewBox="0 0 20 26"
+            aria-hidden
+            style={{ left: `${(i * 29 + 6) % 92}%`, bottom: -30, filter: `drop-shadow(0 0 8px ${glow})`, animation: `sx-lift ${13 + ((i * 3) % 8)}s ease-in ${-((i * 4.3) % 16)}s infinite` }}
+          >
+            <path d="M3 2 H17 L19 18 Q19 22 15 22 H5 Q1 22 1 18 Z" fill={glow} opacity=".9" />
+            <path d="M3 2 H17 L18 8 H2 Z" fill="#fff" opacity=".3" />
+            <rect x="7" y="22" width="6" height="2.4" rx="1" fill={gold} />
+          </svg>
+        );
+      })}
+    </>
+  );
+}
+
+/* ── Eid al-Adha pieces ── */
+
+function Sheep({ size, wool = "#FFFDF7" }: { size: number; wool?: string }) {
+  const leg = (x: number, delay: string) => (
+    <rect x={x} y="34" width="3.2" height="14" rx="1.6" fill="#3B2A2E" className="sx-anim" style={{ transformBox: "fill-box", transformOrigin: "50% 0%", animation: `sx-leg .46s ease-in-out ${delay} infinite` }} />
+  );
+  return (
+    <svg width={size} height={size * 0.72} viewBox="0 0 72 52" aria-hidden style={{ overflow: "visible" }}>
+      <g className="sx-anim" style={{ animation: "sx-hop .46s ease-in-out infinite" }}>
+        {leg(18, "0s")}
+        {leg(25, "-.23s")}
+        {leg(40, "-.23s")}
+        {leg(47, "0s")}
+        <circle cx="12" cy="24" r="4.5" fill={wool} />
+        <g fill={wool} stroke="#E9DFCF" strokeWidth=".8">
+          <circle cx="22" cy="26" r="11" />
+          <circle cx="34" cy="21" r="12.5" />
+          <circle cx="46" cy="26" r="11" />
+          <circle cx="28" cy="32" r="9.5" />
+          <circle cx="40" cy="32" r="9.5" />
+        </g>
+        <ellipse cx="57" cy="21" rx="7.5" ry="6.5" fill="#3B2A2E" />
+        <ellipse cx="51.5" cy="16" rx="2.2" ry="4.2" fill="#3B2A2E" transform="rotate(-38 51.5 16)" />
+        <circle cx="53" cy="13" r="5" fill={wool} />
+        <circle cx="59.5" cy="19.5" r="1.1" fill="#fff" />
+      </g>
+    </svg>
+  );
+}
+
+/** Soft hills with a little flock trotting across them, one after the other. */
+function Flock({ deep, night, gold }: { deep: string; night: string; gold: string }) {
+  const flock = [
+    { size: 62, dur: 17, delay: 0, lift: 6 },
+    { size: 44, dur: 17, delay: -1.5, lift: 4 },
+    { size: 70, dur: 23, delay: -9, lift: 7 },
+    { size: 36, dur: 14, delay: -6, lift: 3 },
+    { size: 52, dur: 20, delay: -14, lift: 5 },
+  ];
+  return (
+    <>
+      <svg className="absolute inset-x-0 bottom-0 h-9 w-full sm:h-14" viewBox="0 0 1200 56" preserveAspectRatio="none" aria-hidden>
+        <path d="M0 56 V30 Q150 2 330 22 T660 16 T960 24 T1200 12 V56Z" fill={deep} opacity=".55" />
+        <path d="M0 56 V40 Q200 18 420 34 T820 30 T1200 34 V56Z" fill={night} stroke={gold} strokeOpacity=".45" strokeWidth="1.2" />
+      </svg>
+      {flock.map((s, i) => (
+        <div
+          key={i}
+          className={`sx-anim absolute left-0 ${i > 2 ? "hidden sm:block" : ""}`}
+          style={{ bottom: s.lift, animation: `sx-run ${s.dur}s linear ${s.delay}s infinite` }}
+        >
+          <div className="origin-bottom scale-[.62] sm:scale-100">
+            <Sheep size={s.size} />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** The season's greeting, set small at the top of the banner's text panel. */
+function SceneGreeting({ skin, countdownDate }: { skin: SeasonSkin; countdownDate?: string }) {
+  const { language } = useLanguage();
+  const ar = language === "ar";
+  const p = skin.info.palette;
+  const cd = countdownParts(daysUntil(countdownDate), skin.info, ar);
+  return (
+    <div className="absolute end-0 top-2 flex w-[58%] flex-col items-center gap-1 px-2 text-center sm:top-4 sm:w-[43%] sm:gap-1.5" data-testid="seasonal-greeting">
+      <div className={ar ? "sx-ar text-[19px] leading-[1.3] sm:text-[30px]" : "sx-en text-[19px] leading-[1.1] sm:text-[30px]"} style={{ color: p.gold, textShadow: `0 2px 18px ${p.night}` }}>
+        {ar ? skin.info.titleAr : skin.info.titleEn}
+      </div>
+      {cd && (
+        <div
+          className="inline-flex items-baseline gap-1.5 rounded-full border px-3 py-0.5 text-[10px] font-medium sm:text-xs"
+          style={{ color: p.light, background: `${p.night}b3`, borderColor: `${p.gold}66` }}
+          data-testid="seasonal-countdown"
+        >
+          {cd.num && <b className="ltr-num text-sm font-semibold leading-none sm:text-base" style={{ color: p.gold }}>{cd.num}</b>}
+          <span>{cd.text}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The moving layer of a banner: butterflies normally, the season's pieces when one is on.
+ * `compact` is for the shorter category banners (fewer pieces, no greeting).
+ */
+export function HeroScene({ compact = false }: { compact?: boolean }) {
+  const { data: settings } = useSiteSettings();
+  const skin = useSeasonSkin();
+  if (!skin) return <FlyingButterflies count={compact ? 3 : 5} />;
+  return <SeasonScene skin={skin} compact={compact} countdownDate={settings?.seasonal_countdown_date} />;
+}
+
+function SeasonScene({ skin, compact, countdownDate }: { skin: SeasonSkin; compact: boolean; countdownDate?: string }) {
+  useSeasonFont();
+  const { season } = skin;
+  const p = skin.info.palette;
+  const s = compact ? "scale-[.5] sm:scale-75" : "scale-[.55] sm:scale-100";
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true" data-testid="seasonal-hero-overlay" data-season={season}>
+      <style>{CSS}</style>
+
+      {season === "christmas" && (
+        <>
+          <Snow count={compact ? 12 : 22} />
+          <Snowflakes count={compact ? 4 : 8} />
+          <div className="absolute start-0 top-0 w-[110px] opacity-95 sm:w-[220px] rtl:-scale-x-100">
+            <OliveBranch width={220} leafA="#6FAE86" leafB="#2F6F54" berry="#C43A52" fluid />
+          </div>
+          <div className="sx-float absolute -top-1 end-[2%] sm:end-[3%]">
+            <div className={`origin-top ${s}`}><BethlehemStar size={108} glow={p.glow} core={p.gold} /></div>
+          </div>
+          <Hanging className="end-[37%] hidden sm:flex" chain={compact ? 10 : 26} delay="-1.1s" gold={p.gold}><Bauble size={30} color="#B8324A" shine="#F3A3B0" /></Hanging>
+          <Hanging className="end-[31%] hidden md:flex" chain={compact ? 34 : 70} delay="-2.6s" gold={p.gold}><Bauble size={22} color="#D9B45B" shine="#FFF0C2" /></Hanging>
+          <Hanging className="end-[13%] hidden sm:flex" chain={compact ? 4 : 12} delay="-.4s" gold={p.gold}><Bauble size={24} color="#F4ECDD" shine="#FFFFFF" /></Hanging>
+          <Hanging className="start-[26%] hidden lg:flex" chain={18} delay="-3.3s" gold={p.gold}><Bauble size={26} color="#B8324A" shine="#F3A3B0" /></Hanging>
+          <SnowDrift />
+        </>
+      )}
+
+      {season === "eid_fitr" && (
+        <>
+          <SkyLanterns glow={p.glow} gold={p.gold} />
+          <div className="sx-float absolute top-1 end-[3%] sm:top-2">
+            <div className={`origin-top ${s}`}><Hilal size={96} gold={p.gold} glow={p.glow} /></div>
+          </div>
+          <Hanging className="end-[37%] hidden sm:flex" chain={compact ? 6 : 22} delay="-1.1s" gold={p.gold}><Fanous size={compact ? 24 : 34} gold={p.gold} glow={p.glow} /></Hanging>
+          <Hanging className="end-[14%] hidden md:flex" chain={compact ? 2 : 8} delay="-2.7s" gold={p.gold}><Fanous size={compact ? 18 : 24} gold={p.gold} glow={p.glow} /></Hanging>
+          <Hanging className="start-[3%]" chain={compact ? 8 : 30} delay="-.5s" gold={p.gold}><div className="origin-top scale-[.6] sm:scale-100"><Fanous size={compact ? 26 : 38} gold={p.gold} glow={p.glow} /></div></Hanging>
+          <Hanging className="start-[13%] hidden lg:flex" chain={compact ? 22 : 58} delay="-3.6s" gold={p.gold}><Fanous size={26} gold={p.gold} glow={p.glow} /></Hanging>
+          <KhatamBand gold={p.gold} />
+        </>
+      )}
+
+      {season === "eid_adha" && (
+        <>
+          <div className="absolute inset-y-0 end-0 w-[58%] overflow-hidden sm:w-[43%]">
+            <SunDisc glow={p.glow} gold={p.gold} />
+            <Motes color={p.glow} />
+          </div>
+          {!compact && <Arcade gold={p.gold} glow={p.glow} height={40} />}
+          <Flock deep={p.deep} night={p.night} gold={p.gold} />
+        </>
+      )}
+
+      {!compact && <SceneGreeting skin={skin} countdownDate={countdownDate} />}
+    </div>
+  );
+}
+
+/** Kept for older call sites: the landing hero's scene. */
+export function SeasonalHeroOverlay() {
+  return <HeroScene />;
 }
 
 /** Small ornament that sits on the corner of the navbar logo: the star of Bethlehem or a thin hilal. */

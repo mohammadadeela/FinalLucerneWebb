@@ -11,35 +11,36 @@
   --news-bar-offset: 0px;
   --navbar-h: 4rem;
 
-  /* Storefront palette — warm cream, berry rose and soft sage.
+  /* Storefront palette — warm cream surfaces with the original black for buttons, text and the footer.
+     Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
   --background: 30 50% 97%;
-  --foreground: 340 16% 14%;
+  --foreground: 0 0% 10%;
 
   --card: 0 0% 100%;
-  --card-foreground: 340 16% 14%;
+  --card-foreground: 0 0% 10%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 340 16% 14%;
+  --popover-foreground: 0 0% 10%;
 
-  --primary: 342 49% 42%;
-  --primary-foreground: 30 60% 98%;
+  --primary: 0 0% 12%;
+  --primary-foreground: 0 0% 98%;
 
   --secondary: 12 48% 93%;
-  --secondary-foreground: 340 18% 18%;
+  --secondary-foreground: 0 0% 15%;
 
   --muted: 28 36% 93%;
-  --muted-foreground: 340 7% 40%;
+  --muted-foreground: 0 0% 42%;
 
   --accent: 96 20% 88%;
-  --accent-foreground: 340 16% 14%;
+  --accent-foreground: 0 0% 10%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
   --border: 24 30% 88%;
   --input: 24 26% 84%;
-  --ring: 342 49% 42%;
+  --ring: 0 0% 12%;
 
   /* Named storefront tints used by the landing page */
   --berry: 342 49% 42%;

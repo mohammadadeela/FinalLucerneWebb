@@ -52,6 +52,10 @@ export default {
           border: "var(--destructive-border)",
         },
         ring: "hsl(var(--ring) / <alpha-value>)",
+        berry: {
+          DEFAULT: "hsl(var(--berry) / <alpha-value>)",
+          deep: "hsl(var(--berry-deep) / <alpha-value>)",
+        },
         chart: {
           "1": "hsl(var(--chart-1) / <alpha-value>)",
           "2": "hsl(var(--chart-2) / <alpha-value>)",

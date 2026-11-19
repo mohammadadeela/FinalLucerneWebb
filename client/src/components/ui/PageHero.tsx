@@ -1,5 +1,6 @@
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { GiButterfly } from "react-icons/gi";
+import { HeroScene, useSeasonSkin } from "@/components/seasonal/SeasonalDecor";
+import { LucerneMark } from "@/components/ui/BrandButterfly";
 import { AutoplayVideo } from "@/components/ui/AutoplayVideo";
 import { useLanguage } from "@/i18n";
 import { splitAccent } from "@/lib/storefront";
@@ -47,6 +48,8 @@ export function PageHero({
 }: PageHeroProps) {
   const { language } = useLanguage();
   const isAr = language === "ar";
+  // While the admin has a season on (Christmas / Eid) the banner wears that season's colours.
+  const skin = useSeasonSkin();
 
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
@@ -73,7 +76,7 @@ export function PageHero({
   return (
     <section
       className="relative isolate overflow-hidden pt-navbar"
-      style={{ background: tintFor(title) }}
+      style={{ background: skin ? skin.panel : tintFor(title) }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
@@ -113,34 +116,44 @@ export function PageHero({
         <div
           className="absolute inset-0 sm:hidden"
           style={{
-            background: `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.9) 38%, hsl(var(--background) / 0.5) 56%, transparent 76%)`,
+            background: skin
+              ? `linear-gradient(to ${isAr ? "right" : "left"}, ${skin.night}f7 0%, ${skin.night}e6 38%, ${skin.night}80 56%, transparent 76%)`
+              : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.9) 38%, hsl(var(--background) / 0.5) 56%, transparent 76%)`,
           }}
         />
 
         {/* Decoration */}
-        <motion.div
-          aria-hidden
-          className="pointer-events-none absolute -top-3 end-2 hidden sm:block lg:end-10"
-          style={{ x: flyX, y: flyY }}
-        >
-          <GiButterfly className="soft-float h-28 w-28 text-primary/[0.08] lg:h-44 lg:w-44" />
-        </motion.div>
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-20 end-[14%] hidden h-48 w-48 rounded-full bg-white/50 blur-3xl sm:block"
-        />
+        {!skin && (
+          <>
+            <motion.div
+              aria-hidden
+              className="pointer-events-none absolute -top-4 end-2 hidden sm:block lg:end-8"
+              style={{ x: flyX, y: flyY }}
+            >
+              <LucerneMark className="soft-float h-32 w-auto text-berry/[0.09] lg:h-48" />
+            </motion.div>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -bottom-20 end-[14%] hidden h-48 w-48 rounded-full bg-white/50 blur-3xl sm:block"
+            />
+          </>
+        )}
+
+        {/* Butterflies — or the season's own moving pieces while one is switched on */}
+        <HeroScene compact />
 
         {/* Copy */}
-        <div className="absolute inset-y-0 end-0 flex w-[58%] items-center pe-4 ps-1 sm:w-[44%] sm:justify-center sm:pe-8 lg:pe-14">
+        <div className="absolute inset-y-0 end-0 z-10 flex w-[58%] items-center pe-4 ps-1 sm:w-[44%] sm:justify-center sm:pe-8 lg:pe-14">
           <div className="w-full max-w-[28rem]">
             <motion.p
-              className="mb-2 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-primary sm:mb-3 sm:text-xs"
+              className="mb-2 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-berry sm:mb-3 sm:text-xs"
+              style={skin ? { color: skin.accent } : undefined}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease }}
             >
               <motion.span
-                className="block h-px w-6 origin-left bg-primary/60 rtl:origin-right sm:w-9"
+                className="block h-px w-6 origin-left bg-current opacity-60 rtl:origin-right sm:w-9"
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 0.8, delay: 0.15, ease }}
@@ -150,18 +163,20 @@ export function PageHero({
             <motion.h1
               className="text-balance text-[2rem] font-medium leading-[1.04] text-foreground sm:text-[clamp(2.2rem,4vw,4rem)] rtl:leading-[1.3]"
               data-testid={titleTestId}
+              style={skin ? { color: skin.ink } : undefined}
               initial={{ opacity: 0, y: 22 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.06, ease }}
             >
               {lead}
-              {accent && <em className="text-primary ltr:italic rtl:not-italic">{accent}</em>}
+              {accent && <em className="text-berry ltr:italic rtl:not-italic" style={skin ? { color: skin.accent } : undefined}>{accent}</em>}
               {tail}
             </motion.h1>
             {subtitle && (
               <motion.p
                 className="font-heading mt-2 line-clamp-3 text-[13px] leading-snug text-foreground/75 sm:mt-3.5 sm:text-[clamp(0.95rem,1.25vw,1.2rem)] sm:leading-relaxed"
                 data-testid={subtitleTestId}
+                style={skin ? { color: skin.sub } : undefined}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.16, ease }}
