@@ -62,8 +62,9 @@ function centerAspectCrop(width: number, height: number, aspect: number): Crop {
 
 async function getCroppedBlob(image: HTMLImageElement, crop: PixelCrop, fileName: string): Promise<File> {
   const canvas = document.createElement("canvas");
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
+  const shown = image.getBoundingClientRect();
+  const scaleX = image.naturalWidth / (shown.width || image.width);
+  const scaleY = image.naturalHeight / (shown.height || image.height);
   canvas.width = Math.round(crop.width * scaleX);
   canvas.height = Math.round(crop.height * scaleY);
   const ctx = canvas.getContext("2d")!;
@@ -126,8 +127,9 @@ export default function ImageCropDialog({ file, onConfirm, onCancel, previewType
     if (!completedCrop || !imgRef.current) return;
     const image = imgRef.current;
     const canvas = document.createElement("canvas");
-    const scaleX = image.naturalWidth / image.width;
-    const scaleY = image.naturalHeight / image.height;
+    const shown = image.getBoundingClientRect();
+    const scaleX = image.naturalWidth / (shown.width || image.width);
+    const scaleY = image.naturalHeight / (shown.height || image.height);
     canvas.width = completedCrop.width * scaleX;
     canvas.height = completedCrop.height * scaleY;
     const ctx = canvas.getContext("2d");
@@ -155,7 +157,7 @@ export default function ImageCropDialog({ file, onConfirm, onCancel, previewType
   return (
     <Dialog open={!!file} onOpenChange={(open) => { if (!open) onCancel(); }}>
       <DialogContent
-        className="w-[calc(100%-1.5rem)] max-w-md p-0 overflow-hidden border-0 shadow-2xl rounded-2xl"
+        className={`w-[calc(100%-1.5rem)] p-0 overflow-hidden border-0 shadow-2xl rounded-2xl ${aspect ? "max-w-3xl" : "max-w-md"}`}
         data-testid="dialog-image-crop"
       >
         <VisuallyHidden><DialogTitle>Image Crop</DialogTitle></VisuallyHidden>
@@ -210,14 +212,14 @@ export default function ImageCropDialog({ file, onConfirm, onCancel, previewType
                     circularCrop={config.circular}
                     minWidth={20}
                     minHeight={20}
-                    className="max-h-40"
+                    className={aspect ? "max-h-[58vh]" : "max-h-40"}
                   >
                     <img
                       ref={imgRef}
                       src={src}
                       alt="crop"
                       onLoad={onImageLoad}
-                      className="max-h-40 max-w-full object-contain select-none"
+                      className={`${aspect ? "max-h-[58vh]" : "max-h-40"} max-w-full object-contain select-none`}
                       draggable={false}
                       data-testid="img-crop-source"
                     />

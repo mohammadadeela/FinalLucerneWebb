@@ -109,13 +109,17 @@ function normalizePosition(pos: string): string {
 
 /** A photo slot's real shapes on the storefront (width / height), measured on the live layout.
  *  `crop` is the frame of the crop tool; `views` are previewed exactly as customers see them. */
-type SlotShape = { crop: number; views: { label: string; aspect: number; width: string }[] };
+type SlotShape = {
+  crop: number;
+  /** `photoShare`: the photo fills only this part of the frame's width (the rest is the name side). */
+  views: { label: string; aspect: number; width: string; photoShare?: number }[];
+};
 const SLOT_SHAPES: Record<string, SlotShape> = {
   homeHero: { crop: 2.3, views: [{ label: "كمبيوتر", aspect: 2.3, width: "100%" }, { label: "هاتف", aspect: 1.25, width: "42%" }] },
   pageHero: { crop: 2.9, views: [{ label: "كمبيوتر", aspect: 2.9, width: "100%" }, { label: "هاتف", aspect: 1.8, width: "48%" }] },
   editorialCenter: { crop: 1.23, views: [{ label: "كمبيوتر", aspect: 1.23, width: "62%" }, { label: "هاتف", aspect: 0.43, width: "20%" }] },
   editorialTile: { crop: 1.77, views: [{ label: "كمبيوتر", aspect: 1.77, width: "100%" }, { label: "هاتف", aspect: 0.63, width: "34%" }] },
-  pill: { crop: 1.37, views: [{ label: "كمبيوتر", aspect: 1.37, width: "62%" }, { label: "هاتف", aspect: 0.8, width: "30%" }] },
+  pill: { crop: 1.37, views: [{ label: "كمبيوتر", aspect: 2.44, width: "62%", photoShare: 0.56 }, { label: "هاتف", aspect: 1.9, width: "30%", photoShare: 0.42 }] },
   promo: { crop: 4, views: [{ label: "كمبيوتر", aspect: 4, width: "100%" }, { label: "هاتف", aspect: 1.78, width: "46%" }] },
   menu: { crop: 1, views: [{ label: "بطاقة القائمة", aspect: 0.85, width: "44%" }, { label: "البطاقة العريضة (الأخيرة)", aspect: 1.8, width: "92%" }] },
   strip: { crop: 15, views: [{ label: "كمبيوتر", aspect: 15, width: "100%" }, { label: "هاتف", aspect: 4.6, width: "60%" }] },
@@ -130,9 +134,19 @@ function SlotPreviews({ src, position, shape }: { src: string; position?: string
       <div className="flex flex-wrap items-end justify-end gap-3">
         {shape.views.map((v) => (
           <div key={v.label} style={{ width: v.width }} className="min-w-[64px]">
-            <div className="overflow-hidden rounded-md border border-border bg-muted" style={{ aspectRatio: String(v.aspect) }}>
-              <img src={src} alt="" className="h-full w-full object-cover" style={{ objectPosition: position || "50% 50%" }} />
-            </div>
+            {v.photoShare ? (
+              /* The whole button as on the site: photo on one side, the name on the other */
+              <div className="flex overflow-hidden rounded-2xl border border-border bg-blush" dir="rtl" style={{ aspectRatio: String(v.aspect) }}>
+                <div className="h-full shrink-0 overflow-hidden" style={{ width: `${v.photoShare * 100}%` }}>
+                  <img src={src} alt="" className="h-full w-full object-cover" style={{ objectPosition: position || "50% 50%" }} />
+                </div>
+                <div className="flex flex-1 items-center justify-center text-[10px] text-foreground/70">الاسم</div>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-md border border-border bg-muted" style={{ aspectRatio: String(v.aspect) }}>
+                <img src={src} alt="" className="h-full w-full object-cover" style={{ objectPosition: position || "50% 50%" }} />
+              </div>
+            )}
             <p className="mt-1 text-center text-[10px] text-muted-foreground">{v.label}</p>
           </div>
         ))}
