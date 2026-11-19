@@ -32,6 +32,7 @@ import {
   blurCloudinaryUrl,
 } from "@/lib/utils";
 import { categoryHref, subcategoryHref } from "@/lib/storefront";
+import { categoryArt } from "@/components/home/CategoryArt";
 
 /* ────────────────────────────── small building blocks ───────────────────────────── */
 
@@ -320,26 +321,35 @@ function bannerPosition(pos?: string) {
 
 /** The banner above each category row: a pink strip, drawn by the site so it is sharp on every
  *  screen, with the category name and a slow endless row of that category's pieces.
- *  The pieces are the admin's own cut-out photos (white or transparent background — they blend
- *  into the pink); until some are uploaded, the category's subcategory and product photos are
- *  shown as small rounded thumbnails. The whole strip opens the category. */
+ *  The pieces are the site's own drawings (see CategoryArt); if the admin uploads cut-out
+ *  photos for a category those are shown instead. The whole strip opens the category. */
 function CategoryShowcase({
   href,
   name,
   cutouts,
-  photos,
+  art,
 }: {
   href: string;
   name: string;
   cutouts: string[];
-  photos: string[];
+  art: ReactNode[];
 }) {
-  const useCutouts = cutouts.length > 0;
-  const base = useCutouts ? cutouts : photos;
+  const base: ReactNode[] =
+    cutouts.length > 0
+      ? cutouts.map((src) => (
+          <img
+            src={optimizeCloudinaryUrl(src, 400) || src}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-auto max-w-[9rem] object-contain mix-blend-multiply"
+          />
+        ))
+      : art;
   // Repeat the pieces until one lap is long enough to fill the widest screen, then double it
   // so the loop is seamless.
-  const lap: string[] = [];
-  while (base.length > 0 && lap.length < 14) lap.push(...base);
+  const lap: ReactNode[] = [];
+  while (base.length > 0 && lap.length < 16) lap.push(...base);
   const track = [...lap, ...lap];
   return (
     <Link
@@ -357,21 +367,11 @@ function CategoryShowcase({
         <div className="absolute inset-0 flex items-center overflow-hidden" dir="ltr" aria-hidden="true">
           <div
             className="strip-marquee flex w-max shrink-0 items-center"
-            style={{ ["--strip-dur" as any]: `${lap.length * 3.2}s` }}
+            style={{ ["--strip-dur" as any]: `${lap.length * 3.4}s` }}
           >
-            {track.map((src, i) => (
-              <span key={i} className="flex shrink-0 items-center justify-center px-3 sm:px-5">
-                <img
-                  src={optimizeCloudinaryUrl(src, 400) || src}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className={
-                    useCutouts
-                      ? "h-[3.4rem] w-auto max-w-[7rem] object-contain mix-blend-multiply sm:h-[4.6rem] sm:max-w-[9rem]"
-                      : "h-12 w-12 rounded-full object-cover ring-2 ring-white sm:h-[4.25rem] sm:w-[4.25rem]"
-                  }
-                />
+            {track.map((piece, i) => (
+              <span key={i} className="flex h-[3.6rem] shrink-0 items-center justify-center px-3.5 sm:h-[4.9rem] sm:px-6">
+                {piece}
               </span>
             ))}
           </div>
@@ -1459,12 +1459,7 @@ export default function Home() {
                 cutouts={[1, 2, 3, 4, 5, 6, 7, 8]
                   .map((n) => g(`home_cat_banner_${section.category.id}_item_${n}`))
                   .filter(Boolean)}
-                photos={[
-                  ...(allSubcategories || [])
-                    .filter((sub: any) => sub.categoryId === section.category.id && sub.isActive !== false && sub.image)
-                    .map((sub: any) => sub.image as string),
-                  ...section.products.map((p: any) => p.mainImage as string).filter(Boolean),
-                ].slice(0, 10)}
+                art={categoryArt(section.category)}
               />
               <ProductRail
                 products={section.products}
