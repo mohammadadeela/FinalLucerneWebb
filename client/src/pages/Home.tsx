@@ -704,7 +704,40 @@ export default function Home() {
         {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
         {catTiles.length > 0 && (
           <Section>
-            <Rail scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
+            {/* Phones: every pill in one row, sized down to fit — no sliding */}
+            <div
+              className="grid gap-1.5 sm:hidden"
+              style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(catTiles.length, 1), 5)}, minmax(0, 1fr))` }}
+              data-testid="row-categories-mobile"
+            >
+              {catTiles.map((item, i) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="flex aspect-[1.9/1] min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush/80 via-blush/45 to-sand/70 ring-1 ring-berry/10"
+                  data-testid={`pill-m-${item.testId}`}
+                >
+                  <span
+                    className="relative block h-full w-[42%] shrink-0 overflow-hidden"
+                    style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
+                  >
+                    <BannerImage
+                      src={item.img || "/placeholder-product.svg"}
+                      alt={item.label}
+                      className="h-full w-full object-cover"
+                      loading="eager"
+                      width={160}
+                    />
+                  </span>
+                  <span className="flex min-w-0 flex-1 items-center justify-center px-1">
+                    <span className="block max-w-full truncate text-[11px] font-medium leading-tight">
+                      {item.label}
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <Rail className="hidden sm:block" scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
               {catTiles.map((item, i) => (
                 <Link
                   key={item.key}
