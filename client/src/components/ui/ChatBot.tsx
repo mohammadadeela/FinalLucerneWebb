@@ -866,27 +866,7 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
     e.preventDefault();
     handleSend(input);
   };
-  // Starter questions shown when the shop has not configured its own suggestions.
-  const FALLBACK_SUGGESTIONS = {
-    ar: [
-      { label: "كم يستغرق التوصيل؟", query: "كم يستغرق التوصيل؟" },
-      { label: "طرق الدفع", query: "ما هي طرق الدفع المتاحة؟" },
-      { label: "التبديل والإرجاع", query: "ما هي سياسة التبديل والإرجاع؟" },
-      { label: "ساعديني في المقاس", query: "ساعديني في اختيار المقاس" },
-      { label: "أين المتجر؟", query: "أين يقع المتجر وما ساعات العمل؟" },
-      { label: "التخفيضات", query: "ما هي التخفيضات المتوفرة الآن؟" },
-    ],
-    en: [
-      { label: "Delivery time", query: "How long does delivery take?" },
-      { label: "Payment methods", query: "What payment methods do you accept?" },
-      { label: "Exchange & returns", query: "What is your exchange and return policy?" },
-      { label: "Help me pick a size", query: "Help me choose my size" },
-      { label: "Store location", query: "Where is the store and what are the opening hours?" },
-      { label: "Current sale", query: "What is on sale right now?" },
-    ],
-  };
-  const currentSuggestions =
-    suggestions?.[lang] && suggestions[lang].length > 0 ? suggestions[lang] : FALLBACK_SUGGESTIONS[lang];
+  const currentSuggestions = suggestions?.[lang] ?? [];
 
   return (
     <>
@@ -1336,17 +1316,6 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
           height:1px;background:#e8e8e8;flex-shrink:0;
         }
 
-        /* ── Comfort pass: roomier window, larger text and tap targets ── */
-        .lb-panel { width:380px; max-height:min(620px, calc(100vh - 140px)); border-color:rgba(0,0,0,0.08); border-radius:22px; }
-        .lb-msgs { font-size:14.5px; line-height:1.65; }
-        .lb-quick-label { font-size:11px; color:#888; letter-spacing:0.04em; }
-        .lb-quick-wrap { gap:8px; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding:4px 14px 12px; }
-        .lb-quick-wrap::-webkit-scrollbar { display:none; }
-        .lb-chip { font-size:13px; padding:9px 15px; border-radius:999px; white-space:nowrap; flex-shrink:0; border-color:#e2e2e2; }
-        .lb-input-bar { padding:12px; gap:10px; }
-        .lb-input { font-size:15px; padding:12px 16px; border-radius:999px; }
-        .lb-send { width:46px; height:46px; }
-
         /* ── Mobile bottom-sheet ── */
         @keyframes lb-sheet {
           from { transform:translateY(100%); opacity:0.6; }
@@ -1355,21 +1324,18 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
         @media (max-width:639px) {
           .lb-panel {
             position:fixed !important;
-            bottom:0 !important; left:0 !important;
-            top:auto !important; right:0 !important;
-            transform:none !important;
-            width:100vw !important; max-width:none !important;
-            height:78vh !important; max-height:78vh !important;
-            border-radius:22px 22px 0 0 !important;
-            border-bottom:none !important;
-            z-index:70 !important;
-            animation:lb-sheet 0.3s cubic-bezier(0.22,1,0.36,1) !important;
+            bottom:80px !important; left:50% !important;
+            top:auto !important; right:auto !important;
+            transform:translateX(-50%) !important;
+            width:92vw !important; max-width:340px !important;
+            max-height:55vh !important;
+            border-radius:16px !important;
+            animation:lb-up 0.28s cubic-bezier(0.34,1.56,0.64,1) !important;
           }
           .lb-msgs { padding:10px; gap:8px; }
           .lb-input-bar { padding:8px; padding-bottom:max(8px, env(safe-area-inset-bottom)); }
           .lb-input { font-size:16px; /* prevents iOS zoom */ }
-          .lb-chip { padding:10px 16px; font-size:13.5px; }
-          .lb-msgs { flex:1; }
+          .lb-chip { padding:6px 13px; font-size:11.5px; }
           .lb-action { padding:7px 12px; font-size:11.5px; }
           .lb-action-sm { padding:5px 10px; font-size:11px; }
           .lb-header { padding:12px 14px; }
@@ -1512,7 +1478,7 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
           )}
 
           {/* Quick suggestions */}
-          {!typing && !sizeWizard.active && currentSuggestions.length > 0 && (
+          {showQuick && !sizeWizard.active && currentSuggestions.length > 0 && (
             <div className="lb-quick-area">
               <div className="lb-quick-label">
                 {lang === "ar" ? "اقتراحات" : "Suggestions"}
