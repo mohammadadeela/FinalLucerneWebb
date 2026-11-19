@@ -1407,8 +1407,8 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
   const [open, setOpen] = useState(false);
   const field = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
   const rows: { key: string; label: string; placeholder: string }[] = [
-    { key: "home_banner_new_texts", label: "البانر فوق «وصل حديثاً»", placeholder: "NEW ARRIVALS | JUST LANDED | FRESH THIS WEEK | THE NEW EDIT" },
-    { key: "home_banner_best_texts", label: "البانر فوق «الأكثر مبيعاً»", placeholder: "BEST SELLERS | MOST LOVED | CUSTOMER FAVOURITES | TOP PICKS" },
+    { key: "home_banner_new_texts", label: "البانر فوق «وصل حديثاً»", placeholder: "NEW ARRIVALS | JUST LANDED | NEW IN | THE NEW EDIT" },
+    { key: "home_banner_best_texts", label: "البانر فوق «الأكثر مبيعاً»", placeholder: "BEST SELLERS | MOST LOVED | TOP PICKS | FAVOURITES" },
   ];
   return (
     <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-home-banners">

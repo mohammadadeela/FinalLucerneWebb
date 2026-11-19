@@ -267,7 +267,9 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
         >
           <span
             key={`${idx}-${current}`}
-            className={`display-latin keep-tracking block truncate text-[1.5rem] font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${texts.length > 1 ? "news-rise" : ""}`}
+            className={`display-latin keep-tracking block whitespace-nowrap font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${
+              current.length <= 11 ? "text-[1.5rem]" : current.length <= 14 ? "text-[1.25rem]" : current.length <= 18 ? "text-[1.05rem]" : "text-[0.85rem]"
+            } ${texts.length > 1 ? "news-rise" : ""}`}
             style={{ ["--tracking" as any]: "0.14em" }}
           >
             {current}
@@ -894,14 +896,14 @@ export default function Home() {
             <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
               <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
                 <h2
-                  className="truncate text-xl font-medium leading-none sm:text-[1.75rem] rtl:leading-snug"
+                  className="truncate text-xl font-semibold leading-none text-berry-deep sm:text-[1.75rem] rtl:leading-snug"
                   data-testid="section-title-trending"
                 >
                   {secFeaturedTitle}
                 </h2>
                 <Link
                   href="/shop"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-foreground px-4 text-[12.5px] font-medium text-background transition-colors hover:bg-berry sm:h-10 sm:px-5 sm:text-[13px]"
+                  className="group inline-flex h-10 shrink-0 items-center gap-1.5 text-[13.5px] font-semibold text-berry transition-colors hover:text-berry-deep sm:text-[15px]"
                   data-testid="link-view-all-/shop"
                 >
                   {pick("تسوقي الكل", "Shop all")}
@@ -948,7 +950,7 @@ export default function Home() {
         {newArrivals.length > 0 && (
           <Section>
             <AnimatedBanner
-              texts={bannerTexts(g("home_banner_new_texts"), ["NEW ARRIVALS", "JUST LANDED", "FRESH THIS WEEK", "THE NEW EDIT"])}
+              texts={bannerTexts(g("home_banner_new_texts"), ["NEW ARRIVALS", "JUST LANDED", "NEW IN", "THE NEW EDIT"])}
               testId="banner-new-arrivals"
             />
             <ProductRail
@@ -1217,7 +1219,7 @@ export default function Home() {
             <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
             <AnimatedBanner
               plain
-              texts={bannerTexts(g("home_banner_best_texts"), ["BEST SELLERS", "MOST LOVED", "CUSTOMER FAVOURITES", "TOP PICKS"])}
+              texts={bannerTexts(g("home_banner_best_texts"), ["BEST SELLERS", "MOST LOVED", "TOP PICKS", "FAVOURITES"])}
               testId="banner-best-sellers"
             />
 
