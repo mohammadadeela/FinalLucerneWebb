@@ -17,7 +17,7 @@ import {
   useProducts,
 } from "@/hooks/use-products";
 import { Link } from "wouter";
-import { ChevronsDown,
+import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
@@ -252,7 +252,7 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
   const current = texts[idx % texts.length];
   return (
     <div
-      className={`relative overflow-hidden rounded-[1.5rem] px-4 sm:px-8 ${plain ? "mb-2 py-1 sm:mb-3 sm:py-2" : "mb-4 bg-blush py-3.5 sm:mb-5 sm:py-5"}`}
+      className={`relative overflow-hidden rounded-[1.5rem] px-4 sm:px-8 ${plain ? "mb-3 py-1.5 sm:mb-4 sm:py-2" : "mb-4 bg-blush py-3.5 sm:mb-5 sm:py-5"}`}
       data-testid={testId}
     >
       {/* Invisible copy of a category banner's text, so the height matches it exactly */}
@@ -260,22 +260,44 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
         <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">أ</p>
         <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">أ</p>
       </div>
-      <div className="absolute inset-0 flex items-center justify-center gap-3 px-4 sm:gap-6" dir="ltr">
-        <span className="hidden h-px w-10 bg-berry/45 sm:block lg:w-24" aria-hidden="true" />
-        <ChevronsDown className="h-5 w-5 shrink-0 animate-bounce text-berry sm:h-7 sm:w-7" strokeWidth={1.6} aria-hidden="true" />
-        <h2 className="m-0 min-w-0 overflow-hidden text-center">
+      <div className="absolute inset-0 flex items-center justify-center gap-2 px-3 sm:gap-5" dir="ltr">
+        {!plain && <CurvedArrow flip />}
+        <h2
+          className={`m-0 min-w-0 overflow-hidden text-center ${plain ? "rounded-full bg-white/70 px-6 py-2 ring-1 ring-berry/25 sm:px-12 sm:py-3" : ""}`}
+        >
           <span
             key={`${idx}-${current}`}
-            className={`display-latin keep-tracking block truncate text-[1.6rem] font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${texts.length > 1 ? "news-rise" : ""}`}
+            className={`display-latin keep-tracking block truncate text-[1.5rem] font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${texts.length > 1 ? "news-rise" : ""}`}
             style={{ ["--tracking" as any]: "0.14em" }}
           >
             {current}
           </span>
         </h2>
-        <ChevronsDown className="h-5 w-5 shrink-0 animate-bounce text-berry sm:h-7 sm:w-7" strokeWidth={1.6} aria-hidden="true" />
-        <span className="hidden h-px w-10 bg-berry/45 sm:block lg:w-24" aria-hidden="true" />
+        {!plain && <CurvedArrow />}
       </div>
     </div>
+  );
+}
+
+/** A hand-drawn style arc that leaves the heading, curves outwards and points down at the products. */
+function CurvedArrow({ flip }: { flip?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 64 52"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-9 w-11 shrink-0 text-berry sm:h-[3.25rem] sm:w-16"
+      style={flip ? { transform: "scaleX(-1)" } : undefined}
+    >
+      <g className="curve-arrow">
+        <path pathLength={100} d="M5 12 C 30 0, 60 14, 50 44" />
+        <path pathLength={100} d="M39 35 L50 45 L58 32" />
+      </g>
+    </svg>
   );
 }
 

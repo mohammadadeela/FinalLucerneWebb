@@ -317,3 +317,26 @@ html.admin-theme {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
 }
+
+/* Curved arrows beside the "new arrivals" heading: the line draws itself, then the
+   arrow dips towards the products below. */
+@keyframes arrow-draw {
+  0%   { stroke-dashoffset: 100; opacity: 0; }
+  12%  { opacity: 1; }
+  55%  { stroke-dashoffset: 0; opacity: 1; }
+  88%  { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes arrow-dip {
+  0%, 55%, 100% { transform: translateY(0); }
+  70%           { transform: translateY(5px); }
+  85%           { transform: translateY(0); }
+}
+.curve-arrow { animation: arrow-dip 2.8s ease-in-out infinite; }
+.curve-arrow path {
+  stroke-dasharray: 100;
+  animation: arrow-draw 2.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .curve-arrow, .curve-arrow path { animation: none; }
+}
