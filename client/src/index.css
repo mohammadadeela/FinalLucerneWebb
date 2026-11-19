@@ -14,37 +14,37 @@
   /* Storefront palette — warm cream surfaces with the original black for buttons, text and the footer.
      Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
-  --background: 0 0% 100%;
-  --foreground: 0 0% 10%;
+  --background: 8 100% 98%;
+  --foreground: 334 19% 16%;
 
-  --card: 0 0% 98%;
-  --card-foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 334 19% 16%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
+  --popover-foreground: 334 19% 16%;
 
-  --primary: 0 0% 12%;
-  --primary-foreground: 0 0% 98%;
+  --primary: 340 49% 35%;
+  --primary-foreground: 8 100% 98%;
 
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 15%;
+  --secondary: 356 50% 94%;
+  --secondary-foreground: 334 19% 18%;
 
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 45%;
+  --muted: 356 45% 95%;
+  --muted-foreground: 334 8% 42%;
 
-  --accent: 0 0% 94%;
-  --accent-foreground: 0 0% 10%;
+  --accent: 356 50% 94%;
+  --accent-foreground: 334 19% 16%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
-  --ring: 0 0% 12%;
+  --border: 355 32% 89%;
+  --input: 355 32% 89%;
+  --ring: 340 49% 35%;
 
   /* Named storefront tints used by the landing page */
-  --berry: 342 49% 42%;
-  --berry-deep: 342 52% 33%;
+  --berry: 340 49% 35%;
+  --berry-deep: 340 52% 27%;
   --blush: 358 67% 90%;
   --sage: 96 20% 84%;
   --sand: 30 42% 91%;
@@ -58,25 +58,25 @@
   }
 }
 
-/* Admin, POS and reports keep the original clean monochrome palette. */
+/* Admin, POS and reports share the storefront's Blush & Burgundy palette. */
 html.admin-theme {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 10%;
-  --card: 0 0% 98%;
-  --card-foreground: 0 0% 10%;
+  --background: 8 100% 98%;
+  --foreground: 334 19% 16%;
+  --card: 0 0% 100%;
+  --card-foreground: 334 19% 16%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  --primary: 0 0% 12%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 15%;
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 45%;
-  --accent: 0 0% 94%;
-  --accent-foreground: 0 0% 10%;
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
-  --ring: 0 0% 12%;
+  --popover-foreground: 334 19% 16%;
+  --primary: 340 49% 35%;
+  --primary-foreground: 8 100% 98%;
+  --secondary: 356 50% 94%;
+  --secondary-foreground: 334 19% 18%;
+  --muted: 356 45% 95%;
+  --muted-foreground: 334 8% 42%;
+  --accent: 356 50% 94%;
+  --accent-foreground: 334 19% 16%;
+  --border: 355 32% 89%;
+  --input: 355 32% 89%;
+  --ring: 340 49% 35%;
 }
 
 .dark {
@@ -316,4 +316,11 @@ html.admin-theme {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
+}
+
+/* Blush & Burgundy: solid dark buttons and links use the burgundy button colour
+   (page #FFF8F7, panels #F7D6D7, buttons #872E4B, text #322229). */
+:is(button, a, [role="button"]).bg-foreground,
+:is(button, a, [role="button"]).bg-black {
+  background-color: hsl(var(--primary));
 }

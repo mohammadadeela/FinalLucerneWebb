@@ -1,8 +1,8 @@
-import { useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import ImageCropDialog from "@/components/admin/ImageCropDialog";
 import AIGenerateImageButton from "@/components/admin/AIGenerateImageButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store, LayoutDashboard, House, Shirt, Footprints, BadgePercent, CircleHelp, MessageSquareText, ListFilter } from "lucide-react";
+import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store, LayoutDashboard, House, Shirt, Footprints, BadgePercent, CircleHelp, MessageSquareText, ListFilter, Crop } from "lucide-react";
  import { SEASONS, getActiveTheme } from "@/lib/seasonal";
 import SeasonalThemeCard from "@/components/admin/SeasonalThemeCard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -115,6 +115,8 @@ function ImageUploadField({
   withCrop = false,
   promptContext,
   cropAspect,
+  originalValue,
+  onChangeOriginal,
 }: {
   value: string;
   position: string;
@@ -125,6 +127,9 @@ function ImageUploadField({
   promptContext?: string;
   /** Fixed crop ratio (width / height) when the slot has its own shape; the preview uses it too. */
   cropAspect?: number;
+  /** URL of the untouched photo, kept so it can be cropped again later. */
+  originalValue?: string;
+  onChangeOriginal?: (url: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
@@ -138,22 +143,56 @@ function ImageUploadField({
     return new Promise((resolve) => setPendingCrop({ file, resolve }));
   }, [withCrop]);
 
+  const [lastOriginal, setLastOriginal] = useState<File | null>(null);
+
+  const uploadOne = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("images", file);
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const data = await res.json();
+    return data.urls?.[0] || "";
+  };
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setLastOriginal(file);
     const cropped = await requestCrop(file);
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("images", cropped);
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.urls?.[0]) onChangeImage(data.urls[0]);
+      // Keep the untouched photo too, so "re-crop" can start from it again later.
+      if (withCrop && onChangeOriginal) {
+        const originalUrl = await uploadOne(file);
+        if (originalUrl) onChangeOriginal(originalUrl);
+      }
+      const url = await uploadOne(cropped);
+      if (url) onChangeImage(url);
     } catch {
       toast({ title: "فشل رفع الصورة", variant: "destructive" });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  // Re-open the crop tool on the photo already in place (the original when we still have it).
+  const handleRecrop = async () => {
+    try {
+      let source = lastOriginal;
+      if (!source) {
+        const res = await fetch(originalValue || value);
+        if (!res.ok) throw new Error("fetch failed");
+        const blob = await res.blob();
+        source = new File([blob], "banner." + (blob.type.split("/")[1] || "jpg"), { type: blob.type || "image/jpeg" });
+      }
+      const cropped = await requestCrop(source);
+      setUploading(true);
+      const url = await uploadOne(cropped);
+      if (url) onChangeImage(url);
+    } catch {
+      toast({ title: "تعذّر فتح الصورة للقص — ارفعي الصورة من جديد", variant: "destructive" });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -294,6 +333,21 @@ function ImageUploadField({
             <Upload className="w-4 h-4" />
           )}
         </Button>
+        {value && withCrop && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleRecrop}
+            disabled={uploading}
+            className="shrink-0 h-9 px-3 gap-1.5"
+            title="إعادة قص الصورة"
+            data-testid="button-recrop-image"
+          >
+            <Crop className="w-4 h-4" />
+            <span className="text-xs">إعادة القص</span>
+          </Button>
+        )}
         {value && (
           <Button
             type="button"
@@ -1381,6 +1435,8 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
               onChangePosition={(pos) => onChange("home_banner_new_image_position", pos)}
               withCrop
               cropAspect={15}
+              originalValue={values["home_banner_new_image_original"] ?? ""}
+              onChangeOriginal={(url) => onChange("home_banner_new_image_original", url)}
             />
           </div>
           <div className="rounded-xl border border-border p-4 space-y-3">
@@ -1392,6 +1448,8 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
               onChangePosition={(pos) => onChange("home_banner_best_image_position", pos)}
               withCrop
               cropAspect={15}
+              originalValue={values["home_banner_best_image_original"] ?? ""}
+              onChangeOriginal={(url) => onChange("home_banner_best_image_original", url)}
             />
           </div>
         </div>
