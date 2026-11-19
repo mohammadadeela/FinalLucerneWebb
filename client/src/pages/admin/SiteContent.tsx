@@ -1553,6 +1553,32 @@ function PromoSliderCard({ values, onChange }: { values: Record<string, string>;
   );
 }
 
+/** Preview of the storefront news bar: one message at a time, rotating, in the bar's own colour. */
+function NewsBarPreview({ text }: { text: string }) {
+  const items = text.split("|").map((t) => t.trim()).filter(Boolean);
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (items.length < 2) return;
+    const id = window.setInterval(() => setIdx((v) => v + 1), 3200);
+    return () => window.clearInterval(id);
+  }, [items.length]);
+  const current = items.length ? items[idx % items.length] : "";
+  return (
+    <div className="bg-berry text-white overflow-hidden">
+      <div className="flex h-9 items-center justify-center px-4" dir="auto">
+        <span key={`${idx}-${current}`} className="news-rise truncate text-[13px] font-medium">
+          {current}
+        </span>
+      </div>
+      {items.length > 1 && (
+        <p className="bg-black/15 py-0.5 text-center text-[10px] text-white/80">
+          {(idx % items.length) + 1} / {items.length}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function NewsBarCard({
   values,
   onChange,
@@ -1647,7 +1673,7 @@ function NewsBarCard({
                   dir="rtl"
                   data-testid="input-news-bar-text-ar"
                 />
-                <p className="text-[11px] text-muted-foreground text-right">افصلي العناصر بـ | لعرضها مع فاصل ✦</p>
+                <p className="text-[11px] text-muted-foreground text-right">افصلي الرسائل بـ | — تظهر رسالة واحدة في كل مرة وتتبدّل تلقائياً</p>
               </div>
 
               <div className="space-y-2">
@@ -1665,7 +1691,7 @@ function NewsBarCard({
                   dir="ltr"
                   data-testid="input-news-bar-text-en"
                 />
-                <p className="text-[11px] text-muted-foreground text-right">Separate items with | to display them with ✦ dividers</p>
+                <p className="text-[11px] text-muted-foreground text-right">Separate messages with | — one shows at a time and they rotate automatically</p>
               </div>
 
               {!hasAnyText && enabled && (
@@ -1686,20 +1712,7 @@ function NewsBarCard({
                 </p>
               </div>
               <div className="mx-5 mb-4 rounded-lg overflow-hidden border border-border/40 shadow-sm" data-testid="news-bar-preview">
-                <div className="bg-foreground text-background overflow-hidden">
-                  <div className="news-preview-track flex items-center whitespace-nowrap py-2.5" dir="ltr">
-                    {[0, 1, 2, 3].map(rep => {
-                      const previewText = values["news_bar_text_ar"] || values["news_bar_text_en"] || "";
-                      const previewItems = previewText.split("|").map((s: string) => s.trim()).filter(Boolean);
-                      return previewItems.map((item: string, i: number) => (
-                        <span key={`${rep}-${i}`} className="inline-flex items-center gap-6 px-4">
-                          <span className="text-xs font-light tracking-[0.25em] uppercase text-background/80">{item}</span>
-                          <span className="text-background/30 text-[8px]">✦</span>
-                        </span>
-                      ));
-                    })}
-                  </div>
-                </div>
+                <NewsBarPreview text={values["news_bar_text_ar"] || values["news_bar_text_en"] || ""} />
                 {hasArText && hasEnText && (
                   <div className="bg-muted/30 px-4 py-2 flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/30">
                     <span dir="ltr" className="truncate max-w-[45%]">EN: {values["news_bar_text_en"]}</span>
@@ -1707,10 +1720,6 @@ function NewsBarCard({
                   </div>
                 )}
               </div>
-              <style>{`
-                .news-preview-track { animation: news-preview-scroll 15s linear infinite; }
-                @keyframes news-preview-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-              `}</style>
             </div>
           )}
         </div>
