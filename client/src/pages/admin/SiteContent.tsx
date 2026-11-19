@@ -1405,6 +1405,11 @@ function HomePillsCard({ values, onChange }: { values: Record<string, string>; o
 
 function HomeBannersCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
   const [open, setOpen] = useState(false);
+  const field = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  const rows: { key: string; label: string; placeholder: string }[] = [
+    { key: "home_banner_new_texts", label: "البانر فوق «وصل حديثاً»", placeholder: "NEW ARRIVALS | JUST LANDED | FRESH THIS WEEK | THE NEW EDIT" },
+    { key: "home_banner_best_texts", label: "البانر فوق «الأكثر مبيعاً»", placeholder: "BEST SELLERS | MOST LOVED | CUSTOMER FAVOURITES | TOP PICKS" },
+  ];
   return (
     <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-home-banners">
       <button
@@ -1417,41 +1422,28 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
           {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </div>
         <div className="text-right">
-          <p className="font-semibold text-sm">بانرات الصفحة الرئيسية (بدون نص)</p>
-          <p className="text-xs text-muted-foreground">Home decorative banners</p>
+          <p className="font-semibold text-sm">بانرات العناوين المتحركة في الصفحة الرئيسية</p>
+          <p className="text-xs text-muted-foreground">Home animated heading banners</p>
         </div>
       </button>
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            شريطان رفيعان فوق «وصل حديثاً» وفوق «الأكثر مبيعاً». غير قابلين للنقر. مقاس الشريط 15:1 (مثلاً 1560×104 بكسل) — عند رفع الصورة تفتح أداة القص بهذا المقاس، والمعاينة هنا بنفس شكل الشريط على الكمبيوتر. على الهاتف يظهر الجزء الأوسط فقط (نحو ثلث العرض)، لذلك ضعي النص في المنتصف. يمكن تحريك الصورة من «تعديل موضع الصورة». إذا تُركت الصورة فارغة يبقى الشريط أبيض.
+            شريطان ورديان بنص عنابي متحرك، فوق «وصل حديثاً» وفوق «الأكثر مبيعاً». اكتبي العبارات وافصلي بينها بـ | لتظهر واحدة تلو الأخرى. عبارة واحدة فقط تبقى ثابتة بدون حركة. إذا تُرك الحقل فارغاً تُستخدم العبارات الافتراضية الظاهرة فيه. يفضّل أن تكون العبارات قصيرة لتظهر كاملة على الهاتف.
           </p>
-          <div className="rounded-xl border border-border p-4 space-y-3">
-            <p className="text-sm font-semibold text-right">البانر فوق «وصل حديثاً»</p>
-            <ImageUploadField
-              value={values["home_banner_new_image"] ?? ""}
-              position={values["home_banner_new_image_position"] ?? "center"}
-              onChangeImage={(url) => onChange("home_banner_new_image", url)}
-              onChangePosition={(pos) => onChange("home_banner_new_image_position", pos)}
-              withCrop
-              cropAspect={15}
-              originalValue={values["home_banner_new_image_original"] ?? ""}
-              onChangeOriginal={(url) => onChange("home_banner_new_image_original", url)}
-            />
-          </div>
-          <div className="rounded-xl border border-border p-4 space-y-3">
-            <p className="text-sm font-semibold text-right">البانر فوق «الأكثر مبيعاً»</p>
-            <ImageUploadField
-              value={values["home_banner_best_image"] ?? ""}
-              position={values["home_banner_best_image_position"] ?? "center"}
-              onChangeImage={(url) => onChange("home_banner_best_image", url)}
-              onChangePosition={(pos) => onChange("home_banner_best_image_position", pos)}
-              withCrop
-              cropAspect={15}
-              originalValue={values["home_banner_best_image_original"] ?? ""}
-              onChangeOriginal={(url) => onChange("home_banner_best_image_original", url)}
-            />
-          </div>
+          {rows.map((r) => (
+            <div key={r.key} className="rounded-xl border border-border p-4 space-y-3">
+              <p className="text-sm font-semibold text-right">{r.label}</p>
+              <input
+                dir="auto"
+                className={field}
+                placeholder={r.placeholder}
+                value={values[r.key] ?? ""}
+                onChange={(e) => onChange(r.key, e.target.value)}
+                data-testid={`input-${r.key}`}
+              />
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -2453,7 +2445,7 @@ const SEARCH_INDEX: { id: string; tab: TabId; labelAr: string; labelEn: string; 
   { id: "headings", tab: "home", labelAr: "عناوين الأقسام", labelEn: "Section headings" },
   { id: "editorial", tab: "home", labelAr: "شبكة التحرير", labelEn: "Editorial grid" },
   { id: "pills", tab: "home", labelAr: "أزرار الأقسام تحت السلايدر", labelEn: "Home category buttons", extra: "pills أقسام فئات تصنيف فرعي صورة أزرار" },
-  { id: "homebanners", tab: "home", labelAr: "بانرات الصفحة الرئيسية", labelEn: "Home decorative banners", extra: "banner بانر شريط وصل حديثا الأكثر مبيعا صورة" },
+  { id: "homebanners", tab: "home", labelAr: "بانرات العناوين المتحركة", labelEn: "Home animated heading banners", extra: "banner بانر شريط وصل حديثا الأكثر مبيعا نص متحرك new arrivals best sellers" },
   { id: "menuphotos", tab: "home", labelAr: "صور قائمة الهاتف", labelEn: "Phone menu photos", extra: "menu mobile قائمة هاتف موبايل صور فئات" },
   { id: "promo", tab: "home", labelAr: "سلايدر الصور", labelEn: "Home photo slider", extra: "slider سلايدر صور شرائح" },
   { id: "page-home", tab: "home", labelAr: "بانر الصفحة الرئيسية", labelEn: "Home hero banner", extra: "صورة فيديو عنوان" },

@@ -17,7 +17,7 @@ import {
   useProducts,
 } from "@/hooks/use-products";
 import { Link } from "wouter";
-import {
+import { ChevronsDown,
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
@@ -238,39 +238,51 @@ function RailSkeleton() {
   );
 }
 
-/** Admin "position" values are keywords (center, top…) or an "x% y%" pair. */
-function bannerPosition(pos?: string) {
-  if (!pos) return "50% 50%";
-  if (pos.includes("%")) return pos;
-  const x = pos.includes("left") ? 0 : pos.includes("right") ? 100 : 50;
-  const y = pos.includes("top") ? 0 : pos.includes("bottom") ? 100 : 50;
-  return `${x}% ${y}%`;
-}
-
-/** A decorative banner, the same size as the category banners — not a link, no text.
- *  Blank until the admin uploads a photo for it (Content → Home). */
-function EmptyBanner({ image, position }: { image?: string; position?: string }) {
+/** A decorative heading banner, the same size as the category banners — not a link.
+ *  Burgundy display capitals on the pink panel; when there are several phrases they
+ *  take turns, rising in and out like the news bar. The admin edits the phrases. */
+function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: string; plain?: boolean }) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (texts.length < 2) return;
+    const id = window.setInterval(() => setIdx((v) => v + 1), 4200);
+    return () => window.clearInterval(id);
+  }, [texts.length]);
+  if (texts.length === 0) return null;
+  const current = texts[idx % texts.length];
   return (
     <div
-      aria-hidden="true"
-      className="relative mb-4 overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5"
+      className={`relative overflow-hidden rounded-[1.5rem] px-4 sm:px-8 ${plain ? "mb-2 py-1 sm:mb-3 sm:py-2" : "mb-4 bg-blush py-3.5 sm:mb-5 sm:py-5"}`}
+      data-testid={testId}
     >
-      {image && (
-        <img
-          src={optimizeCloudinaryUrl(image, 1600) || image}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ objectPosition: bannerPosition(position) }}
-        />
-      )}
-      <div className="invisible">
+      {/* Invisible copy of a category banner's text, so the height matches it exactly */}
+      <div className="invisible" aria-hidden="true">
         <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">أ</p>
         <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">أ</p>
       </div>
+      <div className="absolute inset-0 flex items-center justify-center gap-3 px-4 sm:gap-6" dir="ltr">
+        <span className="hidden h-px w-10 bg-berry/45 sm:block lg:w-24" aria-hidden="true" />
+        <ChevronsDown className="h-5 w-5 shrink-0 animate-bounce text-berry sm:h-7 sm:w-7" strokeWidth={1.6} aria-hidden="true" />
+        <h2 className="m-0 min-w-0 overflow-hidden text-center">
+          <span
+            key={`${idx}-${current}`}
+            className={`display-latin keep-tracking block truncate text-[1.6rem] font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${texts.length > 1 ? "news-rise" : ""}`}
+            style={{ ["--tracking" as any]: "0.14em" }}
+          >
+            {current}
+          </span>
+        </h2>
+        <ChevronsDown className="h-5 w-5 shrink-0 animate-bounce text-berry sm:h-7 sm:w-7" strokeWidth={1.6} aria-hidden="true" />
+        <span className="hidden h-px w-10 bg-berry/45 sm:block lg:w-24" aria-hidden="true" />
+      </div>
     </div>
   );
+}
+
+/** Splits the admin's "A | B | C" field into phrases, falling back to the defaults. */
+function bannerTexts(value: string, fallback: string[]) {
+  const list = (value || "").split("|").map((t) => t.trim()).filter(Boolean);
+  return list.length > 0 ? list : fallback;
 }
 
 function Section({
@@ -913,7 +925,10 @@ export default function Home() {
         {/* ── New arrivals ── */}
         {newArrivals.length > 0 && (
           <Section>
-            <EmptyBanner image={g("home_banner_new_image")} position={g("home_banner_new_image_position")} />
+            <AnimatedBanner
+              texts={bannerTexts(g("home_banner_new_texts"), ["NEW ARRIVALS", "JUST LANDED", "FRESH THIS WEEK", "THE NEW EDIT"])}
+              testId="banner-new-arrivals"
+            />
             <ProductRail
               products={newArrivals}
               testId="rail-new-arrivals"
@@ -1176,7 +1191,13 @@ export default function Home() {
         {/* ── Best sellers ── */}
         {bestSellers.length > 0 && (
           <Section>
-            <EmptyBanner image={g("home_banner_best_image")} position={g("home_banner_best_image_position")} />
+            {/* Same pink panel as the "most wanted" block */}
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
+            <AnimatedBanner
+              plain
+              texts={bannerTexts(g("home_banner_best_texts"), ["BEST SELLERS", "MOST LOVED", "CUSTOMER FAVOURITES", "TOP PICKS"])}
+              testId="banner-best-sellers"
+            />
 
             {isBestSellersLoading ? (
               <RailSkeleton />
@@ -1301,6 +1322,7 @@ export default function Home() {
                 )}
               </>
             )}
+            </div>
           </Section>
         )}
 
