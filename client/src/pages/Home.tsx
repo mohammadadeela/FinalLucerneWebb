@@ -444,17 +444,17 @@ export default function Home() {
         {/* ── Shop by category: soft pills (photo on one side, name on the other) ── */}
         {catTiles.length > 0 && (
           <Section className="hidden sm:block !pb-0">
-            <Rail scrollClassName="gap-4 lg:gap-6 pb-2" testId="rail-categories">
+            <Rail scrollClassName="gap-4 lg:gap-5 pb-2" testId="rail-categories">
               {catTiles.map((item, i) => (
                 <Link
                   key={item.key}
                   href={item.href}
                   role="listitem"
-                  className="group relative flex h-[6.5rem] flex-none snap-start overflow-hidden rounded-[2.25rem] bg-[hsl(var(--sand))] ring-1 ring-black/[0.04] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(74,24,43,0.45)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:h-28 lg:w-[calc((100%-4.5rem)/4)]"
+                  className="group relative flex aspect-[2.44/1] flex-none snap-start overflow-hidden rounded-[2.5rem] bg-[hsl(var(--sand))] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(74,24,43,0.45)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
                   data-testid={`pill-${item.testId}`}
                 >
                   <span
-                    className="relative block h-full w-[46%] shrink-0 overflow-hidden"
+                    className="relative block h-full w-[56%] shrink-0 overflow-hidden"
                     style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
                   >
                     <BannerImage
@@ -465,11 +465,11 @@ export default function Home() {
                       width={400}
                     />
                   </span>
-                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 lg:px-5">
-                    <span className="font-heading block min-w-0 truncate text-lg font-medium leading-tight lg:text-xl">
+                  <span className="flex min-w-0 flex-1 items-center justify-center gap-2.5 px-3">
+                    <span className="font-heading block min-w-0 truncate text-xl font-medium leading-tight lg:text-2xl">
                       {item.label}
                     </span>
-                    <Arrow className="h-4 w-4 shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+                    <Arrow className="h-5 w-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
                   </span>
                 </Link>
               ))}

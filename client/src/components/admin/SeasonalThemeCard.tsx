@@ -103,9 +103,9 @@ export default function SeasonalThemeCard({
                 style={{ background: info.barBg, color: info.barText }}
                 data-testid="seasonal-preview"
               >
-                <span style={{ color: info.accent }}>✦</span>
+                <span style={{ color: info.accent }}>•</span>
                 <span className="mx-3">{seasonBarText(values, active, "ar").split("|")[0].trim()}</span>
-                <span style={{ color: info.accent }}>✦</span>
+                <span style={{ color: info.accent }}>•</span>
               </div>
 
               <div className="space-y-2">

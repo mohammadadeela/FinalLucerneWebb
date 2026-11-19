@@ -668,7 +668,7 @@ export function Navbar() {
     }`;
 
   const iconBtn =
-    "relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-secondary/70 hover:text-berry";
+    "relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-blush/70 hover:text-berry";
 
   return (
     <>
@@ -831,15 +831,15 @@ export function Navbar() {
                     </Link>
                     {c.subs.length > 0 && (
                       <div className="invisible absolute start-1/2 top-full z-50 w-64 -translate-x-1/2 rtl:translate-x-1/2 pt-3 opacity-0 translate-y-1 transition-all duration-200 group-hover/nav:visible group-hover/nav:opacity-100 group-hover/nav:translate-y-0 group-focus-within/nav:visible group-focus-within/nav:opacity-100 group-focus-within/nav:translate-y-0">
-                        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card p-2 shadow-[0_24px_60px_-24px_rgba(74,24,43,0.35)]">
+                        <div className="overflow-hidden rounded-2xl border border-border/70 bg-white p-2 shadow-[0_24px_60px_-24px_rgba(74,24,43,0.35)]">
                           <div className="max-h-[60vh] overflow-y-auto">
                             {c.subs.map((s: any) => (
                               <Link
                                 key={s.id}
                                 href={`${href}?sub=${s.id}`}
-                                className="flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm text-foreground/85 transition-colors hover:bg-secondary/60 hover:text-berry"
+                                className="flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm text-foreground/85 transition-colors hover:bg-blush/60 hover:text-berry"
                               >
-                                <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-secondary">
+                                <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-blush">
                                   {s.image && (
                                     <img
                                       src={optimizeCloudinaryUrl(s.image, 100) || s.image}
@@ -855,7 +855,7 @@ export function Navbar() {
                           </div>
                           <Link
                             href={href}
-                            className="mt-1 flex items-center justify-between rounded-xl bg-secondary/50 px-3 py-2.5 text-xs font-semibold text-berry transition-colors hover:bg-secondary"
+                            className="mt-1 flex items-center justify-between rounded-xl bg-blush/50 px-3 py-2.5 text-xs font-semibold text-berry transition-colors hover:bg-blush"
                           >
                             {isAr ? `كل ${catLabel(c)}` : `All ${catLabel(c)}`}
                             <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" />
@@ -873,12 +873,12 @@ export function Navbar() {
                     <ChevronDown className="h-3.5 w-3.5 opacity-60 transition-transform duration-300 group-hover/nav:rotate-180" />
                   </button>
                   <div className="invisible absolute start-1/2 top-full z-50 w-56 -translate-x-1/2 rtl:translate-x-1/2 pt-3 opacity-0 transition-all duration-200 group-hover/nav:visible group-hover/nav:opacity-100 group-focus-within/nav:visible group-focus-within/nav:opacity-100">
-                    <div className="rounded-2xl border border-border/70 bg-card p-2 shadow-[0_24px_60px_-24px_rgba(74,24,43,0.35)]">
+                    <div className="rounded-2xl border border-border/70 bg-white p-2 shadow-[0_24px_60px_-24px_rgba(74,24,43,0.35)]">
                       {overflowNavCats.map((c: any) => (
                         <Link
                           key={c.id}
                           href={categoryHref(c)}
-                          className="block rounded-xl px-3 py-2 text-sm text-foreground/85 transition-colors hover:bg-secondary/60 hover:text-berry"
+                          className="block rounded-xl px-3 py-2 text-sm text-foreground/85 transition-colors hover:bg-blush/60 hover:text-berry"
                         >
                           {catLabel(c)}
                         </Link>
@@ -903,7 +903,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="hidden lg:flex h-10 w-48 xl:w-64 items-center gap-2.5 rounded-full border border-border bg-card/70 px-4 text-start text-[13px] text-muted-foreground transition-colors hover:border-berry/50 hover:bg-card me-1"
+                className="hidden lg:flex h-10 w-48 xl:w-64 items-center gap-2.5 rounded-full border border-border bg-white/70 px-4 text-start text-[13px] text-muted-foreground transition-colors hover:border-berry/50 hover:bg-white me-1"
                 data-testid="button-search-open"
               >
                 <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={1.7} />
@@ -917,7 +917,7 @@ export function Navbar() {
                 <ClickIcon
                   animation="spin"
                   onClick={toggleLanguage}
-                  className="h-10 rounded-full px-2.5 text-[13px] transition-colors hover:bg-secondary/70 hover:text-berry bg-transparent border-none outline-none"
+                  className="h-10 rounded-full px-2.5 text-[13px] transition-colors hover:bg-blush/70 hover:text-berry bg-transparent border-none outline-none"
                   testId="button-language-toggle"
                 >
                   <Globe className="w-4 h-4" strokeWidth={1.6} />
@@ -949,10 +949,10 @@ export function Navbar() {
                 </Link>
                 {user && (
                   <div className="invisible absolute end-0 top-full z-50 w-48 pt-2 opacity-0 transition-all duration-200 group-hover/acc:visible group-hover/acc:opacity-100 group-focus-within/acc:visible group-focus-within/acc:opacity-100">
-                    <div className="rounded-2xl border border-border/70 bg-card p-1.5 shadow-[0_24px_60px_-24px_rgba(74,24,43,0.35)]">
+                    <div className="rounded-2xl border border-border/70 bg-white p-1.5 shadow-[0_24px_60px_-24px_rgba(74,24,43,0.35)]">
                       <Link
                         href="/profile"
-                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-secondary/60 hover:text-berry"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-blush/60 hover:text-berry"
                       >
                         <User className="h-4 w-4" strokeWidth={1.6} />
                         {t.profile.myAccount}
@@ -1074,7 +1074,7 @@ export function Navbar() {
                     setMobileMenuOpen(false);
                     setSearchOpen(true);
                   }}
-                  className="mb-3 flex h-11 w-full items-center gap-2.5 rounded-full border border-border bg-card px-4 text-start text-sm text-muted-foreground"
+                  className="mb-3 flex h-11 w-full items-center gap-2.5 rounded-full border border-border bg-white px-4 text-start text-sm text-muted-foreground"
                 >
                   <Search className="h-4 w-4 text-foreground/70" strokeWidth={1.7} />
                   {isAr ? "ابحثي عن ملابس، أحذية، حقائب..." : "Search for clothing, shoes, bags..."}
@@ -1082,10 +1082,10 @@ export function Navbar() {
 
                 <Link
                   href="/shop"
-                  className="flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-medium hover:bg-secondary/60"
+                  className="flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-medium hover:bg-blush/60"
                   data-testid="link-shop-mobile"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-foreground/80">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sage text-foreground/80">
                     <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.6} />
                   </span>
                   {isAr ? "كل المنتجات" : "Shop All"}
@@ -1099,10 +1099,10 @@ export function Navbar() {
                       <div className="flex items-center">
                         <Link
                           href={href}
-                          className="flex flex-1 items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-medium hover:bg-secondary/60"
+                          className="flex flex-1 items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-medium hover:bg-blush/60"
                           data-testid={`link-${c.slug}-mobile`}
                         >
-                          <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-secondary">
+                          <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-blush">
                             {c.image && (
                               <img
                                 src={optimizeCloudinaryUrl(c.image, 120) || c.image}
@@ -1142,7 +1142,7 @@ export function Navbar() {
                                 <Link
                                   key={s.id}
                                   href={`${href}?sub=${s.id}`}
-                                  className="rounded-full border border-border bg-card px-3.5 py-1.5 text-[13px] text-foreground/85 hover:border-berry/50 hover:text-berry"
+                                  className="rounded-full border border-border bg-white px-3.5 py-1.5 text-[13px] text-foreground/85 hover:border-berry/50 hover:text-berry"
                                 >
                                   {isAr ? s.nameAr || s.name : s.name}
                                 </Link>
@@ -1172,7 +1172,7 @@ export function Navbar() {
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href={user ? "/profile" : "/auth"}
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-sm"
+                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-sm"
                     data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
                   >
                     <User className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
@@ -1182,7 +1182,7 @@ export function Navbar() {
                   </Link>
                   <Link
                     href={user ? "/wishlist" : "/auth"}
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-sm"
+                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-sm"
                     data-testid="link-wishlist-mobile"
                   >
                     <Heart className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
@@ -1190,7 +1190,7 @@ export function Navbar() {
                   </Link>
                   <Link
                     href="/our-location"
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-sm"
+                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-sm"
                     data-testid="link-our-location"
                   >
                     <MapPin className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
@@ -1199,7 +1199,7 @@ export function Navbar() {
                   <button
                     type="button"
                     onClick={toggleLanguage}
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-card px-3 py-3 text-start text-sm"
+                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-start text-sm"
                     data-testid="button-language-toggle-mobile"
                   >
                     <Globe className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />

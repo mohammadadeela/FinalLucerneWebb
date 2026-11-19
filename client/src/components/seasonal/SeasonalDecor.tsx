@@ -305,7 +305,7 @@ export function Arcade({ gold, glow, height = 56 }: { gold: string; glow: string
     <svg className="absolute top-0 inset-x-0 w-full" height={height} aria-hidden>
       <defs>
         <pattern id={`p${id}`} width="112" height="58" patternUnits="userSpaceOnUse">
-          <path d="M6 58 V30 C6 16 34 8 56 0 C78 8 106 16 106 30 V58" fill="rgba(5,47,42,.34)" stroke={gold} strokeOpacity=".62" strokeWidth="1.2" />
+          <path d="M6 58 V30 C6 16 34 8 56 0 C78 8 106 16 106 30 V58" fill="rgba(140,98,40,.10)" stroke={gold} strokeOpacity=".62" strokeWidth="1.2" />
           <path d="M17 58 V32 C17 23 38 16 56 10 C74 16 95 23 95 32 V58" fill="none" stroke={gold} strokeOpacity=".28" strokeWidth="1" />
           <line x1="56" y1="10" x2="56" y2="19" stroke={gold} strokeOpacity=".7" strokeWidth="1" />
           <circle cx="56" cy="23" r="6" fill={glow} fillOpacity=".25" />
@@ -602,7 +602,7 @@ function Sheep({ size, wool = "#FFFDF7" }: { size: number; wool?: string }) {
         {leg(40, "-.23s")}
         {leg(47, "0s")}
         <circle cx="12" cy="24" r="4.5" fill={wool} />
-        <g fill={wool} stroke="#E9DFCF" strokeWidth=".8">
+        <g fill={wool} stroke="#CDBB9C" strokeWidth=".9">
           <circle cx="22" cy="26" r="11" />
           <circle cx="34" cy="21" r="12.5" />
           <circle cx="46" cy="26" r="11" />
@@ -656,7 +656,7 @@ function SceneGreeting({ skin, countdownDate }: { skin: SeasonSkin; countdownDat
   const cd = countdownParts(daysUntil(countdownDate), skin.info, ar);
   return (
     <div className="absolute end-0 top-2 flex w-[58%] flex-col items-center gap-1 px-2 text-center sm:top-4 sm:w-[43%] sm:gap-1.5" data-testid="seasonal-greeting">
-      <div className={ar ? "sx-ar text-[19px] leading-[1.3] sm:text-[30px]" : "sx-en text-[19px] leading-[1.1] sm:text-[30px]"} style={{ color: p.gold, textShadow: `0 2px 18px ${p.night}` }}>
+      <div className={ar ? "sx-ar text-[19px] leading-[1.3] sm:text-[30px]" : "sx-en text-[19px] leading-[1.1] sm:text-[30px]"} style={{ color: p.gold, textShadow: `0 1px 14px ${p.night}` }}>
         {ar ? skin.info.titleAr : skin.info.titleEn}
       </div>
       {cd && (
@@ -703,10 +703,10 @@ function SeasonScene({ skin, compact, countdownDate }: { skin: SeasonSkin; compa
           <div className="sx-float absolute -top-1 end-[2%] sm:end-[3%]">
             <div className={`origin-top ${s}`}><BethlehemStar size={108} glow={p.glow} core={p.gold} /></div>
           </div>
-          <Hanging className="end-[37%] hidden sm:flex" chain={compact ? 10 : 26} delay="-1.1s" gold={p.gold}><Bauble size={30} color="#B8324A" shine="#F3A3B0" /></Hanging>
+          <Hanging className="end-[37%] hidden sm:flex" chain={compact ? 10 : 26} delay="-1.1s" gold={p.gold}><Bauble size={30} color="#1F6B4E" shine="#8FD0B0" /></Hanging>
           <Hanging className="end-[31%] hidden md:flex" chain={compact ? 34 : 70} delay="-2.6s" gold={p.gold}><Bauble size={22} color="#D9B45B" shine="#FFF0C2" /></Hanging>
           <Hanging className="end-[13%] hidden sm:flex" chain={compact ? 4 : 12} delay="-.4s" gold={p.gold}><Bauble size={24} color="#F4ECDD" shine="#FFFFFF" /></Hanging>
-          <Hanging className="start-[26%] hidden lg:flex" chain={18} delay="-3.3s" gold={p.gold}><Bauble size={26} color="#B8324A" shine="#F3A3B0" /></Hanging>
+          <Hanging className="start-[26%] hidden lg:flex" chain={18} delay="-3.3s" gold={p.gold}><Bauble size={26} color="#F4ECDD" shine="#FFFFFF" /></Hanging>
           <SnowDrift />
         </>
       )}
@@ -809,10 +809,10 @@ export function SeasonThumb({ id }: { id: SeasonalTheme }) {
         <>
           <Arcade gold={p.gold} glow={p.glow} height={34} />
           <div className="absolute inset-x-0 bottom-0 h-10 overflow-hidden"><SunDisc glow={p.glow} gold={p.gold} /></div>
-          <Skyline back="rgba(14,92,79,.62)" front="rgba(5,47,42,.9)" edge={p.gold} />
+          <Skyline back="rgba(168,116,42,.35)" front="rgba(120,84,40,.75)" edge={p.gold} />
         </>
       )}
-      <div className={`absolute inset-x-0 bottom-2 text-center ${id === "eid_adha" ? "bottom-3" : ""} ${"sx-ar"} text-[15px]`} style={{ color: p.light, textShadow: "0 1px 8px rgba(0,0,0,.6)" }}>{info.titleAr}</div>
+      <div className={`absolute inset-x-0 bottom-2 text-center ${id === "eid_adha" ? "bottom-3" : ""} ${"sx-ar"} text-[15px]`} style={{ color: p.light, textShadow: `0 1px 8px ${p.night}` }}>{info.titleAr}</div>
       <style>{CSS}</style>
     </div>
   );

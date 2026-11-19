@@ -52,6 +52,9 @@ export default {
           border: "var(--destructive-border)",
         },
         ring: "hsl(var(--ring) / <alpha-value>)",
+        blush: "hsl(var(--blush) / <alpha-value>)",
+        sage: "hsl(var(--sage) / <alpha-value>)",
+        sand: "hsl(var(--sand) / <alpha-value>)",
         berry: {
           DEFAULT: "hsl(var(--berry) / <alpha-value>)",
           deep: "hsl(var(--berry-deep) / <alpha-value>)",

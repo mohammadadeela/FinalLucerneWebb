@@ -38,21 +38,50 @@ export function Rail({
     if (!el) return;
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     ro?.observe(el);
-    Array.from(el.children).forEach((c) => ro?.observe(c));
     window.addEventListener("resize", measure);
     return () => {
       ro?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [measure, children]);
+  }, [measure]);
 
+  // Rows fill in after their products load — re-check the arrows whenever the content changes.
+  useEffect(() => {
+    measure();
+  });
+
+  // Arrow clicks run their own short eased scroll (about a third of a second) instead of the
+  // browser's "smooth" scroll, which waits a beat before moving and felt laggy on long rows.
+  const anim = useRef(0);
   const scrollByDir = (dir: "prev" | "next") => {
     const el = ref.current;
     if (!el) return;
     const rtl = window.getComputedStyle(el).direction === "rtl";
     const sign = rtl ? -1 : 1;
-    const amount = Math.max(240, el.clientWidth * 0.85);
-    el.scrollBy({ left: (dir === "next" ? 1 : -1) * sign * amount, behavior: "smooth" });
+    const first = el.firstElementChild as HTMLElement | null;
+    const gap = parseFloat(window.getComputedStyle(el).columnGap || "0") || 0;
+    const step = first ? first.offsetWidth + gap : 240;
+    // Move by whole cards so the row always lands cleanly.
+    const amount = Math.max(1, Math.floor((el.clientWidth + gap) / step) - (el.clientWidth < 640 ? 0 : 1)) * step;
+    const from = el.scrollLeft;
+    const delta = (dir === "next" ? 1 : -1) * sign * amount;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    cancelAnimationFrame(anim.current);
+    el.style.scrollSnapType = "none";
+    if (reduce) {
+      el.scrollLeft = from + delta;
+      el.style.scrollSnapType = "";
+      return;
+    }
+    const t0 = performance.now();
+    const D = 340;
+    const tick = (now: number) => {
+      const k = Math.min(1, (now - t0) / D);
+      el.scrollLeft = from + delta * (1 - Math.pow(1 - k, 3));
+      if (k < 1) anim.current = requestAnimationFrame(tick);
+      else el.style.scrollSnapType = "";
+    };
+    anim.current = requestAnimationFrame(tick);
   };
 
   const arrow =
@@ -88,7 +117,7 @@ export function Rail({
         role="list"
         aria-label={ariaLabel}
         data-testid={testId}
-        className={`scrollbar-hide flex snap-x snap-proximity overflow-x-auto scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 scroll-px-4 sm:scroll-px-0 ${scrollClassName}`}
+        className={`scrollbar-hide flex snap-x snap-proximity overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scroll-px-4 sm:scroll-px-0 ${scrollClassName}`}
       >
         {children}
       </div>

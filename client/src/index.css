@@ -17,7 +17,7 @@
   --background: 30 50% 97%;
   --foreground: 0 0% 10%;
 
-  --card: 0 0% 100%;
+  --card: 0 0% 98%;
   --card-foreground: 0 0% 10%;
 
   --popover: 0 0% 100%;
@@ -26,20 +26,20 @@
   --primary: 0 0% 12%;
   --primary-foreground: 0 0% 98%;
 
-  --secondary: 12 48% 93%;
+  --secondary: 0 0% 92%;
   --secondary-foreground: 0 0% 15%;
 
-  --muted: 28 36% 93%;
-  --muted-foreground: 0 0% 42%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 45%;
 
-  --accent: 96 20% 88%;
+  --accent: 0 0% 94%;
   --accent-foreground: 0 0% 10%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 24 30% 88%;
-  --input: 24 26% 84%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
   --ring: 0 0% 12%;
 
   /* Named storefront tints used by the landing page */
