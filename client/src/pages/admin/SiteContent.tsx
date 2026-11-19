@@ -122,7 +122,8 @@ const SLOT_SHAPES: Record<string, SlotShape> = {
   pill: { crop: 1.37, views: [{ label: "كمبيوتر", aspect: 2.44, width: "62%", photoShare: 0.56 }, { label: "هاتف", aspect: 1.9, width: "30%", photoShare: 0.42 }] },
   promo: { crop: 4, views: [{ label: "كمبيوتر", aspect: 4, width: "100%" }, { label: "هاتف", aspect: 1.78, width: "46%" }] },
   menu: { crop: 1, views: [{ label: "بطاقة القائمة", aspect: 0.85, width: "44%" }, { label: "البطاقة العريضة (الأخيرة)", aspect: 1.8, width: "92%" }] },
-  strip: { crop: 15, views: [{ label: "كمبيوتر", aspect: 15, width: "100%" }, { label: "هاتف", aspect: 4.6, width: "60%" }] },
+  strip: { crop: 15, views: [{ label: "كمبيوتر", aspect: 15, width: "100%" }] },
+  stripPhone: { crop: 4.6, views: [{ label: "هاتف", aspect: 4.6, width: "60%" }] },
 };
 
 /** Shows the photo cropped to each real shape of its slot, the same way the storefront crops it. */
@@ -1539,7 +1540,7 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            الشريط الذي يظهر فوق منتجات كل فئة في الصفحة الرئيسية (يفتح الفئة عند الضغط). مقاس الشريط 15:1 (مثلاً 1560×104 بكسل) — أداة القص تفتح بهذا المقاس والمعاينة هنا بنفس الشكل. على الهاتف يظهر الجزء الأوسط فقط (نحو ثلث العرض). إذا تُركت الصورة فارغة يبقى الشريط أبيض. تظهر في الصفحة الرئيسية فقط الفئات المفعّل لها «إظهار في الرئيسية».
+            الشريط الذي يظهر فوق منتجات كل فئة في الصفحة الرئيسية (يفتح الفئة عند الضغط). مقاس الشريط 15:1 (مثلاً 1560×104 بكسل) — أداة القص تفتح بهذا المقاس والمعاينة هنا بنفس الشكل. على الهاتف لا تُقص الصورة: إما صورة الهاتف الخاصة، أو تتحرك الصورة العريضة ببطء لتظهر كاملة. إذا تُركت الصورة فارغة يبقى الشريط أبيض. تظهر في الصفحة الرئيسية فقط الفئات المفعّل لها «إظهار في الرئيسية».
           </p>
           {categories.map((c: any) => (
             <div key={c.id} className="rounded-xl border border-border p-4 space-y-3">
@@ -1553,6 +1554,18 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
                 shape={SLOT_SHAPES.strip}
                 originalValue={values[`home_cat_banner_${c.id}_image_original`] ?? ""}
                 onChangeOriginal={(url) => onChange(`home_cat_banner_${c.id}_image_original`, url)}
+              />
+              <p className="pt-2 text-xs font-semibold text-right">صورة الهاتف (اختياري)</p>
+              <p className="text-[11px] text-muted-foreground text-right">صورة خاصة بالهاتف بمقاس 4.6:1 (مثلاً 1380×300 بكسل) تظهر كاملة بدون قص. إذا تُركت فارغة تُعرض صورة الكمبيوتر على الهاتف بارتفاعها الكامل وتتحرك ببطء من طرف إلى طرف حتى تظهر كلها.</p>
+              <ImageUploadField
+                value={values[`home_cat_banner_${c.id}_image_phone`] ?? ""}
+                position="center"
+                onChangeImage={(url) => onChange(`home_cat_banner_${c.id}_image_phone`, url)}
+                onChangePosition={() => {}}
+                withCrop
+                shape={SLOT_SHAPES.stripPhone}
+                originalValue={values[`home_cat_banner_${c.id}_image_phone_original`] ?? ""}
+                onChangeOriginal={(url) => onChange(`home_cat_banner_${c.id}_image_phone_original`, url)}
               />
             </div>
           ))}

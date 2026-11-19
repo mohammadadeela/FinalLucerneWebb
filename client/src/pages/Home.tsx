@@ -1392,16 +1392,47 @@ export default function Home() {
                 className="relative mb-4 block overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
                 data-testid={`link-view-all-${section.href}`}
               >
-                {g(`home_cat_banner_${section.category.id}_image`) && (
-                  <img
-                    src={optimizeCloudinaryUrl(g(`home_cat_banner_${section.category.id}_image`), 1600) || g(`home_cat_banner_${section.category.id}_image`)}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 h-full w-full object-cover"
-                    style={{ objectPosition: bannerPosition(g(`home_cat_banner_${section.category.id}_image_position`)) }}
-                  />
-                )}
+                {(() => {
+                  const wide = g(`home_cat_banner_${section.category.id}_image`);
+                  const phone = g(`home_cat_banner_${section.category.id}_image_phone`);
+                  if (!wide && !phone) return null;
+                  const wideSrc = optimizeCloudinaryUrl(wide, 1600) || wide;
+                  return (
+                    <>
+                      {/* Desktop and tablet: the strip photo fills the banner */}
+                      {wide && (
+                        <img
+                          src={wideSrc}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className={`absolute inset-0 h-full w-full object-cover hidden sm:block`}
+                          style={{ objectPosition: bannerPosition(g(`home_cat_banner_${section.category.id}_image_position`)) }}
+                        />
+                      )}
+                      {/* Phones: never cut. The admin's phone photo is shown whole; without one the
+                          wide strip is shown at full height and glides from side to side, so all of
+                          it is seen. */}
+                      {phone ? (
+                        <img
+                          src={optimizeCloudinaryUrl(phone, 800) || phone}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="absolute inset-0 h-full w-full object-cover sm:hidden"
+                        />
+                      ) : (
+                        <img
+                          src={wideSrc}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="strip-pan absolute inset-y-0 left-0 h-full w-auto max-w-none sm:hidden"
+                        />
+                      )}
+                    </>
+                  );
+                })()}
                 <div className="invisible relative min-w-0 ps-12 sm:ps-24" aria-hidden="true">
                   <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">
                     {pick("من أقسامنا", "From our collections")}
