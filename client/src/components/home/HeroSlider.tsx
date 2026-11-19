@@ -240,7 +240,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                       {slide.subtitle}
                     </p>
                   )}
-                  <div className="mt-3.5 flex flex-col items-start gap-2 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-4">
+                  <div className="flex gap-2 whitespace-nowrap max-sm:absolute max-sm:bottom-4 max-sm:end-3 max-sm:w-max sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-4">
                     <Link
                       href={slide.primary.href}
                       tabIndex={active ? 0 : -1}
@@ -295,7 +295,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
             </button>
 
             {/* Dots — the active one is a little progress bar */}
-            <div className="absolute bottom-3.5 start-4 z-30 flex items-center gap-2 sm:bottom-6 sm:start-auto sm:end-0 sm:w-[43%] sm:justify-center">
+            <div className="absolute bottom-[1.6rem] start-3 z-30 flex items-center gap-1.5 sm:gap-2 sm:bottom-6 sm:start-auto sm:end-0 sm:w-[43%] sm:justify-center">
               {slides.map((s, i) => {
                 const active = i === safeIndex;
                 return (

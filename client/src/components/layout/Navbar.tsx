@@ -780,11 +780,11 @@ export function Navbar() {
             <div className="flex items-center lg:hidden">
               <ClickIcon
                 animation="pop"
-                onClick={() => setMobileMenuOpen(true)}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className={`${iconBtn} bg-transparent border-none outline-none`}
                 testId="button-mobile-menu"
               >
-                <Menu className="w-6 h-6" strokeWidth={1.6} />
+                {mobileMenuOpen ? <X className="w-6 h-6" strokeWidth={1.6} /> : <Menu className="w-6 h-6" strokeWidth={1.6} />}
               </ClickIcon>
               <ClickIcon
                 animation="pop"
@@ -829,13 +829,6 @@ export function Navbar() {
 
             {/* Desktop navigation */}
             <nav className="hidden lg:flex items-center gap-5 xl:gap-7 2xl:gap-9" aria-label="Main">
-              <Link
-                href="/shop"
-                className={navLinkClass(currentPath === "/shop")}
-                data-testid="link-shop"
-              >
-                {isAr ? "كل المنتجات" : "Shop All"}
-              </Link>
               {primaryNavCats.map((c: any) => {
                 const href = categoryHref(c);
                 const active = currentPath === href;
@@ -1044,172 +1037,110 @@ export function Navbar() {
             </div>
           </div>
         </div>
-      </header>
-
-      {/* ── Phone menu ── kept deliberately simple: search, the categories, sale, and three
-          small links. One tap takes you where you want to go. */}
-      <AnimatePresence>
+        {/* ── Phone menu ── the original drop-down list under the header, with small edits:
+            no Home link, categories come from the admin, and sign-in + language live here. */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
-            <motion.div
-              className="absolute inset-0 bg-black/40"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setMobileMenuOpen(false)}
-              aria-hidden="true"
-            />
-            <motion.aside
-              className="absolute inset-y-0 start-0 flex w-[84%] max-w-[340px] flex-col bg-background text-foreground shadow-2xl"
-              initial={{ x: isAr ? "100%" : "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: isAr ? "100%" : "-100%" }}
-              transition={{ type: "tween", duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              data-testid="mobile-menu"
-            >
-              <div className="flex h-14 shrink-0 items-center justify-between px-4">
-                <span className="flex items-end gap-1.5" dir="ltr">
-                  <span
-                    className="display-latin keep-tracking text-[1.25rem] font-medium leading-none"
-                    style={{ ["--tracking" as any]: "0.12em" }}
-                  >
-                    LUCERNE
-                  </span>
-                  <BrandButterfly className="h-5 w-auto" />
-                </span>
-                <button
-                  type="button"
+          <div className="lg:hidden absolute top-full inset-x-0 w-full bg-background border-b shadow-lg text-foreground max-h-[calc(100vh-var(--navbar-h)-var(--news-bar-offset,0px))] overflow-y-auto" data-testid="mobile-menu">
+            <div className="flex flex-col p-4">
+              {navCategories.map((c: any) => (
+                <Link
+                  key={c.id}
+                  href={categoryHref(c)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium hover:bg-muted/50 transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-muted"
-                  aria-label="Close"
-                  data-testid="button-mobile-menu-close"
+                  data-testid={`link-${c.slug}-mobile`}
                 >
-                  <X className="h-[18px] w-[18px]" strokeWidth={1.7} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setSearchOpen(true);
-                  }}
-                  className="mb-3 flex h-11 w-full items-center gap-2.5 rounded-full bg-muted px-4 text-start text-[13.5px] text-muted-foreground"
-                >
-                  <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={1.7} />
-                  <span className="truncate">{isAr ? "عن ماذا تبحثين؟" : "What are you looking for?"}</span>
-                </button>
-
-                <nav aria-label="Categories">
-                  <Link
-                    href="/shop"
-                    className="flex items-center gap-3.5 border-b border-border/60 py-3 text-[16px]"
-                    data-testid="link-shop-mobile"
-                  >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sand">
-                      <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                    </span>
-                    <span className="flex-1">{isAr ? "كل المنتجات" : "Shop All"}</span>
-                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground/70 rtl:rotate-90" />
-                  </Link>
-                  {navCategories.map((c: any) => (
-                    <Link
-                      key={c.id}
-                      href={categoryHref(c)}
-                      className="flex items-center gap-3.5 border-b border-border/60 py-3 text-[16px]"
-                      data-testid={`link-${c.slug}-mobile`}
-                    >
-                      <span className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-sand">
-                        {c.image ? (
-                          <img
-                            src={optimizeCloudinaryUrl(c.image, 160) || c.image}
-                            alt=""
-                            loading="lazy"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center text-berry">
-                            <MenuGlyph category={c} />
-                          </span>
-                        )}
-                      </span>
-                      <span className="flex-1 truncate">{catLabel(c)}</span>
-                      <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground/70 rtl:rotate-90" />
-                    </Link>
-                  ))}
-                  <Link
-                    href="/sales"
-                    className="flex items-center gap-3.5 py-3 text-[16px] font-medium"
-                    style={{ color: "#9B1C1C" }}
-                    data-testid="link-sales-mobile"
-                  >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-50">
-                      <BadgePercent className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                    </span>
-                    <span className="flex-1">{t.nav.sales}</span>
-                    <ChevronDown className="h-4 w-4 -rotate-90 opacity-60 rtl:rotate-90" />
-                  </Link>
-                </nav>
-              </div>
-
-              {/* Bottom: three small links + language */}
-              <div
-                className="shrink-0 border-t border-border/70 px-4 pt-2.5"
-                style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+                  <span className="flex w-5 h-5 shrink-0 items-center justify-center text-muted-foreground [&_svg]:!w-5 [&_svg]:!h-5">
+                    <MenuGlyph category={c} />
+                  </span>
+                  {catLabel(c)}
+                </Link>
+              ))}
+              <Link
+                href="/sales"
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium hover:bg-red-50 transition-colors"
+                style={{ color: "#9B1C1C" }}
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="link-sales-mobile"
               >
-                <div className="flex items-center justify-between text-[13px]">
-                  <Link
-                    href={user ? "/profile" : "/auth"}
-                    className="inline-flex items-center gap-1.5 py-1.5"
-                    data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
-                  >
-                    <User className="h-[17px] w-[17px]" strokeWidth={1.6} />
-                    {user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}
-                  </Link>
-                  <Link href="/our-location" className="inline-flex items-center gap-1.5 py-1.5" data-testid="link-our-location">
-                    <MapPin className="h-[17px] w-[17px]" strokeWidth={1.6} />
-                    {t.nav.ourLocation}
-                  </Link>
+                <BadgePercent className="w-5 h-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                {t.nav.sales}
+              </Link>
+              <Link
+                href="/our-location"
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium hover:bg-muted/50 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="link-our-location"
+              >
+                <MapPin className="w-5 h-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                {t.nav.ourLocation}
+              </Link>
+              <Link
+                href={user ? "/wishlist" : "/auth"}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium hover:bg-muted/50 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="link-wishlist-mobile"
+              >
+                <Heart className="w-5 h-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                {t.wishlist.navLabel}
+              </Link>
+              <Link
+                href={user ? "/profile" : "/auth"}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium hover:bg-muted/50 transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
+              >
+                <User className="w-5 h-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                {user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}
+              </Link>
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium hover:bg-muted/50 transition-colors w-full text-start"
+                data-testid="button-language-toggle-mobile"
+              >
+                <Globe className="w-5 h-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                {t.langLabel}
+              </button>
+              {(user?.role === "admin" || user?.role === "employee") && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium text-primary hover:bg-primary/5 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <LayoutDashboard className="w-5 h-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                  {t.nav.adminDashboard}
+                </Link>
+              )}
+              {user && (
+                <div className="border-t border-border/40 mt-2 pt-2">
                   <button
-                    type="button"
-                    onClick={toggleLanguage}
-                    className="inline-flex items-center gap-1.5 py-1.5"
-                    data-testid="button-language-toggle-mobile"
+                    onClick={() => {
+                      logout.mutate();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="dark-red-zone flex items-center gap-3 px-3 py-3 rounded-lg text-sm uppercase tracking-widest font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors w-full text-start"
+                    data-testid="button-logout-mobile"
                   >
-                    <Globe className="h-[17px] w-[17px]" strokeWidth={1.6} />
-                    {t.langLabel}
+                    <LogOut className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+                    {t.profile.logout}
                   </button>
                 </div>
-                {user && (
-                  <div className="mt-1 flex items-center justify-between text-[12.5px] text-muted-foreground">
-                    {user.role === "admin" || user.role === "employee" ? (
-                      <Link href="/admin" className="inline-flex items-center gap-1.5 py-1 text-foreground">
-                        <LayoutDashboard className="h-4 w-4" strokeWidth={1.6} />
-                        {t.nav.adminDashboard}
-                      </Link>
-                    ) : (
-                      <span />
-                    )}
-                    <button
-                      onClick={() => {
-                        logout.mutate();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="dark-red-zone inline-flex items-center gap-1.5 py-1 hover:text-destructive"
-                      data-testid="button-logout-mobile"
-                    >
-                      <LogOut className="h-4 w-4" strokeWidth={1.6} />
-                      {t.profile.logout}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.aside>
+              )}
+            </div>
           </div>
         )}
-      </AnimatePresence>
+      </header>
+
+      {/* ── Mobile menu backdrop — tap anywhere outside to close ── */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-[49] lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
 
       {/* ── Search Overlay ── */}
       <AnimatePresence>
