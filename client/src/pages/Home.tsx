@@ -5,6 +5,7 @@ import { ProductWatermark } from "@/components/ui/ProductWatermark";
 import { AutoplayVideo } from "@/components/ui/AutoplayVideo";
 import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
 import { Rail } from "@/components/home/Rail";
+import { CategoryGlyph } from "@/components/home/CategoryGlyph";
 import {
   useBestSellers,
   useFeaturedProducts,
@@ -144,9 +145,11 @@ function ProductRail({
   testId,
   lead,
   more,
+  compact,
 }: {
   products: any[];
   testId?: string;
+  compact?: boolean;
   lead?: ReactNode;
   more?: { href: string; label: string; tone?: "default" | "sale" };
 }) {
@@ -166,7 +169,7 @@ function ProductRail({
       )}
       {products.map((product, index) => (
         <div key={product.id} role="listitem" className={RAIL_ITEM}>
-          <ProductCard product={product} priority={index < 2} />
+          <ProductCard product={product} priority={index < 2} compact={compact} />
         </div>
       ))}
       {more && (
@@ -408,9 +411,23 @@ export default function Home() {
     key: `c-${c.id}`,
     href: categoryHref(c),
     label: catName(c),
+    category: c,
     img: c.image || "",
     testId: `link-category-home-${c.id}`,
   }));
+
+  // Lookbook slider: every category with a banner (its page banner if the admin set one, else its picture).
+  const lookbook = (categoriesList || [])
+    .map((c: any) => ({
+      key: `look-${c.id}`,
+      category: c,
+      href: categoryHref(c),
+      label: catName(c),
+      image: g(`${c.slug}_hero_image`) || c.image || "",
+      position: g(`${c.slug}_hero_image_position`) || "center",
+      subtitle: pick(g(`${c.slug}_hero_subtitle_ar`), g(`${c.slug}_hero_subtitle_en`)),
+    }))
+    .filter((item: any) => item.image);
 
   // Names the restored category circles + editorial grid expect.
   const products = allProducts;
@@ -440,42 +457,6 @@ export default function Home() {
 
       <main className="flex-1">
         <HeroSlider slides={slides} isAr={isAr} />
-
-        {/* ── Shop by category: soft pills (photo on one side, name on the other) ── */}
-        {catTiles.length > 0 && (
-          <Section className="hidden sm:block !pb-0">
-            <Rail scrollClassName="gap-4 lg:gap-5 pb-2" testId="rail-categories">
-              {catTiles.map((item, i) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  role="listitem"
-                  className="group relative flex aspect-[2.44/1] flex-none snap-start overflow-hidden rounded-[2.5rem] bg-[hsl(var(--sand))] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(74,24,43,0.45)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
-                  data-testid={`pill-${item.testId}`}
-                >
-                  <span
-                    className="relative block h-full w-[56%] shrink-0 overflow-hidden"
-                    style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
-                  >
-                    <BannerImage
-                      src={item.img || "/placeholder-product.svg"}
-                      alt={item.label}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      loading="eager"
-                      width={400}
-                    />
-                  </span>
-                  <span className="flex min-w-0 flex-1 items-center justify-center gap-2.5 px-3">
-                    <span className="font-heading block min-w-0 truncate text-xl font-medium leading-tight lg:text-2xl">
-                      {item.label}
-                    </span>
-                    <Arrow className="h-5 w-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-                  </span>
-                </Link>
-              ))}
-            </Rail>
-          </Section>
-        )}
 
         {/* Category Circles */}
         <section className="py-14 sm:py-20 w-full px-4 sm:px-6 lg:px-8 bg-background">
@@ -697,6 +678,7 @@ export default function Home() {
               <ProductRail
                 products={trending}
                 testId="rail-trending"
+                compact
                 more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
               />
             )}
@@ -718,6 +700,56 @@ export default function Home() {
               testId="rail-new-arrivals"
               more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
             />
+          </Section>
+        )}
+
+        {/* ── Lookbook slider: one wide card per category, from the banners the admin already manages ── */}
+        {lookbook.length > 1 && (
+          <Section className="!pt-2">
+            <SectionHeader
+              title={pick("جولة في الأقسام", "The Lookbook")}
+              eyebrow={pick("اكتشفي", "Discover")}
+              testId="section-title-lookbook"
+            />
+            <Rail scrollClassName="gap-3 sm:gap-5 pb-3" testId="rail-lookbook">
+              {lookbook.map((item) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  role="listitem"
+                  className="group relative block aspect-[5/4] w-[84%] flex-none snap-start overflow-hidden rounded-[1.75rem] bg-sand sm:aspect-[2/1] sm:w-[62%] lg:w-[46%]"
+                  data-testid={`lookbook-${item.key}`}
+                >
+                  <BannerImage
+                    src={item.image}
+                    alt={item.label}
+                    width={1000}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
+                    style={{ objectPosition: item.position }}
+                  />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
+                  <CategoryGlyph
+                    category={item.category}
+                    className="absolute end-4 top-4 h-16 w-16 text-white/35 transition-transform duration-700 group-hover:-rotate-6 group-hover:scale-110 sm:end-6 sm:top-6 sm:h-24 sm:w-24"
+                  />
+                  <span className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3 text-white sm:inset-x-7 sm:bottom-6">
+                    <span className="min-w-0">
+                      <span className="font-heading block text-3xl font-medium leading-none sm:text-5xl rtl:leading-snug">
+                        {item.label}
+                      </span>
+                      {item.subtitle && (
+                        <span className="mt-1.5 line-clamp-1 block text-[13px] text-white/85 sm:mt-2.5 sm:text-base">
+                          {item.subtitle}
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-foreground transition-colors duration-300 group-hover:bg-berry group-hover:text-white sm:h-14 sm:w-14">
+                      <Arrow className="h-5 w-5" />
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </Rail>
           </Section>
         )}
 
@@ -1109,48 +1141,87 @@ export default function Home() {
           </Section>
         )}
 
+        {/* ── Shop by category: pills with the category's icon behind its name ── */}
+        {catTiles.length > 0 && (
+          <Section className="!pb-2">
+            <SectionHeader
+              title={pick("تسوقي حسب القسم", "Shop by Category")}
+              testId="section-title-categories"
+            />
+            <Rail scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
+              {catTiles.map((item, i) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  role="listitem"
+                  className="group relative flex aspect-[2.44/1] w-[78%] flex-none snap-start overflow-hidden rounded-[2.5rem] bg-sand transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
+                  data-testid={`pill-${item.testId}`}
+                >
+                  <span
+                    className="relative block h-full w-[54%] shrink-0 overflow-hidden rounded-e-[2.5rem]"
+                    style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
+                  >
+                    <BannerImage
+                      src={item.img || "/placeholder-product.svg"}
+                      alt={item.label}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      width={400}
+                    />
+                  </span>
+                  <span className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 px-2 text-center">
+                    <CategoryGlyph
+                      category={item.category}
+                      className="pointer-events-none absolute left-1/2 top-1/2 h-[78%] w-auto -translate-x-1/2 -translate-y-1/2 text-berry/[0.11] transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <span className="font-heading relative block max-w-full truncate text-xl font-medium leading-tight lg:text-2xl">
+                      {item.label}
+                    </span>
+                    <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white text-foreground shadow-sm transition-colors duration-300 group-hover:bg-berry group-hover:text-white">
+                      <Arrow className="h-3.5 w-3.5" />
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </Rail>
+          </Section>
+        )}
+
         {/* ── One rail per category the admin shows on the home page ── */}
         {categorySections
           .filter((s) => s.products.length > 0)
           .map((section, idx) => (
             <Section
               key={section.category.id}
-              className={idx % 2 === 0 ? "bg-[hsl(var(--sand)/0.55)]" : ""}
+              className={idx % 2 === 0 ? "bg-[hsl(var(--sand)/0.45)]" : ""}
             >
-              <SectionHeader
-                title={catName(section.category)}
-                href={section.href}
-                linkLabel={t.home.viewAll}
-                testId={`section-title-category-${section.category.id}`}
-              />
+              <div className="relative mb-5 flex items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] bg-white px-5 py-5 ring-1 ring-black/[0.05] sm:mb-7 sm:px-9 sm:py-7">
+                <CategoryGlyph
+                  category={section.category}
+                  className="pointer-events-none absolute -bottom-5 start-3 h-28 w-28 -rotate-6 text-berry/[0.1] sm:start-6 sm:h-40 sm:w-40"
+                />
+                <div className="relative min-w-0 ps-12 sm:ps-24">
+                  <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] text-berry sm:text-[11px]">
+                    {pick("من أقسامنا", "From our collections")}
+                  </p>
+                  <h2
+                    className="truncate text-[1.75rem] font-medium leading-none sm:text-[2.5rem] rtl:leading-snug"
+                    data-testid={`section-title-category-${section.category.id}`}
+                  >
+                    {catName(section.category)}
+                  </h2>
+                </div>
+                <Link
+                  href={section.href}
+                  className="group relative inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-foreground px-4 text-[13px] font-medium text-background transition-colors duration-300 hover:bg-berry sm:h-11 sm:px-6 sm:text-sm"
+                  data-testid={`link-view-all-${section.href}`}
+                >
+                  {t.home.viewAll}
+                  <Arrow className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
+                </Link>
+              </div>
               <ProductRail
                 products={section.products}
                 testId={`rail-category-${section.category.id}`}
-                lead={
-                  section.category.image ? (
-                    <Link
-                      href={section.href}
-                      className="group relative block h-full min-h-[14rem] overflow-hidden rounded-[1.15rem] bg-[hsl(var(--blush))]"
-                    >
-                      <BannerImage
-                        src={section.category.image}
-                        alt={catName(section.category)}
-                        width={600}
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <span className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--berry-deep)/0.85)] via-[hsl(var(--berry-deep)/0.15)] to-transparent" />
-                      <span className="absolute inset-x-3 bottom-3 text-white sm:inset-x-4 sm:bottom-4">
-                        <span className="font-heading block text-2xl font-medium leading-none sm:text-3xl rtl:leading-snug">
-                          {catName(section.category)}
-                        </span>
-                        <span className="mt-2 inline-flex items-center gap-2 text-[13px]">
-                          {pick("تسوقي القسم", "Shop the edit")}
-                          <Arrow className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
-                        </span>
-                      </span>
-                    </Link>
-                  ) : undefined
-                }
                 more={{
                   href: section.href,
                   label: pick(`كل ${catName(section.category)}`, `All ${catName(section.category)}`),

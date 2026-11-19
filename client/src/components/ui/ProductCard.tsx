@@ -18,7 +18,18 @@ import { ProductWatermark } from "@/components/ui/ProductWatermark";
 // of the row and looked oversized in sliders.
 const MAX_VISIBLE_SWATCHES = 5;
 
-export const ProductCard = memo(function ProductCard({ product, initialColorName, priority = false }: { product: Product; initialColorName?: string | null; priority?: boolean }) {
+/** "80" for whole prices, "80.50" otherwise. */
+function formatPrice(value: unknown): string {
+  const n = parseFloat(String(value));
+  if (!Number.isFinite(n)) return "0";
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
+}
+
+/**
+ * `compact` is the small card used for single highlight rows on the landing page:
+ * a square photo on a white tile, with the price and colour dots on one line.
+ */
+export const ProductCard = memo(function ProductCard({ product, initialColorName, priority = false, compact = false }: { product: Product; initialColorName?: string | null; priority?: boolean; compact?: boolean }) {
   const { t, language } = useLanguage();
   const { data: user } = useAuth();
   const { isWishlisted, toggle } = useWishlist();
@@ -41,10 +52,13 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
     toggle(product.id, activeColor ?? undefined);
   };
 
-  const price = parseFloat(product.price.toString()).toFixed(2);
+  const price = formatPrice(product.price);
   const discountPrice = product.discountPrice
-    ? parseFloat(product.discountPrice.toString()).toFixed(2)
+    ? formatPrice(product.discountPrice)
     : null;
+  const discountPercent = product.discountPrice
+    ? Math.round((1 - parseFloat(product.discountPrice.toString()) / parseFloat(product.price.toString())) * 100)
+    : 0;
   const isSoldOut = product.stockQuantity <= 0;
 
   const cv = (product as any).colorVariants as ColorVariant[] | undefined;
@@ -212,7 +226,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
   return (
     <div
-      className="group block cursor-pointer"
+      className={compact ? "group block h-full cursor-pointer rounded-[1.15rem] bg-white p-1.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)] sm:p-2" : "group block cursor-pointer"}
       data-testid={`card-product-${product.id}`}
       onMouseEnter={() => { setIsCardHovered(true); handlePrefetchIntent(); }}
       onMouseLeave={() => setIsCardHovered(false)}
@@ -220,7 +234,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
     >
       {/* Image container */}
       <Link href={`/product/${product.id}`} className="block">
-        <div ref={nearViewportRef} className="relative aspect-[3/4] overflow-hidden bg-white mb-3 rounded-2xl ring-1 ring-black/[0.06]">
+        <div ref={nearViewportRef} className={`relative overflow-hidden bg-white rounded-2xl ${compact ? "aspect-[1/1] mb-2.5" : "aspect-[3/4] mb-3 ring-1 ring-black/[0.06]"}`}>
           {/* Blur-up placeholder — shows a tiny blurred preview while the real image loads.
               For R2 images: a pre-generated tiny blur.webp fades out when the photo arrives.
               Legacy Cloudinary remains supported for rollback; other images use the shimmer. */}
@@ -407,11 +421,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
       </Link>
 
       {/* Info */}
-      <div className="space-y-2 px-0.5">
-        <p className="text-[10px] text-muted-foreground/70 uppercase tracking-[0.2em] font-medium">
-          {product.brand || "Lucerne Boutique"}
-        </p>
-
+      <div className={compact ? "flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-1 pb-1 [&>a]:w-full" : "space-y-2 px-0.5"}>
         <Link href={`/product/${product.id}`}>
           <h3 className={`font-semibold text-xs sm:text-sm leading-snug line-clamp-2 transition-colors duration-200 ${isSoldOut ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
             {product.name}
@@ -420,7 +430,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
         {hasVariants && cv.length > 1 && (
           <div
-            className="flex gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide flex-nowrap py-0.5 h-6 sm:h-7 items-center"
+            className={`flex gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide flex-nowrap py-0.5 h-6 sm:h-7 items-center px-0.5 ${compact ? "order-2" : ""}`}
             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             data-testid={`swatches-${product.id}`}
           >
@@ -444,7 +454,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                   title={translateColorName(v.name, language === "ar" ? "ar" : "en")}
                   data-testid={`swatch-${product.id}-${idx}`}
                 >
-                  {v.mainImage ? (
+                  {v.mainImage && !swatchColors[0] ? (
                     <img
                       src={optimizeCloudinaryUrl(v.mainImage, 100) || v.mainImage}
                       alt={v.name}
@@ -478,29 +488,38 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div
+          className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 ${compact ? "order-1" : ""}`}
+        >
           {discountPrice ? (
             <>
               <span
-                className={`font-bold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
+                className={`ltr-num text-base font-bold leading-none sm:text-lg ${isSoldOut ? "text-muted-foreground/70" : ""}`}
                 style={isSoldOut ? undefined : { color: "#9B1C1C" }}
                 data-testid={`text-discount-price-${product.id}`}
               >
-                ₪{discountPrice}
+                <span className="me-0.5 text-[0.72em] font-semibold">₪</span>
+                {discountPrice}
               </span>
               <span
-                className="text-xs text-muted-foreground/60 line-through"
+                className="ltr-num text-[11px] text-muted-foreground/70 line-through sm:text-xs"
                 data-testid={`text-original-price-${product.id}`}
               >
                 ₪{price}
               </span>
+              {!isSoldOut && discountPercent > 0 && (
+                <span className="ltr-num rounded-full bg-[#9B1C1C]/10 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[#9B1C1C]">
+                  -{discountPercent}%
+                </span>
+              )}
             </>
           ) : (
             <span
-              className={`font-bold text-sm sm:text-base ${isSoldOut ? "text-muted-foreground/70" : ""}`}
+              className={`ltr-num text-base font-bold leading-none sm:text-lg ${isSoldOut ? "text-muted-foreground/70" : ""}`}
               data-testid={`text-price-${product.id}`}
             >
-              ₪{price}
+              <span className="me-0.5 text-[0.72em] font-semibold">₪</span>
+              {price}
             </span>
           )}
         </div>

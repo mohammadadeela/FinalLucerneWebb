@@ -15,6 +15,8 @@ import {
   RefreshCw,
   ChevronDown,
   ArrowUpRight,
+  Shirt,
+  Gem,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -138,6 +140,17 @@ export function HeelIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+/** Small category icon for the phone menu tiles, picked from the category's name. */
+function MenuGlyph({ category }: { category: any }) {
+  const key = `${category?.slug || ""} ${category?.name || ""} ${category?.nameAr || ""}`.toLowerCase();
+  const cls = "h-4 w-4";
+  if (/shoe|heel|sandal|boot|حذاء|أحذية|احذية|شوز|كعب|صندل/.test(key)) return <HeelIcon className={cls} />;
+  if (/dress|abaya|gown|فستان|فساتين|عباي/.test(key)) return <DressIcon className={cls} />;
+  if (/bag|purse|clutch|حقيب|حقائب|شنط/.test(key)) return <ShoppingBag className={cls} strokeWidth={1.6} />;
+  if (/belt|accessor|jewel|scarf|أقشط|اقشط|قشاط|حزام|إكسسوار|اكسسوار/.test(key)) return <Gem className={cls} strokeWidth={1.6} />;
+  return <Shirt className={cls} strokeWidth={1.6} />;
+}
+
 /** The boutique butterfly as a news-bar icon (same call shape as the line icons). */
 function NewsButterfly({ className }: { className?: string; strokeWidth?: number }) {
   return <LucerneLogo className={className} />;
@@ -663,7 +676,7 @@ export function Navbar() {
   };
 
   const navLinkClass = (active: boolean) =>
-    `relative inline-flex items-center gap-1 py-2 text-[15px] transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-center after:bg-berry after:transition-transform after:duration-300 hover:text-berry hover:after:scale-x-100 ${
+    `relative inline-flex items-center gap-1 whitespace-nowrap py-2 text-[15px] transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-center after:bg-berry after:transition-transform after:duration-300 hover:text-berry hover:after:scale-x-100 ${
       active ? "text-berry after:scale-x-100" : "text-foreground after:scale-x-0"
     }`;
 
@@ -806,7 +819,7 @@ export function Navbar() {
             </Link>
 
             {/* Desktop navigation */}
-            <nav className="hidden lg:flex items-center gap-6 xl:gap-9" aria-label="Main">
+            <nav className="hidden lg:flex items-center gap-5 xl:gap-7 2xl:gap-9" aria-label="Main">
               <Link
                 href="/shop"
                 className={navLinkClass(currentPath === "/shop")}
@@ -903,7 +916,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="hidden lg:flex h-10 w-48 xl:w-64 items-center gap-2.5 rounded-full border border-border bg-white/70 px-4 text-start text-[13px] text-muted-foreground transition-colors hover:border-berry/50 hover:bg-white me-1"
+                className="hidden lg:flex h-10 w-40 xl:w-52 2xl:w-64 items-center gap-2.5 rounded-full border border-border bg-white/70 px-4 text-start text-[13px] text-muted-foreground transition-colors hover:border-berry/50 hover:bg-white me-1"
                 data-testid="button-search-open"
               >
                 <Search className="h-4 w-4 shrink-0 text-foreground/70" strokeWidth={1.7} />
@@ -1024,13 +1037,13 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* ── Mobile drawer ── everything that is not "shop right now" lives here,
-          so the phone header stays down to: menu, search, logo, wishlist, bag. */}
+      {/* ── Mobile menu ── a full-height sheet: greeting and search on a berry header,
+          quick actions, categories as photo tiles, then account and settings. */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true">
             <motion.div
-              className="absolute inset-0 bg-foreground/45 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -1039,200 +1052,235 @@ export function Navbar() {
               aria-hidden="true"
             />
             <motion.aside
-              className="absolute inset-y-0 start-0 flex w-[86%] max-w-[360px] flex-col bg-background text-foreground shadow-2xl"
+              className="absolute inset-y-0 start-0 flex w-[90%] max-w-[400px] flex-col overflow-hidden rounded-e-[2rem] bg-background text-foreground shadow-2xl"
               initial={{ x: isAr ? "100%" : "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: isAr ? "100%" : "-100%" }}
-              transition={{ type: "tween", duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ type: "tween", duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               data-testid="mobile-menu"
             >
-              <div className="flex items-center justify-between border-b border-border/70 px-4 h-16 shrink-0">
-                <span className="flex items-end gap-1.5" dir="ltr">
-                  <span
-                    className="display-latin keep-tracking text-[1.35rem] font-medium leading-none"
-                    style={{ ["--tracking" as any]: "0.12em" }}
-                  >
-                    LUCERNE
+              {/* Header */}
+              <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-berry to-berry-deep px-5 pb-9 pt-5 text-white">
+                <LucerneLogo className="pointer-events-none absolute -end-6 -top-6 h-36 w-auto text-white/10" />
+                <div className="relative flex items-center justify-between">
+                  <span className="flex items-end gap-1.5" dir="ltr">
+                    <span
+                      className="display-latin keep-tracking text-[1.45rem] font-medium leading-none"
+                      style={{ ["--tracking" as any]: "0.12em" }}
+                    >
+                      LUCERNE
+                    </span>
+                    <LucerneLogo className="h-5 w-auto text-white/90" />
                   </span>
-                  <LucerneLogo className="h-5 w-auto text-berry" />
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={iconBtn}
-                  aria-label="Close"
-                  data-testid="button-mobile-menu-close"
-                >
-                  <X className="h-5 w-5" strokeWidth={1.6} />
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25"
+                    aria-label="Close"
+                    data-testid="button-mobile-menu-close"
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.6} />
+                  </button>
+                </div>
+                <p className="relative mt-5 text-[13px] text-white/80">
+                  {user
+                    ? isAr ? "أهلاً بعودتكِ" : "Welcome back"
+                    : isAr ? "أهلاً بكِ في لوسيرن" : "Welcome to Lucerne"}
+                </p>
+                <p className="font-heading relative mt-0.5 text-2xl font-medium leading-tight">
+                  {isAr ? "ماذا تبحثين اليوم؟" : "What are you looking for?"}
+                </p>
               </div>
 
-              <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3">
+              <div className="relative -mt-6 flex-1 overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-background px-4 pb-5 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     setSearchOpen(true);
                   }}
-                  className="mb-3 flex h-11 w-full items-center gap-2.5 rounded-full border border-border bg-white px-4 text-start text-sm text-muted-foreground"
+                  className="flex h-12 w-full items-center gap-2.5 rounded-full border border-border bg-white px-4 text-start text-sm text-muted-foreground shadow-sm"
                 >
                   <Search className="h-4 w-4 text-foreground/70" strokeWidth={1.7} />
                   {isAr ? "ابحثي عن ملابس، أحذية، حقائب..." : "Search for clothing, shoes, bags..."}
                 </button>
 
-                <Link
-                  href="/shop"
-                  className="flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-medium hover:bg-blush/60"
-                  data-testid="link-shop-mobile"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sage text-foreground/80">
-                    <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                  </span>
-                  {isAr ? "كل المنتجات" : "Shop All"}
-                </Link>
+                {/* Quick actions */}
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <Link
+                    href="/shop"
+                    className="flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-[12.5px] font-medium ring-1 ring-black/[0.05]"
+                    data-testid="link-shop-mobile"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sage/70">
+                      <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.6} />
+                    </span>
+                    {isAr ? "كل المنتجات" : "Shop All"}
+                  </Link>
+                  <Link
+                    href="/sales"
+                    className="flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-[12.5px] font-semibold ring-1 ring-black/[0.05]"
+                    style={{ color: "#9B1C1C" }}
+                    data-testid="link-sales-mobile"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
+                      <BadgePercent className="h-[18px] w-[18px]" strokeWidth={1.6} />
+                    </span>
+                    {t.nav.sales}
+                  </Link>
+                  <Link
+                    href={user ? "/wishlist" : "/auth"}
+                    className="relative flex flex-col items-center gap-1.5 rounded-2xl bg-white px-2 py-3 text-center text-[12.5px] font-medium ring-1 ring-black/[0.05]"
+                    data-testid="link-wishlist-mobile"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blush">
+                      <Heart className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
+                    </span>
+                    {t.wishlist.navLabel}
+                  </Link>
+                </div>
 
-                {navCategories.map((c: any) => {
-                  const href = categoryHref(c);
-                  const open = expandedCat === c.id;
-                  return (
-                    <div key={c.id}>
-                      <div className="flex items-center">
+                {/* Categories */}
+                <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                  {isAr ? "الأقسام" : "Categories"}
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {navCategories.map((c: any) => {
+                    const href = categoryHref(c);
+                    const open = expandedCat === c.id;
+                    return (
+                      <div key={c.id} className="relative">
                         <Link
                           href={href}
-                          className="flex flex-1 items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-medium hover:bg-blush/60"
+                          className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-sand"
                           data-testid={`link-${c.slug}-mobile`}
                         >
-                          <span className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-blush">
-                            {c.image && (
-                              <img
-                                src={optimizeCloudinaryUrl(c.image, 120) || c.image}
-                                alt=""
-                                loading="lazy"
-                                className="h-full w-full object-cover"
-                              />
-                            )}
+                          {c.image && (
+                            <img
+                              src={optimizeCloudinaryUrl(c.image, 400) || c.image}
+                              alt=""
+                              loading="lazy"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                          )}
+                          <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                          <span className="absolute start-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground">
+                            <MenuGlyph category={c} />
                           </span>
-                          {catLabel(c)}
+                          <span className="font-heading absolute inset-x-3 bottom-2.5 truncate text-lg font-medium leading-tight text-white">
+                            {catLabel(c)}
+                          </span>
                         </Link>
                         {c.subs.length > 0 && (
                           <button
                             type="button"
                             onClick={() => setExpandedCat(open ? null : c.id)}
-                            className={iconBtn}
+                            className={`absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${open ? "bg-berry text-white" : "bg-white/90 text-foreground"}`}
                             aria-expanded={open}
                             aria-label={catLabel(c)}
                           >
-                            <ChevronDown
-                              className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-                            />
+                            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
                           </button>
                         )}
                       </div>
-                      <AnimatePresence initial={false}>
-                        {open && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.22 }}
-                            className="overflow-hidden"
-                          >
-                            <div className="ms-[3.25rem] flex flex-wrap gap-2 pb-3 pt-1">
-                              {c.subs.map((s: any) => (
-                                <Link
-                                  key={s.id}
-                                  href={`${href}?sub=${s.id}`}
-                                  className="rounded-full border border-border bg-white px-3.5 py-1.5 text-[13px] text-foreground/85 hover:border-berry/50 hover:text-berry"
-                                >
-                                  {isAr ? s.nameAr || s.name : s.name}
-                                </Link>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+                <AnimatePresence initial={false}>
+                  {(() => {
+                    const c = navCategories.find((x: any) => x.id === expandedCat);
+                    if (!c || c.subs.length === 0) return null;
+                    const href = categoryHref(c);
+                    return (
+                      <motion.div
+                        key={c.id}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.22 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-black/[0.05]">
+                          <p className="mb-2 text-[12px] font-semibold text-berry">{catLabel(c)}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {c.subs.map((s: any) => (
+                              <Link
+                                key={s.id}
+                                href={`${href}?sub=${s.id}`}
+                                className="rounded-full border border-border bg-background px-3.5 py-1.5 text-[13px] text-foreground/85"
+                              >
+                                {isAr ? s.nameAr || s.name : s.name}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })()}
+                </AnimatePresence>
 
-                <Link
-                  href="/sales"
-                  className="flex items-center gap-3 rounded-2xl px-3 py-3 text-[15px] font-semibold hover:bg-red-50"
-                  style={{ color: "#9B1C1C" }}
-                  data-testid="link-sales-mobile"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
-                    <BadgePercent className="h-[18px] w-[18px]" strokeWidth={1.6} />
-                  </span>
-                  {t.nav.sales}
-                </Link>
-
-                <div className="my-3 h-px bg-border/70" />
-
-                <div className="grid grid-cols-2 gap-2">
+                {/* Account and settings */}
+                <div className="mt-5 overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05]">
                   <Link
                     href={user ? "/profile" : "/auth"}
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-sm"
+                    className="flex items-center gap-3 border-b border-border/70 px-4 py-3.5 text-sm"
                     data-testid={user ? "link-profile-mobile" : "link-auth-mobile"}
                   >
                     <User className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    <span className="truncate">
-                      {user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}
-                    </span>
-                  </Link>
-                  <Link
-                    href={user ? "/wishlist" : "/auth"}
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-sm"
-                    data-testid="link-wishlist-mobile"
-                  >
-                    <Heart className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    <span className="truncate">{t.wishlist.navLabel}</span>
+                    <span className="flex-1">{user ? t.profile.myAccount : isAr ? "تسجيل الدخول" : "Sign in"}</span>
+                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground rtl:rotate-90" />
                   </Link>
                   <Link
                     href="/our-location"
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-sm"
+                    className="flex items-center gap-3 border-b border-border/70 px-4 py-3.5 text-sm"
                     data-testid="link-our-location"
                   >
                     <MapPin className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    <span className="truncate">{t.nav.ourLocation}</span>
+                    <span className="flex-1">{t.nav.ourLocation}</span>
+                    <ChevronDown className="h-4 w-4 -rotate-90 text-muted-foreground rtl:rotate-90" />
                   </Link>
-                  <button
-                    type="button"
-                    onClick={toggleLanguage}
-                    className="flex items-center gap-2.5 rounded-2xl border border-border/70 bg-white px-3 py-3 text-start text-sm"
-                    data-testid="button-language-toggle-mobile"
-                  >
+                  <div className="flex items-center gap-3 px-4 py-3 text-sm">
                     <Globe className="h-[18px] w-[18px] text-berry" strokeWidth={1.6} />
-                    <span className="truncate">{t.langLabel}</span>
-                  </button>
+                    <span className="flex-1">{isAr ? "اللغة" : "Language"}</span>
+                    <span className="flex rounded-full bg-muted p-0.5 text-[12.5px]" data-testid="button-language-toggle-mobile">
+                      {(["ar", "en"] as const).map((lng) => (
+                        <button
+                          key={lng}
+                          type="button"
+                          onClick={() => setLanguage(lng)}
+                          className={`rounded-full px-3 py-1 transition-colors ${language === lng ? "bg-foreground text-background" : "text-muted-foreground"}`}
+                        >
+                          {lng === "ar" ? "العربية" : "English"}
+                        </button>
+                      ))}
+                    </span>
+                  </div>
                 </div>
 
                 {(user?.role === "admin" || user?.role === "employee") && (
                   <Link
                     href="/admin"
-                    className="mt-2 flex items-center gap-2.5 rounded-2xl bg-foreground px-4 py-3 text-sm font-medium text-background"
+                    className="mt-3 flex items-center gap-2.5 rounded-2xl bg-foreground px-4 py-3.5 text-sm font-medium text-background"
                   >
                     <LayoutDashboard className="h-[18px] w-[18px]" strokeWidth={1.6} />
                     {t.nav.adminDashboard}
                   </Link>
                 )}
-              </div>
 
-              {user && (
-                <div className="border-t border-border/70 p-3 shrink-0">
+                {user && (
                   <button
                     onClick={() => {
                       logout.mutate();
                       setMobileMenuOpen(false);
                     }}
-                    className="dark-red-zone flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-start text-sm font-medium text-muted-foreground hover:bg-destructive/5 hover:text-destructive"
+                    className="dark-red-zone mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border px-4 py-3 text-sm font-medium text-muted-foreground hover:border-destructive/40 hover:text-destructive"
                     data-testid="button-logout-mobile"
                   >
-                    <LogOut className="w-[18px] h-[18px] shrink-0" strokeWidth={1.6} />
+                    <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={1.6} />
                     {t.profile.logout}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </motion.aside>
           </div>
         )}
