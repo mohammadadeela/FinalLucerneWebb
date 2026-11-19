@@ -28,10 +28,7 @@ const SLIDE_MS = 6500;
 
 /* Soft panel tints, one per slide, so every slide feels like its own page of a lookbook. */
 const TINTS = [
-  "linear-gradient(120deg, hsl(var(--sand)) 0%, hsl(var(--blush) / 0.75) 100%)",
-  "linear-gradient(120deg, hsl(var(--background)) 0%, hsl(var(--sage) / 0.85) 100%)",
-  "linear-gradient(120deg, hsl(var(--blush) / 0.7) 0%, hsl(var(--sand)) 100%)",
-  "linear-gradient(120deg, hsl(var(--sage) / 0.6) 0%, hsl(var(--sand)) 100%)",
+  "linear-gradient(120deg, hsl(var(--blush)) 0%, hsl(var(--blush) / 0.88) 100%)",
 ];
 
 export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolean }) {
@@ -187,7 +184,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                 style={{
                   background: skin
                     ? `linear-gradient(to ${isAr ? "right" : "left"}, ${skin.night}f7 0%, ${skin.night}eb 36%, ${skin.night}8c 54%, transparent 74%)`
-                    : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.92) 36%, hsl(var(--background) / 0.55) 54%, transparent 74%)`,
+                    : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--blush) / 0.97) 0%, hsl(var(--blush) / 0.92) 36%, hsl(var(--blush) / 0.55) 54%, transparent 74%)`,
                 }}
               />
 

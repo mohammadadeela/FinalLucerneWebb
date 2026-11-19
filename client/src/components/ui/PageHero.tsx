@@ -19,10 +19,7 @@ interface PageHeroProps {
 /* Each page gets its own soft panel colour, picked from its title so it is
    stable between visits (shoes stay blush, clothes stay sage, …). */
 const TINTS = [
-  "linear-gradient(120deg, hsl(var(--sand)) 0%, hsl(var(--blush) / 0.8) 100%)",
-  "linear-gradient(120deg, hsl(var(--background)) 0%, hsl(var(--sage) / 0.9) 100%)",
-  "linear-gradient(120deg, hsl(var(--blush) / 0.65) 0%, hsl(var(--sand)) 100%)",
-  "linear-gradient(120deg, hsl(var(--sage) / 0.55) 0%, hsl(var(--sand)) 100%)",
+  "linear-gradient(120deg, hsl(var(--blush)) 0%, hsl(var(--blush) / 0.88) 100%)",
 ];
 function tintFor(title: string) {
   let h = 0;
@@ -118,7 +115,7 @@ export function PageHero({
           style={{
             background: skin
               ? `linear-gradient(to ${isAr ? "right" : "left"}, ${skin.night}f7 0%, ${skin.night}e6 38%, ${skin.night}80 56%, transparent 76%)`
-              : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.9) 38%, hsl(var(--background) / 0.5) 56%, transparent 76%)`,
+              : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--blush) / 0.97) 0%, hsl(var(--blush) / 0.9) 38%, hsl(var(--blush) / 0.5) 56%, transparent 76%)`,
           }}
         />
 
