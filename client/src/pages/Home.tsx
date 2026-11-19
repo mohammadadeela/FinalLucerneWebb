@@ -906,7 +906,7 @@ export default function Home() {
         {newArrivals.length > 0 && (
           <Section>
             <AnimatedBanner
-              texts={bannerTexts(g("home_banner_new_texts"), ["NEW ARRIVALS", "JUST LANDED", "NEW IN", "THE NEW EDIT"])}
+              texts={bannerTexts(g("home_banner_new_texts"), ["NEW ARRIVALS", "JUST LANDED", "NEW IN", "NEW SEASON"])}
               testId="banner-new-arrivals"
             />
             <ProductRail
