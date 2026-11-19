@@ -703,8 +703,26 @@ export default function Home() {
 
         {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
         {catTiles.length > 0 && (
-          <Section className="hidden sm:block">
-            <Rail scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
+          <Section>
+            <div className="grid grid-cols-2 gap-2.5 sm:hidden">
+              {catTiles.map((item, i) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className="group relative flex aspect-[2.3/1] overflow-hidden rounded-[1.6rem] bg-sand"
+                  data-testid={`pill-m-${item.testId}`}
+                >
+                  <span className="relative block h-full w-[52%] shrink-0 overflow-hidden" style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}>
+                    <BannerImage src={item.img || "/placeholder-product.svg"} alt={item.label} className="h-full w-full object-cover" width={300} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2">
+                    <span className="font-heading block min-w-0 truncate text-[15px] font-medium leading-tight">{item.label}</span>
+                    <Arrow className="h-3.5 w-3.5 shrink-0" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+            <Rail className="hidden sm:block" scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
               {catTiles.map((item, i) => (
                 <Link
                   key={item.key}
@@ -735,9 +753,6 @@ export default function Home() {
             </Rail>
           </Section>
         )}
-
-        {/* Category circles — phones: right under the hero, as in the design */}
-        <div className="sm:hidden">{categoryCircles}</div>
 
         {/* ── Most wanted: soft panel of white tiles — photo, price, name ── */}
         {trending.length > 0 && (
@@ -1069,8 +1084,8 @@ export default function Home() {
           );
         })()}
 
-        {/* Category circles — larger screens */}
-        <div className="hidden sm:block">{categoryCircles}</div>
+        {/* Category circles */}
+        {categoryCircles}
 
         {/* ── Best sellers ── */}
         {bestSellers.length > 0 && (
