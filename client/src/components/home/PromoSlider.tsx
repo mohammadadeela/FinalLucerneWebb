@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { optimizeCloudinaryUrl } from "@/lib/utils";
 
 export interface PromoSlide {
@@ -30,7 +29,6 @@ export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: bool
 
   if (count === 0) return null;
   const go = (n: number) => setIndex(((n % count) + count) % count);
-  const Arrow = isAr ? ArrowLeft : ArrowRight;
 
   return (
     <div
@@ -65,38 +63,16 @@ export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: bool
             />
             <span className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
             {slide.title && (
-              <span className="font-heading absolute bottom-8 start-3.5 max-w-[34%] truncate text-xl font-medium leading-tight text-white sm:bottom-12 sm:start-9 sm:text-4xl">
+              <span className="font-heading absolute bottom-8 start-3.5 max-w-[80%] truncate text-xl font-medium leading-tight text-white sm:bottom-12 sm:start-9 sm:text-4xl">
                 {slide.title}
               </span>
             )}
-            <span className="absolute inset-x-0 bottom-8 flex justify-center sm:bottom-12">
-              <span className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-3 text-[12px] font-medium text-foreground transition-colors duration-300 group-hover:bg-berry group-hover:text-white sm:h-11 sm:px-6 sm:text-sm">
-                {isAr ? "تسوقي الآن" : "Shop now"}
-                <Arrow className="h-4 w-4" />
-              </span>
-            </span>
           </Link>
         ))}
       </div>
 
       {count > 1 && (
         <>
-          <button
-            type="button"
-            onClick={() => go(i - 1)}
-            className="absolute start-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow transition-colors hover:bg-berry hover:text-white sm:flex"
-            aria-label={isAr ? "السابق" : "Previous"}
-          >
-            <ChevronLeft className="h-5 w-5 rtl:-scale-x-100" />
-          </button>
-          <button
-            type="button"
-            onClick={() => go(i + 1)}
-            className="absolute end-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow transition-colors hover:bg-berry hover:text-white sm:flex"
-            aria-label={isAr ? "التالي" : "Next"}
-          >
-            <ChevronRight className="h-5 w-5 rtl:-scale-x-100" />
-          </button>
           <div className="absolute inset-x-0 bottom-3.5 z-20 flex justify-center gap-2 sm:bottom-5">
             {slides.map((s, n) => (
               <button
