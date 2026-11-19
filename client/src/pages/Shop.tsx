@@ -173,10 +173,10 @@ export default function Shop() {
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col md:flex-row items-baseline justify-between gap-4 mb-8 sm:mb-12">
-          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold" data-testid="text-collection-title">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-10 py-5 sm:py-8">
+        <div className="max-w-[1280px] mx-auto">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 sm:mb-5">
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-semibold" data-testid="text-collection-title">
             {t.shop.collection}
           </h1>
           <div className="mt-1 md:mt-0 w-full md:w-auto flex flex-row gap-2 items-center">
@@ -204,35 +204,41 @@ export default function Shop() {
           </div>
         </div>
 
-        {/* Mobile: horizontal scroll category tabs */}
-        <div className="lg:hidden mb-5 -mx-4 px-4">
+        {/* Category tabs — one scrollable row on every screen size */}
+        <div className="mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
           <div
-            className="flex gap-2.5 overflow-x-auto pb-2 snap-x snap-mandatory"
+            className="flex gap-2 overflow-x-auto pb-2 snap-x snap-proximity"
             style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
           >
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`snap-start flex-shrink-0 rounded-2xl px-4 py-3 text-sm border transition-colors whitespace-nowrap shadow-sm ${selectedCategory === null ? "border-foreground bg-foreground text-background font-semibold" : "border-border bg-background text-foreground hover:border-foreground"}`}
+              className={`snap-start flex-shrink-0 inline-flex items-center gap-2 rounded-full ps-1.5 pe-4 h-11 text-sm border transition-colors whitespace-nowrap ${selectedCategory === null ? "border-foreground bg-foreground text-background font-semibold" : "border-border bg-background text-foreground hover:border-foreground"}`}
               data-testid="button-all-products-mobile"
             >
+              <span className="w-2" />
               {t.shop.allProducts}
             </button>
             {categories?.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`snap-start flex-shrink-0 rounded-2xl px-4 py-3 text-sm border transition-colors whitespace-nowrap shadow-sm ${selectedCategory === cat.id ? "border-foreground bg-foreground text-background font-semibold" : "border-border bg-background text-foreground hover:border-foreground"}`}
+                className={`snap-start flex-shrink-0 inline-flex items-center gap-2 rounded-full ps-1.5 pe-4 h-11 text-sm border transition-colors whitespace-nowrap ${selectedCategory === cat.id ? "border-foreground bg-foreground text-background font-semibold" : "border-border bg-background text-foreground hover:border-foreground"}`}
                 data-testid={`button-category-mobile-${cat.id}`}
               >
+                {cat.image ? (
+                  <img src={cat.image} alt="" loading="lazy" className="h-8 w-8 rounded-full object-cover bg-muted" />
+                ) : (
+                  <span className="w-2" />
+                )}
                 {language === "ar" ? (cat.nameAr || cat.name) : cat.name}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-12">
+        <div className="flex flex-col">
           {/* Desktop sidebar */}
-          <aside className="hidden lg:block w-56 flex-shrink-0">
+          <aside className="hidden">
             <div className="sticky top-28 space-y-8">
               <div>
                 <h3 className="font-semibold uppercase tracking-widest text-xs mb-4 text-muted-foreground">{t.shop.categories}</h3>
@@ -263,7 +269,7 @@ export default function Shop() {
           </aside>
 
           <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <p className="text-sm flex items-center gap-1.5" data-testid="text-results-count">
                   <>
                     <ShoppingBag size={14} className="text-muted-foreground" />
