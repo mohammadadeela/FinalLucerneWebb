@@ -23,6 +23,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { SeasonalLogoAccent } from "@/components/seasonal/SeasonalDecor";
+import { BrandButterfly } from "@/components/ui/BrandButterfly";
 import { SEASONS, getActiveTheme, seasonBarText } from "@/lib/seasonal";
 import { useCart } from "@/store/use-cart";
 import { useAuth, useLogout } from "@/hooks/use-auth";
@@ -810,7 +811,7 @@ export function Navbar() {
                   LUCERNE
                 </span>
                 <span className="relative inline-block -mb-0.5">
-                  <LucerneLogo className="h-6 w-auto sm:h-7 text-berry" />
+                  <BrandButterfly className="h-7 w-auto sm:h-8" />
                   <SeasonalLogoAccent />
                 </span>
               </span>
