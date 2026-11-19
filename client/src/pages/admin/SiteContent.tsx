@@ -114,6 +114,7 @@ function ImageUploadField({
   onChangePosition,
   withCrop = false,
   promptContext,
+  cropAspect,
 }: {
   value: string;
   position: string;
@@ -122,6 +123,8 @@ function ImageUploadField({
   withCrop?: boolean;
   /** Description used to build the AI-generation prompt, e.g. "Home page hero banner". */
   promptContext?: string;
+  /** Fixed crop ratio (width / height) when the slot has its own shape; the preview uses it too. */
+  cropAspect?: number;
 }) {
   const [uploading, setUploading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
@@ -171,7 +174,7 @@ function ImageUploadField({
       {value ? (
         <>
           <div className="relative rounded-lg overflow-hidden border border-border bg-muted/30 group">
-            <div className="relative w-full h-40 overflow-hidden">
+            <div className={`relative w-full overflow-hidden ${cropAspect ? "" : "h-40"}`} style={cropAspect ? { aspectRatio: String(cropAspect) } : undefined}>
               <img
                 src={value}
                 alt="hero preview"
@@ -317,7 +320,8 @@ function ImageUploadField({
       {withCrop && (
         <ImageCropDialog
           file={pendingCrop?.file ?? null}
-          previewType="grid"
+          previewType={cropAspect ? "general" : "grid"}
+          aspect={cropAspect}
           onConfirm={(croppedFile) => {
             const resolve = pendingCrop?.resolve;
             setPendingCrop(null);
@@ -1366,15 +1370,29 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            شريطان رفيعان فوق «وصل حديثاً» وفوق «الأكثر مبيعاً». غير قابلين للنقر وبدون نص. الشريط رفيع جداً على الكمبيوتر، لذلك يظهر فقط الجزء الأوسط من الصورة. إذا تُركت الصورة فارغة يبقى الشريط أبيض.
+            شريطان رفيعان فوق «وصل حديثاً» وفوق «الأكثر مبيعاً». غير قابلين للنقر. مقاس الشريط 15:1 (مثلاً 1560×104 بكسل) — عند رفع الصورة تفتح أداة القص بهذا المقاس، والمعاينة هنا بنفس شكل الشريط على الكمبيوتر. على الهاتف يظهر الجزء الأوسط فقط (نحو ثلث العرض)، لذلك ضعي النص في المنتصف. يمكن تحريك الصورة من «تعديل موضع الصورة». إذا تُركت الصورة فارغة يبقى الشريط أبيض.
           </p>
           <div className="rounded-xl border border-border p-4 space-y-3">
             <p className="text-sm font-semibold text-right">البانر فوق «وصل حديثاً»</p>
-            <SimpleImageUpload value={values["home_banner_new_image"] ?? ""} onChange={(url) => onChange("home_banner_new_image", url)} label="الصورة" withCrop />
+            <ImageUploadField
+              value={values["home_banner_new_image"] ?? ""}
+              position={values["home_banner_new_image_position"] ?? "center"}
+              onChangeImage={(url) => onChange("home_banner_new_image", url)}
+              onChangePosition={(pos) => onChange("home_banner_new_image_position", pos)}
+              withCrop
+              cropAspect={15}
+            />
           </div>
           <div className="rounded-xl border border-border p-4 space-y-3">
             <p className="text-sm font-semibold text-right">البانر فوق «الأكثر مبيعاً»</p>
-            <SimpleImageUpload value={values["home_banner_best_image"] ?? ""} onChange={(url) => onChange("home_banner_best_image", url)} label="الصورة" withCrop />
+            <ImageUploadField
+              value={values["home_banner_best_image"] ?? ""}
+              position={values["home_banner_best_image_position"] ?? "center"}
+              onChangeImage={(url) => onChange("home_banner_best_image", url)}
+              onChangePosition={(pos) => onChange("home_banner_best_image_position", pos)}
+              withCrop
+              cropAspect={15}
+            />
           </div>
         </div>
       )}

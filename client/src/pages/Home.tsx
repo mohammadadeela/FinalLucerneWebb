@@ -238,9 +238,18 @@ function RailSkeleton() {
   );
 }
 
+/** Admin "position" values are keywords (center, top…) or an "x% y%" pair. */
+function bannerPosition(pos?: string) {
+  if (!pos) return "50% 50%";
+  if (pos.includes("%")) return pos;
+  const x = pos.includes("left") ? 0 : pos.includes("right") ? 100 : 50;
+  const y = pos.includes("top") ? 0 : pos.includes("bottom") ? 100 : 50;
+  return `${x}% ${y}%`;
+}
+
 /** A decorative banner, the same size as the category banners — not a link, no text.
  *  Blank until the admin uploads a photo for it (Content → Home). */
-function EmptyBanner({ image }: { image?: string }) {
+function EmptyBanner({ image, position }: { image?: string; position?: string }) {
   return (
     <div
       aria-hidden="true"
@@ -253,6 +262,7 @@ function EmptyBanner({ image }: { image?: string }) {
           loading="lazy"
           decoding="async"
           className="absolute inset-0 h-full w-full object-cover"
+          style={{ objectPosition: bannerPosition(position) }}
         />
       )}
       <div className="invisible">
@@ -903,7 +913,7 @@ export default function Home() {
         {/* ── New arrivals ── */}
         {newArrivals.length > 0 && (
           <Section>
-            <EmptyBanner image={g("home_banner_new_image")} />
+            <EmptyBanner image={g("home_banner_new_image")} position={g("home_banner_new_image_position")} />
             <ProductRail
               products={newArrivals}
               testId="rail-new-arrivals"
@@ -1166,7 +1176,7 @@ export default function Home() {
         {/* ── Best sellers ── */}
         {bestSellers.length > 0 && (
           <Section>
-            <EmptyBanner image={g("home_banner_best_image")} />
+            <EmptyBanner image={g("home_banner_best_image")} position={g("home_banner_best_image_position")} />
 
             {isBestSellersLoading ? (
               <RailSkeleton />

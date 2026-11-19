@@ -86,10 +86,12 @@ interface Props {
   onConfirm: (file: File) => void;
   onCancel: () => void;
   previewType?: PreviewType;
+  /** Optional fixed crop ratio (width / height) for slots with their own shape, e.g. a thin banner. */
+  aspect?: number;
 }
 
-export default function ImageCropDialog({ file, onConfirm, onCancel, previewType = "general" }: Props) {
-  const config = CONFIGS[previewType];
+export default function ImageCropDialog({ file, onConfirm, onCancel, previewType = "general", aspect }: Props) {
+  const config = aspect ? { ...CONFIGS[previewType], aspect, circular: false } : CONFIGS[previewType];
   const [src, setSrc] = useState("");
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
@@ -253,7 +255,7 @@ export default function ImageCropDialog({ file, onConfirm, onCancel, previewType
           </div>
 
           {/* RIGHT — Live Preview (side panel on desktop, horizontal strip on mobile) */}
-          {!isVideo && (
+          {!isVideo && !aspect && (
             <div className="w-full md:w-40 border-t md:border-t-0 md:border-s border-border bg-muted/20 flex flex-col">
               <div className="px-3 pt-2.5 pb-1 shrink-0">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
