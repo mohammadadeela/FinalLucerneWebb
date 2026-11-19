@@ -1441,6 +1441,30 @@ function ThumbImage({ src, alt, size = 300 }: { src: string; alt: string; size?:
 }
 
 // ─── ProductDetails ───────────────────────────────────────────────────────────
+/** Product description that stays short on phones: three lines, then "show more". */
+function ClampedDescription({ text, isAr }: { text: string; isAr: boolean }) {
+  const [open, setOpen] = useState(false);
+  const long = (text || "").length > 130;
+  return (
+    <div className="mb-4 sm:mb-8" data-testid="text-product-description">
+      <p
+        className={`text-[14px] leading-relaxed text-muted-foreground sm:text-base whitespace-pre-line ${long && !open ? "line-clamp-3 sm:line-clamp-none" : ""}`}
+      >
+        {text}
+      </p>
+      {long && (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="mt-1 text-[13px] font-medium text-foreground underline underline-offset-4 sm:hidden"
+        >
+          {open ? (isAr ? "عرض أقل" : "Show less") : isAr ? "عرض المزيد" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ProductDetails() {
 const { id } = useParams<{ id: string }>();
 const { data: product, isLoading } = useProduct(Number(id));
@@ -2481,13 +2505,15 @@ draggable={false}
 {/* ── Info panel ── */}
 <div
 ref={infoPanelRef}
-className="flex flex-col pt-4 sm:pt-8 lg:pt-0 lg:sticky lg:top-28 h-fit"
+className="flex flex-col pt-3 sm:pt-8 lg:pt-0 lg:sticky lg:top-28 h-fit"
 >
-<div className="text-sm text-muted-foreground uppercase tracking-widest mb-2">
-{product.brand || "Lucerne Boutique"}
+{product.brand && (
+<div className="text-[11px] sm:text-sm text-muted-foreground uppercase tracking-widest mb-1 sm:mb-2">
+{product.brand}
 </div>
+)}
 <h1
-className="font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold mb-4 text-balance"
+className="font-display text-[1.45rem] leading-snug sm:text-3xl md:text-4xl lg:text-5xl font-medium sm:font-semibold mb-1.5 sm:mb-4 text-balance"
 data-testid="text-product-name"
 >
 {product.name}
@@ -2511,47 +2537,41 @@ data-testid="product-sold-out-notice"
 </div>
 )}
 
-<div className="flex items-center gap-4 mb-6 sm:mb-8 text-lg sm:text-xl">
+<div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3 sm:mb-8 text-[1.35rem] sm:text-2xl">
 {discountPrice ? (
 <>
 <span
-className="font-semibold"
+className="price-text ltr-num"
 style={{ color: "#9B1C1C" }}
 data-testid="text-discount-price"
 >
 ₪{discountPrice}
 </span>
 <span
-className="text-muted-foreground line-through"
+className="price-text ltr-num text-[0.7em] text-muted-foreground line-through"
 data-testid="text-original-price"
 >
 ₪{price}
 </span>
-<span
-className="text-xs uppercase tracking-widest text-white px-2 py-1"
-style={{ backgroundColor: "#9B1C1C" }}
->
-Save{" "}
+<span className="self-center rounded-full bg-[#9B1C1C]/10 px-2.5 py-1 text-[12px] font-medium leading-none text-[#9B1C1C]">
+{isAr ? "خصم" : "Save"}{" "}
+<span className="ltr-num">
 {Math.round(
 (1 - parseFloat(discountPrice) / parseFloat(price)) *
 100,
 )}
 %
 </span>
+</span>
 </>
 ) : (
-<span className="font-medium" data-testid="text-price">
+<span className="price-text ltr-num" data-testid="text-price">
 ₪{price}
 </span>
 )}
 </div>
 
-<div
-className="prose prose-sm md:prose-base text-muted-foreground mb-6 sm:mb-10 leading-relaxed max-w-none"
-data-testid="text-product-description"
->
-{product.description}
-</div>
+<ClampedDescription text={product.description || ""} isAr={isAr} />
 
 {/* Colors — desktop */}
 {hasMultipleColors && (
