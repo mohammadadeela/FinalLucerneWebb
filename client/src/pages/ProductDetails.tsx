@@ -2707,30 +2707,6 @@ data-testid="text-select-size-prompt"
 </div>
 )}
 
-{!isSoldOut && selectedSize &&
-sizeInv[selectedSize] !== undefined &&
-sizeInv[selectedSize] >= 1 &&
-sizeInv[selectedSize] <= 2 && (
-<div
-className="inline-flex max-w-full items-center gap-2 rounded-full border border-rose-200/80 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-950/30 ps-1.5 pe-3 py-1 mb-4 text-xs"
-role="status"
-data-testid="text-low-stock-urgency"
->
-<span className="relative w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
-<span className="absolute inset-0 rounded-full bg-rose-300/40 animate-ping" aria-hidden />
-<Flame className="relative w-3.5 h-3.5" />
-</span>
-<span className="min-w-0 truncate text-rose-900 dark:text-rose-200">
-<span className="font-bold">
-{isAr
-? `باقي ${sizeInv[selectedSize] === 1 ? "قطعة واحدة" : "قطعتان"} فقط بمقاس ${selectedSize}`
-: `Only ${sizeInv[selectedSize]} left in size ${selectedSize}`}
-</span>
-<span className="text-rose-700/80 dark:text-rose-300/80">{isAr ? " · ينفد بسرعة" : " · selling fast"}</span>
-</span>
-</div>
-)}
-
 {/* Qty + Add to cart — min 44px touch targets */}
 <div className="flex items-center gap-2.5 mb-4">
 {!isSoldOut && (
