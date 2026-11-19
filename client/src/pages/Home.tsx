@@ -764,7 +764,7 @@ export default function Home() {
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="flex aspect-[1.9/1] min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush/80 via-blush/45 to-sand/70 ring-1 ring-berry/10"
+                  className="flex aspect-[1.9/1] min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush via-blush/90 to-blush/75 ring-1 ring-berry/10"
                   data-testid={`pill-m-${item.testId}`}
                 >
                   <span
@@ -793,7 +793,7 @@ export default function Home() {
                   key={item.key}
                   href={item.href}
                   role="listitem"
-                  className="group relative flex aspect-[2.44/1] w-[58%] flex-none snap-start overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-blush/80 via-blush/45 to-sand/70 ring-1 ring-berry/10 transition-all sm:rounded-[2.5rem] duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
+                  className="group relative flex aspect-[2.44/1] w-[58%] flex-none snap-start overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-blush via-blush/90 to-blush/75 ring-1 ring-berry/10 transition-all sm:rounded-[2.5rem] duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
                   data-testid={`pill-${item.testId}`}
                 >
                   <span
@@ -822,7 +822,7 @@ export default function Home() {
         {/* ── Most wanted: soft panel of white tiles — photo, price, name ── */}
         {trending.length > 0 && (
           <Section>
-            <div className="overflow-hidden rounded-[1.5rem] bg-blush/50 p-3 sm:rounded-[1.75rem] sm:p-5">
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
               <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
                 <h2
                   className="truncate text-xl font-medium leading-none sm:text-[1.75rem] rtl:leading-snug"
