@@ -107,6 +107,40 @@ function normalizePosition(pos: string): string {
   return "50% 50%";
 }
 
+/** A photo slot's real shapes on the storefront (width / height), measured on the live layout.
+ *  `crop` is the frame of the crop tool; `views` are previewed exactly as customers see them. */
+type SlotShape = { crop: number; views: { label: string; aspect: number; width: string }[] };
+const SLOT_SHAPES: Record<string, SlotShape> = {
+  homeHero: { crop: 2.3, views: [{ label: "كمبيوتر", aspect: 2.3, width: "100%" }, { label: "هاتف", aspect: 1.25, width: "42%" }] },
+  pageHero: { crop: 2.9, views: [{ label: "كمبيوتر", aspect: 2.9, width: "100%" }, { label: "هاتف", aspect: 1.8, width: "48%" }] },
+  editorialCenter: { crop: 1.23, views: [{ label: "كمبيوتر", aspect: 1.23, width: "62%" }, { label: "هاتف", aspect: 0.43, width: "20%" }] },
+  editorialTile: { crop: 1.77, views: [{ label: "كمبيوتر", aspect: 1.77, width: "100%" }, { label: "هاتف", aspect: 0.63, width: "34%" }] },
+  pill: { crop: 1.37, views: [{ label: "كمبيوتر", aspect: 1.37, width: "62%" }, { label: "هاتف", aspect: 0.8, width: "30%" }] },
+  promo: { crop: 4, views: [{ label: "كمبيوتر", aspect: 4, width: "100%" }, { label: "هاتف", aspect: 1.78, width: "46%" }] },
+  menu: { crop: 1, views: [{ label: "بطاقة القائمة", aspect: 0.85, width: "44%" }, { label: "البطاقة العريضة (الأخيرة)", aspect: 1.8, width: "92%" }] },
+  strip: { crop: 15, views: [{ label: "كمبيوتر", aspect: 15, width: "100%" }, { label: "هاتف", aspect: 4.6, width: "60%" }] },
+};
+
+/** Shows the photo cropped to each real shape of its slot, the same way the storefront crops it. */
+function SlotPreviews({ src, position, shape }: { src: string; position?: string; shape: SlotShape }) {
+  if (!src) return null;
+  return (
+    <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3" data-testid="slot-previews">
+      <p className="text-[11px] font-semibold text-muted-foreground text-right">كيف تظهر للعميلة</p>
+      <div className="flex flex-wrap items-end justify-end gap-3">
+        {shape.views.map((v) => (
+          <div key={v.label} style={{ width: v.width }} className="min-w-[64px]">
+            <div className="overflow-hidden rounded-md border border-border bg-muted" style={{ aspectRatio: String(v.aspect) }}>
+              <img src={src} alt="" className="h-full w-full object-cover" style={{ objectPosition: position || "50% 50%" }} />
+            </div>
+            <p className="mt-1 text-center text-[10px] text-muted-foreground">{v.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ImageUploadField({
   value,
   position,
@@ -117,6 +151,7 @@ function ImageUploadField({
   cropAspect,
   originalValue,
   onChangeOriginal,
+  shape,
 }: {
   value: string;
   position: string;
@@ -130,7 +165,10 @@ function ImageUploadField({
   /** URL of the untouched photo, kept so it can be cropped again later. */
   originalValue?: string;
   onChangeOriginal?: (url: string) => void;
+  /** The slot's real shapes: sets the crop frame and shows a preview per shape. */
+  shape?: SlotShape;
 }) {
+  if (shape && !cropAspect) cropAspect = shape.crop;
   const [uploading, setUploading] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
   const [pendingCrop, setPendingCrop] = useState<{ file: File; resolve: (f: File) => void } | null>(null);
@@ -226,7 +264,11 @@ function ImageUploadField({
               </div>
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground">هذه هي الصورة الفعلية بدون تعديل — مرري الفأرة فوقها لرؤية تسمية المعاينة</p>
+          {shape ? (
+            <SlotPreviews src={value} position={normalizedPos} shape={shape} />
+          ) : (
+            <p className="text-[10px] text-muted-foreground">هذه هي الصورة الفعلية بدون تعديل — مرري الفأرة فوقها لرؤية تسمية المعاينة</p>
+          )}
 
           <button
             type="button"
@@ -619,6 +661,10 @@ function SectionCard({
               position={values[`${prefix}_hero_image_position`] ?? "center"}
               onChangeImage={(url) => onChange(`${prefix}_hero_image`, url)}
               onChangePosition={(pos) => onChange(`${prefix}_hero_image_position`, pos)}
+              withCrop
+              shape={prefix === "home" ? SLOT_SHAPES.homeHero : SLOT_SHAPES.pageHero}
+              originalValue={values[`${prefix}_hero_image_original`] ?? ""}
+              onChangeOriginal={(url) => onChange(`${prefix}_hero_image_original`, url)}
               promptContext={`Wide hero banner background photo for the "${section.labelEn}" page of a women's fashion boutique website, showcasing the mood/style of that category`}
             />
           </div>
@@ -872,7 +918,7 @@ function CategoryCirclesCard({
   );
 }
 
-function SimpleImageUpload({ value, onChange, label, withCrop = false, promptContext }: { value: string; onChange: (url: string) => void; label?: string; withCrop?: boolean; promptContext?: string }) {
+function SimpleImageUpload({ value, onChange, label, withCrop = false, promptContext, shape }: { value: string; onChange: (url: string) => void; label?: string; withCrop?: boolean; promptContext?: string; shape?: SlotShape }) {
   const [uploading, setUploading] = useState(false);
   const [pendingCrop, setPendingCrop] = useState<{ file: File; resolve: (f: File) => void } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -906,7 +952,7 @@ function SimpleImageUpload({ value, onChange, label, withCrop = false, promptCon
     <>
       <div className="space-y-2">
         {label && <p className="text-xs text-muted-foreground font-medium">{label}</p>}
-        <div className="relative rounded-lg overflow-hidden border border-border bg-muted/30 aspect-square">
+        <div className="relative rounded-lg overflow-hidden border border-border bg-muted/30" style={{ aspectRatio: String(shape?.crop ?? 1) }}>
           {value ? (
             <img src={value} alt="" className="w-full h-full object-cover" />
           ) : (
@@ -958,6 +1004,7 @@ function SimpleImageUpload({ value, onChange, label, withCrop = false, promptCon
           </Button>
         </div>
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        {shape && <SlotPreviews src={value} shape={shape} />}
         {promptContext && (
           <AIGenerateImageButton
             getPrompt={() => promptContext}
@@ -970,7 +1017,8 @@ function SimpleImageUpload({ value, onChange, label, withCrop = false, promptCon
       {withCrop && (
         <ImageCropDialog
           file={pendingCrop?.file ?? null}
-          previewType="grid"
+          previewType={shape ? "general" : "grid"}
+          aspect={shape?.crop}
           onConfirm={(croppedFile) => {
             const resolve = pendingCrop?.resolve;
             setPendingCrop(null);
@@ -1205,6 +1253,9 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
               onChangeImage={(url) => onChange("editorial_center_image", url)}
               onChangePosition={(pos) => onChange("editorial_center_image_position", pos)}
               withCrop
+              shape={SLOT_SHAPES.editorialCenter}
+              originalValue={values["editorial_center_image_original"] ?? ""}
+              onChangeOriginal={(url) => onChange("editorial_center_image_original", url)}
               promptContext="Tall editorial fashion photo for the center of a boutique homepage collage, showcasing an elegant clothing piece or styled outfit"
             />
             <div className="mt-3">
@@ -1291,6 +1342,7 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
                       onChange={(url) => onChange(`editorial_tile_${n}_image`, url)}
                       label="صورة مخصصة (اختياري — تتجاوز صورة الفئة)"
                       withCrop
+                      shape={SLOT_SHAPES.editorialTile}
                       promptContext={(() => {
                         const selectedCat = categories.find((c: any) => String(c.id) === selectedCatId);
                         const selectedSub = subcategories.find((s: any) => String(s.id) === selectedSubId);
@@ -1393,6 +1445,7 @@ function HomePillsCard({ values, onChange }: { values: Record<string, string>; o
                   onChange={(url) => onChange(`home_pill_${n}_image`, url)}
                   label="صورة الزر"
                   withCrop
+                  shape={SLOT_SHAPES.pill}
                 />
               </div>
             );
@@ -1483,7 +1536,7 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
                 onChangeImage={(url) => onChange(`home_cat_banner_${c.id}_image`, url)}
                 onChangePosition={(pos) => onChange(`home_cat_banner_${c.id}_image_position`, pos)}
                 withCrop
-                cropAspect={15}
+                shape={SLOT_SHAPES.strip}
                 originalValue={values[`home_cat_banner_${c.id}_image_original`] ?? ""}
                 onChangeOriginal={(url) => onChange(`home_cat_banner_${c.id}_image_original`, url)}
               />
@@ -1528,6 +1581,7 @@ function MenuPhotosCard({ values, onChange }: { values: Record<string, string>; 
                   onChange={(url) => onChange(`menu_photo_${c.id}`, url)}
                   label="صورة القائمة"
                   withCrop
+                  shape={SLOT_SHAPES.menu}
                 />
               </div>
             ))}
@@ -1611,6 +1665,7 @@ function PromoSliderCard({ values, onChange }: { values: Record<string, string>;
                 onChange={(url) => onChange(`promo_slide_${n}_image`, url)}
                 label="الصورة"
                 withCrop
+                shape={SLOT_SHAPES.promo}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input

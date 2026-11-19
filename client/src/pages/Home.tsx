@@ -1048,6 +1048,7 @@ export default function Home() {
                           loading="eager"
                           width={800}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          style={{ objectPosition: bannerPosition(getSetting(siteSettings, "editorial_center_image_position")) }}
                         />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/30" />
