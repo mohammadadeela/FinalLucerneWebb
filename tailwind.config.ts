@@ -110,5 +110,12 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: [
+    require("tailwindcss-animate"),
+    require("@tailwindcss/typography"),
+    // `store:` — styles that apply on the storefront only, never inside the admin area.
+    ({ addVariant }: { addVariant: (name: string, definition: string) => void }) => {
+      addVariant("store", "html:not(.admin-theme) &");
+    },
+  ],
 } satisfies Config;

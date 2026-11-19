@@ -5,27 +5,25 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  // Shared feel for every button: quick colour/shadow transitions, a small press-in on click,
-  // and a clear two-ring focus outline for keyboard users.
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium select-none" +
-  " transition-[background-color,border-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.98]" +
-  " focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background" +
-  " disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0" +
+  " hover-elevate active-elevate-2" +
+  // Storefront only — the admin area keeps the original button exactly.
+  " store:rounded-lg store:select-none store:hover:translate-y-0 store:transition-[background-color,border-color,color,box-shadow,transform] store:duration-200 store:ease-out store:active:scale-[0.98]" +
+  " store:focus-visible:ring-2 store:focus-visible:ring-offset-2 store:focus-visible:ring-offset-background",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground border border-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_8px_18px_-10px_rgba(0,0,0,0.55)] hover:bg-primary/90 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_12px_22px_-10px_rgba(0,0,0,0.6)]",
+          "bg-primary text-primary-foreground border border-primary-border store:border-primary store:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_8px_18px_-10px_rgba(0,0,0,0.55)] store:hover:bg-primary/90",
         destructive:
-          "bg-destructive text-destructive-foreground border border-destructive shadow-[0_8px_18px_-10px_hsl(var(--destructive)/0.7)] hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground border border-destructive-border store:hover:bg-destructive/90",
         outline:
           // Shows the background color of whatever card / sidebar / accent background it is inside of.
           // Inherits the current text color.
-          "border border-foreground/15 bg-transparent shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:border-foreground/35 hover:bg-foreground/[0.04] active:shadow-none",
-        secondary:
-          "border border-transparent bg-secondary text-secondary-foreground hover:bg-foreground/[0.1]",
+          " border [border-color:var(--button-outline)]  shadow-xs active:shadow-none store:border-foreground/15 store:hover:border-foreground/35 store:hover:bg-foreground/[0.04]",
+        secondary: "border bg-secondary text-secondary-foreground border border-secondary-border store:hover:bg-foreground/[0.1]",
         // Add a transparent border so that when someone toggles a border on later, it doesn't shift layout/size.
-        ghost: "border border-transparent hover:bg-foreground/[0.06]",
+        ghost: "border border-transparent store:hover:bg-foreground/[0.06]",
       },
       // Heights are set as "min" heights, because sometimes Ai will place large amount of content
       // inside buttons. With a min-height they will look appropriate with small amounts of content,
@@ -33,7 +31,7 @@ const buttonVariants = cva(
       size: {
         default: "min-h-9 px-4 py-2",
         sm: "min-h-8 rounded-md px-3 text-xs",
-        lg: "min-h-11 rounded-lg px-8",
+        lg: "min-h-10 rounded-md px-8",
         icon: "h-9 w-9",
       },
     },

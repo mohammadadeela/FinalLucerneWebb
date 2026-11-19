@@ -4862,10 +4862,10 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap [&_svg]:!h-4 [&_svg]:!w-4">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={toggleFullscreen}
-            className={`flex items-center gap-2 text-[13px] h-10 px-3.5 rounded-xl border transition-colors font-medium ${
+            className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-colors font-medium ${
               posFullscreen
                 ? "bg-foreground text-background border-foreground shadow-sm"
                 : "border-border text-muted-foreground hover:bg-muted"
@@ -4898,10 +4898,10 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
           {!isEmployee && (
           <button
             onClick={openCustomerDisplay}
-            className={`flex items-center gap-2 text-[13px] h-10 px-3.5 rounded-xl border font-medium transition-colors ${
+            className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border font-medium transition-colors ${
               customerScreenBlocked
                 ? "border-purple-400 bg-purple-100 text-purple-800 animate-pulse dark:bg-purple-950/50 dark:border-purple-600"
-                : "border-border bg-card text-foreground hover:bg-muted [&_svg]:text-purple-600"
+                : "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/20 dark:border-purple-800 dark:hover:bg-purple-950/40"
             }`}
             data-testid="button-customer-screen"
             title={ar ? "فتح شاشة العميل في نافذة جديدة" : "Open customer display"}
@@ -4913,7 +4913,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
           {!isEmployee && (
           <button
             onClick={() => setReturnMode(true)}
-            className="flex items-center gap-2 text-[13px] h-10 px-3.5 rounded-xl border border-border bg-card text-foreground hover:bg-muted [&_svg]:text-orange-500 font-medium transition-colors"
+            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 dark:bg-orange-950/20 dark:border-orange-800 dark:hover:bg-orange-950/40 transition-colors font-medium"
             data-testid="button-return-mode"
           >
             <Undo2 className="w-3.5 h-3.5" />
@@ -4922,7 +4922,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
           )}
           <button
             onClick={() => setExchangeMode(true)}
-            className="flex items-center gap-2 text-[13px] h-10 px-3.5 rounded-xl border border-border bg-card text-foreground hover:bg-muted [&_svg]:text-blue-600 font-medium transition-colors"
+            className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/20 dark:border-blue-800 dark:hover:bg-blue-950/40 transition-colors font-medium"
             data-testid="button-exchange-mode"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
@@ -4930,7 +4930,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
           </button>
           <button
             onClick={() => setAutoPrint((v) => !v)}
-            className={`flex items-center gap-2 text-[13px] h-10 px-3.5 rounded-xl border transition-colors font-medium ${autoPrint ? "bg-foreground text-background border-foreground shadow-sm" : "border-border text-muted-foreground hover:bg-muted"}`}
+            className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-colors font-medium ${autoPrint ? "bg-foreground text-background border-foreground shadow-sm" : "border-border text-muted-foreground hover:bg-muted"}`}
             data-testid="button-auto-print-toggle"
           >
             <Printer className="w-3.5 h-3.5" />
@@ -4944,7 +4944,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
           </button>
           <button
             onClick={() => setOskEnabledPersist(!oskEnabled)}
-            className={`flex items-center gap-2 text-[13px] h-10 px-3.5 rounded-xl border transition-colors font-medium ${oskEnabled ? "bg-foreground text-background border-foreground shadow-sm" : "border-border text-muted-foreground hover:bg-muted"}`}
+            className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-colors font-medium ${oskEnabled ? "bg-foreground text-background border-foreground shadow-sm" : "border-border text-muted-foreground hover:bg-muted"}`}
             data-testid="button-osk-toggle"
             title={ar ? "لوحة مفاتيح على الشاشة عند لمس أي حقل" : "On-screen keyboard on any field tap"}
           >
@@ -4962,7 +4962,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
               onClick={() =>
                 setActiveTab((t) => (t === "pos" ? "dashboard" : "pos"))
               }
-              className={`flex items-center gap-2 text-[13px] h-10 px-3.5 rounded-xl border transition-colors font-medium ${activeTab === "dashboard" ? "bg-foreground text-background border-foreground shadow-sm" : "border-border text-muted-foreground hover:bg-muted"}`}
+              className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg border transition-colors font-medium ${activeTab === "dashboard" ? "bg-foreground text-background border-foreground shadow-sm" : "border-border text-muted-foreground hover:bg-muted"}`}
               data-testid="button-toggle-dashboard"
             >
               {activeTab === "dashboard" ? (
@@ -5417,7 +5417,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                 className={`flex-shrink-0 px-5 py-3 rounded-full text-sm font-semibold transition-all duration-200 border-2 ${categoryFilter === "all" ? "bg-foreground text-background border-foreground shadow-md scale-105" : "bg-background border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"}`}
                 data-testid="button-cat-all"
               >
-                {ar ? "الكل" : "All"}
+                {ar ? "✦ الكل" : "✦ All"}
               </button>
               {categories.map((cat) => {
                 const catSubs = subcategories.filter(
@@ -5573,7 +5573,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {filteredProducts.map((product, productIdx) => {
                     const price = product.discountPrice
                       ? parseFloat(product.discountPrice as string)
@@ -5594,7 +5594,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                           disabled={isSoldOut}
                           className={`w-full text-start focus:outline-none focus:ring-2 focus:ring-foreground/40 ${isSoldOut ? "cursor-not-allowed" : ""}`}
                         >
-                          <div className="aspect-[4/5] overflow-hidden bg-muted relative">
+                          <div className="aspect-[3/4] overflow-hidden bg-muted relative">
                             {product.mainImage ? (
                               <PosProductImage
                                 src={product.mainImage}
@@ -5632,14 +5632,14 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                             )}
                           </div>
                           <div className="p-2.5 pb-1.5">
-                            <p className="text-[13px] font-semibold line-clamp-2 leading-snug mb-1.5 min-h-[2.2em]">
+                            <p className="text-xs font-semibold line-clamp-2 leading-tight mb-1.5">
                               {ar
                                 ? (product as any).nameAr || product.name
                                 : product.name}
                             </p>
                             <div className="flex items-baseline gap-1.5 flex-wrap">
                               <span
-                                className={`text-base font-bold ltr-num ${hasDiscount && !isSoldOut ? "text-red-600" : "text-foreground"}`}
+                                className={`text-sm font-bold ltr-num ${hasDiscount && !isSoldOut ? "text-red-600" : "text-foreground"}`}
                               >
                                 ₪{price.toFixed(2)}
                               </span>

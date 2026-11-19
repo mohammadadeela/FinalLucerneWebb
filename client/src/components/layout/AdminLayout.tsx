@@ -85,20 +85,6 @@ export function AdminLayout({
   ];
 
   const navItems = isEmployee ? employeeNavItems : adminNavItems;
-
-  // Sidebar groups — the same links, arranged by the job they belong to.
-  const NAV_GROUPS: { ar: string; en: string; hrefs: string[] }[] = [
-    { ar: "المبيعات", en: "Sales", hrefs: ["/admin/pos", "/admin/orders", "/admin/exchanges"] },
-    { ar: "المنتجات", en: "Catalog", hrefs: ["/admin/products", "/admin/categories", "/admin/discount-codes"] },
-    { ar: "العملاء والمحتوى", en: "Customers & content", hrefs: ["/admin/users", "/admin/site-content"] },
-    { ar: "التقارير", en: "Insights", hrefs: ["/admin", "/admin/analytics", "/admin/database"] },
-  ];
-  const navGroups = NAV_GROUPS.map((group) => ({
-    label: language === "ar" ? group.ar : group.en,
-    items: group.hrefs
-      .map((href) => navItems.find((n) => n.href === href))
-      .filter(Boolean) as typeof navItems,
-  })).filter((group) => group.items.length > 0);
   const currentNav = navItems.find(n => n.href === location) || navItems.find(n => location.startsWith(n.href) && n.href !== "/admin");
   const initials = (user.fullName || user.email || "A")
     .split(/\s+/)
@@ -123,15 +109,8 @@ export function AdminLayout({
           )}
         </div>
       </div>
-      <nav className="flex-1 py-3 px-3 overflow-y-auto">
-        {navGroups.map((group) => (
-          <div key={group.label} className="mb-3 space-y-0.5">
-            {navGroups.length > 1 && (
-              <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
-                {group.label}
-              </p>
-            )}
-        {group.items.map((item) => {
+      <nav className="flex-1 py-4 px-3 space-y-0.5 overflow-y-auto">
+        {navItems.map((item) => {
           const isActive = location === item.href || (item.href !== "/admin" && location.startsWith(item.href));
           return (
             <Link key={item.href} href={item.href}>
@@ -139,19 +118,20 @@ export function AdminLayout({
                 onClick={() => setMobileOpen(false)}
                 className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                   isActive
-                    ? "bg-primary text-primary-foreground font-semibold shadow-[0_8px_18px_-10px_rgba(0,0,0,0.55)]"
+                    ? "bg-primary/10 text-primary font-semibold"
                     : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                 }`}
                 data-testid={`link-admin-nav-${item.href.replace(/\//g, '-')}`}
               >
+                {isActive && (
+                  <span className="absolute start-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-full bg-primary" />
+                )}
                 <item.icon className={`w-[18px] h-[18px] shrink-0 transition-transform ${isActive ? "" : "group-hover:scale-110"}`} />
                 <span className="text-sm">{item.label}</span>
               </div>
             </Link>
           );
         })}
-          </div>
-        ))}
       </nav>
       <div className="p-3 border-t border-border/60 space-y-2">
         <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-muted/40">
@@ -214,7 +194,7 @@ export function AdminLayout({
       {mobileOpen && (
         <>
           <div className="md:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setMobileOpen(false)} />
-          <aside className="md:hidden fixed top-0 bottom-0 start-0 w-72 bg-card z-50 flex flex-col shadow-xl animate-in fade-in duration-200">
+          <aside className="md:hidden fixed top-0 bottom-0 start-0 w-72 bg-card z-50 flex flex-col shadow-xl animate-in slide-in-from-left">
             <SidebarContent />
           </aside>
         </>
