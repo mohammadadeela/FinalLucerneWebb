@@ -489,12 +489,94 @@ export async function generateAiProductPhoto(
 }
 
 
-/** Background colour of the ready-made category banner rows (matches the built-in shoes row). */
-export const ROW_BANNER_BG = "#F7D5E6";
+/* ───────────────────────── Storefront theme prompts ─────────────────────────
+   Every generated storefront photo shares one clean look: a real studio product photo on a
+   plain soft colour. Each photo slot on the site adds its own composition rule, written from
+   the slot's measured shape, so the subject survives the desktop and the phone crop. */
+
+const THEME_BACKGROUNDS = [
+  "soft pink (#F9DCEA)",
+  "warm sand beige (#F3E9DD)",
+  "pale sage green (#E7EDE2)",
+  "dusty rose (#EBC8CF)",
+  "soft cream (#F6EDDD)",
+];
+const pickOne = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
+
+const THEME_RULES = (background: string) => `Look (the same for every photo on the site):
+- Real, photorealistic studio product photography. Never an illustration, drawing, icon, 3D render or CGI.
+- Background: plain, soft, solid ${background} with only a very gentle gradient. No props, no furniture, no room, no scenery.
+- Soft diffused studio light from the front-left and a small soft natural shadow under the subject. No harsh shadows, no glow.
+- Product colours from this palette: cream, beige, camel, soft pink, burgundy, black, white, with small gold details. Elegant and feminine.
+- Sharp focus, true materials and fabric detail.
+- If a person appears: a fictional elegant woman, calm natural pose, modest classy clothing, same plain background.
+- No text, letters, numbers, logos, watermarks, labels or price tags anywhere.`;
+
+export type PhotoSlot =
+  | "homeHero" | "pageHero" | "promo" | "editorialCenter" | "editorialTile" | "pill" | "menu" | "circle";
+
+const SLOT_RULES: Record<PhotoSlot, { ideas: string[]; composition: string }> = {
+  homeHero: {
+    ideas: ["a model wearing the look, full length", "a styled group of three hero pieces", "a model holding one statement accessory"],
+    composition:
+      "Wide horizontal image. The website shows only a wide band from the vertical centre of this image (2.3 times wider than tall), and phones show only the central half of that band. Keep the entire subject inside a box in the exact centre, at most 38% of the image height and 45% of the image width. Everything outside that box is plain background. Nothing important in the lower corners.",
+  },
+  pageHero: {
+    ideas: ["one hero piece", "a pair or a small group of two or three pieces", "a model wearing the piece, three-quarter length"],
+    composition:
+      "Wide horizontal image. The website shows only a wide band from the vertical centre of this image (about 3 times wider than tall), and phones show only the central 60% of that band. Keep the entire subject inside a box in the exact centre, at most 30% of the image height and 50% of the image width. Everything outside that box is plain background.",
+  },
+  promo: {
+    ideas: ["a neat row of five pieces", "a row of three pieces with generous spacing", "a row of seven small pieces"],
+    composition:
+      "Wide horizontal image. The website shows only a thin band from the vertical centre of this image (4 times wider than tall), and phones show only the central 44% of that band. Arrange the pieces as one straight row along the horizontal centre line, no taller than 22% of the image height, with the most important pieces inside the central 40% of the width. Above and below the row: plain background.",
+  },
+  editorialCenter: {
+    ideas: ["an outfit hanging as one tall arrangement with a bag and shoes below it", "a model, full length, standing straight", "three garments hanging one above the other in a tall column"],
+    composition:
+      "The website shows this photo nearly whole on desktop, but phones show only a tall narrow column from the centre (the central 30% of the width). Build one tall vertical arrangement inside that central column, at most 28% of the image width and 75% of the image height. Keep the top fifth and the bottom sixth of the column simple, because a headline and a button are printed there.",
+  },
+  editorialTile: {
+    ideas: ["one piece hanging vertically", "one piece standing upright", "a model, waist up"],
+    composition:
+      "Wide horizontal image. On desktop the website shows most of it; phones show only a tall narrow column from the centre (the central third of the width). Place ONE subject in the exact centre, at most 30% of the image width and 50% of the image height. Keep the lowest fifth of the image simple and slightly darker, because the name is printed there in white.",
+  },
+  pill: {
+    ideas: ["one single product", "a model, waist up", "a pair of the product"],
+    composition:
+      "The website shows this as a small photo beside a button label, cut slightly wide on desktop and slightly tall on phones. Place ONE subject in the exact centre, at most 50% of the image width and 65% of the image height, with plain background all around it.",
+  },
+  menu: {
+    ideas: ["one single product", "a pair of the product", "a small neat group of three"],
+    composition:
+      "Square image. The website shows it almost whole in the phone menu, sometimes cut to a wide strip through the middle. Place the subject in the exact centre, at most 70% of the image width and 50% of the image height. Keep the lowest quarter simple and slightly darker, because the name is printed there in white.",
+  },
+  circle: {
+    ideas: ["one single product", "a pair of the product", "one piece on a slim gold hanger"],
+    composition:
+      "Square image, shown on the website as a circle. Place the subject in the exact centre, filling about 65% of the frame, completely inside an imaginary circle that touches the four edges. Nothing in the corners.",
+  },
+};
+
+/** Full prompt for one storefront photo slot. */
+export function buildThemedPrompt(slot: PhotoSlot, subject: string): string {
+  const rules = SLOT_RULES[slot] || SLOT_RULES.pageHero;
+  return `Create one photograph for a women's fashion web store, Lucerne Boutique.
+
+Subject: ${subject}
+Show it as: ${pickOne(rules.ideas)}.
+
+${THEME_RULES(pickOne(THEME_BACKGROUNDS))}
+
+Composition (important — the website crops this photo):
+${rules.composition}
+
+Generate only the image.`;
+}
 
 /**
- * Prompt for a category banner: one straight row of real product photos on a single flat
- * colour. The storefront trims the empty background and fits the row into the banner.
+ * Prompt for a category banner: one straight row of real product photos on pure white.
+ * The white is trimmed away on the server and blends into the banner colour on the site.
  */
 export function buildProductRowPrompt(products: string): string {
   return `Create one photorealistic studio product photograph for a women's fashion web store banner.
@@ -503,13 +585,86 @@ Products: ${products}
 
 Rules:
 - Wide horizontal image.
-- Background: ONE perfectly flat colour, ${ROW_BANNER_BG}, edge to edge. No gradient, no texture, no floor line, no vignette, no backdrop shadows.
-- ONE single straight row of the products, side by side, centred vertically, spread across almost the full width with a small margin at the left and right edges.
-- All products the same height, standing on the same invisible baseline, evenly spaced, not touching each other. Shoes are seen from the side, all pointing the same way. Clothes hang on a slim gold hanger, seen from the front.
+- Background: pure flat white, #FFFFFF, edge to edge. No gradient, no texture, no floor line, no vignette, no grey areas, no backdrop shadows.
+- ONE single straight row of the products, side by side, centred vertically, spread across almost the full width with a small margin at the left and right edges. Make the products as large as the image allows.
+- All products the same height, standing on the same invisible baseline, evenly spaced, not touching each other. Shoes are seen from the side, all pointing the same way. Clothes hang on a slim gold hanger, seen from the front, with no rail or pole.
 - Real product photography: sharp, clean, true materials, soft even studio light. Never an illustration, icon, drawing or 3D render.
-- Each product a different colour from this palette: nude, beige, cream, camel, soft pink, burgundy, black, white, with small gold details.
-- Only a very small, faint shadow directly under each product.
+- Each product a different colour from this palette: nude, beige, camel, soft pink, burgundy, black, olive, navy, with small gold details. Avoid pure white products, because the background is white.
+- No shadows on the background, or only a very faint one directly under each product.
 - Nothing else in the image: no text, no logos, no watermarks, no labels, no people.
 
 Generate only the image.`;
+}
+
+/* ───────────────────────────── Video generation ─────────────────────────────
+   Gemini Omni Flash through the Interactions API. With a starting image the clip keeps the
+   photo's exact look and only adds gentle movement. */
+
+const GEMINI_VIDEO_MODEL = process.env.GEMINI_VIDEO_MODEL || "gemini-omni-1.1-flash";
+
+export async function generateVideoFromPrompt(subject: string, imageUrl?: string): Promise<Buffer> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    const err: any = new Error("GEMINI_API_KEY is not configured. Add it in Secrets.");
+    err.noKey = true;
+    throw err;
+  }
+
+  const motion =
+    "Very slow, gentle camera push-in. Fabric and light move softly and naturally. No camera shake, no cuts, no people entering, no new objects, no text. Calm, luxurious fashion mood. No dialogue, no voice, no music.";
+  const input: any[] = [];
+  if (imageUrl) {
+    const { data, mimeType } = await fetchAsBase64(imageUrl);
+    input.push({ type: "image", data, mime_type: mimeType });
+    input.push({
+      type: "text",
+      text: `Animate this exact photo into a short, smooth clip for a women's fashion web store banner (${subject}). Keep every item, every colour, the background and the framing exactly as in the photo. ${motion}`,
+    });
+  } else {
+    input.push({
+      type: "text",
+      text: `A short, smooth clip for a women's fashion web store banner. Subject: ${subject}. Real studio footage on a plain soft pink background, the subject centred with empty background around it, soft diffused light, elegant and feminine. ${motion}`,
+    });
+  }
+
+  const res = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify({
+      model: GEMINI_VIDEO_MODEL,
+      input,
+      generation_config: { video_config: { task: imageUrl ? "image_to_video" : "text_to_video" } },
+      background: false,
+      store: false,
+      stream: false,
+    }),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    const isRateLimit = res.status === 429 || /quota|rate limit/i.test(text);
+    throw new Error(
+      isRateLimit
+        ? "Gemini rate limit / quota reached. Wait a minute and try again."
+        : `Gemini video generation failed (${res.status}): ${text.slice(0, 300)}`,
+    );
+  }
+  let json: any;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error("Gemini returned an unreadable answer for the video.");
+  }
+  const steps: any[] = Array.isArray(json?.steps) ? json.steps : [];
+  const contents: any[] = [
+    ...steps.filter((st) => st?.type === "model_output").flatMap((st) => st?.content || []),
+    ...(Array.isArray(json?.outputs) ? json.outputs : []),
+  ];
+  const video = contents.find((c) => c?.type === "video");
+  if (video?.data) return Buffer.from(video.data, "base64");
+  if (video?.uri) {
+    const dl = await fetch(video.uri, { headers: { "x-goog-api-key": apiKey } });
+    if (!dl.ok) throw new Error(`Could not download the generated video (${dl.status}).`);
+    return Buffer.from(await dl.arrayBuffer());
+  }
+  throw new Error(`Gemini did not return a video${json?.status ? ` (status: ${json.status})` : ""}.`);
 }

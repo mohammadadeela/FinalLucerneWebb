@@ -10,6 +10,8 @@ interface AIGenerateImageButtonProps {
   /** Called with the generated (already-uploaded) image URL. */
   onGenerated: (url: string) => void;
   aspect?: "square" | "portrait" | "landscape";
+  /** The storefront photo slot this image is for — the server adds that slot's composition rule. */
+  slot?: string;
   size?: "sm" | "default";
   /** Extra classes, e.g. to make it full-width to match a neighboring button. */
   className?: string;
@@ -26,6 +28,7 @@ export default function AIGenerateImageButton({
   getPrompt,
   onGenerated,
   aspect = "landscape",
+  slot,
   size = "sm",
   className = "",
   disabled = false,
@@ -48,7 +51,7 @@ export default function AIGenerateImageButton({
       const res = await fetch("/api/admin/ai-generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, aspect }),
+        body: JSON.stringify({ prompt, aspect, slot }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {

@@ -321,8 +321,15 @@ function bannerPosition(pos?: string) {
 /** Ready-made product rows that ship with the site, used until the admin uploads their own. */
 function defaultCategoryRow(category: { name?: string | null; nameAr?: string | null; slug?: string | null }) {
   const t = `${category.name || ""} ${category.slug || ""} ${category.nameAr || ""}`.toLowerCase();
-  if (/shoe|heel|boot|sneaker|sandal|حذ|شوز|كعب|جزم/.test(t)) return { src: "/banners/shoes-row.webp", bg: "#F7D5E6" };
+  if (/shoe|heel|boot|sneaker|sandal|حذ|شوز|كعب|جزم/.test(t)) return { src: "/banners/shoes-row.webp", bg: "#F7D5E6", ar: 5.8 };
   return null;
+}
+
+/** A white (or nearly white) photo background is blended into the banner colour instead of shown. */
+function isNearWhite(hex: string) {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec((hex || "").trim());
+  if (!m) return false;
+  return Math.min(parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)) >= 236;
 }
 
 function Section({
@@ -1391,15 +1398,20 @@ export default function Home() {
               key={section.category.id}
               className=""
             >
-              {/* The category banner: a row of real product photos, centred on its own flat colour.
-                  The admin uploads one photo of the row (Content → Home); the admin page trims the
-                  empty background away, so here the whole row is simply fitted inside the banner —
-                  sharp, and never cut on any screen. Shoes ship with a ready-made row. */}
+              {/* The category banner: a row of real product photos. The admin page (or the built-in
+                  generator) trims the empty background off the photo, so here the row is fitted
+                  whole inside the banner and repeated side by side to fill the width — sharp, and
+                  never cut on any screen. Rows of tall pieces (dresses, abayas) get a taller banner
+                  so they stay clear. A white photo background blends into the banner's pink. */}
               {(() => {
                 const id = section.category.id;
                 const builtIn = defaultCategoryRow(section.category);
-                const row = g(`home_cat_banner_${id}_row`) || builtIn?.src || "";
-                const rowBg = g(`home_cat_banner_${id}_row`) ? g(`home_cat_banner_${id}_row_bg`) : builtIn?.bg;
+                const own = g(`home_cat_banner_${id}_row`);
+                const row = own || builtIn?.src || "";
+                const rowBg = (own ? g(`home_cat_banner_${id}_row_bg`) : builtIn?.bg) || "";
+                const ar = (own ? parseFloat(g(`home_cat_banner_${id}_row_ar`)) : builtIn?.ar) || 5.8;
+                const blend = isNearWhite(rowBg);
+                const tall = !!row && ar < 4;
                 const wide = g(`home_cat_banner_${id}_image`);
                 const phone = g(`home_cat_banner_${id}_image_phone`);
                 const wideSrc = optimizeCloudinaryUrl(wide, 1600) || wide;
@@ -1407,19 +1419,29 @@ export default function Home() {
                   <Link
                     href={section.href}
                     aria-label={catName(section.category)}
-                    className="group relative mb-4 block overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
-                    style={row && rowBg ? { backgroundColor: rowBg } : undefined}
+                    className={`relative mb-4 block overflow-hidden rounded-[1.5rem] px-4 transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 ${
+                      tall ? "h-32 sm:h-44" : "py-3.5 sm:py-5"
+                    } ${row ? (blend || !rowBg ? "bg-blush" : "") : "bg-white ring-1 ring-black/[0.05]"}`}
+                    style={row && rowBg && !blend ? { backgroundColor: rowBg } : undefined}
                     data-testid={`link-view-all-${section.href}`}
                   >
                     {row ? (
-                      <img
-                        src={optimizeCloudinaryUrl(row, 1200) || row}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="absolute inset-0 m-auto max-h-[82%] max-w-[94%] transition-transform duration-500 group-hover:scale-105"
+                      <div
+                        className={`absolute inset-x-[2.5%] inset-y-[7%] flex flex-wrap content-start justify-evenly overflow-hidden ${blend ? "mix-blend-multiply" : ""}`}
                         data-testid={`img-category-row-${id}`}
-                      />
+                      >
+                        {/* Whole copies only, spaced evenly: the ones that do not fit wrap out of sight */}
+                        {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
+                          <img
+                            key={n}
+                            src={optimizeCloudinaryUrl(row, 1200) || row}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full max-w-full shrink-0 object-contain"
+                          />
+                        ))}
+                      </div>
                     ) : wide || phone ? (
                       <>
                         {wide && (
@@ -1439,14 +1461,16 @@ export default function Home() {
                         )}
                       </>
                     ) : null}
-                    <div className="invisible relative min-w-0 ps-12 sm:ps-24" aria-hidden="true">
-                      <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">
-                        {pick("من أقسامنا", "From our collections")}
-                      </p>
-                      <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">
-                        {catName(section.category)}
-                      </p>
-                    </div>
+                    {!tall && (
+                      <div className="invisible relative min-w-0 ps-12 sm:ps-24" aria-hidden="true">
+                        <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] sm:text-[11px]">
+                          {pick("من أقسامنا", "From our collections")}
+                        </p>
+                        <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">
+                          {catName(section.category)}
+                        </p>
+                      </div>
+                    )}
                   </Link>
                 );
               })()}

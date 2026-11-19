@@ -111,17 +111,19 @@ function normalizePosition(pos: string): string {
  *  `crop` is the frame of the crop tool; `views` are previewed exactly as customers see them. */
 type SlotShape = {
   crop: number;
+  /** Name of the slot for the photo generator (it adds this slot's composition rule). */
+  slot?: string;
   /** `photoShare`: the photo fills only this part of the frame's width (the rest is the name side). */
   views: { label: string; aspect: number; width: string; photoShare?: number }[];
 };
 const SLOT_SHAPES: Record<string, SlotShape> = {
-  homeHero: { crop: 2.3, views: [{ label: "كمبيوتر", aspect: 2.3, width: "100%" }, { label: "هاتف", aspect: 1.25, width: "42%" }] },
-  pageHero: { crop: 2.9, views: [{ label: "كمبيوتر", aspect: 2.9, width: "100%" }, { label: "هاتف", aspect: 1.8, width: "48%" }] },
-  editorialCenter: { crop: 1.23, views: [{ label: "كمبيوتر", aspect: 1.23, width: "62%" }, { label: "هاتف", aspect: 0.43, width: "20%" }] },
-  editorialTile: { crop: 1.77, views: [{ label: "كمبيوتر", aspect: 1.77, width: "100%" }, { label: "هاتف", aspect: 0.63, width: "34%" }] },
-  pill: { crop: 1.37, views: [{ label: "كمبيوتر", aspect: 2.44, width: "62%", photoShare: 0.56 }, { label: "هاتف", aspect: 1.9, width: "30%", photoShare: 0.42 }] },
-  promo: { crop: 4, views: [{ label: "كمبيوتر", aspect: 4, width: "100%" }, { label: "هاتف", aspect: 1.78, width: "46%" }] },
-  menu: { crop: 1, views: [{ label: "بطاقة القائمة", aspect: 0.85, width: "44%" }, { label: "البطاقة العريضة (الأخيرة)", aspect: 1.8, width: "92%" }] },
+  homeHero: { slot: "homeHero", crop: 2.3, views: [{ label: "كمبيوتر", aspect: 2.3, width: "100%" }, { label: "هاتف", aspect: 1.25, width: "42%" }] },
+  pageHero: { slot: "pageHero", crop: 2.9, views: [{ label: "كمبيوتر", aspect: 2.9, width: "100%" }, { label: "هاتف", aspect: 1.8, width: "48%" }] },
+  editorialCenter: { slot: "editorialCenter", crop: 1.23, views: [{ label: "كمبيوتر", aspect: 1.23, width: "62%" }, { label: "هاتف", aspect: 0.43, width: "20%" }] },
+  editorialTile: { slot: "editorialTile", crop: 1.77, views: [{ label: "كمبيوتر", aspect: 1.77, width: "100%" }, { label: "هاتف", aspect: 0.63, width: "34%" }] },
+  pill: { slot: "pill", crop: 1.37, views: [{ label: "كمبيوتر", aspect: 2.44, width: "62%", photoShare: 0.56 }, { label: "هاتف", aspect: 1.9, width: "30%", photoShare: 0.42 }] },
+  promo: { slot: "promo", crop: 4, views: [{ label: "كمبيوتر", aspect: 4, width: "100%" }, { label: "هاتف", aspect: 1.78, width: "46%" }] },
+  menu: { slot: "menu", crop: 1, views: [{ label: "بطاقة القائمة", aspect: 0.85, width: "44%" }, { label: "البطاقة العريضة (الأخيرة)", aspect: 1.8, width: "92%" }] },
   strip: { crop: 15, views: [{ label: "كمبيوتر", aspect: 15, width: "100%" }] },
   stripPhone: { crop: 4.6, views: [{ label: "هاتف", aspect: 4.6, width: "60%" }] },
 };
@@ -425,6 +427,7 @@ function ImageUploadField({
           getPrompt={() => promptContext}
           onGenerated={(url) => onChangeImage(url)}
           aspect="landscape"
+          slot={shape?.slot}
           className="w-full h-9"
         />
       )}
@@ -453,13 +456,52 @@ function VideoUploadField({
   onChange,
   position,
   onChangePosition,
+  aiSubject,
+  aiImage,
 }: {
   value: string;
   onChange: (url: string) => void;
   position?: string;
   onChangePosition?: (pos: string) => void;
+  /** Enables "generate video": what the clip is about. */
+  aiSubject?: string;
+  /** The slot's current photo — the clip is made from it, so it keeps the same look. */
+  aiImage?: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const handleGenerateVideo = async () => {
+    setGenerating(true);
+    try {
+      const start = await fetch("/api/admin/ai-generate-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: aiSubject, imageUrl: aiImage || "" }),
+      });
+      const started = await start.json().catch(() => ({}));
+      if (!start.ok || !started.jobId) {
+        throw new Error(started?.noKey ? "ميزة الذكاء الاصطناعي غير مفعّلة على السيرفر (مفتاح API غير موجود)" : started?.message || "تعذّر بدء توليد الفيديو");
+      }
+      // The clip takes a minute or more: ask every few seconds until it is ready.
+      const deadline = Date.now() + 8 * 60 * 1000;
+      for (;;) {
+        await new Promise((r) => setTimeout(r, 5000));
+        const res = await fetch(`/api/admin/ai-generate-video/${started.jobId}`);
+        const job = await res.json().catch(() => ({}));
+        if (job.status === "done" && job.url) {
+          onChange(job.url);
+          toast({ title: "تم توليد الفيديو — راجعيه ثم احفظي" });
+          break;
+        }
+        if (job.status === "error" || !res.ok) throw new Error(job?.message || "فشل توليد الفيديو");
+        if (Date.now() > deadline) throw new Error("استغرق التوليد وقتاً طويلاً — حاولي مرة أخرى");
+      }
+    } catch (err: any) {
+      toast({ title: "فشل توليد الفيديو", description: err?.message || "حاولي مرة أخرى", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
   const [showPositionControls, setShowPositionControls] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -628,6 +670,27 @@ function VideoUploadField({
         />
       </div>
 
+      {aiSubject && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleGenerateVideo}
+          disabled={generating || uploading}
+          className="w-full h-9 gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+          data-testid="button-ai-generate-video"
+        >
+          {generating ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Bot className="w-4 h-4" />}
+          <span className="text-xs">
+            {generating
+              ? "جاري توليد الفيديو… قد يستغرق دقيقة أو أكثر"
+              : aiImage
+                ? "توليد فيديو من الصورة الحالية بالذكاء الاصطناعي"
+                : "توليد فيديو بالذكاء الاصطناعي"}
+          </span>
+        </Button>
+      )}
+
       <p className="text-[11px] text-muted-foreground">
         الفيديو يُشغَّل تلقائياً وبدون صوت. عند تعيين فيديو يُستخدم بدلاً من الصورة.
       </p>
@@ -680,7 +743,7 @@ function SectionCard({
               shape={prefix === "home" ? SLOT_SHAPES.homeHero : SLOT_SHAPES.pageHero}
               originalValue={values[`${prefix}_hero_image_original`] ?? ""}
               onChangeOriginal={(url) => onChange(`${prefix}_hero_image_original`, url)}
-              promptContext={`Wide hero banner background photo for the "${section.labelEn}" page of a women's fashion boutique website, showcasing the mood/style of that category`}
+              promptContext={prefix === "home" ? "the new season collection: an elegant outfit with a handbag and heels" : prefix === "sales" ? "sale: a handbag, a pair of heels and a folded knit, with small satin ribbons" : `women's ${section.labelEn.replace(/ Page$/i, "").toLowerCase()}`}
             />
           </div>
 
@@ -695,6 +758,8 @@ function SectionCard({
               onChange={(url) => onChange(`${prefix}_hero_video`, url)}
               position={values[`${prefix}_hero_video_position`] ?? ""}
               onChangePosition={(pos) => onChange(`${prefix}_hero_video_position`, pos)}
+              aiSubject={prefix === "home" ? "the new season collection" : prefix === "sales" ? "sale pieces" : `women's ${section.labelEn.replace(/ Page$/i, "").toLowerCase()}`}
+              aiImage={values[`${prefix}_hero_image`] ?? ""}
             />
           </div>
 
@@ -1025,6 +1090,7 @@ function SimpleImageUpload({ value, onChange, label, withCrop = false, promptCon
             getPrompt={() => promptContext}
             onGenerated={(url) => onChange(url)}
             aspect="square"
+            slot={shape?.slot}
             className="w-full h-8 text-[11px]"
           />
         )}
@@ -1271,13 +1337,15 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
               shape={SLOT_SHAPES.editorialCenter}
               originalValue={values["editorial_center_image_original"] ?? ""}
               onChangeOriginal={(url) => onChange("editorial_center_image_original", url)}
-              promptContext="Tall editorial fashion photo for the center of a boutique homepage collage, showcasing an elegant clothing piece or styled outfit"
+              promptContext="the new collection: a satin dress with a coat, a handbag and heels"
             />
             <div className="mt-3">
               <p className="text-xs text-muted-foreground mb-1.5">فيديو بديل (اختياري — يُعرض بدلاً من الصورة، والصورة تبقى كـ poster)</p>
               <VideoUploadField
                 value={values["editorial_center_video"] ?? ""}
                 onChange={(url) => onChange("editorial_center_video", url)}
+                aiSubject="the new collection"
+                aiImage={values["editorial_center_image"] ?? ""}
               />
             </div>
           </div>
@@ -1373,6 +1441,12 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
                       <VideoUploadField
                         value={values[`editorial_tile_${n}_video`] ?? ""}
                         onChange={(url) => onChange(`editorial_tile_${n}_video`, url)}
+                        aiSubject={(() => {
+                          const cat = categories.find((c: any) => String(c.id) === selectedCatId);
+                          const sub = subcategories.find((x: any) => String(x.id) === selectedSubId);
+                          return `women's ${sub?.name || cat?.name || "fashion"}`;
+                        })()}
+                        aiImage={values[`editorial_tile_${n}_image`] ?? ""}
                       />
                     </div>
                   </div>
@@ -1461,6 +1535,12 @@ function HomePillsCard({ values, onChange }: { values: Record<string, string>; o
                   label="صورة الزر"
                   withCrop
                   shape={SLOT_SHAPES.pill}
+                  promptContext={(() => {
+                    const cat = categories.find((c: any) => String(c.id) === catId);
+                    const sub = subcategories.find((x: any) => String(x.id) === subId);
+                    const name = sub?.name || sub?.nameAr || cat?.name || cat?.nameAr || "";
+                    return name ? `women's ${name}` : "";
+                  })()}
                 />
               </div>
             );
@@ -1521,7 +1601,7 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
 /** Finds the products in a photo taken on a flat background and returns just that area
  *  (with a little breathing room) plus the background colour, so the row can be fitted
  *  into the banner at full size with no empty space and no visible edges. */
-async function trimRowPhoto(file: File): Promise<{ file: File; bg: string }> {
+async function trimRowPhoto(file: File): Promise<{ file: File; bg: string; ar: number }> {
   const bmp = await createImageBitmap(file);
   const canvas = document.createElement("canvas");
   canvas.width = bmp.width;
@@ -1551,9 +1631,9 @@ async function trimRowPhoto(file: File): Promise<{ file: File; bg: string }> {
     }
   }
   const hex = "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
-  if (maxX < 0) return { file, bg: hex };
-  const padX = Math.round((maxX - minX) * 0.03);
-  const padY = Math.round((maxY - minY) * 0.1);
+  if (maxX < 0) return { file, bg: hex, ar: W / H };
+  const padX = Math.round((maxX - minX) * 0.025);
+  const padY = Math.round((maxY - minY) * 0.04);
   const x = Math.max(0, minX - padX), y = Math.max(0, minY - padY);
   const w = Math.min(W, maxX + padX) - x, h = Math.min(H, maxY + padY) - y;
   const out = document.createElement("canvas");
@@ -1561,7 +1641,7 @@ async function trimRowPhoto(file: File): Promise<{ file: File; bg: string }> {
   out.height = h;
   out.getContext("2d")!.drawImage(canvas, x, y, w, h, 0, 0, w, h);
   const blob: Blob = await new Promise((res, rej) => out.toBlob((bl) => (bl ? res(bl) : rej(new Error("empty"))), "image/png"));
-  return { file: new File([blob], file.name.replace(/\.[^.]+$/, "") + "-row.png", { type: "image/png" }), bg: hex };
+  return { file: new File([blob], file.name.replace(/\.[^.]+$/, "") + "-row.png", { type: "image/png" }), bg: hex, ar: w / h };
 }
 
 /** What goes in each category's ready-made row, picked from the category's names. */
@@ -1570,11 +1650,11 @@ function rowProductsFor(c: { name?: string; nameAr?: string; slug?: string }): s
   if (/shoe|heel|boot|sneaker|sandal|حذ|شوز|كعب|جزم/.test(t))
     return "5 women's shoes: nude stiletto heel, white leather sneaker, burgundy block-heel pump, beige ballerina flat with a bow, tan ankle boot with a gold buckle.";
   if (/abaya|عباي|عباء/.test(t))
-    return "7 abayas on slim gold hangers: beige embroidered, black with gold trim, burgundy, dusty mauve, brown, cream open abaya, olive.";
+    return "8 abayas on slim gold hangers: beige embroidered, black with gold trim, burgundy, dusty mauve, brown, olive, navy, camel.";
   if (/belt|قشط|قشاط|حزام|أحزمة/.test(t))
     return "6 women's leather belts with gold buckles, each neatly coiled: black, burgundy, tan, navy, brown, cream.";
   if (/dress|فستان|فساتين/.test(t))
-    return "7 dresses on slim gold hangers: black midi, cream satin slip, burgundy long evening, soft pink short, beige long-sleeved maxi, black polka-dot, white lace.";
+    return "8 dresses on slim gold hangers: black midi, beige satin slip, burgundy long evening, soft pink short, camel long-sleeved maxi, black polka-dot, olive wrap dress, navy shirt dress.";
   if (/bag|حقيب|شنط|حقائب/.test(t))
     return "6 women's handbags: camel structured tote, black top-handle bag, burgundy shoulder bag, cream crossbody, soft pink clutch, beige bucket bag.";
   if (/cloth|ملابس/.test(t))
@@ -1582,7 +1662,20 @@ function rowProductsFor(c: { name?: string; nameAr?: string; slug?: string }): s
   return `6 different women's fashion products from the category "${c.name || c.nameAr || ""}", each a different style and colour.`;
 }
 
-function RowPhotoUpload({ value, bg, onChange, products }: { value: string; bg: string; onChange: (url: string, bg: string) => void; products: string }) {
+function RowPhotoUpload({ value, bg, ar, onChange, products, builtIn }: {
+  value: string;
+  bg: string;
+  ar: number;
+  onChange: (url: string, bg: string, ar: number) => void;
+  products: string;
+  /** The ready-made row the site shows for this category until a photo is set. */
+  builtIn?: { src: string; bg: string; ar: number } | null;
+}) {
+  const shown = value ? { src: value, bg, ar: ar || 5.8 } : builtIn || null;
+  const nearWhite = (hex: string) => {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec((hex || "").trim());
+    return !!m && Math.min(parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)) >= 236;
+  };
   const [busy, setBusy] = useState(false);
   const [generating, setGenerating] = useState(false);
   const handleGenerate = async () => {
@@ -1600,7 +1693,7 @@ function RowPhotoUpload({ value, bg, onChange, products }: { value: string; bg: 
         );
       }
       if (!data.url) throw new Error("لم يتم إرجاع رابط الصورة");
-      onChange(data.url, data.bg || "");
+      onChange(data.url, data.bg || "", Number(data.ar) || 0);
       toast({ title: "تم توليد صورة الصف — راجعي المعاينة ثم احفظي" });
     } catch (err: any) {
       toast({ title: "فشل التوليد", description: err?.message || "حاولي مرة أخرى", variant: "destructive" });
@@ -1620,7 +1713,7 @@ function RowPhotoUpload({ value, bg, onChange, products }: { value: string; bg: 
       formData.append("images", trimmed.file);
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.urls?.[0]) onChange(data.urls[0], trimmed.bg);
+      if (data.urls?.[0]) onChange(data.urls[0], trimmed.bg, trimmed.ar);
     } catch {
       toast({ title: "فشل رفع الصورة", variant: "destructive" });
     } finally {
@@ -1630,24 +1723,41 @@ function RowPhotoUpload({ value, bg, onChange, products }: { value: string; bg: 
   };
   return (
     <div className="space-y-3">
-      {value ? (
+      {shown ? (
         <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3" data-testid="row-previews">
-          <p className="text-[11px] font-semibold text-muted-foreground text-right">كيف تظهر للعميلة</p>
-          {[{ label: "كمبيوتر", aspect: 15, width: "100%" }, { label: "هاتف", aspect: 4.6, width: "60%" }].map((v) => (
-            <div key={v.label} style={{ width: v.width }} className="ms-auto">
-              <div className="relative overflow-hidden rounded-2xl" style={{ aspectRatio: String(v.aspect), backgroundColor: bg || "#fff" }}>
-                <img src={value} alt="" className="absolute inset-0 m-auto max-h-[82%] max-w-[94%]" />
+          <p className="text-[11px] font-semibold text-muted-foreground text-right">
+            كيف تظهر للعميلة{!value && builtIn ? " — هذا هو الصف الجاهز المعروض حالياً" : ""}
+          </p>
+          {(() => {
+            const tall = shown.ar < 4;
+            const blend = nearWhite(shown.bg);
+            // The banner's real shapes: low strip for wide rows, taller banner for rows of tall pieces.
+            const views = tall
+              ? [{ label: "كمبيوتر", aspect: 7.7, width: "100%" }, { label: "هاتف", aspect: 2.86, width: "60%" }]
+              : [{ label: "كمبيوتر", aspect: 15, width: "100%" }, { label: "هاتف", aspect: 4.6, width: "60%" }];
+            return views.map((v) => (
+              <div key={v.label} style={{ width: v.width }} className="ms-auto">
+                <div
+                  className={`relative overflow-hidden rounded-2xl ${blend || !shown.bg ? "bg-blush" : ""}`}
+                  style={{ aspectRatio: String(v.aspect), ...(shown.bg && !blend ? { backgroundColor: shown.bg } : {}) }}
+                >
+                  <div className={`absolute inset-x-[2.5%] inset-y-[7%] flex flex-wrap content-start justify-evenly overflow-hidden ${blend ? "mix-blend-multiply" : ""}`}>
+                    {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
+                      <img key={n} src={shown.src} alt="" className="h-full max-w-full shrink-0 object-contain" />
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-1 text-center text-[10px] text-muted-foreground">{v.label}</p>
               </div>
-              <p className="mt-1 text-center text-[10px] text-muted-foreground">{v.label}</p>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       ) : (
         <div className="flex h-20 items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/20 text-xs text-muted-foreground">لا توجد صورة</div>
       )}
       <div className="flex justify-end gap-2">
         {value && (
-          <Button type="button" variant="outline" size="sm" onClick={() => onChange("", "")} className="h-9 px-3 text-destructive hover:bg-destructive/10" data-testid="button-clear-row">
+          <Button type="button" variant="outline" size="sm" onClick={() => onChange("", "", 0)} className="h-9 px-3 text-destructive hover:bg-destructive/10" data-testid="button-clear-row">
             <X className="w-4 h-4" />
           </Button>
         )}
@@ -1695,10 +1805,13 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
               <RowPhotoUpload
                 value={values[`home_cat_banner_${c.id}_row`] ?? ""}
                 bg={values[`home_cat_banner_${c.id}_row_bg`] ?? ""}
+                ar={parseFloat(values[`home_cat_banner_${c.id}_row_ar`] ?? "") || 0}
                 products={rowProductsFor(c)}
-                onChange={(url, bg) => {
+                builtIn={/shoe|heel|boot|sneaker|sandal|حذ|شوز|كعب|جزم/.test(`${c.name || ""} ${c.slug || ""} ${c.nameAr || ""}`.toLowerCase()) ? { src: "/banners/shoes-row.webp", bg: "#F7D5E6", ar: 5.8 } : null}
+                onChange={(url, bg, ar) => {
                   onChange(`home_cat_banner_${c.id}_row`, url);
                   onChange(`home_cat_banner_${c.id}_row_bg`, bg);
+                  onChange(`home_cat_banner_${c.id}_row_ar`, ar ? String(Number(ar.toFixed(3))) : "");
                 }}
               />
             </div>
@@ -1743,6 +1856,7 @@ function MenuPhotosCard({ values, onChange }: { values: Record<string, string>; 
                   label="صورة القائمة"
                   withCrop
                   shape={SLOT_SHAPES.menu}
+                  promptContext={`women's ${c.name || c.nameAr || ""}`}
                 />
               </div>
             ))}
@@ -1827,6 +1941,12 @@ function PromoSliderCard({ values, onChange }: { values: Record<string, string>;
                 label="الصورة"
                 withCrop
                 shape={SLOT_SHAPES.promo}
+                promptContext={(() => {
+                  const cat = categories.find((c: any) => String(c.id) === catId);
+                  const sub = subcategories.find((x: any) => String(x.id) === (values[`promo_slide_${n}_subcategory_id`] ?? ""));
+                  const name = sub?.name || sub?.nameAr || cat?.name || cat?.nameAr || values[`promo_slide_${n}_title_en`] || "";
+                  return name ? `women's ${name}` : "women's fashion: dresses, shoes and bags";
+                })()}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input

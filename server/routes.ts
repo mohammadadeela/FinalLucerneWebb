@@ -6802,49 +6802,55 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { prompt, aspect, style } = req.body as {
+    const { prompt, aspect, style, slot } = req.body as {
       prompt?: string;
       aspect?: "square" | "portrait" | "landscape";
       style?: "row";
+      slot?: string;
     };
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
       return res.status(400).json({ message: "prompt required" });
     }
     try {
-      const { generateImageFromPrompt } = await import("./aiPhotoGen");
-      // Category banner row: products on one flat colour. The empty background is trimmed
-      // here, so the storefront can fit the whole row into the banner on any screen.
+      const ai = await import("./aiPhotoGen");
+      const subject = prompt.trim().slice(0, 600);
+
+      // Category banner row: products on pure white. The empty background is trimmed here; the
+      // storefront blends the white into the banner colour and fits the row on any screen.
       if (style === "row") {
-        const { buildProductRowPrompt, ROW_BANNER_BG } = await import("./aiPhotoGen");
-        const { buffer: raw } = await generateImageFromPrompt(
-          prompt.trim().slice(0, 600),
-          "landscape",
-          buildProductRowPrompt(prompt.trim().slice(0, 600)),
-        );
+        const { buffer: raw } = await ai.generateImageFromPrompt(subject, "landscape", ai.buildProductRowPrompt(subject));
         const sharp = (await import("sharp")).default;
-        const corner = await sharp(raw).extract({ left: 0, top: 0, width: 8, height: 8 }).resize(1, 1).raw().toBuffer();
-        const bg =
-          corner.length >= 3
-            ? "#" + [corner[0], corner[1], corner[2]].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase()
-            : ROW_BANNER_BG;
+        const corner = await sharp(raw).extract({ left: 0, top: 0, width: 8, height: 8 }).resize(1, 1).removeAlpha().raw().toBuffer();
+        const bg = "#" + [corner[0], corner[1], corner[2]].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
         let rowBuffer = raw;
+        let width = 0;
+        let height = 0;
         try {
-          const trimmed = await sharp(raw).trim({ background: bg, threshold: 26 }).toBuffer({ resolveWithObject: true });
-          const padX = Math.round(trimmed.info.width * 0.03);
-          const padY = Math.round(trimmed.info.height * 0.1);
-          rowBuffer = await sharp(trimmed.data)
+          const trimmed = await sharp(raw).trim({ background: bg, threshold: 18 }).toBuffer({ resolveWithObject: true });
+          const padX = Math.round(trimmed.info.width * 0.025);
+          const padY = Math.round(trimmed.info.height * 0.04);
+          const out = await sharp(trimmed.data)
             .extend({ top: padY, bottom: padY, left: padX, right: padX, background: bg })
             .png()
-            .toBuffer();
+            .toBuffer({ resolveWithObject: true });
+          rowBuffer = out.data;
+          width = out.info.width;
+          height = out.info.height;
         } catch (trimErr: any) {
           console.warn("[ai-generate-image] row trim skipped:", trimErr?.message || trimErr);
         }
         const rowUrl = await uploadToCloudinary(rowBuffer, "ai-category-row.png");
-        return res.json({ url: rowUrl, bg });
+        return res.json({ url: rowUrl, bg, ar: width && height ? Number((width / height).toFixed(3)) : 0 });
       }
-      const { buffer } = await generateImageFromPrompt(
-        prompt.trim().slice(0, 300),
-        aspect === "square" || aspect === "portrait" ? aspect : "landscape",
+
+      // Every other storefront photo uses the shared clean theme, with the composition rule of
+      // its slot. Older callers that only send an aspect get the closest slot.
+      const slots = ["homeHero", "pageHero", "promo", "editorialCenter", "editorialTile", "pill", "menu", "circle"];
+      const chosen = (slots.includes(slot || "") ? slot : aspect === "square" ? "circle" : aspect === "portrait" ? "editorialCenter" : "pageHero") as any;
+      const { buffer } = await ai.generateImageFromPrompt(
+        subject,
+        chosen === "circle" || chosen === "menu" ? "square" : "landscape",
+        ai.buildThemedPrompt(chosen, subject),
       );
       const url = await uploadToCloudinary(buffer, "ai-generated-image.png");
       res.json({ url });
@@ -6855,6 +6861,47 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
         noKey: !!err?.noKey,
       });
     }
+  });
+
+  // ── AI video for banners ─────────────────────────────────────────────────
+  // Generation takes a minute or more, so it runs as a job: start it, then ask for its state.
+  const aiVideoJobs = new Map<string, { status: "running" | "done" | "error"; url?: string; message?: string; noKey?: boolean; at: number }>();
+  app.post("/api/admin/ai-generate-video", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const { prompt, imageUrl } = req.body as { prompt?: string; imageUrl?: string };
+    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+      return res.status(400).json({ message: "prompt required" });
+    }
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({ message: "GEMINI_API_KEY is not configured.", noKey: true });
+    }
+    for (const [id, job] of aiVideoJobs) if (Date.now() - job.at > 60 * 60 * 1000) aiVideoJobs.delete(id);
+    const jobId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+    aiVideoJobs.set(jobId, { status: "running", at: Date.now() });
+    let source = typeof imageUrl === "string" && imageUrl.trim() ? imageUrl.trim() : "";
+    if (source.startsWith("/")) source = `${req.protocol}://${req.get("host")}${source}`;
+    (async () => {
+      try {
+        const { generateVideoFromPrompt } = await import("./aiPhotoGen");
+        const buffer = await generateVideoFromPrompt(prompt.trim().slice(0, 400), source || undefined);
+        const url = await uploadVideoToCloudinary(buffer, "ai-banner-video.mp4");
+        aiVideoJobs.set(jobId, { status: "done", url, at: Date.now() });
+      } catch (err: any) {
+        console.error("[ai-generate-video]", err?.message || err);
+        aiVideoJobs.set(jobId, { status: "error", message: err?.message || "AI video generation failed", noKey: !!err?.noKey, at: Date.now() });
+      }
+    })();
+    res.json({ jobId });
+  });
+  app.get("/api/admin/ai-generate-video/:jobId", (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const job = aiVideoJobs.get(req.params.jobId);
+    if (!job) return res.status(404).json({ status: "error", message: "Job not found (the server may have restarted)." });
+    res.json({ status: job.status, url: job.url, message: job.message, noKey: job.noKey });
   });
 
   // ── Ollama backend proxy (tags / chat / health / url) ──────────────────────
