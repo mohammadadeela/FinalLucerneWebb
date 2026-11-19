@@ -4157,7 +4157,7 @@ export default function Products() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+      <div className="flex flex-col gap-4 mb-6 sm:mb-8">
         <div>
           <h1
             className="text-2xl sm:text-3xl font-display font-semibold text-foreground"
@@ -4169,8 +4169,8 @@ export default function Products() {
             {t.admin.manageProducts}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="flex items-stretch rounded-lg border border-border bg-background overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full sm:w-auto shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 w-full rounded-2xl border border-border/70 bg-card p-2.5 sm:p-3">
+          <div className="flex items-stretch sm:h-10 rounded-lg border border-border bg-background overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full sm:w-auto shadow-sm">
             <span className="flex items-center ps-3 text-muted-foreground flex-shrink-0">
               <Search className="w-4 h-4" />
             </span>
