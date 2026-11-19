@@ -319,10 +319,22 @@ function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className={`w-full px-3 pt-3 pb-0 sm:px-6 sm:pt-4 lg:px-10 ${className}`}>
+    <motion.section id={id} className={`w-full px-3 pt-3 pb-0 sm:px-6 sm:pt-4 lg:px-10 ${className}`} {...REVEAL}>
       <div className="mx-auto w-full max-w-[1560px]">{children}</div>
-    </section>
+    </motion.section>
   );
+}
+
+/* Every block of the landing page rises gently into place the first time it scrolls into view. */
+const REVEAL = {
+  initial: { opacity: 0, y: 30 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.12 },
+  transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+};
+
+function Reveal({ children }: { children: ReactNode }) {
+  return <motion.div {...REVEAL}>{children}</motion.div>;
 }
 
 /* Pastel backdrops that rotate across category tiles (blush / sage / sand). */
@@ -890,62 +902,6 @@ export default function Home() {
           </Section>
         )}
 
-        {/* ── Most wanted: soft panel of white tiles — photo, price, name ── */}
-        {trending.length > 0 && (
-          <Section>
-            <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
-              <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
-                <h2
-                  className="truncate text-xl font-semibold leading-none text-berry-deep sm:text-[1.75rem] rtl:leading-snug"
-                  data-testid="section-title-trending"
-                >
-                  {secFeaturedTitle}
-                </h2>
-                <Link
-                  href="/shop"
-                  className="group inline-flex h-10 shrink-0 items-center gap-1.5 text-[13.5px] font-semibold text-berry transition-colors hover:text-berry-deep sm:text-[15px]"
-                  data-testid="link-view-all-/shop"
-                >
-                  {pick("تسوقي الكل", "Shop all")}
-                  <Arrow className="h-4 w-4" />
-                </Link>
-              </div>
-              <div
-                className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
-                data-testid="rail-trending"
-              >
-                {trending.slice(0, 7).map((product: any, i: number) => {
-                  const price = parseFloat(String(product.discountPrice ?? product.price));
-                  return (
-                    <Link
-                      key={product.id}
-                      href={`/product/${product.id}`}
-                      className={`group flex-col items-center rounded-[1.25rem] bg-white p-2 text-center transition-shadow duration-300 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)] sm:rounded-[1.5rem] sm:p-2.5 ${i < 6 ? "flex" : "hidden"} ${i < 4 ? "sm:flex" : "sm:hidden"} ${i < 5 ? "md:flex" : "md:hidden"} ${i < 6 ? "lg:flex" : "lg:hidden"} ${i < 7 ? "xl:flex" : "xl:hidden"}`}
-                      data-testid={`tile-trending-${product.id}`}
-                    >
-                      <span className="relative block aspect-square w-full overflow-hidden rounded-[0.9rem] bg-sand sm:rounded-[1.1rem]">
-                        <BannerImage
-                          src={product.mainImage}
-                          alt={product.name}
-                          width={400}
-                          loading={i < 6 ? "eager" : "lazy"}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      </span>
-                      <span className="price-text ltr-num mt-2 text-[14px] leading-tight text-berry sm:text-base">
-                        ₪{Number.isInteger(price) ? price : price.toFixed(2)}
-                      </span>
-                      <span className="mt-0.5 line-clamp-1 w-full text-[12px] text-foreground/75 sm:text-[13px]">
-                        {product.name}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </Section>
-        )}
-
         {/* ── New arrivals ── */}
         {newArrivals.length > 0 && (
           <Section>
@@ -962,25 +918,8 @@ export default function Home() {
           </Section>
         )}
 
-        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
-        {promoSlides.length > 0 && (
-          <Section>
-            <PromoSlider slides={promoSlides} isAr={isAr} />
-          </Section>
-        )}
-
-        {/* ── On sale ── */}
-        {onSale.length > 0 && (
-          <Section>
-            <ProductRail
-              products={onSale}
-              testId="rail-on-sale"
-              more={{ href: "/sales", label: pick("كل التخفيضات", "All sale pieces"), tone: "sale" }}
-            />
-          </Section>
-        )}
-
         {/* Editorial Category Grid */}
+        <Reveal>
         {(() => {
           const editorialCats = (categoriesList || [])
             .filter((c: any) => c.showOnHome)
@@ -1208,9 +1147,74 @@ export default function Home() {
             </section>
           );
         })()}
+        </Reveal>
 
-        {/* Category circles */}
-        {categoryCircles}
+        {/* ── Most wanted: soft panel of white tiles — photo, price, name ── */}
+        {trending.length > 0 && (
+          <Section>
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+                <h2
+                  className="truncate text-xl font-semibold leading-none text-berry-deep sm:text-[1.75rem] rtl:leading-snug"
+                  data-testid="section-title-trending"
+                >
+                  {secFeaturedTitle}
+                </h2>
+                <Link
+                  href="/shop"
+                  className="group inline-flex h-10 shrink-0 items-center gap-1.5 text-[13.5px] font-semibold text-berry transition-colors hover:text-berry-deep sm:text-[15px]"
+                  data-testid="link-view-all-/shop"
+                >
+                  {pick("تسوقي الكل", "Shop all")}
+                  <Arrow className="h-4 w-4" />
+                </Link>
+              </div>
+              <div
+                className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
+                data-testid="rail-trending"
+              >
+                {trending.slice(0, 7).map((product: any, i: number) => {
+                  const price = parseFloat(String(product.discountPrice ?? product.price));
+                  return (
+                    <Link
+                      key={product.id}
+                      href={`/product/${product.id}`}
+                      className={`group flex-col items-center rounded-[1.25rem] bg-white p-2 text-center transition-shadow duration-300 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)] sm:rounded-[1.5rem] sm:p-2.5 ${i < 6 ? "flex" : "hidden"} ${i < 4 ? "sm:flex" : "sm:hidden"} ${i < 5 ? "md:flex" : "md:hidden"} ${i < 6 ? "lg:flex" : "lg:hidden"} ${i < 7 ? "xl:flex" : "xl:hidden"}`}
+                      data-testid={`tile-trending-${product.id}`}
+                    >
+                      <span className="relative block aspect-square w-full overflow-hidden rounded-[0.9rem] bg-sand sm:rounded-[1.1rem]">
+                        <BannerImage
+                          src={product.mainImage}
+                          alt={product.name}
+                          width={400}
+                          loading={i < 6 ? "eager" : "lazy"}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </span>
+                      <span className="price-text ltr-num mt-2 text-[14px] leading-tight text-berry sm:text-base">
+                        ₪{Number.isInteger(price) ? price : price.toFixed(2)}
+                      </span>
+                      <span className="mt-0.5 line-clamp-1 w-full text-[12px] text-foreground/75 sm:text-[13px]">
+                        {product.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {/* ── On sale ── */}
+        {onSale.length > 0 && (
+          <Section>
+            <ProductRail
+              products={onSale}
+              testId="rail-on-sale"
+              more={{ href: "/sales", label: pick("كل التخفيضات", "All sale pieces"), tone: "sale" }}
+            />
+          </Section>
+        )}
 
         {/* ── Best sellers ── */}
         {bestSellers.length > 0 && (
@@ -1349,6 +1353,18 @@ export default function Home() {
             </div>
           </Section>
         )}
+
+        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
+        {promoSlides.length > 0 && (
+          <Section>
+            <PromoSlider slides={promoSlides} isAr={isAr} />
+          </Section>
+        )}
+
+        {/* Category circles */}
+        <Reveal>
+        {categoryCircles}
+        </Reveal>
 
         {/* ── One rail per category the admin shows on the home page ── */}
         {categorySections

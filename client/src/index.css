@@ -14,7 +14,7 @@
   /* Storefront palette — warm cream surfaces with the original black for buttons, text and the footer.
      Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
-  --background: 0 0% 100%;
+  --background: 8 100% 98%; /* soft blush white, #FFF8F7 */
   --foreground: 0 0% 10%;
 
   --card: 0 0% 98%;
