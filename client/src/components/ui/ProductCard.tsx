@@ -494,11 +494,11 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           {discountPrice ? (
             <>
               <span
-                className={`ltr-num text-base font-bold leading-none sm:text-lg ${isSoldOut ? "text-muted-foreground/70" : ""}`}
+                className={`price-text ltr-num text-[15px] leading-none sm:text-[17px] ${isSoldOut ? "text-muted-foreground/70" : ""}`}
                 style={isSoldOut ? undefined : { color: "#9B1C1C" }}
                 data-testid={`text-discount-price-${product.id}`}
               >
-                <span className="me-0.5 text-[0.72em] font-semibold">₪</span>
+                <span className="me-0.5 text-[0.72em]">₪</span>
                 {discountPrice}
               </span>
               <span
@@ -510,10 +510,10 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             </>
           ) : (
             <span
-              className={`ltr-num text-base font-bold leading-none sm:text-lg ${isSoldOut ? "text-muted-foreground/70" : ""}`}
+              className={`price-text ltr-num text-[15px] leading-none sm:text-[17px] ${isSoldOut ? "text-muted-foreground/70" : ""}`}
               data-testid={`text-price-${product.id}`}
             >
-              <span className="me-0.5 text-[0.72em] font-semibold">₪</span>
+              <span className="me-0.5 text-[0.72em]">₪</span>
               {price}
             </span>
           )}

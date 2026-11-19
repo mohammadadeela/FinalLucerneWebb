@@ -643,6 +643,21 @@ export function Navbar() {
 
   const [expandedCat, setExpandedCat] = useState<number | null>(null);
 
+  // The app-style tab bar shows on browsing pages only — never over checkout, cart or a product's own buy bar.
+  const showTabBar =
+    currentPath === "/" ||
+    currentPath === "/shop" ||
+    currentPath === "/sales" ||
+    currentPath === "/wishlist" ||
+    currentPath === "/dresses" ||
+    currentPath === "/shoes" ||
+    currentPath === "/clothes" ||
+    currentPath.startsWith("/category/");
+  useEffect(() => {
+    document.documentElement.classList.toggle("has-tabbar", showTabBar);
+    return () => document.documentElement.classList.remove("has-tabbar");
+  }, [showTabBar]);
+
   // Lock page scroll while the mobile drawer is open, and close it on navigation.
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -722,8 +737,27 @@ export function Navbar() {
           role="status"
           aria-live="off"
         >
+          {/* The everyday bar is alive too: two small butterflies drift across it */}
+          {!seasonInfo && (
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+              {[
+                { top: "8%", dur: "26s", delay: "-4s", size: "h-4" },
+                { top: "46%", dur: "34s", delay: "-19s", size: "h-3" },
+              ].map((b, i) => (
+                <span
+                  key={i}
+                  className="bar-glide absolute left-0 block"
+                  style={{ top: b.top, animationDuration: b.dur, animationDelay: b.delay }}
+                >
+                  <span className="bar-bob block [&_g]:stroke-current [&_g]:[stroke-width:70]">
+                    <LucerneLogo className={`${b.size} w-auto text-white/55`} />
+                  </span>
+                </span>
+              ))}
+            </div>
+          )}
           {/* All messages side by side — wide screens, 3 messages or fewer */}
-          {newsItems.length <= 3 && (
+          {newsItems.length <= 1 && (
             <div className="hidden md:flex h-9 items-center justify-center gap-5 px-6 text-[13px]">
               {newsItems.map((item, i) => {
                 const Icon = newsIcon(item);
@@ -749,7 +783,7 @@ export function Navbar() {
           )}
           {/* One message at a time — phones, or more than 3 messages */}
           <div
-            className={`flex h-9 items-center justify-center px-4 text-[12.5px] sm:text-[13px] ${newsItems.length <= 3 ? "md:hidden" : ""}`}
+            className={`flex h-9 items-center justify-center px-4 text-[12.5px] sm:text-[13px] relative ${newsItems.length <= 1 ? "md:hidden" : ""}`}
           >
             {(() => {
               const item = newsItems[newsIdx % newsItems.length];
@@ -1297,6 +1331,50 @@ export function Navbar() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ── Phone tab bar ── the app-style bottom bar: shop, categories, search, wishlist, bag */}
+      {showTabBar && (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-white/95 backdrop-blur-md lg:hidden"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+          aria-label="Quick navigation"
+          data-testid="mobile-tabbar"
+        >
+          <div className="mx-auto grid h-[3.75rem] max-w-md grid-cols-5">
+            {[
+              { key: "home", label: isAr ? "لوسيرن" : "Lucerne", href: "/", active: currentPath === "/", icon: <LucerneLogo className="h-[22px] w-auto [&_g]:stroke-current [&_g]:[stroke-width:60]" /> },
+              { key: "cats", label: isAr ? "الأقسام" : "Categories", onClick: () => setMobileMenuOpen(true), active: false, icon: <Menu className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
+              { key: "search", label: isAr ? "بحث" : "Search", onClick: () => setSearchOpen(true), active: false, icon: <Search className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
+              { key: "wish", label: t.wishlist.navLabel, href: user ? "/wishlist" : "/auth", active: currentPath === "/wishlist", badge: wishlistCount, icon: <Heart className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
+              { key: "bag", label: t.nav.cart, href: "/cart", active: currentPath === "/cart", badge: itemCount, icon: <ShoppingBag className="h-[21px] w-[21px]" strokeWidth={1.6} /> },
+            ].map((tab) => {
+              const inner = (
+                <span className={`relative flex h-full flex-col items-center justify-center gap-1 text-[10.5px] transition-colors ${tab.active ? "text-berry" : "text-foreground/70"}`}>
+                  <span className="relative">
+                    {tab.icon}
+                    {!!tab.badge && (
+                      <span className="absolute -end-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-berry px-1 text-[9px] font-bold text-white">
+                        {tab.badge}
+                      </span>
+                    )}
+                  </span>
+                  <span className="max-w-full truncate px-1">{tab.label}</span>
+                  {tab.active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-berry" />}
+                </span>
+              );
+              return tab.href ? (
+                <Link key={tab.key} href={tab.href} className="block h-full" data-testid={`tab-${tab.key}`}>
+                  {inner}
+                </Link>
+              ) : (
+                <button key={tab.key} type="button" onClick={tab.onClick} className="h-full" data-testid={`tab-${tab.key}`}>
+                  {inner}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
 
       {/* ── Search Overlay ── */}
       <AnimatePresence>

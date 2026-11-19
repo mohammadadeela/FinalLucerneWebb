@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Noto+Sans+Arabic:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Tajawal:wght@300;400;500;700&family=Noto+Sans+Arabic:wght@100..900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,7 +7,7 @@
 :root {
   --font-display: 'Cormorant Garamond', serif;
   --font-sans: 'Jost', sans-serif;
-  --font-arabic: 'Noto Sans Arabic', sans-serif;
+  --font-arabic: 'Tajawal', 'Noto Sans Arabic', sans-serif;
   --news-bar-offset: 0px;
   --navbar-h: 4rem;
 
@@ -148,7 +148,7 @@ html.admin-theme {
   }
   [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4, [dir="rtl"] h5, [dir="rtl"] h6 {
     font-family: var(--font-arabic);
-    @apply font-semibold;
+    @apply font-medium;
     letter-spacing: 0;
   }
   /* Arabic text must never have letter-spacing — it breaks joined letters */
@@ -308,4 +308,39 @@ html.admin-theme {
 }
 [dir="rtl"] .font-heading {
   font-family: var(--font-arabic);
+}
+
+/* Prices: soft, rounded numerals at a medium weight — never heavy or sharp. */
+.price-text {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* News bar butterflies: a slow glide across the bar with a gentle wing beat. */
+@keyframes bar-glide {
+  from { transform: translate3d(-8vw, 0, 0); }
+  to   { transform: translate3d(108vw, 0, 0); }
+}
+@keyframes bar-bob {
+  0%, 100% { transform: translateY(-3px) rotate(-6deg) scaleX(1); }
+  50%      { transform: translateY(3px) rotate(6deg) scaleX(0.72); }
+}
+.bar-glide { animation: bar-glide linear infinite; }
+.bar-bob   { animation: bar-bob 0.9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .bar-glide, .bar-bob { animation: none; display: none; }
+}
+
+/* Phone tab bar: keep page content and the floating chat / Instagram buttons clear of it. */
+@media (max-width: 1023px) {
+  html.has-tabbar body {
+    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom));
+  }
+  html.has-tabbar [data-testid="instagram-widget"],
+  html.has-tabbar div[style*="position: fixed"]:has(> .lb-fab),
+  html.has-tabbar div[style*="position: fixed"]:has(.lb-fab) {
+    translate: 0 -3.75rem;
+  }
 }

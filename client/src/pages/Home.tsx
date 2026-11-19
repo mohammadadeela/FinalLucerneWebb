@@ -100,7 +100,7 @@ function SectionHeader({
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
   const sale = tone === "sale";
   return (
-    <div className="mb-3 flex items-end justify-between gap-4 sm:mb-4">
+    <div className="mb-2.5 flex items-end justify-between gap-4 sm:mb-3">
       <div className="min-w-0">
         {eyebrow && (
           <p
@@ -134,12 +134,14 @@ function SectionHeader({
 }
 
 const RAIL_ITEM =
-  "flex-none snap-start w-[46%] sm:w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-(var(--cols)-1)*1rem)/var(--cols))]";
+  "flex-none snap-start w-[44%] sm:w-[calc((100%-1.5rem)/3)] md:w-[calc((100%-2.25rem)/4)] lg:w-[calc((100%-3rem)/5)] xl:w-[calc((100%-3.75rem)/6)] 2xl:w-[calc((100%-4.5rem)/7)]";
 
 /**
- * A row of product cards. `lead` puts a cover tile first (used by category rows)
- * and `more` adds a closing "see everything" tile, so short rows still fill the
- * line instead of leaving a blank gap, and long rows end with a clear next step.
+ * A row of product cards.
+ * - `more` adds a closing "see everything" tile that stretches to fill whatever width is left,
+ *   so a short row never ends in a blank gap.
+ * - `mobileGrid` shows the first four products as a 2×2 grid on phones (with a button to see
+ *   the rest) instead of another sideways slider.
  */
 function ProductRail({
   products,
@@ -147,55 +149,77 @@ function ProductRail({
   lead,
   more,
   compact,
+  mobileGrid,
 }: {
   products: any[];
   testId?: string;
   compact?: boolean;
+  mobileGrid?: boolean;
   lead?: ReactNode;
   more?: { href: string; label: string; tone?: "default" | "sale" };
 }) {
   const { language } = useLanguage();
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
-  const total = products.length + (lead ? 1 : 0) + (more ? 1 : 0);
   const sale = more?.tone === "sale";
   return (
-    <Rail
-      scrollClassName={`gap-3 sm:gap-4 pb-3 ${total >= 5 ? "[--cols:5]" : "[--cols:4]"}`}
-      testId={testId}
-    >
-      {lead && (
-        <div role="listitem" className={RAIL_ITEM}>
-          {lead}
-        </div>
-      )}
-      {products.map((product, index) => (
-        <div key={product.id} role="listitem" className={RAIL_ITEM}>
-          <ProductCard product={product} priority={index < 2} compact={compact} />
-        </div>
-      ))}
-      {more && (
-        <div role="listitem" className={RAIL_ITEM}>
-          <Link
-            href={more.href}
-            className={`group flex h-full min-h-[14rem] flex-col items-center justify-center gap-4 rounded-[1.15rem] border border-dashed p-4 text-center transition-colors duration-300 ${
-              sale
-                ? "border-[#9B1C1C]/35 bg-white/60 text-[#9B1C1C] hover:bg-white"
-                : "border-berry/35 bg-[hsl(var(--blush)/0.35)] text-foreground hover:bg-[hsl(var(--blush)/0.6)]"
-            }`}
-            data-testid={testId ? `${testId}-more` : undefined}
-          >
-            <span
-              className={`flex h-14 w-14 items-center justify-center rounded-full text-white transition-transform duration-300 group-hover:scale-110 ${sale ? "bg-[#9B1C1C]" : "bg-berry"}`}
+    <>
+      {mobileGrid && (
+        <div className="sm:hidden">
+          <div className="grid grid-cols-2 gap-2.5">
+            {products.slice(0, 4).map((product, index) => (
+              <ProductCard key={product.id} product={product} priority={index < 2} compact={compact} />
+            ))}
+          </div>
+          {more && products.length > 4 && (
+            <Link
+              href={more.href}
+              className={`mt-3 flex h-10 items-center justify-center gap-2 rounded-full border text-[13px] font-medium ${sale ? "border-[#9B1C1C]/40 text-[#9B1C1C]" : "border-foreground/15 text-foreground"}`}
             >
-              <Arrow className="h-5 w-5" />
-            </span>
-            <span className="font-heading text-lg font-medium leading-tight sm:text-xl">
               {more.label}
-            </span>
-          </Link>
+              <Arrow className="h-4 w-4" />
+            </Link>
+          )}
         </div>
       )}
-    </Rail>
+      <Rail
+        className={mobileGrid ? "hidden sm:block" : ""}
+        scrollClassName="gap-2.5 sm:gap-3 pb-1"
+        testId={testId}
+      >
+        {lead && (
+          <div role="listitem" className={RAIL_ITEM}>
+            {lead}
+          </div>
+        )}
+        {products.map((product, index) => (
+          <div key={product.id} role="listitem" className={RAIL_ITEM}>
+            <ProductCard product={product} priority={index < 2} compact={compact} />
+          </div>
+        ))}
+        {more && (
+          <div role="listitem" className={`${RAIL_ITEM} !flex-auto`}>
+            <Link
+              href={more.href}
+              className={`group flex h-full min-h-[12rem] flex-col items-center justify-center gap-3 rounded-[1.15rem] border border-dashed p-4 text-center transition-colors duration-300 ${
+                sale
+                  ? "border-[#9B1C1C]/35 bg-white/60 text-[#9B1C1C] hover:bg-white"
+                  : "border-berry/35 bg-[hsl(var(--blush)/0.35)] text-foreground hover:bg-[hsl(var(--blush)/0.6)]"
+              }`}
+              data-testid={testId ? `${testId}-more` : undefined}
+            >
+              <span
+                className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-300 group-hover:scale-110 ${sale ? "bg-[#9B1C1C]" : "bg-berry"}`}
+              >
+                <Arrow className="h-5 w-5" />
+              </span>
+              <span className="font-heading text-base font-medium leading-tight sm:text-lg">
+                {more.label}
+              </span>
+            </Link>
+          </div>
+        )}
+      </Rail>
+    </>
   );
 }
 
@@ -203,7 +227,7 @@ function RailSkeleton() {
   return (
     <div className="flex gap-3 overflow-hidden sm:gap-4">
       {[...Array(5)].map((_, i) => (
-        <div key={i} className={`${RAIL_ITEM} [--cols:5] animate-pulse`}>
+        <div key={i} className={`${RAIL_ITEM} animate-pulse`}>
           <div className="mb-3 aspect-[3/4] rounded-2xl bg-muted" />
           <div className="mb-2 h-3.5 w-2/3 rounded bg-muted" />
           <div className="h-3.5 w-1/4 rounded bg-muted" />
@@ -223,8 +247,8 @@ function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className={`w-full px-4 py-3.5 sm:px-6 sm:py-5 lg:px-10 ${className}`}>
-      <div className="mx-auto w-full max-w-[1280px]">{children}</div>
+    <section id={id} className={`w-full px-3 pt-3 pb-0 sm:px-6 sm:pt-4 lg:px-10 ${className}`}>
+      <div className="mx-auto w-full max-w-[1560px]">{children}</div>
     </section>
   );
 }
@@ -378,7 +402,7 @@ export default function Home() {
     t.home.newArrivals;
   const secFeaturedTitle =
     pick(g("section_featured_title_ar"), g("section_featured_title_en")) ||
-    pick("الأكثر رواجاً", "Trending Now");
+    pick("الأكثر طلباً", "Most Wanted");
   const secBestSellersTitle =
     pick(g("section_best_sellers_title_ar"), g("section_best_sellers_title_en")) ||
     t.home.bestSellers;
@@ -464,7 +488,7 @@ export default function Home() {
   // The original category circles (categories + featured subcategories).
   const categoryCircles = (
     <>
-        <section className="py-5 sm:py-6 w-full px-4 sm:px-6 lg:px-8 bg-background">
+        <section className="pt-3 sm:pt-4 pb-0 w-full px-3 sm:px-6 lg:px-8 bg-background">
           <div className="text-center mb-4 sm:mb-6">
             <p className="text-xs sm:text-sm text-foreground/50 mb-2">
               {language === "ar" ? "تسوق حسب الفئة" : "Shop by Category"}
@@ -674,12 +698,12 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1">
+      <main className="flex-1 pb-6">
         <HeroSlider slides={slides} isAr={isAr} />
 
         {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
         {catTiles.length > 0 && (
-          <Section className="hidden sm:block !pt-5 !pb-1">
+          <Section className="hidden sm:block">
             <Rail scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
               {catTiles.map((item, i) => (
                 <Link
@@ -715,32 +739,59 @@ export default function Home() {
         {/* Category circles — phones: right under the hero, as in the design */}
         <div className="sm:hidden">{categoryCircles}</div>
 
-        {/* ── Trending now ── */}
-        {(isFeaturedLoading || trending.length > 0) && (
+        {/* ── Most wanted: soft panel of white tiles — photo, price, name ── */}
+        {trending.length > 0 && (
           <Section>
-            <SectionHeader
-              title={secFeaturedTitle}
-              href="/shop"
-              linkLabel={t.home.viewAll}
-              testId="section-title-trending"
-            />
-            {isFeaturedLoading && trending.length === 0 ? (
-              <RailSkeleton />
-            ) : (
-              <ProductRail
-                products={trending}
-                testId="rail-trending"
-                compact
-                more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
-              />
-            )}
-          </Section>
-        )}
-
-        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
-        {promoSlides.length > 0 && (
-          <Section className="!py-3 sm:!py-4">
-            <PromoSlider slides={promoSlides} isAr={isAr} />
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush/50 p-3 sm:rounded-[1.75rem] sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+                <h2
+                  className="truncate text-xl font-medium leading-none sm:text-[1.75rem] rtl:leading-snug"
+                  data-testid="section-title-trending"
+                >
+                  {secFeaturedTitle}
+                </h2>
+                <Link
+                  href="/shop"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-foreground px-4 text-[12.5px] font-medium text-background transition-colors hover:bg-berry sm:h-10 sm:px-5 sm:text-[13px]"
+                  data-testid="link-view-all-/shop"
+                >
+                  {pick("تسوقي الكل", "Shop all")}
+                  <Arrow className="h-4 w-4" />
+                </Link>
+              </div>
+              <div
+                className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
+                data-testid="rail-trending"
+              >
+                {trending.slice(0, 7).map((product: any, i: number) => {
+                  const price = parseFloat(String(product.discountPrice ?? product.price));
+                  return (
+                    <Link
+                      key={product.id}
+                      href={`/product/${product.id}`}
+                      className={`group flex-col items-center rounded-[1.25rem] bg-white p-2 text-center transition-shadow duration-300 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)] sm:rounded-[1.5rem] sm:p-2.5 ${i < 6 ? "flex" : "hidden"} ${i < 4 ? "sm:flex" : "sm:hidden"} ${i < 5 ? "md:flex" : "md:hidden"} ${i < 6 ? "lg:flex" : "lg:hidden"} ${i < 7 ? "xl:flex" : "xl:hidden"}`}
+                      data-testid={`tile-trending-${product.id}`}
+                    >
+                      <span className="relative block aspect-square w-full overflow-hidden rounded-[0.9rem] bg-sand sm:rounded-[1.1rem]">
+                        <BannerImage
+                          src={product.mainImage}
+                          alt={product.name}
+                          width={400}
+                          loading={i < 6 ? "eager" : "lazy"}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </span>
+                      <span className="price-text ltr-num mt-2 text-[14px] leading-tight text-berry sm:text-base">
+                        ₪{Number.isInteger(price) ? price : price.toFixed(2)}
+                      </span>
+                      <span className="mt-0.5 line-clamp-1 w-full text-[12px] text-foreground/75 sm:text-[13px]">
+                        {product.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </Section>
         )}
 
@@ -757,13 +808,37 @@ export default function Home() {
             <ProductRail
               products={newArrivals}
               testId="rail-new-arrivals"
+              mobileGrid
               more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
             />
           </Section>
         )}
 
-        {/* Category circles — larger screens */}
-        <div className="hidden sm:block">{categoryCircles}</div>
+        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
+        {promoSlides.length > 0 && (
+          <Section>
+            <PromoSlider slides={promoSlides} isAr={isAr} />
+          </Section>
+        )}
+
+        {/* ── On sale ── */}
+        {onSale.length > 0 && (
+          <Section>
+            <SectionHeader
+              title={secOnSaleTitle}
+              eyebrow={pick("أسعار مخفّضة", "Marked down")}
+              href="/sales"
+              linkLabel={t.home.viewAll}
+              tone="sale"
+              testId="text-sales-title"
+            />
+            <ProductRail
+              products={onSale}
+              testId="rail-on-sale"
+              more={{ href: "/sales", label: pick("كل التخفيضات", "All sale pieces"), tone: "sale" }}
+            />
+          </Section>
+        )}
 
         {/* Editorial Category Grid */}
         {(() => {
@@ -829,8 +904,8 @@ export default function Home() {
           });
           const [tl, tr, bl, br] = tiles;
           return (
-            <section className="w-full px-4 sm:px-6 lg:px-10 py-3.5 sm:py-5 bg-background">
-              <div className="mx-auto max-w-[1280px] grid grid-cols-[1fr_1.4fr_1fr] grid-rows-2 gap-1 sm:gap-1.5 h-[340px] sm:h-[440px] lg:h-[520px] rounded-2xl overflow-hidden">
+            <section className="w-full px-3 sm:px-6 lg:px-10 pt-3 sm:pt-4 pb-0 bg-background">
+              <div className="mx-auto max-w-[1560px] grid grid-cols-[1fr_1.4fr_1fr] grid-rows-2 gap-1 sm:gap-1.5 h-[340px] sm:h-[440px] lg:h-[520px] rounded-2xl overflow-hidden">
                 {/* Top-left tile */}
                 <Link href={tl.href}>
                   <div className="relative overflow-hidden group cursor-pointer h-full bg-muted">
@@ -994,24 +1069,8 @@ export default function Home() {
           );
         })()}
 
-        {/* ── On sale ── */}
-        {onSale.length > 0 && (
-          <Section className="bg-[hsl(var(--blush)/0.45)]">
-            <SectionHeader
-              title={secOnSaleTitle}
-              eyebrow={pick("أسعار مخفّضة", "Marked down")}
-              href="/sales"
-              linkLabel={t.home.viewAll}
-              tone="sale"
-              testId="text-sales-title"
-            />
-            <ProductRail
-              products={onSale}
-              testId="rail-on-sale"
-              more={{ href: "/sales", label: pick("كل التخفيضات", "All sale pieces"), tone: "sale" }}
-            />
-          </Section>
-        )}
+        {/* Category circles — larger screens */}
+        <div className="hidden sm:block">{categoryCircles}</div>
 
         {/* ── Best sellers ── */}
         {bestSellers.length > 0 && (
@@ -1159,7 +1218,7 @@ export default function Home() {
           .map((section, idx) => (
             <Section
               key={section.category.id}
-              className={idx % 2 === 0 ? "bg-[hsl(var(--sand)/0.45)]" : ""}
+              className=""
             >
               <div className="relative mb-4 flex items-center justify-between gap-4 overflow-hidden rounded-[1.5rem] bg-white px-5 py-4 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5">
                 <CategoryGlyph
@@ -1189,6 +1248,7 @@ export default function Home() {
               <ProductRail
                 products={section.products}
                 testId={`rail-category-${section.category.id}`}
+                mobileGrid
                 more={{
                   href: section.href,
                   label: pick(`كل ${catName(section.category)}`, `All ${catName(section.category)}`),

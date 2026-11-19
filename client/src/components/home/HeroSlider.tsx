@@ -240,11 +240,11 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                       {slide.subtitle}
                     </p>
                   )}
-                  <div className="mt-4 flex flex-col gap-2.5 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-4">
+                  <div className="mt-3.5 flex flex-col items-start gap-2 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-4">
                     <Link
                       href={slide.primary.href}
                       tabIndex={active ? 0 : -1}
-                      className="group inline-flex h-11 items-center justify-center gap-3 rounded-lg bg-berry px-5 text-[13px] font-medium text-white shadow-[0_14px_30px_-14px_hsl(var(--berry)/0.9)] transition-all duration-300 hover:bg-[hsl(var(--berry-deep))] hover:shadow-[0_18px_34px_-14px_hsl(var(--berry)/1)] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
+                      className="group inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-berry px-4 text-[12.5px] font-medium text-white shadow-[0_14px_30px_-14px_hsl(var(--berry)/0.9)] transition-all duration-300 hover:bg-[hsl(var(--berry-deep))] hover:shadow-[0_18px_34px_-14px_hsl(var(--berry)/1)] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
                       data-testid={i === 0 ? "button-shop-collection" : undefined}
                       style={skin ? { background: skin.accent, color: skin.night, boxShadow: "none" } : undefined}
                     >
@@ -255,7 +255,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                       <Link
                         href={slide.secondary.href}
                         tabIndex={active ? 0 : -1}
-                        className="inline-flex h-11 items-center justify-center rounded-lg border border-berry/60 bg-white/55 px-5 text-[13px] font-medium text-foreground backdrop-blur-sm transition-colors duration-300 hover:border-berry hover:bg-white hover:text-berry sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-berry/60 bg-white/55 px-4 text-[12.5px] font-medium text-foreground backdrop-blur-sm transition-colors duration-300 hover:border-berry hover:bg-white hover:text-berry sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
                         style={skin ? { borderColor: `${skin.accent}99`, color: skin.ink, background: "rgba(255,255,255,.08)" } : undefined}
                       >
                         {slide.secondary.label}
