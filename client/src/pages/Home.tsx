@@ -1297,27 +1297,35 @@ export default function Home() {
               key={section.category.id}
               className=""
             >
-              <Link
-                href={section.href}
-                className="relative mb-4 block overflow-hidden rounded-[1.5rem] bg-white px-4 py-3.5 ring-1 ring-black/[0.05] transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 sm:py-5"
-                data-testid={`link-view-all-${section.href}`}
-              >
-                <CategoryGlyph
-                  category={section.category}
-                  className="pointer-events-none absolute -bottom-5 start-3 h-24 w-24 -rotate-6 text-berry/[0.1] sm:start-6 sm:h-32 sm:w-32"
-                />
-                <div className="relative min-w-0 ps-12 sm:ps-24">
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] text-berry sm:text-[11px]">
-                    {pick("من أقسامنا", "From our collections")}
-                  </p>
-                  <h2
-                    className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug"
-                    data-testid={`section-title-category-${section.category.id}`}
+              {/* Picture-only banner: the category's own banner photo (Content → that category's page),
+                  falling back to the category photo. With no photo at all the name is shown instead. */}
+              {(() => {
+                const banner = g(`${section.category.slug}_hero_image`) || section.category.image || "";
+                return (
+                  <Link
+                    href={section.href}
+                    aria-label={catName(section.category)}
+                    className="relative mb-3 mt-1 block overflow-hidden rounded-[1.5rem] bg-sand/60 ring-1 ring-black/[0.05] sm:mb-4"
+                    data-testid={`link-view-all-${section.href}`}
                   >
-                    {catName(section.category)}
-                  </h2>
-                </div>
-              </Link>
+                    {banner ? (
+                      <BannerImage
+                        src={banner}
+                        alt={catName(section.category)}
+                        className="block aspect-[3/1] w-full object-cover sm:aspect-[6/1]"
+                        width={1600}
+                      />
+                    ) : (
+                      <h2
+                        className="truncate px-5 py-4 text-2xl font-medium leading-none sm:px-8 sm:py-5 sm:text-[2rem] rtl:leading-snug"
+                        data-testid={`section-title-category-${section.category.id}`}
+                      >
+                        {catName(section.category)}
+                      </h2>
+                    )}
+                  </Link>
+                );
+              })()}
               <ProductRail
                 products={section.products}
                 testId={`rail-category-${section.category.id}`}
