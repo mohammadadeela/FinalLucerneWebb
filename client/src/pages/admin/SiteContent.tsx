@@ -1261,6 +1261,73 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
   );
 }
 
+function PromoSliderCard({ values, onChange }: { values: Record<string, string>; onChange: (key: string, val: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const field = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary";
+  return (
+    <div className="border border-border rounded-xl overflow-hidden shadow-sm" data-testid="section-promo-slider">
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-5 py-4 bg-muted/30 hover:bg-muted/60 transition-colors"
+        onClick={() => setOpen(!open)}
+        data-testid="toggle-section-promo-slider"
+      >
+        <div className="flex items-center gap-3">
+          {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </div>
+        <div className="text-right">
+          <p className="font-semibold text-sm">سلايدر الصور في منتصف الصفحة الرئيسية</p>
+          <p className="text-xs text-muted-foreground">Home page photo slider</p>
+        </div>
+      </button>
+      {open && (
+        <div className="p-5 space-y-5 bg-background">
+          <p className="text-xs text-muted-foreground text-right">
+            حتى 4 شرائح. كل شريحة: صورة عريضة، عنوان، ورابط الصفحة التي تفتحها (مثال: /sales أو /shop أو /dresses). الشريحة بدون صورة لا تظهر. إذا تُركت كلها فارغة يعرض الموقع صور الأقسام تلقائياً.
+          </p>
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="rounded-xl border border-border p-4 space-y-3">
+              <p className="text-sm font-semibold text-right">الشريحة {n}</p>
+              <SimpleImageUpload
+                value={values[`promo_slide_${n}_image`] ?? ""}
+                onChange={(url) => onChange(`promo_slide_${n}_image`, url)}
+                label="الصورة"
+                withCrop
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  dir="rtl"
+                  className={field}
+                  placeholder="العنوان بالعربية"
+                  value={values[`promo_slide_${n}_title_ar`] ?? ""}
+                  onChange={(e) => onChange(`promo_slide_${n}_title_ar`, e.target.value)}
+                  data-testid={`input-promo-${n}-title-ar`}
+                />
+                <input
+                  dir="ltr"
+                  className={field}
+                  placeholder="Title in English"
+                  value={values[`promo_slide_${n}_title_en`] ?? ""}
+                  onChange={(e) => onChange(`promo_slide_${n}_title_en`, e.target.value)}
+                  data-testid={`input-promo-${n}-title-en`}
+                />
+              </div>
+              <input
+                dir="ltr"
+                className={field}
+                placeholder="/shop"
+                value={values[`promo_slide_${n}_link`] ?? ""}
+                onChange={(e) => onChange(`promo_slide_${n}_link`, e.target.value)}
+                data-testid={`input-promo-${n}-link`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NewsBarCard({
   values,
   onChange,
@@ -2093,6 +2160,7 @@ const SEARCH_INDEX: { id: string; tab: TabId; labelAr: string; labelEn: string; 
   { id: "bestsellers", tab: "home", labelAr: "الأكثر مبيعاً", labelEn: "Best sellers" },
   { id: "headings", tab: "home", labelAr: "عناوين الأقسام", labelEn: "Section headings" },
   { id: "editorial", tab: "home", labelAr: "شبكة التحرير", labelEn: "Editorial grid" },
+  { id: "promo", tab: "home", labelAr: "سلايدر الصور", labelEn: "Home photo slider", extra: "slider سلايدر صور شرائح" },
   { id: "page-home", tab: "home", labelAr: "بانر الصفحة الرئيسية", labelEn: "Home hero banner", extra: "صورة فيديو عنوان" },
   { id: "page-dresses", tab: "dresses", labelAr: "صفحة الفساتين", labelEn: "Dresses page" },
   { id: "page-clothes", tab: "clothes", labelAr: "صفحة الملابس", labelEn: "Clothes page" },
@@ -2188,6 +2256,7 @@ export default function SiteContent() {
       case "bestsellers": return <BestSellersCard values={merged} onChange={handleChange} />;
       case "headings": return <SectionHeadingsCard values={merged} onChange={handleChange} />;
       case "editorial": return <EditorialGridCard values={merged} onChange={handleChange} />;
+      case "promo": return <PromoSliderCard values={merged} onChange={handleChange} />;
       case "support": return <SupportPagesCard values={merged} onChange={handleChange} />;
       default: {
         if (id.startsWith("page-")) {
@@ -2200,7 +2269,7 @@ export default function SiteContent() {
   };
   const cardsForTab: Record<TabId, string[]> = {
     overview: [],
-    home: ["page-home", "bestsellers", "headings", "editorial"],
+    home: ["page-home", "bestsellers", "headings", "editorial", "promo"],
     dresses: ["page-dresses"],
     clothes: ["page-clothes"],
     shoes: ["page-shoes"],

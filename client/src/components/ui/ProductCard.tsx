@@ -454,7 +454,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                   title={translateColorName(v.name, language === "ar" ? "ar" : "en")}
                   data-testid={`swatch-${product.id}-${idx}`}
                 >
-                  {v.mainImage && !swatchColors[0] ? (
+                  {v.mainImage ? (
                     <img
                       src={optimizeCloudinaryUrl(v.mainImage, 100) || v.mainImage}
                       alt={v.name}
@@ -507,11 +507,6 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               >
                 ₪{price}
               </span>
-              {!isSoldOut && discountPercent > 0 && (
-                <span className="ltr-num rounded-full bg-[#9B1C1C]/10 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-[#9B1C1C]">
-                  -{discountPercent}%
-                </span>
-              )}
             </>
           ) : (
             <span

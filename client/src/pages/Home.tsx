@@ -6,6 +6,7 @@ import { AutoplayVideo } from "@/components/ui/AutoplayVideo";
 import { HeroSlider, type HeroSlide } from "@/components/home/HeroSlider";
 import { Rail } from "@/components/home/Rail";
 import { CategoryGlyph } from "@/components/home/CategoryGlyph";
+import { PromoSlider, type PromoSlide } from "@/components/home/PromoSlider";
 import {
   useBestSellers,
   useFeaturedProducts,
@@ -99,7 +100,7 @@ function SectionHeader({
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
   const sale = tone === "sale";
   return (
-    <div className="mb-5 flex items-end justify-between gap-4 sm:mb-7">
+    <div className="mb-4 flex items-end justify-between gap-4 sm:mb-5">
       <div className="min-w-0">
         {eyebrow && (
           <p
@@ -109,13 +110,13 @@ function SectionHeader({
           </p>
         )}
         <h2
-          className="text-[1.75rem] font-medium leading-none sm:text-[2.5rem] rtl:leading-snug"
+          className="text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug"
           data-testid={testId || "section-title"}
         >
           {title}
         </h2>
         <span
-          className={`mt-3 block h-[2px] w-12 rounded-full ${sale ? "bg-[#9B1C1C]/70" : "bg-berry/70"}`}
+          className={`mt-2 block h-[2px] w-10 rounded-full ${sale ? "bg-[#9B1C1C]/70" : "bg-berry/70"}`}
         />
       </div>
       {href && (
@@ -222,7 +223,7 @@ function Section({
   id?: string;
 }) {
   return (
-    <section id={id} className={`w-full px-4 py-8 sm:px-6 sm:py-11 lg:px-10 ${className}`}>
+    <section id={id} className={`w-full px-4 py-5 sm:px-6 sm:py-7 lg:px-10 ${className}`}>
       <div className="mx-auto w-full max-w-[1560px]">{children}</div>
     </section>
   );
@@ -416,18 +417,27 @@ export default function Home() {
     testId: `link-category-home-${c.id}`,
   }));
 
-  // Lookbook slider: every category with a banner (its page banner if the admin set one, else its picture).
-  const lookbook = (categoriesList || [])
-    .map((c: any) => ({
-      key: `look-${c.id}`,
-      category: c,
-      href: categoryHref(c),
-      label: catName(c),
-      image: g(`${c.slug}_hero_image`) || c.image || "",
-      position: g(`${c.slug}_hero_image_position`) || "center",
-      subtitle: pick(g(`${c.slug}_hero_subtitle_ar`), g(`${c.slug}_hero_subtitle_en`)),
+  // Photo slider: the admin's own slides; until some are set, the categories' photos fill in.
+  const adminSlides = [1, 2, 3, 4]
+    .map((n) => ({
+      key: `promo-${n}`,
+      image: g(`promo_slide_${n}_image`),
+      title: pick(g(`promo_slide_${n}_title_ar`), g(`promo_slide_${n}_title_en`)),
+      href: g(`promo_slide_${n}_link`) || "/shop",
     }))
-    .filter((item: any) => item.image);
+    .filter((slide) => slide.image);
+  const promoSlides: PromoSlide[] =
+    adminSlides.length > 0
+      ? adminSlides
+      : (categoriesList || [])
+          .filter((c: any) => c.image)
+          .slice(0, 4)
+          .map((c: any) => ({
+            key: `promo-cat-${c.id}`,
+            image: c.image,
+            title: catName(c),
+            href: categoryHref(c),
+          }));
 
   // Names the restored category circles + editorial grid expect.
   const products = allProducts;
@@ -459,12 +469,12 @@ export default function Home() {
         <HeroSlider slides={slides} isAr={isAr} />
 
         {/* Category Circles */}
-        <section className="py-14 sm:py-20 w-full px-4 sm:px-6 lg:px-8 bg-background">
-          <div className="text-center mb-10 sm:mb-14">
+        <section className="py-7 sm:py-9 w-full px-4 sm:px-6 lg:px-8 bg-background">
+          <div className="text-center mb-6 sm:mb-8">
             <p className="text-xs sm:text-sm text-foreground/50 mb-2">
               {language === "ar" ? "تسوق حسب الفئة" : "Shop by Category"}
             </p>
-            <h2 className="font-display text-2xl sm:text-4xl font-semibold">
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold">
               {language === "ar" ? "أصنافنا" : "Explore Collections"}
             </h2>
           </div>
@@ -678,7 +688,6 @@ export default function Home() {
               <ProductRail
                 products={trending}
                 testId="rail-trending"
-                compact
                 more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
               />
             )}
@@ -703,53 +712,10 @@ export default function Home() {
           </Section>
         )}
 
-        {/* ── Lookbook slider: one wide card per category, from the banners the admin already manages ── */}
-        {lookbook.length > 1 && (
-          <Section className="!pt-2">
-            <SectionHeader
-              title={pick("جولة في الأقسام", "The Lookbook")}
-              eyebrow={pick("اكتشفي", "Discover")}
-              testId="section-title-lookbook"
-            />
-            <Rail scrollClassName="gap-3 sm:gap-5 pb-3" testId="rail-lookbook">
-              {lookbook.map((item) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  role="listitem"
-                  className="group relative block aspect-[5/4] w-[84%] flex-none snap-start overflow-hidden rounded-[1.75rem] bg-sand sm:aspect-[2/1] sm:w-[62%] lg:w-[46%]"
-                  data-testid={`lookbook-${item.key}`}
-                >
-                  <BannerImage
-                    src={item.image}
-                    alt={item.label}
-                    width={1000}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
-                    style={{ objectPosition: item.position }}
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                  <CategoryGlyph
-                    category={item.category}
-                    className="absolute end-4 top-4 h-16 w-16 text-white/35 transition-transform duration-700 group-hover:-rotate-6 group-hover:scale-110 sm:end-6 sm:top-6 sm:h-24 sm:w-24"
-                  />
-                  <span className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3 text-white sm:inset-x-7 sm:bottom-6">
-                    <span className="min-w-0">
-                      <span className="font-heading block text-3xl font-medium leading-none sm:text-5xl rtl:leading-snug">
-                        {item.label}
-                      </span>
-                      {item.subtitle && (
-                        <span className="mt-1.5 line-clamp-1 block text-[13px] text-white/85 sm:mt-2.5 sm:text-base">
-                          {item.subtitle}
-                        </span>
-                      )}
-                    </span>
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-foreground transition-colors duration-300 group-hover:bg-berry group-hover:text-white sm:h-14 sm:w-14">
-                      <Arrow className="h-5 w-5" />
-                    </span>
-                  </span>
-                </Link>
-              ))}
-            </Rail>
+        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
+        {promoSlides.length > 0 && (
+          <Section className="!py-3 sm:!py-4">
+            <PromoSlider slides={promoSlides} isAr={isAr} />
           </Section>
         )}
 
@@ -1158,7 +1124,7 @@ export default function Home() {
                   data-testid={`pill-${item.testId}`}
                 >
                   <span
-                    className="relative block h-full w-[54%] shrink-0 overflow-hidden rounded-e-[2.5rem]"
+                    className="relative block h-full w-[56%] shrink-0 overflow-hidden"
                     style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
                   >
                     <BannerImage
@@ -1168,17 +1134,11 @@ export default function Home() {
                       width={400}
                     />
                   </span>
-                  <span className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1.5 px-2 text-center">
-                    <CategoryGlyph
-                      category={item.category}
-                      className="pointer-events-none absolute left-1/2 top-1/2 h-[78%] w-auto -translate-x-1/2 -translate-y-1/2 text-berry/[0.11] transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <span className="font-heading relative block max-w-full truncate text-xl font-medium leading-tight lg:text-2xl">
+                  <span className="flex min-w-0 flex-1 items-center justify-center gap-2.5 px-3">
+                    <span className="font-heading block min-w-0 truncate text-lg font-medium leading-tight lg:text-[1.35rem]">
                       {item.label}
                     </span>
-                    <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-white text-foreground shadow-sm transition-colors duration-300 group-hover:bg-berry group-hover:text-white">
-                      <Arrow className="h-3.5 w-3.5" />
-                    </span>
+                    <Arrow className="h-[18px] w-[18px] shrink-0 transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1" />
                   </span>
                 </Link>
               ))}
@@ -1194,17 +1154,17 @@ export default function Home() {
               key={section.category.id}
               className={idx % 2 === 0 ? "bg-[hsl(var(--sand)/0.45)]" : ""}
             >
-              <div className="relative mb-5 flex items-center justify-between gap-4 overflow-hidden rounded-[1.75rem] bg-white px-5 py-5 ring-1 ring-black/[0.05] sm:mb-7 sm:px-9 sm:py-7">
+              <div className="relative mb-4 flex items-center justify-between gap-4 overflow-hidden rounded-[1.5rem] bg-white px-5 py-4 ring-1 ring-black/[0.05] sm:mb-5 sm:px-8 sm:py-5">
                 <CategoryGlyph
                   category={section.category}
-                  className="pointer-events-none absolute -bottom-5 start-3 h-28 w-28 -rotate-6 text-berry/[0.1] sm:start-6 sm:h-40 sm:w-40"
+                  className="pointer-events-none absolute -bottom-5 start-3 h-24 w-24 -rotate-6 text-berry/[0.1] sm:start-6 sm:h-32 sm:w-32"
                 />
                 <div className="relative min-w-0 ps-12 sm:ps-24">
                   <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.26em] text-berry sm:text-[11px]">
                     {pick("من أقسامنا", "From our collections")}
                   </p>
                   <h2
-                    className="truncate text-[1.75rem] font-medium leading-none sm:text-[2.5rem] rtl:leading-snug"
+                    className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug"
                     data-testid={`section-title-category-${section.category.id}`}
                   >
                     {catName(section.category)}

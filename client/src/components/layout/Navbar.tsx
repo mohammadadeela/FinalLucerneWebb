@@ -153,7 +153,12 @@ function MenuGlyph({ category }: { category: any }) {
 
 /** The boutique butterfly as a news-bar icon (same call shape as the line icons). */
 function NewsButterfly({ className }: { className?: string; strokeWidth?: number }) {
-  return <LucerneLogo className={className} />;
+  // Drawn a little larger and with a stroke so the fine line-art stays visible at news-bar size.
+  return (
+    <span className={`inline-flex shrink-0 items-center [&_g]:stroke-current [&_g]:[stroke-width:90] ${className ? "" : ""}`}>
+      <LucerneLogo className="h-[22px] w-auto" />
+    </span>
+  );
 }
 
 function ClickIcon({
@@ -358,7 +363,10 @@ export function Navbar() {
   // An active seasonal theme (Christmas / Eid) replaces the regular bar with a themed one.
   const season = getActiveTheme(siteSettings);
   const seasonInfo = season ? SEASONS[season] : null;
-  const newsBarText = season ? seasonBarText(siteSettings, season, language === "ar" ? "ar" : "en") : baseNewsBarText;
+  const seasonText = season ? seasonBarText(siteSettings, season, language === "ar" ? "ar" : "en") : "";
+  const newsBarText = season
+    ? [seasonText, newsBarEnabled ? baseNewsBarText : ""].filter((part) => part.trim().length > 0).join(" | ")
+    : baseNewsBarText;
   const showNewsBar = season ? newsBarText.trim().length > 0 : newsBarEnabled && newsBarText.trim().length > 0;
   const isAr = language === "ar";
 
@@ -1052,7 +1060,7 @@ export function Navbar() {
               aria-hidden="true"
             />
             <motion.aside
-              className="absolute inset-y-0 start-0 flex w-[90%] max-w-[400px] flex-col overflow-hidden rounded-e-[2rem] bg-background text-foreground shadow-2xl"
+              className="absolute inset-y-0 start-0 flex w-[88%] max-w-[380px] flex-col overflow-hidden bg-[#faf7f4] text-foreground shadow-2xl"
               initial={{ x: isAr ? "100%" : "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: isAr ? "100%" : "-100%" }}
@@ -1092,7 +1100,7 @@ export function Navbar() {
                 </p>
               </div>
 
-              <div className="relative -mt-6 flex-1 overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-background px-4 pb-5 pt-4">
+              <div className="relative -mt-6 flex-1 overflow-y-auto overscroll-contain rounded-t-[1.75rem] bg-[#faf7f4] px-4 pb-8 pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -1144,80 +1152,83 @@ export function Navbar() {
                 <p className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
                   {isAr ? "الأقسام" : "Categories"}
                 </p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {navCategories.map((c: any) => {
+                <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05]">
+                  {navCategories.map((c: any, idx: number) => {
                     const href = categoryHref(c);
                     const open = expandedCat === c.id;
                     return (
-                      <div key={c.id} className="relative">
-                        <Link
-                          href={href}
-                          className="group relative block aspect-[4/3] overflow-hidden rounded-2xl bg-sand"
-                          data-testid={`link-${c.slug}-mobile`}
-                        >
-                          {c.image && (
-                            <img
-                              src={optimizeCloudinaryUrl(c.image, 400) || c.image}
-                              alt=""
-                              loading="lazy"
-                              className="absolute inset-0 h-full w-full object-cover"
-                            />
-                          )}
-                          <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                          <span className="absolute start-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-foreground">
-                            <MenuGlyph category={c} />
-                          </span>
-                          <span className="font-heading absolute inset-x-3 bottom-2.5 truncate text-lg font-medium leading-tight text-white">
-                            {catLabel(c)}
-                          </span>
-                        </Link>
-                        {c.subs.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedCat(open ? null : c.id)}
-                            className={`absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-full transition-colors ${open ? "bg-berry text-white" : "bg-white/90 text-foreground"}`}
-                            aria-expanded={open}
-                            aria-label={catLabel(c)}
+                      <div key={c.id} className={idx > 0 ? "border-t border-border/70" : ""}>
+                        <div className="flex items-center">
+                          <Link
+                            href={href}
+                            className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-[15px] font-medium"
+                            data-testid={`link-${c.slug}-mobile`}
                           >
-                            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`} />
-                          </button>
-                        )}
+                            <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-sand">
+                              {c.image ? (
+                                <img
+                                  src={optimizeCloudinaryUrl(c.image, 160) || c.image}
+                                  alt=""
+                                  loading="lazy"
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center text-berry">
+                                  <MenuGlyph category={c} />
+                                </span>
+                              )}
+                            </span>
+                            <span className="truncate">{catLabel(c)}</span>
+                          </Link>
+                          {c.subs.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedCat(open ? null : c.id)}
+                              className="flex h-12 w-12 shrink-0 items-center justify-center text-muted-foreground"
+                              aria-expanded={open}
+                              aria-label={catLabel(c)}
+                            >
+                              <ChevronDown className={`h-5 w-5 transition-transform duration-300 ${open ? "rotate-180 text-berry" : ""}`} />
+                            </button>
+                          ) : (
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center text-muted-foreground/60">
+                              <ChevronDown className="h-4 w-4 -rotate-90 rtl:rotate-90" />
+                            </span>
+                          )}
+                        </div>
+                        <AnimatePresence initial={false}>
+                          {open && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.22 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="flex flex-wrap gap-2 px-3 pb-3 pt-0.5">
+                                <Link
+                                  href={href}
+                                  className="rounded-full bg-foreground px-3.5 py-1.5 text-[13px] font-medium text-background"
+                                >
+                                  {isAr ? "الكل" : "All"}
+                                </Link>
+                                {c.subs.map((s: any) => (
+                                  <Link
+                                    key={s.id}
+                                    href={`${href}?sub=${s.id}`}
+                                    className="rounded-full border border-border bg-background px-3.5 py-1.5 text-[13px] text-foreground/85"
+                                  >
+                                    {isAr ? s.nameAr || s.name : s.name}
+                                  </Link>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     );
                   })}
                 </div>
-                <AnimatePresence initial={false}>
-                  {(() => {
-                    const c = navCategories.find((x: any) => x.id === expandedCat);
-                    if (!c || c.subs.length === 0) return null;
-                    const href = categoryHref(c);
-                    return (
-                      <motion.div
-                        key={c.id}
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.22 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="mt-2.5 rounded-2xl bg-white p-3 ring-1 ring-black/[0.05]">
-                          <p className="mb-2 text-[12px] font-semibold text-berry">{catLabel(c)}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {c.subs.map((s: any) => (
-                              <Link
-                                key={s.id}
-                                href={`${href}?sub=${s.id}`}
-                                className="rounded-full border border-border bg-background px-3.5 py-1.5 text-[13px] text-foreground/85"
-                              >
-                                {isAr ? s.nameAr || s.name : s.name}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })()}
-                </AnimatePresence>
 
                 {/* Account and settings */}
                 <div className="mt-5 overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05]">
