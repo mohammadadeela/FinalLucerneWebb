@@ -866,32 +866,43 @@ export default function Home() {
               style={{ gridTemplateColumns: `repeat(${Math.min(Math.max(catTiles.length, 1), 5)}, minmax(0, 1fr))` }}
               data-testid="row-categories-mobile"
             >
-              {catTiles.map((item, i) => (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className="flex aspect-[1.9/1] min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush via-blush/90 to-blush/75 ring-1 ring-berry/10"
-                  data-testid={`pill-m-${item.testId}`}
-                >
-                  <span
-                    className="relative block h-full w-[42%] shrink-0 overflow-hidden"
-                    style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
+              {catTiles.map((item, i) => {
+                // Five in a row are too narrow for a name beside the photo, so the name goes under
+                // it; with four or fewer it stays beside it. Either way the whole name is shown.
+                const stacked = catTiles.length >= 5;
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.href}
+                    className={`flex min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush via-blush/90 to-blush/75 ring-1 ring-berry/10 ${
+                      stacked ? "aspect-[1/1.12] flex-col" : "aspect-[1.9/1]"
+                    }`}
+                    data-testid={`pill-m-${item.testId}`}
                   >
-                    <BannerImage
-                      src={item.img || "/placeholder-product.svg"}
-                      alt={item.label}
-                      className="h-full w-full object-cover"
-                      loading="eager"
-                      width={160}
-                    />
-                  </span>
-                  <span className="flex min-w-0 flex-1 items-center justify-center px-1">
-                    <span className="block max-w-full truncate text-[11px] font-medium leading-tight">
-                      {item.label}
+                    <span
+                      className={`relative block shrink-0 overflow-hidden ${stacked ? "h-[62%] w-full" : "h-full w-[42%]"}`}
+                      style={{ background: TILE_TINTS[i % TILE_TINTS.length] }}
+                    >
+                      <BannerImage
+                        src={item.img || "/placeholder-product.svg"}
+                        alt={item.label}
+                        className="h-full w-full object-cover"
+                        loading="eager"
+                        width={160}
+                      />
                     </span>
-                  </span>
-                </Link>
-              ))}
+                    <span className="flex min-h-0 min-w-0 flex-1 items-center justify-center px-1">
+                      <span
+                        className={`block max-w-full break-words text-center font-medium leading-[1.15] line-clamp-2 ${
+                          item.label.length > 9 ? "text-[9.5px]" : stacked ? "text-[10.5px]" : "text-[11px]"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
             <Rail className="hidden sm:block" scrollClassName="gap-3 lg:gap-5 pb-2" testId="rail-categories">
               {catTiles.map((item, i) => (
