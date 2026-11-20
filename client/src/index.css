@@ -351,3 +351,14 @@ html.admin-theme {
 @media (prefers-reduced-motion: reduce) {
   .strip-pan { animation: none; left: 50%; transform: translateX(-50%); }
 }
+
+/* Category row photo: its four edges melt into the banner, so no box shows around the
+   products even when the photo's background is not perfectly even. */
+.row-fade {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
+  mask-composite: intersect;
+}

@@ -6823,14 +6823,31 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
         const corner = await sharp(raw).extract({ left: 0, top: 0, width: 8, height: 8 }).resize(1, 1).removeAlpha().raw().toBuffer();
         const bg = "#" + [corner[0], corner[1], corner[2]].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
         let rowBuffer = raw;
+        let rowBg = bg;
         let width = 0;
         let height = 0;
         try {
           const trimmed = await sharp(raw).trim({ background: bg, threshold: 18 }).toBuffer({ resolveWithObject: true });
           const padX = Math.round(trimmed.info.width * 0.025);
           const padY = Math.round(trimmed.info.height * 0.04);
+          // The banner takes the colour found just around the products: an uneven background is
+          // often lighter in the middle than in the corners, and this keeps photo and banner matched.
+          try {
+            const tw = trimmed.info.width;
+            const th = trimmed.info.height;
+            const strips = await Promise.all([
+              sharp(trimmed.data).extract({ left: 0, top: 0, width: tw, height: 1 }).resize(1, 1).removeAlpha().raw().toBuffer(),
+              sharp(trimmed.data).extract({ left: 0, top: th - 1, width: tw, height: 1 }).resize(1, 1).removeAlpha().raw().toBuffer(),
+              sharp(trimmed.data).extract({ left: 0, top: 0, width: 1, height: th }).resize(1, 1).removeAlpha().raw().toBuffer(),
+              sharp(trimmed.data).extract({ left: tw - 1, top: 0, width: 1, height: th }).resize(1, 1).removeAlpha().raw().toBuffer(),
+            ]);
+            const avg = [0, 1, 2].map((ch) => Math.round(strips.reduce((sum, st) => sum + st[ch], 0) / strips.length));
+            rowBg = "#" + avg.map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
+          } catch {
+            /* keep the corner colour */
+          }
           const out = await sharp(trimmed.data)
-            .extend({ top: padY, bottom: padY, left: padX, right: padX, background: bg })
+            .extend({ top: padY, bottom: padY, left: padX, right: padX, background: rowBg })
             .png()
             .toBuffer({ resolveWithObject: true });
           rowBuffer = out.data;
@@ -6840,7 +6857,7 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
           console.warn("[ai-generate-image] row trim skipped:", trimErr?.message || trimErr);
         }
         const rowUrl = await uploadToCloudinary(rowBuffer, "ai-category-row.png");
-        return res.json({ url: rowUrl, bg, ar: width && height ? Number((width / height).toFixed(3)) : 0 });
+        return res.json({ url: rowUrl, bg: rowBg, ar: width && height ? Number((width / height).toFixed(3)) : 0 });
       }
 
       // Every other storefront photo uses the shared clean theme, with the composition rule of

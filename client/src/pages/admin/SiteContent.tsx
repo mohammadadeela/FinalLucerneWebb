@@ -1671,8 +1671,21 @@ async function trimRowPhoto(file: File): Promise<{ file: File; bg: string; ar: n
       if (y > maxY) maxY = y;
     }
   }
-  const hex = "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+  let hex = "#" + [r, g, b].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
   if (maxX < 0) return { file, bg: hex, ar: W / H };
+  // The banner takes the colour found just around the products (an uneven background is often
+  // lighter in the middle than in the corners), so the photo and the banner match.
+  {
+    const mx = Math.max(2, Math.round((maxX - minX) * 0.02));
+    const my = Math.max(2, Math.round((maxY - minY) * 0.04));
+    const x0 = Math.max(0, minX - mx), x1 = Math.min(W - 1, maxX + mx);
+    const y0 = Math.max(0, minY - my), y1 = Math.min(H - 1, maxY + my);
+    let rr = 0, gg = 0, bb = 0, nn = 0;
+    const add = (x: number, y: number) => { const i = (y * W + x) * 4; rr += data[i]; gg += data[i + 1]; bb += data[i + 2]; nn++; };
+    for (let x = x0; x <= x1; x += 2) { add(x, y0); add(x, y1); }
+    for (let y = y0; y <= y1; y += 2) { add(x0, y); add(x1, y); }
+    if (nn > 0) hex = "#" + [rr / nn, gg / nn, bb / nn].map((v) => Math.round(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+  }
   const padX = Math.round((maxX - minX) * 0.025);
   const padY = Math.round((maxY - minY) * 0.04);
   const x = Math.max(0, minX - padX), y = Math.max(0, minY - padY);
@@ -1782,11 +1795,7 @@ function RowPhotoUpload({ value, bg, ar, onChange, products, builtIn }: {
                   className={`relative overflow-hidden rounded-2xl ${blend || !shown.bg ? "bg-blush" : ""}`}
                   style={{ aspectRatio: String(v.aspect), ...(shown.bg && !blend ? { backgroundColor: shown.bg } : {}) }}
                 >
-                  <div className={`absolute inset-x-[2.5%] inset-y-[7%] flex flex-wrap content-start justify-evenly overflow-hidden ${blend ? "mix-blend-multiply" : ""}`}>
-                    {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
-                      <img key={n} src={shown.src} alt="" className="h-full max-w-full shrink-0 object-contain" />
-                    ))}
-                  </div>
+                  <img src={shown.src} alt="" className={`row-fade absolute inset-0 m-auto max-h-[90%] max-w-[96%] ${blend ? "mix-blend-multiply" : ""}`} />
                 </div>
                 <p className="mt-1 text-center text-[10px] text-muted-foreground">{v.label}</p>
               </div>
@@ -1838,7 +1847,7 @@ function CategoryStripBannersCard({ values, onChange }: { values: Record<string,
       {open && (
         <div className="p-5 space-y-5 bg-background">
           <p className="text-xs text-muted-foreground text-right">
-            الشريط فوق منتجات كل فئة: صف من صور المنتجات الحقيقية على خلفية بلون واحد. ارفعي الصورة كما هي (مثلاً 5 قطع في صف على خلفية وردية) — الموقع يقصّ الفراغ حول القطع تلقائياً، ويأخذ لون الخلفية للشريط، ويعرض الصف كاملاً وواضحاً على الكمبيوتر والهاتف بدون أي قص. كلما كانت القطع أكبر في الصورة كانت أوضح. فئة الأحذية لها صف جاهز يظهر تلقائياً إلى أن ترفعي غيره. زر «توليد الصف تلقائياً» يصنع صورة الصف للفئة بالذكاء الاصطناعي ويجهّزها مباشرة — راجعي المعاينة ثم اضغطي حفظ، وإن لم تعجبك اضغطي «توليد صورة أخرى».
+            الشريط فوق منتجات كل فئة: صف من صور المنتجات الحقيقية على خلفية بلون واحد. ارفعي الصورة كما هي (مثلاً 5 قطع في صف على خلفية وردية) — الموقع يقصّ الفراغ حول القطع تلقائياً، ويأخذ لون الخلفية للشريط، ويعرض الصف مرة واحدة في وسط الشريط، كاملاً وواضحاً على الكمبيوتر والهاتف بدون أي قص. كلما كانت القطع أكبر في الصورة كانت أوضح. فئة الأحذية لها صف جاهز يظهر تلقائياً إلى أن ترفعي غيره. زر «توليد الصف تلقائياً» يصنع صورة الصف للفئة بالذكاء الاصطناعي ويجهّزها مباشرة — راجعي المعاينة ثم اضغطي حفظ، وإن لم تعجبك اضغطي «توليد صورة أخرى».
           </p>
           <BulkAIGenerate
             label="توليد صفوف كل الفئات بالذكاء الاصطناعي"

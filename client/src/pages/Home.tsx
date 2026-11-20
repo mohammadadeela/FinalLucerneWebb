@@ -1400,7 +1400,7 @@ export default function Home() {
             >
               {/* The category banner: a row of real product photos. The admin page (or the built-in
                   generator) trims the empty background off the photo, so here the row is fitted
-                  whole inside the banner and repeated side by side to fill the width — sharp, and
+                  whole inside the banner, once, centred — sharp, and
                   never cut on any screen. Rows of tall pieces (dresses, abayas) get a taller banner
                   so they stay clear. A white photo background blends into the banner's pink. */}
               {(() => {
@@ -1426,22 +1426,15 @@ export default function Home() {
                     data-testid={`link-view-all-${section.href}`}
                   >
                     {row ? (
-                      <div
-                        className={`absolute inset-x-[2.5%] inset-y-[7%] flex flex-wrap content-start justify-evenly overflow-hidden ${blend ? "mix-blend-multiply" : ""}`}
+                      /* One row, shown once, as large as the banner allows */
+                      <img
+                        src={optimizeCloudinaryUrl(row, 1600) || row}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className={`row-fade absolute inset-0 m-auto max-h-[90%] max-w-[96%] ${blend ? "mix-blend-multiply" : ""}`}
                         data-testid={`img-category-row-${id}`}
-                      >
-                        {/* Whole copies only, spaced evenly: the ones that do not fit wrap out of sight */}
-                        {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
-                          <img
-                            key={n}
-                            src={optimizeCloudinaryUrl(row, 1200) || row}
-                            alt=""
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full max-w-full shrink-0 object-contain"
-                          />
-                        ))}
-                      </div>
+                      />
                     ) : wide || phone ? (
                       <>
                         {wide && (
