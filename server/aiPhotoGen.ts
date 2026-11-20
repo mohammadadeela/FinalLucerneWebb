@@ -558,13 +558,35 @@ const SLOT_RULES: Record<PhotoSlot, { ideas: string[]; composition: string }> = 
   },
 };
 
+/** Things that are worn on the body hang on a hanger; shoes, belts, bags and jewellery never do. */
+const HANGS_RE =
+  /dress|abaya|gown|blouse|shirt|blazer|jacket|coat|cardigan|sweater|knit|top\b|tunic|skirt|pants|trouser|jeans|suit|\bsets?\b|outfit|cloth|kaftan|jumpsuit|فستان|فساتين|عباي|عباء|بلوز|قميص|قمصان|بليزر|جاكيت|معطف|تنور|بنطل|بناطيل|طقم|أطقم|ملابس/i;
+const NEVER_HANGS_RE =
+  /shoe|heel|boot|sneaker|sandal|ballerina|flat\b|loafer|slipper|belt|bag|clutch|purse|wallet|jewel|necklace|earring|bracelet|ring\b|watch|scarf pin|sunglass|حذاء|أحذية|شوز|كعب|جزم|بوت|بسطار|صندل|باليرينا|سنيكرز|قشاط|أقشطة|قشط|حزام|حقيب|شنط|كلتش|إكسسوار|اكسسوار|مجوهر|نظار/i;
+export function canHang(subject: string): boolean {
+  if (NEVER_HANGS_RE.test(subject)) return false;
+  return HANGS_RE.test(subject);
+}
+
+/** How this kind of product is presented, so nothing is shown in a way that makes no sense. */
+function displayRule(subject: string): string {
+  if (canHang(subject)) {
+    return "Garments may hang on a slim gold hanger (no rail or pole), be worn by a model, or be neatly folded.";
+  }
+  return "Never use a hanger, hook, rail or mannequin for this product — hangers are only for garments. Shoes and boots stand on the surface, seen from the side. Belts are neatly coiled or laid flat. Bags stand upright on the surface. Jewellery and small accessories lie flat on the surface.";
+}
+
 /** Full prompt for one storefront photo slot. */
 export function buildThemedPrompt(slot: PhotoSlot, subject: string): string {
   const rules = SLOT_RULES[slot] || SLOT_RULES.pageHero;
+  const hangs = canHang(subject);
+  // Ideas that hang the product, or dress a model in it, only suit garments.
+  const ideas = rules.ideas.filter((idea) => hangs || !/hang|outfit|garment|wearing/i.test(idea));
   return `Create one photograph for a women's fashion web store, Lucerne Boutique.
 
 Subject: ${subject}
-Show it as: ${pickOne(rules.ideas)}.
+Show it as: ${pickOne(ideas.length ? ideas : ["one single product", "a pair of the product"])}.
+Presentation: ${displayRule(subject)}
 
 ${THEME_RULES(pickOne(THEME_BACKGROUNDS))}
 
@@ -587,7 +609,8 @@ Rules:
 - Wide horizontal image.
 - Background: pure flat white, #FFFFFF, edge to edge. No gradient, no texture, no floor line, no vignette, no grey areas, no backdrop shadows.
 - ONE single straight row of the products, side by side, centred vertically, spread across almost the full width with a small margin at the left and right edges. Make the products as large as the image allows.
-- All products the same height, standing on the same invisible baseline, evenly spaced, not touching each other. Shoes are seen from the side, all pointing the same way. Clothes hang on a slim gold hanger, seen from the front, with no rail or pole.
+- All products the same height, standing on the same invisible baseline, evenly spaced, not touching each other.
+- ${displayRule(products)} Shoes all point the same way.
 - Real product photography: sharp, clean, true materials, soft even studio light. Never an illustration, icon, drawing or 3D render.
 - Each product a different colour from this palette: nude, beige, camel, soft pink, burgundy, black, olive, navy, with small gold details. Avoid pure white products, because the background is white.
 - No shadows on the background, or only a very faint one directly under each product.
@@ -623,12 +646,18 @@ export async function generateVideoFromPrompt(subject: string, imageUrl?: string
   } else {
     input.push({
       type: "text",
-      text: `A short, smooth clip for a women's fashion web store banner. Subject: ${subject}. Show it as: ${pickOne([
-        "one hero piece turning slowly on an invisible stand",
-        "a small styled group of two or three pieces, with a slow glide across them",
-        "a piece on a slim gold hanger swaying very gently",
-        "an elegant woman wearing the piece, moving slowly and gracefully, modest classy styling",
-      ])}. Real studio footage on a plain, soft, solid ${pickOne(THEME_BACKGROUNDS)} background with no props or scenery, the subject centred with empty background around it, soft diffused light, elegant and feminine, colours from cream, beige, camel, soft pink, burgundy and black. ${motion}`,
+      text: `A short, smooth clip for a women's fashion web store banner. Subject: ${subject}. Show it as: ${pickOne(
+        canHang(subject)
+          ? [
+              "a piece on a slim gold hanger swaying very gently",
+              "an elegant woman wearing the piece, moving slowly and gracefully, modest classy styling",
+              "a small styled group of two or three pieces, with a slow glide across them",
+            ]
+          : [
+              "one hero piece turning slowly on an invisible stand",
+              "a small styled group of two or three pieces resting on the surface, with a slow glide across them",
+            ],
+      )}. ${displayRule(subject)} Real studio footage on a plain, soft, solid ${pickOne(THEME_BACKGROUNDS)} background with no props or scenery, the subject centred with empty background around it, soft diffused light, elegant and feminine, colours from cream, beige, camel, soft pink, burgundy and black. ${motion}`,
     });
   }
 
