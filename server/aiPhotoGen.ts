@@ -562,7 +562,7 @@ const SLOT_RULES: Record<PhotoSlot, { ideas: string[]; composition: string }> = 
 const HANGS_RE =
   /dress|abaya|gown|blouse|shirt|blazer|jacket|coat|cardigan|sweater|knit|top\b|tunic|skirt|pants|trouser|jeans|suit|\bsets?\b|outfit|cloth|kaftan|jumpsuit|فستان|فساتين|عباي|عباء|بلوز|قميص|قمصان|بليزر|جاكيت|معطف|تنور|بنطل|بناطيل|طقم|أطقم|ملابس/i;
 const NEVER_HANGS_RE =
-  /shoe|heel|boot|sneaker|sandal|ballerina|flat\b|loafer|slipper|belt|bag|clutch|purse|wallet|jewel|necklace|earring|bracelet|ring\b|watch|scarf pin|sunglass|حذاء|أحذية|شوز|كعب|جزم|بوت|بسطار|صندل|باليرينا|سنيكرز|قشاط|أقشطة|قشط|حزام|حقيب|شنط|كلتش|إكسسوار|اكسسوار|مجوهر|نظار/i;
+  /shoe|heel|boot|sneaker|sandal|ballerina|accessor|perfume|flat\b|loafer|slipper|belt|bag|clutch|purse|wallet|jewel|necklace|earring|bracelet|ring\b|watch|scarf pin|sunglass|حذاء|أحذية|شوز|كعب|جزم|بوت|بسطار|صندل|باليرينا|سنيكرز|قشاط|أقشطة|قشط|حزام|حقيب|شنط|كلتش|إكسسوار|اكسسوار|مجوهر|نظار/i;
 export function canHang(subject: string): boolean {
   if (NEVER_HANGS_RE.test(subject)) return false;
   return HANGS_RE.test(subject);
