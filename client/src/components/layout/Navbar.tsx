@@ -1059,7 +1059,7 @@ export function Navbar() {
             >
               <div className="flex h-[100dvh] max-h-full flex-col">
               {/* Wordmark + close */}
-              <div className="relative flex h-[4.5rem] shrink-0 items-center justify-center border-b border-black/[0.06] bg-blush px-4">
+              <div className="relative flex h-[4.5rem] shrink-0 items-center justify-center border-b border-black/[0.06] bg-gradient-to-b from-blush/50 to-transparent px-4">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex flex-col items-center leading-none" aria-label="Lucerne Boutique">
                   <span className="flex items-end gap-1.5" dir="ltr">
                     <span
@@ -1128,7 +1128,7 @@ export function Navbar() {
                           key={c.id}
                           href={categoryHref(c)}
                           onClick={() => setMobileMenuOpen(false)}
-                          className="relative block min-h-0 overflow-hidden rounded-2xl bg-blush"
+                          className="relative block min-h-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush to-sand"
                           style={last && spare > 0 ? { gridColumn: `span ${spare + 1}` } : undefined}
                           data-testid={`link-${c.slug}-mobile`}
                         >
@@ -1179,7 +1179,7 @@ export function Navbar() {
                   <Link
                     href="/our-location"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blush"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sand/80"
                     aria-label={t.nav.ourLocation}
                     data-testid="link-our-location"
                   >
