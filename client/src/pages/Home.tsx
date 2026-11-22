@@ -245,7 +245,7 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     if (texts.length < 2) return;
-    const id = window.setInterval(() => setIdx((v) => v + 1), 3200);
+    const id = window.setInterval(() => setIdx((v) => v + 1), 4200);
     return () => window.clearInterval(id);
   }, [texts.length]);
   if (texts.length === 0) return null;

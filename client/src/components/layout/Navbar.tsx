@@ -667,7 +667,7 @@ export function Navbar() {
     if (newsItems.length < 2) return;
     const id = window.setInterval(
       () => setNewsIdx((i) => (i + 1) % newsItems.length),
-      3200,
+      4200,
     );
     return () => window.clearInterval(id);
   }, [newsItems.length, newsBarText]);

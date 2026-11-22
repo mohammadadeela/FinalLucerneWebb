@@ -24,7 +24,7 @@ export interface HeroSlide {
   secondary?: { label: string; href: string };
 }
 
-const SLIDE_MS = 5200;
+const SLIDE_MS = 6500;
 
 /* Soft panel tints, one per slide, so every slide feels like its own page of a lookbook. */
 const TINTS = [
