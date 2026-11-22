@@ -17,7 +17,7 @@
   --background: 332 65% 98.5%; /* pink-tinted white */
   --foreground: 0 0% 10%;
 
-  --card: 0 0% 98%;
+  --card: 0 0% 100%; /* same white as every other card and tile */
   --card-foreground: 0 0% 10%;
 
   --popover: 0 0% 100%;

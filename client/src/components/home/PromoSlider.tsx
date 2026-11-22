@@ -32,7 +32,7 @@ export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: bool
 
   return (
     <div
-      className="relative overflow-hidden rounded-[1.5rem] bg-sand sm:rounded-[2rem]"
+      className="relative overflow-hidden rounded-[1.5rem] bg-blush sm:rounded-[2rem]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={(e) => setTouchX(e.touches[0].clientX)}

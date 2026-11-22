@@ -123,7 +123,7 @@ export default function TermsOfService() {
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
       <main className="flex-1">
-        <section className="bg-secondary py-16 sm:py-24">
+        <section className="bg-blush py-16 sm:py-24">
           <div className="w-full px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="font-display text-3xl sm:text-5xl tracking-widest uppercase mb-4">
               {t.footer.termsOfService}

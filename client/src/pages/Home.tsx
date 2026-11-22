@@ -204,7 +204,7 @@ function ProductRail({
               className={`group flex h-full min-h-[12rem] flex-col items-center justify-center gap-3 rounded-[1.15rem] border border-dashed p-4 text-center transition-colors duration-300 ${
                 sale
                   ? "border-[#9B1C1C]/35 bg-white/60 text-[#9B1C1C] hover:bg-white"
-                  : "border-berry/35 bg-[hsl(var(--blush)/0.35)] text-foreground hover:bg-[hsl(var(--blush)/0.6)]"
+                  : "border-berry/35 bg-blush text-foreground hover:bg-blush/80"
               }`}
               data-testid={testId ? `${testId}-more` : undefined}
             >
@@ -366,14 +366,8 @@ function Reveal({ children }: { children: ReactNode }) {
 }
 
 /* Pastel backdrops that rotate across category tiles (blush / sage / sand). */
-const TILE_TINTS = [
-  "hsl(var(--blush))",
-  "hsl(var(--blush) / 0.75)",
-  "hsl(var(--sage))",
-  "hsl(var(--blush) / 0.95)",
-  "hsl(var(--sand))",
-  "hsl(var(--sage) / 0.7)",
-];
+// The colour behind a category photo while it loads — the same pink as every other panel.
+const TILE_TINTS = ["hsl(var(--blush))"];
 
 /* ──────────────────────────────────── page ──────────────────────────────────────── */
 
@@ -1222,7 +1216,7 @@ export default function Home() {
                       className={`group flex-col items-center rounded-[1.25rem] bg-white p-2 text-center transition-shadow duration-300 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)] sm:rounded-[1.5rem] sm:p-2.5 ${i < 6 ? "flex" : "hidden"} ${i < 4 ? "sm:flex" : "sm:hidden"} ${i < 5 ? "md:flex" : "md:hidden"} ${i < 6 ? "lg:flex" : "lg:hidden"} ${i < 7 ? "xl:flex" : "xl:hidden"}`}
                       data-testid={`tile-trending-${product.id}`}
                     >
-                      <span className="relative block aspect-square w-full overflow-hidden rounded-[0.9rem] bg-sand sm:rounded-[1.1rem]">
+                      <span className="relative block aspect-square w-full overflow-hidden rounded-[0.9rem] bg-blush sm:rounded-[1.1rem]">
                         <BannerImage
                           src={product.mainImage}
                           alt={product.name}

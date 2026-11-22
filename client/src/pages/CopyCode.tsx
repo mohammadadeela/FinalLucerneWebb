@@ -86,7 +86,7 @@ export default function CopyCode() {
   }, [copied]);
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50 px-4 py-10">
+    <div className="min-h-screen w-full flex items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-white border border-gray-200 shadow-sm px-6 py-10 sm:px-10 text-center">
         <p className="text-[11px] font-bold tracking-[0.3em] text-gray-900 uppercase">Lucerne Boutique</p>
         <p className="text-xs text-gray-400 mt-1">لوسيرن بوتيك</p>

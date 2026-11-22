@@ -25,7 +25,7 @@ export default function ShippingReturns() {
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
       <main className="flex-1">
-        <section className="bg-secondary py-16 sm:py-24">
+        <section className="bg-blush py-16 sm:py-24">
           <div className="w-full px-4 sm:px-6 lg:px-8 text-center">
             <h1 className="font-display text-3xl sm:text-5xl tracking-widest uppercase mb-4" data-testid="text-shipping-title">
               {t.shipping.title}
@@ -67,7 +67,7 @@ export default function ShippingReturns() {
 
           {note && (
             <div className="border-t border-border pt-12">
-              <div className="flex items-start gap-3 bg-secondary rounded-lg p-6">
+              <div className="flex items-start gap-3 bg-blush rounded-lg p-6">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-shipping-note">
                   {note}

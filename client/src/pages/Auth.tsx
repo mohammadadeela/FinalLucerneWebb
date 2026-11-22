@@ -1256,7 +1256,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex-1 flex items-center justify-center p-4 py-20 bg-muted/20">
+      <main className="flex-1 flex items-center justify-center p-4 py-20">
         <div className="bg-card w-full max-w-md p-6 sm:p-8 md:p-12 shadow-2xl border border-border/50">
 
           {/* ── LOGIN ── */}
