@@ -501,7 +501,7 @@ export const en = {
       "To start a return, contact us via WhatsApp or visit our store in person.",
       "Refunds are processed within 3-5 business days after receiving the returned item.",
     ],
-    note: "For any questions about your shipment or to request a return, don't hesitate to contact us via WhatsApp or visit our store directly.",
+    note: "For any questions about your shipment or to request an exchange, don't hesitate to contact us via WhatsApp or visit our store directly.",
   },
 
   contact: {
