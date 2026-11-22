@@ -418,7 +418,7 @@ export const en = {
     sale: "Sale",
     support: "Support",
     faq: "FAQ",
-    shippingReturns: "Shipping & Returns",
+    shippingReturns: "Shipping & Exchanges",
     contactUs: "Contact Us",
     ourLocation: "Our Location",
     followUs: "Follow Us",
@@ -461,7 +461,7 @@ export const en = {
       {
         question: "Can I return a product if it doesn't fit?",
         answer:
-          "Yes, we accept returns within 7 days of delivery, provided the item is unused and in its original condition. See our Shipping & Returns page for details.",
+          "There are no returns. Exchanges are accepted within one day of receiving the parcel.",
       },
       {
         question: "How long does delivery take?",
@@ -482,9 +482,9 @@ export const en = {
   },
 
   shipping: {
-    title: "Shipping & Returns",
+    title: "Shipping & Exchanges",
     subtitle:
-      "Everything you need to know about delivery and our return policy.",
+      "Everything you need to know about delivery and our exchange policy.",
     shippingTitle: "Shipping Policy",
     shippingDetails: [
       "We deliver to all areas of the West Bank and Jerusalem.",
@@ -493,15 +493,13 @@ export const en = {
       "Shipping costs are calculated at checkout based on your location.",
       "Orders over 300 NIS receive free shipping within Ramallah.",
     ],
-    returnsTitle: "Return Policy",
+    returnsTitle: "Exchange Policy",
     returnsDetails: [
-      "We accept returns within 7 days of the delivery date.",
+      "There are no returns.",
+      "Exchanges are accepted within one day of receiving the parcel.",
       "The item must be in its original condition, unused, and in its original packaging.",
-      "Sale items and special offers are non-returnable unless there is a manufacturing defect.",
-      "To start a return, contact us via WhatsApp or visit our store in person.",
-      "Refunds are processed within 3-5 business days after receiving the returned item.",
     ],
-    note: "For any questions about your shipment or to request a return, don't hesitate to contact us via WhatsApp or visit our store directly.",
+    note: "For any questions about your shipment or to request an exchange, don't hesitate to contact us via WhatsApp or visit our store directly.",
   },
 
   contact: {

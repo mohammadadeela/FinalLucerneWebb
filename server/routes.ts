@@ -1824,8 +1824,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
 
   // --- Exchange Requests ---
   // Exchange window is admin-configurable (site setting "exchange_window_days",
-  // default 3) instead of hardcoded, so the store can change it any time.
-  const DEFAULT_EXCHANGE_WINDOW_DAYS = 3;
+  // default 1) instead of hardcoded, so the store can change it any time.
+  const DEFAULT_EXCHANGE_WINDOW_DAYS = 1;
   async function getExchangeWindowMs(): Promise<number> {
     const raw = await storage.getSiteSetting("exchange_window_days");
     const days = raw ? parseFloat(raw) : NaN;

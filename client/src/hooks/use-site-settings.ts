@@ -83,7 +83,7 @@ export const defaultSettings: Record<string, string> = {
   reports_page_enabled: "true",
 
   exchange_note: "الفساتين والالبسة الرسمية لا تبدل",
-  exchange_window_days: "3",
+  exchange_window_days: "1",
 
   news_bar_enabled: "false",
   news_bar_text_ar: "",
@@ -105,7 +105,7 @@ export const defaultSettings: Record<string, string> = {
   faq_items: JSON.stringify([
     { question_ar: "كيف يمكنني تتبع طلبي؟", question_en: "How can I track my order?", answer_ar: "بعد تأكيد طلبك ستصلك رسالة عبر واتساب تتضمن تفاصيل الشحن ورقم التتبع.", answer_en: "Once your order is confirmed, you'll receive a WhatsApp message with shipping details and a tracking number." },
     { question_ar: "ما هي طرق الدفع المتاحة؟", question_en: "What payment methods do you accept?", answer_ar: "نقبل الدفع عبر بطاقات الائتمان والخصم (Visa, Mastercard) بالإضافة إلى الدفع عند الاستلام داخل رام الله.", answer_en: "We accept credit and debit cards (Visa, Mastercard) as well as cash on delivery within Ramallah." },
-    { question_ar: "هل يمكنني إرجاع المنتج إذا لم يناسبني؟", question_en: "Can I return a product if it doesn't fit?", answer_ar: "نعم، نقبل الإرجاع خلال 7 أيام من تاريخ الاستلام بشرط أن يكون المنتج بحالته الأصلية.", answer_en: "Yes, we accept returns within 7 days of delivery, provided the item is unused and in its original condition." },
+    { question_ar: "هل يمكنني إرجاع المنتج إذا لم يناسبني؟", question_en: "Can I return a product if it doesn't fit?", answer_ar: "لا يوجد إرجاع. التبديل خلال يوم واحد من استلام الطرد.", answer_en: "There are no returns. Exchanges are accepted within one day of receiving the parcel." },
     { question_ar: "كم يستغرق التوصيل؟", question_en: "How long does delivery take?", answer_ar: "يتم التوصيل داخل رام الله خلال 1-2 يوم عمل. المناطق الأخرى في فلسطين تستغرق من 2-4 أيام عمل.", answer_en: "Delivery within Ramallah takes 1-2 business days. Other areas in Palestine take 2-4 business days." },
     { question_ar: "هل تتوفر المقاسات الكبيرة؟", question_en: "Do you carry plus sizes?", answer_ar: "نعم، نحرص على توفير مقاسات متنوعة تناسب جميع الأجسام.", answer_en: "Yes, we carry a wide range of sizes to suit all body types." },
     { question_ar: "كيف أتواصل معكم؟", question_en: "How can I contact you?", answer_ar: "يمكنك التواصل معنا عبر واتساب أو زيارة متجرنا في رام الله.", answer_en: "You can reach us via WhatsApp or visit our store in Ramallah." },
@@ -114,10 +114,10 @@ export const defaultSettings: Record<string, string> = {
   // Shipping & Returns page
   shipping_details_ar: "نوفر خدمة التوصيل لجميع مناطق الضفة الغربية وداخل القدس.\nالتوصيل داخل رام الله والبيرة: 1-2 يوم عمل.\nالتوصيل لباقي مناطق فلسطين: 2-4 أيام عمل.\nتكلفة الشحن تُحسب عند الدفع بناءً على موقعك.\nالطلبات التي تتجاوز 300 شيكل تحصل على شحن مجاني داخل رام الله.",
   shipping_details_en: "We deliver to all areas of the West Bank and Jerusalem.\nDelivery within Ramallah and Al-Bireh: 1-2 business days.\nDelivery to other areas in Palestine: 2-4 business days.\nShipping costs are calculated at checkout based on your location.\nOrders over 300 NIS receive free shipping within Ramallah.",
-  returns_details_ar: "نقبل إرجاع المنتجات خلال 7 أيام من تاريخ الاستلام.\nيجب أن يكون المنتج بحالته الأصلية، غير مستخدم، وبعبوته الأصلية.\nالمنتجات المخفضة والعروض الخاصة غير قابلة للإرجاع إلا في حالة وجود عيب مصنعي.\nلبدء عملية الإرجاع، تواصلي معنا عبر واتساب أو حضوري مباشرة إلى المتجر.\nيتم استرداد المبلغ خلال 3-5 أيام عمل بعد استلام المنتج المُرجع.",
-  returns_details_en: "We accept returns within 7 days of the delivery date.\nThe item must be in its original condition, unused, and in its original packaging.\nSale items and special offers are non-returnable unless there is a manufacturing defect.\nTo start a return, contact us via WhatsApp or visit our store in person.\nRefunds are processed within 3-5 business days after receiving the returned item.",
-  shipping_note_ar: "لأي استفسار حول شحنتك أو طلب إرجاع، لا تترددي في التواصل معنا عبر واتساب أو زيارة متجرنا مباشرة.",
-  shipping_note_en: "For any questions about your shipment or to request a return, don't hesitate to contact us via WhatsApp or visit our store directly.",
+  returns_details_ar: "لا يوجد إرجاع.\nالتبديل خلال يوم واحد من استلام الطرد.\nيجب أن يكون المنتج بحالته الأصلية، غير مستخدم، وبعبوته الأصلية.",
+  returns_details_en: "There are no returns.\nExchanges are accepted within one day of receiving the parcel.\nThe item must be in its original condition, unused, and in its original packaging.",
+  shipping_note_ar: "لأي استفسار حول شحنتك أو طلب تبديل، لا تترددي في التواصل معنا عبر واتساب أو زيارة متجرنا مباشرة.",
+  shipping_note_en: "For any questions about your shipment or to request an exchange, don't hesitate to contact us via WhatsApp or visit our store directly.",
 
   // Contact page
   contact_phone: "970597314193",

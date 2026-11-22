@@ -28,8 +28,8 @@ const sections = {
       icon: RotateCcw,
       title: "الإرجاع والاستبدال",
       body: [
-        "لا نقبل الإرجاع نهائياً.",
-        "نقبل الاستبدال خلال ٣ أيام فقط من تاريخ الاستلام، شريطة أن تكون المنتجات بحالتها الأصلية غير مستخدمة مع كامل علاماتها التجارية.",
+        "لا يوجد إرجاع.",
+        "التبديل خلال يوم واحد من استلام الطرد، شريطة أن تكون المنتجات بحالتها الأصلية غير مستخدمة مع كامل علاماتها التجارية.",
         "لا تُقبل المنتجات المستعملة أو التالفة أو التي أُزيلت علاماتها للاستبدال.",
       ],
     },
@@ -82,8 +82,8 @@ const sections = {
       icon: RotateCcw,
       title: "Returns & Exchanges",
       body: [
-        "We do not accept returns under any circumstances.",
-        "Exchanges are accepted within 3 days of the delivery date only, provided items are in their original, unused condition with all tags attached.",
+        "There are no returns.",
+        "Exchanges are accepted within one day of receiving the parcel, provided items are in their original, unused condition with all tags attached.",
         "Used, damaged, or untagged items will not be accepted for exchange.",
       ],
     },
