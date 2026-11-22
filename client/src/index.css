@@ -337,8 +337,23 @@ html.admin-theme {
   stroke-dasharray: 100;
   animation: arrow-draw 2.8s ease-in-out infinite;
 }
+/* Beside a rotating heading the arrow keeps the heading's 4.2s clock (same as .news-rise):
+   it draws once as the phrase arrives, dips, rests, and fades out together with the phrase. */
+@keyframes arrow-draw-synced {
+  0%   { stroke-dashoffset: 100; opacity: 0; }
+  8%   { opacity: 1; }
+  37%  { stroke-dashoffset: 0; opacity: 1; }
+  88%  { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes arrow-dip-synced {
+  0%, 37%, 57%, 100% { transform: translateY(0); }
+  47%                { transform: translateY(5px); }
+}
+.curve-arrow.curve-arrow-synced { animation: arrow-dip-synced 4.2s ease-in-out both; }
+.curve-arrow.curve-arrow-synced path { animation: arrow-draw-synced 4.2s ease-in-out both; }
 @media (prefers-reduced-motion: reduce) {
-  .curve-arrow, .curve-arrow path { animation: none; }
+  .curve-arrow, .curve-arrow path, .curve-arrow.curve-arrow-synced, .curve-arrow.curve-arrow-synced path { animation: none; }
 }
 
 /* Phones: a wide strip photo shown at full height glides from one end to the other, so none of

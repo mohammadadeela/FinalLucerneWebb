@@ -261,7 +261,7 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
         <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">أ</p>
       </div>
       <div className="absolute inset-0 flex items-center justify-center gap-2 px-3 sm:gap-5" dir="ltr">
-        {!plain && <CurvedArrow flip />}
+        {!plain && <CurvedArrow flip cycle={texts.length > 1 ? idx : undefined} />}
         <h2
           className="m-0 min-w-0 overflow-hidden text-center"
         >
@@ -275,14 +275,16 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
             {current}
           </span>
         </h2>
-        {!plain && <CurvedArrow />}
+        {!plain && <CurvedArrow cycle={texts.length > 1 ? idx : undefined} />}
       </div>
     </div>
   );
 }
 
 /** A hand-drawn style arc that leaves the heading, curves outwards and points down at the products. */
-function CurvedArrow({ flip }: { flip?: boolean }) {
+function CurvedArrow({ flip, cycle }: { flip?: boolean; cycle?: number }) {
+  // With rotating phrases the arrow restarts with every phrase (keyed by `cycle`) and runs
+  // on the phrase's own 4.2s clock, so it draws once per phrase and never out of step.
   return (
     <svg
       viewBox="0 0 64 52"
@@ -295,7 +297,7 @@ function CurvedArrow({ flip }: { flip?: boolean }) {
       className="h-9 w-11 shrink-0 text-berry sm:h-[3.25rem] sm:w-16"
       style={flip ? { transform: "scaleX(-1)" } : undefined}
     >
-      <g className="curve-arrow">
+      <g key={cycle ?? "loop"} className={cycle === undefined ? "curve-arrow" : "curve-arrow curve-arrow-synced"}>
         <path pathLength={100} d="M5 12 C 30 0, 60 14, 50 44" />
         <path pathLength={100} d="M39 35 L50 45 L58 32" />
       </g>
