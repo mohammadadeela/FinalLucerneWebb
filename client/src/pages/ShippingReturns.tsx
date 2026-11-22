@@ -1,11 +1,10 @@
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { useLanguage } from "@/i18n";
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { Truck, RotateCcw, AlertCircle, ArrowLeftRight, Ruler, Send, ArrowLeft, ArrowRight, Clock } from "lucide-react";
-import { useSiteSettings, defaultSettings } from "@/hooks/use-site-settings";
+import { Truck, AlertCircle, Check, MapPin, ArrowLeftRight, Ruler, Send, ArrowLeft, ArrowRight, Clock } from "lucide-react";
+import { useSiteSettings, defaultSettings, getShippingZones } from "@/hooks/use-site-settings";
 import { rememberPostLoginTarget } from "@/lib/post-login";
+import { SupportPage, SupportHeading, Rise } from "@/components/support/SupportShell";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function ShippingReturns() {
@@ -38,7 +37,7 @@ export default function ShippingReturns() {
       : windowDays === 1 ? "one day" : `${windowDays} days`;
   const exchangeNote = (settings?.exchange_note ?? "").trim();
   const exchangeSteps = [
-    { icon: ArrowLeftRight, ar: "افتحي «الاستبدال»", en: "Open “Exchanges”", dAr: "في صفحة حسابك تجدين طلباتك المؤهلة للتبديل.", dEn: "Your account page lists the orders you can exchange." },
+    { icon: ArrowLeftRight, ar: "اذهبي إلى «الاستبدال»", en: "Go to “Exchanges”", dAr: "في صفحة حسابك تجدين طلباتك المؤهلة للتبديل.", dEn: "Your account page lists the orders you can exchange." },
     { icon: Ruler, ar: "اختاري القطعة", en: "Pick the piece", dAr: "حددي القطعة والمقاس المطلوب واكتبي السبب.", dEn: "Choose the piece, the size you want, and the reason." },
     { icon: Send, ar: "أرسلي الطلب", en: "Send the request", dAr: "يصلك إشعار بالرد على طلبك.", dEn: "You get a notification with our answer." },
   ];
@@ -56,53 +55,87 @@ export default function ShippingReturns() {
   const shippingLines = get("shipping_details_ar", "shipping_details_en");
   const returnsLines = get("returns_details_ar", "returns_details_en");
 
+  const zones = getShippingZones(settings);
+
   return (
-    <div className="min-h-screen flex flex-col pt-navbar">
-      <Navbar />
-      <main className="flex-1">
-        <section className="bg-blush py-16 sm:py-24">
-          <div className="w-full px-4 sm:px-6 lg:px-8 text-center">
-            <h1 className="font-display text-3xl sm:text-5xl tracking-widest uppercase mb-4" data-testid="text-shipping-title">
-              {t.shipping.title}
-            </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto" data-testid="text-shipping-subtitle">
-              {t.shipping.subtitle}
-            </p>
-          </div>
-        </section>
+    <SupportPage
+      current="shipping"
+      title={t.shipping.title}
+      subtitle={t.shipping.subtitle}
+      titleTestId="text-shipping-title"
+      subtitleTestId="text-shipping-subtitle"
+      heroExtra={
+        <div className="flex flex-wrap justify-center gap-2">
+          <a href="#shipping" className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground/80 transition-colors hover:text-berry-deep" data-testid="jump-shipping">
+            {t.shipping.shippingTitle}
+          </a>
+          <a href="#exchange-policy" className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-foreground/80 transition-colors hover:text-berry-deep" data-testid="jump-exchange">
+            {t.shipping.returnsTitle}
+          </a>
+          {exchangesEnabled && (
+            <a href="#how-to-exchange" className="rounded-full bg-berry px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-berry-deep" data-testid="jump-how">
+              {isAr ? "كيف أبدّل طلبي؟" : "How do I exchange?"}
+            </a>
+          )}
+        </div>
+      }
+    >
+      <div className="space-y-10 sm:space-y-14">
+        {/* Shipping */}
+        <Rise>
+          <section id="shipping" className="scroll-mt-28">
+            <SupportHeading icon={Truck} testId="text-shipping-section">{t.shipping.shippingTitle}</SupportHeading>
 
-        <section className="w-full px-4 sm:px-6 lg:px-8 py-12 sm:py-16 max-w-4xl mx-auto space-y-16">
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <Truck className="w-6 h-6 shrink-0" />
-              <h2 className="font-display text-xl uppercase tracking-widest" data-testid="text-shipping-section">
-                {t.shipping.shippingTitle}
-              </h2>
-            </div>
-            <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+            {zones.length > 0 && (
+              <div className={`mb-3 grid gap-2.5 ${zones.length >= 3 ? "grid-cols-3" : "grid-cols-2"}`} data-testid="shipping-zones">
+                {zones.map((zone) => (
+                  <div key={zone.id} className="rounded-2xl bg-white p-3 text-center sm:p-5" data-testid={`shipping-zone-${zone.id}`}>
+                    <span className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-blush text-berry">
+                      <MapPin className="h-4 w-4" strokeWidth={1.8} />
+                    </span>
+                    <p className="mt-2 text-[13px] font-semibold leading-snug text-foreground sm:text-sm">{isAr ? zone.nameAr : zone.nameEn}</p>
+                    <p className="price-text mt-1 text-lg font-bold text-berry-deep sm:text-2xl">
+                      {Number(zone.price) > 0 ? `₪${zone.price}` : isAr ? "مجاني" : "Free"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <ul className="space-y-3 rounded-2xl bg-white p-5 sm:p-6">
               {shippingLines.map((line, i) => (
-                <p key={i} data-testid={`text-shipping-detail-${i}`}>{line}</p>
+                <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-foreground/75" data-testid={`text-shipping-detail-${i}`}>
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blush text-berry">
+                    <Check className="h-3 w-3" strokeWidth={2.5} />
+                  </span>
+                  {line}
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
+        </Rise>
 
-          <div className="border-t border-border pt-12">
-            <div className="flex items-center gap-3 mb-6">
-              <RotateCcw className="w-6 h-6 shrink-0" />
-              <h2 className="font-display text-xl uppercase tracking-widest" data-testid="text-returns-section">
-                {t.shipping.returnsTitle}
-              </h2>
-            </div>
-            <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+        {/* Exchange policy */}
+        <Rise>
+          <section id="exchange-policy" className="scroll-mt-28">
+            <SupportHeading icon={ArrowLeftRight} testId="text-returns-section">{t.shipping.returnsTitle}</SupportHeading>
+            <ul className="space-y-3 rounded-2xl bg-white p-5 sm:p-6">
               {returnsLines.map((line, i) => (
-                <p key={i} data-testid={`text-returns-detail-${i}`}>{line}</p>
+                <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-foreground/75" data-testid={`text-returns-detail-${i}`}>
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blush text-berry">
+                    <Check className="h-3 w-3" strokeWidth={2.5} />
+                  </span>
+                  {line}
+                </li>
               ))}
-            </div>
+            </ul>
+          </section>
+        </Rise>
 
             {exchangesEnabled && (
               <div
                 id="how-to-exchange"
-                className="mt-10 scroll-mt-28 rounded-[1.5rem] bg-blush p-5 sm:p-8"
+                className="scroll-mt-28 rounded-[1.5rem] bg-blush p-5 sm:p-8"
                 data-testid="how-to-exchange"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -159,21 +192,16 @@ export default function ShippingReturns() {
                 </div>
               </div>
             )}
-          </div>
 
-          {note && (
-            <div className="border-t border-border pt-12">
-              <div className="flex items-start gap-3 bg-blush rounded-lg p-6">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-shipping-note">
-                  {note}
-                </p>
-              </div>
+        {note && (
+          <Rise>
+            <div className="flex items-start gap-3 rounded-2xl bg-white p-5">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-berry" />
+              <p className="text-sm leading-relaxed text-foreground/75" data-testid="text-shipping-note">{note}</p>
             </div>
-          )}
-        </section>
-      </main>
-      <Footer />
-    </div>
+          </Rise>
+        )}
+      </div>
+    </SupportPage>
   );
 }
