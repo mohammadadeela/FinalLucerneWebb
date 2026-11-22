@@ -356,6 +356,15 @@ export default function OrderConfirmation() {
                     );
                   })}
                 </div>
+                {/* A quiet pointer to the exchange guide, while exchanges are switched on */}
+                {siteSettings?.exchanges_enabled !== "false" && (
+                  <p className="mt-3 text-center text-xs text-muted-foreground" data-testid="text-exchange-pointer">
+                    {ar ? "المقاس غير مناسب؟ " : "Wrong size? "}
+                    <Link href="/shipping-returns#how-to-exchange" className="font-semibold text-foreground underline underline-offset-4">
+                      {ar ? "تعرّفي كيف تبدّلين طلبك" : "See how to exchange your order"}
+                    </Link>
+                  </p>
+                )}
               </motion.section>
 
               {/* Actions */}
