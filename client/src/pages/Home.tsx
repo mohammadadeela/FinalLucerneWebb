@@ -932,11 +932,11 @@ export default function Home() {
                       width={400}
                     />
                   </span>
-                  <span className="flex min-w-0 flex-1 items-center justify-center gap-1.5 px-1.5 sm:gap-2.5 lg:px-3">
+                  <span className={`flex min-w-0 flex-1 items-center justify-center px-1.5 lg:px-3 ${catTiles.length === 5 || catTiles.length === 6 ? "gap-1 xl:gap-1.5" : "gap-2.5"}`}>
                     <span className={`font-heading block min-w-0 text-center font-medium leading-tight line-clamp-2 ${catTiles.length === 5 || catTiles.length === 6 ? "text-[12px] lg:text-[15px] xl:text-[17px]" : catTiles.length > 6 ? "text-base lg:text-lg" : "text-lg lg:text-[1.35rem]"}`}>
                       {item.label}
                     </span>
-                    {catTiles.length < 5 && <Arrow className="h-4 w-4 shrink-0 text-berry transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 sm:h-[18px] sm:w-[18px]" />}
+                    <Arrow className={`shrink-0 text-berry transition-transform duration-300 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 ${catTiles.length === 5 || catTiles.length === 6 ? "h-3.5 w-3.5 xl:h-4 xl:w-4" : "h-[18px] w-[18px]"}`} />
                   </span>
                 </Link>
               ))}
