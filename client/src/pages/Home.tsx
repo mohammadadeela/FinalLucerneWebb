@@ -261,17 +261,17 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
         <p className="truncate text-2xl font-medium leading-none sm:text-[2rem] rtl:leading-snug">أ</p>
       </div>
       <div className="absolute inset-0 flex items-center justify-center gap-2 px-3 sm:gap-5" dir="ltr">
-        {!plain && <CurvedArrow flip />}
+        {!plain && <CurvedArrow flip cycle={texts.length > 1 ? idx : undefined} />}
         <h2 className="m-0 grid min-w-0 overflow-hidden text-center">
-          {/* The next phrase rises in while the previous one leaves, in the same moment — the
-              banner is never empty between two phrases. */}
+          {/* One movement per phrase: the old phrase leaves, the arrows start drawing for the
+              next one, and the next phrase rises in while they draw. */}
           <AnimatePresence initial={false}>
             <motion.span
               key={`${idx}-${current}`}
               initial={{ y: "85%", opacity: 0 }}
               animate={{ y: "0%", opacity: 1 }}
-              exit={{ y: "-85%", opacity: 0 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ y: "-85%", opacity: 0, transition: { duration: 0.4, ease: [0.4, 0, 1, 1] } }}
+              transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className={`display-latin keep-tracking col-start-1 row-start-1 block whitespace-nowrap font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${
                 current.length <= 11 ? "text-[1.5rem]" : current.length <= 14 ? "text-[1.25rem]" : current.length <= 18 ? "text-[1.05rem]" : "text-[0.85rem]"
               }`}
@@ -281,14 +281,16 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
             </motion.span>
           </AnimatePresence>
         </h2>
-        {!plain && <CurvedArrow />}
+        {!plain && <CurvedArrow cycle={texts.length > 1 ? idx : undefined} />}
       </div>
     </div>
   );
 }
 
 /** A hand-drawn style arc that leaves the heading, curves outwards and points down at the products. */
-function CurvedArrow({ flip }: { flip?: boolean }) {
+function CurvedArrow({ flip, cycle }: { flip?: boolean; cycle?: number }) {
+  // With rotating phrases the arrow redraws once for every new phrase (keyed by `cycle`);
+  // with a single phrase it keeps its gentle loop.
   return (
     <svg
       viewBox="0 0 64 52"
@@ -301,7 +303,7 @@ function CurvedArrow({ flip }: { flip?: boolean }) {
       className="h-9 w-11 shrink-0 text-berry sm:h-[3.25rem] sm:w-16"
       style={flip ? { transform: "scaleX(-1)" } : undefined}
     >
-      <g className="curve-arrow">
+      <g key={cycle ?? "loop"} className={cycle === undefined ? "curve-arrow" : "curve-arrow-once"}>
         <path pathLength={100} d="M5 12 C 30 0, 60 14, 50 44" />
         <path pathLength={100} d="M39 35 L50 45 L58 32" />
       </g>
