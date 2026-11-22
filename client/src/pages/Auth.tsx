@@ -97,7 +97,7 @@ function LoginNotification({
     action?: () => void; actionLabel?: string; actionArrow?: ReactNode;
   }> = {
     email_not_found: {
-      bg: "bg-blush",
+      bg: "bg-[#E8257D]/10",
       border: "border-transparent",
       iconWrap: "bg-white",
       iconColor: "text-[#E8257D]",
@@ -109,7 +109,7 @@ function LoginNotification({
       actionArrow: ar ? <ArrowLeft className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />,
     },
     google_account: {
-      bg: "bg-blush",
+      bg: "bg-[#E8257D]/10",
       border: "border-transparent",
       iconWrap: "bg-white",
       iconColor: "text-[#E8257D]",
@@ -221,7 +221,7 @@ function PhoneLoginNotification({
     <div
       className={`relative flex items-start gap-3 rounded-2xl border p-3.5 animate-in fade-in slide-in-from-top-1 duration-200 ${
         isNotSignedUp
-          ? "border-transparent bg-blush"
+          ? "border-transparent bg-[#E8257D]/10"
           : "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/25"
       }`}
       data-testid="phone-login-error-notification"
@@ -1093,7 +1093,7 @@ export default function Auth() {
     const baseBtn =
       "relative w-full h-12 flex items-center justify-center gap-3 rounded-full border text-sm font-semibold " +
       "transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none";
-    const normalBtn = "border-foreground/15 bg-white hover:border-berry hover:text-berry-deep";
+    const normalBtn = "border-foreground/15 bg-white hover:border-[#E8257D] hover:text-[#B3125C]";
     const lastBtn = "border-[#E8257D] bg-white shadow-[0_0_0_3px] shadow-[#E8257D]/15";
     const badge = (
       <span className="absolute -top-2 end-3 text-[10px] leading-none px-2 py-1 rounded-full bg-[#E8257D] text-white font-medium shadow-sm">
@@ -1165,7 +1165,7 @@ export default function Auth() {
       : (language === "ar" ? "التسجيل عبر واتساب" : "Register with WhatsApp");
     const smsLabel = language === "ar" ? "التسجيل عبر SMS" : "Register with SMS";
     const isLast = (m: LastLoginMethod) => highlightLastUsed && lastLoginMethod === m;
-    const normalBtn = "border-foreground/15 bg-white hover:border-berry hover:text-berry-deep";
+    const normalBtn = "border-foreground/15 bg-white hover:border-[#E8257D] hover:text-[#B3125C]";
     const lastBtn = "border-[#E8257D] bg-white shadow-[0_0_0_3px] shadow-[#E8257D]/15";
     const badge = (
       <span className="absolute -top-2 end-3 text-[10px] leading-none px-2 py-1 rounded-full bg-[#E8257D] text-white font-medium shadow-sm">
@@ -1243,7 +1243,7 @@ export default function Auth() {
             n === current
               ? "bg-[#E8257D] text-white border-[#E8257D]"
               : n < current
-              ? "bg-blush text-[#E8257D] border-transparent"
+              ? "bg-[#E8257D]/10 text-[#E8257D] border-transparent"
               : "bg-transparent text-muted-foreground border-border"
           }`}>
             {n < current ? "✓" : n}
@@ -1271,7 +1271,7 @@ export default function Auth() {
               <p className="display-latin mt-1 text-[10px] uppercase tracking-[0.42em] text-muted-foreground">Boutique</p>
             </div>
             {(step === "auth" || step === "reg-email") && (
-              <div className="relative mt-6 grid grid-cols-2 rounded-full bg-blush/60 p-1 text-sm font-semibold" role="tablist">
+              <div className="relative mt-6 grid grid-cols-2 rounded-full bg-[#E8257D]/10 p-1 text-sm font-semibold" role="tablist">
                 {([
                   { id: "auth", label: t.auth.signIn },
                   { id: "reg-email", label: t.auth.createAccount },
@@ -1360,7 +1360,7 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() => setRememberMe(v => !v)}
-                  className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl border transition-all duration-300 group ${rememberMe ? "border-transparent bg-blush/70" : "border-border/60 bg-transparent hover:bg-blush/30"}`}
+                  className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl border transition-all duration-300 group ${rememberMe ? "border-transparent bg-[#E8257D]/10" : "border-border/60 bg-transparent hover:bg-[#E8257D]/10"}`}
                   data-testid="checkbox-remember-me"
                   aria-pressed={rememberMe}
                 >
@@ -1504,7 +1504,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("reg-email")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-step2"
                 aria-label="Go back"
               >
@@ -1568,7 +1568,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("reg-code")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-step3"
                 aria-label="Go back"
               >
@@ -1689,7 +1689,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("auth")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-forgot-email"
                 aria-label="Go back"
               >
@@ -1714,7 +1714,7 @@ export default function Auth() {
                 </div>
 
                 {forgotEmailNotFound && (
-                  <div className="rounded-2xl bg-blush p-4" data-testid="forgot-email-not-found">
+                  <div className="rounded-2xl bg-[#E8257D]/10 p-4" data-testid="forgot-email-not-found">
                     <div className="flex items-start gap-3">
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-bold text-[#B3125C]">{t.auth.emailNotRegistered}</p>
@@ -1761,7 +1761,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("forgot-email")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-forgot-code"
                 aria-label="Go back"
               >
@@ -1818,7 +1818,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("forgot-code")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-forgot-newpass"
                 aria-label="Go back"
               >
@@ -1891,14 +1891,14 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("auth")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-login"
                 aria-label="Go back"
               >
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-2">
-                <div className="w-14 h-14 rounded-full bg-blush flex items-center justify-center mx-auto mb-4">
+                <div className="w-14 h-14 rounded-full bg-[#E8257D]/10 flex items-center justify-center mx-auto mb-4">
                   <Phone className="w-7 h-7 text-[#E8257D]" />
                 </div>
                 <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-login-title">
@@ -2034,14 +2034,14 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep(phoneIntent === "signup" ? "reg-email" : "phone-login")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-entry"
                 aria-label="Go back"
               >
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-2">
-                <div className="w-14 h-14 rounded-full bg-blush flex items-center justify-center mx-auto mb-4">
+                <div className="w-14 h-14 rounded-full bg-[#E8257D]/10 flex items-center justify-center mx-auto mb-4">
                   {phoneChannel !== "whatsapp"
                     ? <MessageSquare className="w-7 h-7 text-[#E8257D]" />
                     : <Phone className="w-7 h-7 text-[#E8257D]" />}
@@ -2130,7 +2130,7 @@ export default function Auth() {
                   setPhoneOtp("");
                   setStep("auth");
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-otp"
                 aria-label="Go back"
               >
@@ -2257,7 +2257,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("phone-signup-name")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-signup-pwd"
                 aria-label="Go back"
               >
