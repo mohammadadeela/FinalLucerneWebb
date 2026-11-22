@@ -103,7 +103,7 @@ export const defaultSettings: Record<string, string> = {
 
   // FAQ page
   faq_items: JSON.stringify([
-    { question_ar: "كيف يمكنني تتبع طلبي؟", question_en: "How can I track my order?", answer_ar: "بعد تأكيد طلبك ستصلك رسالة عبر واتساب تتضمن تفاصيل الشحن ورقم التتبع.", answer_en: "Once your order is confirmed, you'll receive a WhatsApp message with shipping details and a tracking number." },
+    { question_ar: "كيف يمكنني تتبع طلبي؟", question_en: "How can I track my order?", answer_ar: "ادخلي إلى «حسابي» ثم افتحي «طلباتي»، وستجدين حالة كل طلب أولاً بأول.", answer_en: "Open “My account”, then “Orders” — you'll see the status of every order there." },
     { question_ar: "ما هي طرق الدفع المتاحة؟", question_en: "What payment methods do you accept?", answer_ar: "نقبل الدفع عبر بطاقات الائتمان والخصم (Visa, Mastercard) بالإضافة إلى الدفع عند الاستلام داخل رام الله.", answer_en: "We accept credit and debit cards (Visa, Mastercard) as well as cash on delivery within Ramallah." },
     { question_ar: "هل يمكنني إرجاع المنتج إذا لم يناسبني؟", question_en: "Can I return a product if it doesn't fit?", answer_ar: "نعم، نقبل الإرجاع خلال 7 أيام من تاريخ الاستلام بشرط أن يكون المنتج بحالته الأصلية.", answer_en: "Yes, we accept returns within 7 days of delivery, provided the item is unused and in its original condition." },
     { question_ar: "كم يستغرق التوصيل؟", question_en: "How long does delivery take?", answer_ar: "يتم التوصيل داخل رام الله خلال 1-2 يوم عمل. المناطق الأخرى في فلسطين تستغرق من 2-4 أيام عمل.", answer_en: "Delivery within Ramallah takes 1-2 business days. Other areas in Palestine take 2-4 business days." },
