@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Search, X } from "lucide-react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { useLanguage } from "@/i18n";
 import { useSiteSettings, defaultSettings } from "@/hooks/use-site-settings";
 import { SupportPage, Rise } from "@/components/support/SupportShell";
@@ -50,8 +50,8 @@ function FAQItemRow({ index, question, answer, open, onToggle }: {
           {String(index + 1).padStart(2, "0")}
         </span>
         <span className="flex-1 text-sm font-semibold leading-snug text-foreground sm:text-base">{question}</span>
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${open ? "rotate-45 bg-foreground text-background" : "bg-blush/70 text-berry"}`}>
-          <Plus className="h-4 w-4" />
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${open ? "rotate-180 bg-foreground text-background" : "bg-blush/70 text-berry"}`}>
+          <ChevronDown className="h-4 w-4" />
         </span>
       </button>
       <AnimatePresence initial={false}>
