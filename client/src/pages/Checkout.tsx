@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
+import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { UserCheck, Coins, CreditCard, Banknote, MapPin, Truck, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn, Lock } from "lucide-react";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
@@ -550,7 +551,7 @@ export default function Checkout() {
       <div className="min-h-screen flex flex-col pt-navbar">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-4 border-berry border-t-transparent rounded-full" />
         </main>
         <Footer />
       </div>
@@ -564,7 +565,7 @@ export default function Checkout() {
       <div className="min-h-screen flex flex-col pt-navbar">
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+          <div className="animate-spin w-8 h-8 border-4 border-berry border-t-transparent rounded-full" />
         </main>
         <Footer />
       </div>
@@ -1017,15 +1018,21 @@ export default function Checkout() {
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-5xl mx-auto">
+      <main className="flex-1 w-full px-3 pb-12 pt-5 sm:px-6 sm:pt-8 lg:px-8">
+        <div className="max-w-6xl mx-auto">
         <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} images={items.slice(0, 3).map((it: any) => getItemImage(it)).filter(Boolean)} />
-        <h1 className="font-display text-3xl sm:text-4xl mb-8 sm:mb-12" data-testid="text-checkout-title">{t.checkout.title}</h1>
+        <CheckoutSteps current={2} />
+        <div className="mb-4 mt-5 flex items-end justify-between gap-3 sm:mb-6 sm:mt-7">
+          <h1 className="text-2xl font-bold text-berry-deep sm:text-3xl" data-testid="text-checkout-title">{t.checkout.title}</h1>
+          <Link href="/cart" className="text-xs font-semibold text-berry hover:underline sm:text-sm" data-testid="link-back-to-cart">
+            {language === "ar" ? "تعديل السلة" : "Edit cart"}
+          </Link>
+        </div>
 
         {soldOutItems.length > 0 && items.length > 0 && (
           <div
             ref={soldOutBannerRef}
-            className="relative rounded-2xl border border-red-200/80 dark:border-red-800/60 bg-gradient-to-b from-red-50/80 to-background dark:from-red-950/30 dark:to-background p-5 mb-8 shadow-sm scroll-mt-28"
+            className="relative rounded-2xl border border-red-200/80 dark:border-red-800/60 bg-gradient-to-b from-red-50/80 to-background dark:from-red-950/30 dark:to-background p-5 mb-4 shadow-sm scroll-mt-28"
             data-testid="partial-sold-out-notice"
           >
             <button
@@ -1095,27 +1102,24 @@ export default function Checkout() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-16">
-          <div>
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-6">
+          <div className="space-y-3 sm:space-y-4">
             {/* Guest notice: they can order, but points and discount codes belong to accounts */}
             {!user && guestCheckoutEnabled && (
-              <div className="relative overflow-hidden rounded-2xl text-white shadow-lg mb-6" data-testid="banner-guest-checkout">
+              <div className="relative overflow-hidden rounded-[1.5rem] bg-blush text-berry-deep" data-testid="banner-guest-checkout">
                 {/* Same pink as the points card on the profile page (pink stops only under the text, so it stays readable) */}
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-500 via-pink-600 to-pink-700" />
-                <div className="absolute -top-10 -end-10 w-40 h-40 rounded-full bg-white/10 blur-2xl" />
-                <div className="absolute -bottom-14 -start-8 w-44 h-44 rounded-full bg-amber-300/25 blur-2xl" />
-                <Gift className="absolute -bottom-4 -end-3 w-24 h-24 text-white/10" aria-hidden="true" />
+                <Gift className="absolute -bottom-4 -end-3 w-24 h-24 text-berry/10" aria-hidden="true" />
                 <div className="relative flex items-start gap-4 p-5">
-                  <span className="w-11 h-11 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                  <span className="w-11 h-11 rounded-full bg-white text-berry flex items-center justify-center shrink-0">
                     <Gift className="w-5 h-5" />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-bold leading-snug">{language === "ar" ? "أنتِ تتسوقين كضيفة" : "You're checking out as a guest"}</p>
-                    <p className="text-[13px] text-white/90 mt-1.5 leading-relaxed" data-testid="text-guest-points-hint">
+                    <p className="text-[13px] text-foreground/70 mt-1.5 leading-relaxed" data-testid="text-guest-points-hint">
                       {loyaltyPointsEnabled && Math.floor(subtotal / 2) > 0
                         ? (language === "ar"
-                            ? <>سجّلي الدخول لتكسبي <b className="mx-0.5 inline-flex items-center rounded-full bg-white/25 px-2 py-0.5 text-[13px] font-bold leading-none ltr-num">{Math.floor(subtotal / 2)}</b> نقطة على هذا الطلب. الضيوف لا يحصلون على نقاط أو أكواد خصم.</>
-                            : <>Sign in to earn <b className="mx-0.5 inline-flex items-center rounded-full bg-white/25 px-2 py-0.5 text-[13px] font-bold leading-none ltr-num">{Math.floor(subtotal / 2)}</b> points on this order. Guests can't earn points or use discount codes.</>)
+                            ? <>سجّلي الدخول لتكسبي <b className="mx-0.5 inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[13px] font-bold leading-none text-berry-deep ltr-num">{Math.floor(subtotal / 2)}</b> نقطة على هذا الطلب. الضيوف لا يحصلون على نقاط أو أكواد خصم.</>
+                            : <>Sign in to earn <b className="mx-0.5 inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[13px] font-bold leading-none text-berry-deep ltr-num">{Math.floor(subtotal / 2)}</b> points on this order. Guests can't earn points or use discount codes.</>)
                         : (language === "ar"
                             ? "الضيوف لا يحصلون على نقاط أو أكواد خصم. سجّلي الدخول للاستفادة منها."
                             : "Guests can't earn points or use discount codes. Sign in to enjoy them.")}
@@ -1123,7 +1127,7 @@ export default function Checkout() {
                     <button
                       type="button"
                       onClick={() => { rememberPostLoginTarget("/checkout"); setLocation("/auth"); }}
-                      className="mt-3.5 inline-flex items-center gap-2 rounded-full bg-white text-rose-600 px-5 py-2 text-xs font-semibold shadow-sm hover:bg-white/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-pink-600"
+                      className="mt-3.5 inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2 text-xs font-semibold hover:bg-berry transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-berry/50"
                       data-testid="button-guest-signin"
                     >
                       <LogIn className="w-4 h-4" />
@@ -1136,8 +1140,8 @@ export default function Checkout() {
 
             {/* Delivery or store pickup */}
             {pickupAvailable && (
-              <div className="mb-8" data-testid="section-delivery-method">
-                <h2 className="text-xl font-semibold uppercase tracking-widest mb-4">{language === "ar" ? "طريقة الاستلام" : "How do you want it?"}</h2>
+              <div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500" data-testid="section-delivery-method">
+                <h2 className="flex items-center gap-2.5 text-base font-bold text-foreground sm:text-lg mb-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blush text-berry"><Truck className="h-4 w-4" strokeWidth={1.8} /></span>{language === "ar" ? "طريقة الاستلام" : "How do you want it?"}</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {([
                     { id: "delivery", icon: Truck, title: language === "ar" ? "توصيل" : "Delivery", sub: language === "ar" ? "إلى باب منزلك" : "To your door" },
@@ -1153,15 +1157,15 @@ export default function Checkout() {
                         aria-pressed={selected}
                         className={`relative flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 text-sm transition-all duration-200 ${
                           selected
-                            ? "border-foreground bg-foreground text-background shadow-md"
-                            : "border-border text-muted-foreground hover:border-foreground/40 hover:bg-muted/50"
+                            ? "border-berry bg-blush/70 text-berry-deep shadow-sm"
+                            : "border-transparent bg-background text-foreground/70 hover:border-berry/30"
                         }`}
                         data-testid={`button-delivery-${opt.id}`}
                       >
-                        {selected && <CheckCircle2 className="absolute top-2 end-2 w-4 h-4" />}
-                        <Icon className={`w-5 h-5 ${selected ? "" : "text-primary"}`} />
+                        {selected && <CheckCircle2 className="absolute top-2 end-2 w-4 h-4 text-berry" />}
+                        <Icon className="w-5 h-5 text-berry" />
                         <span className="font-semibold">{opt.title}</span>
-                        <span className={`text-[11px] ${selected ? "text-background/80" : "text-muted-foreground"}`}>{opt.sub}</span>
+                        <span className={`text-[11px] ${selected ? "text-berry/80" : "text-muted-foreground"}`}>{opt.sub}</span>
                       </button>
                     );
                   })}
@@ -1170,9 +1174,9 @@ export default function Checkout() {
             )}
 
             {deliveryMethod === "pickup" && (
-              <div className="rounded-2xl border border-primary/25 bg-primary/5 p-5 mb-8" data-testid="box-pickup-info">
+              <div className="rounded-[1.5rem] bg-blush p-5" data-testid="box-pickup-info">
                 <div className="flex items-center gap-2 mb-2">
-                  <Store className="w-4 h-4 text-primary" />
+                  <Store className="w-4 h-4 text-berry" />
                   <p className="text-sm font-bold">{language === "ar" ? "استلام من متجر لوسيرن" : "Pick up at Lucerne Boutique"}</p>
                 </div>
                 <p className="text-sm">{language === "ar" ? getSetting(siteSettings, "location_address_ar") : getSetting(siteSettings, "location_address_en")}</p>
@@ -1185,16 +1189,16 @@ export default function Checkout() {
               </div>
             )}
 
-            {deliveryMethod === "delivery" && (<>
-            <div ref={shippingRegionRef} className="flex items-baseline justify-between mb-4">
-              <h2 className="text-xl font-semibold uppercase tracking-widest">{t.checkout.shippingRegion}</h2>
+            {deliveryMethod === "delivery" && (<div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+            <div ref={shippingRegionRef} className="flex items-center justify-between mb-4 scroll-mt-28">
+              <h2 className="flex items-center gap-2.5 text-base font-bold text-foreground sm:text-lg"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blush text-berry"><MapPin className="h-4 w-4" strokeWidth={1.8} /></span>{t.checkout.shippingRegion}</h2>
               {!shippingRegion && (
-                <span className="text-xs text-primary font-semibold animate-pulse">
+                <span className="text-xs text-berry font-semibold animate-pulse">
                   {language === "ar" ? "← اختاري منطقتك" : "← Choose your region"}
                 </span>
               )}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+            <div className={`grid gap-2 sm:grid-cols-3 sm:gap-2.5 ${shippingZones.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
               {shippingZones.map((zone) => {
                 const selected = shippingRegion === zone.id;
                 return (
@@ -1202,36 +1206,37 @@ export default function Checkout() {
                     key={zone.id}
                     type="button"
                     onClick={() => setShippingRegion(zone.id)}
-                    className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm transition-all duration-200 ${
+                    className={`relative flex flex-col items-center gap-1.5 px-1.5 py-3 sm:gap-2 sm:p-4 rounded-2xl border-2 text-[13px] sm:text-sm transition-all duration-200 ${
                       selected
-                        ? "border-foreground bg-foreground text-background shadow-md scale-[1.03]"
-                        : "border-border text-muted-foreground hover:border-foreground/40 hover:bg-muted/50 hover:scale-[1.01]"
+                        ? "border-berry bg-blush/70 text-berry-deep shadow-sm scale-[1.03]"
+                        : "border-transparent bg-background text-foreground/70 hover:border-berry/30 hover:scale-[1.01]"
                     } ${!shippingRegion ? "animate-shake-hint" : ""}`}
                     data-testid={`button-region-${zone.id}`}
                   >
                     {selected && (
-                      <span className="absolute top-2 end-2 w-4 h-4 rounded-full bg-background flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-foreground" />
+                      <span className="absolute top-2 end-2 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+                        <CheckCircle2 className="w-4 h-4 text-berry" />
                       </span>
                     )}
-                    <MapPin className={`w-5 h-5 shrink-0 ${selected ? "text-background" : "text-primary"}`} />
+                    <MapPin className="w-5 h-5 shrink-0 text-berry" />
                     <span className="font-semibold text-center leading-tight">{language === "ar" ? zone.nameAr : zone.nameEn}</span>
-                    <span className={`text-xs font-bold ${selected ? "text-background/80" : "text-primary"}`}>₪{zone.price}</span>
+                    <span className="price-text text-sm font-bold text-berry-deep">₪{zone.price}</span>
                   </button>
                 );
               })}
             </div>
 
-            </>)}
+            </div>)}
 
-            <h2 className="text-xl font-semibold mb-6 uppercase tracking-widest">{t.checkout.deliveryDetails}</h2>
+            <div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+            <h2 className="flex items-center gap-2.5 text-base font-bold text-foreground sm:text-lg mb-5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blush text-berry"><UserCheck className="h-4 w-4" strokeWidth={1.8} /></span>{t.checkout.deliveryDetails}</h2>
 
             {/* Auto-filled banner — shown only to returning customers whose data was pre-loaded */}
             {autoFilled && (
-              <div className="flex items-center gap-3 bg-primary/8 border border-primary/25 rounded-xl px-4 py-3 mb-2 animate-in fade-in slide-in-from-top-2 duration-500">
-                <UserCheck className="w-5 h-5 text-primary shrink-0" />
+              <div className="flex items-center gap-3 bg-blush rounded-2xl px-4 py-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                <UserCheck className="w-5 h-5 text-berry shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-primary">
+                  <p className="text-sm font-semibold text-berry-deep">
                     {language === "ar" ? "ملأنا بياناتك تلقائياً!" : "We filled in your info!"}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -1251,10 +1256,10 @@ export default function Checkout() {
               </div>
             )}
 
-            <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
+            <form id="checkout-form" onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="flex items-center gap-1">{t.checkout.fullName}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-name" />
+                <Input id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25" data-testid="input-checkout-name" />
               </div>
               <div className="space-y-2">
                 {whatsappNotificationsEnabled && !!user && (
@@ -1270,17 +1275,17 @@ export default function Checkout() {
                 <Label htmlFor="phone" className="flex items-center gap-1">{t.checkout.phone}<span className="text-red-500 text-base leading-none">*</span></Label>
                 <div
                   key={`phone-${phoneShakeKey}`}
-                  className={`flex gap-0 rounded-md border focus-within:ring-2 focus-within:ring-ring ${
+                  className={`flex gap-0 overflow-hidden rounded-2xl border bg-background focus-within:ring-2 focus-within:ring-berry/25 ${
                     phoneValidationError
                       ? "border-red-500 focus-within:ring-red-500 animate-[shake-hint_0.45s_ease-in-out_1]"
-                      : "border-border"
+                      : "border-border/60 focus-within:border-berry/40"
                   }`}
                   dir="ltr"
                 >
                   <PhoneCountrySelect
                     value={phonePrefix}
                     onChange={setPhonePrefix}
-                    height="h-10"
+                    height="h-12"
                     testId="select-checkout-phone-prefix"
                   />
                   <input
@@ -1310,7 +1315,7 @@ export default function Checkout() {
                       setFormData({...formData, phone: limitedDigits});
                     }}
                     placeholder="59xxxxxxx"
-                    className="flex-1 h-10 bg-background px-3 text-sm focus:outline-none rounded-e-md"
+                    className="flex-1 h-12 bg-transparent px-3 text-sm focus:outline-none"
                     aria-invalid={phoneValidationError}
                     data-testid="input-checkout-phone"
                   />
@@ -1339,17 +1344,17 @@ export default function Checkout() {
                 </Label>
                 <div
                   key={`phone2-${phone2ShakeKey}`}
-                  className={`flex gap-0 rounded-md border focus-within:ring-2 focus-within:ring-ring ${
+                  className={`flex gap-0 overflow-hidden rounded-2xl border bg-background focus-within:ring-2 focus-within:ring-berry/25 ${
                     phone2ValidationError
                       ? "border-red-500 focus-within:ring-red-500 animate-[shake-hint_0.45s_ease-in-out_1]"
-                      : "border-border"
+                      : "border-border/60 focus-within:border-berry/40"
                   }`}
                   dir="ltr"
                 >
                   <PhoneCountrySelect
                     value={phone2Prefix}
                     onChange={setPhone2Prefix}
-                    height="h-10"
+                    height="h-12"
                     testId="select-checkout-phone2-prefix"
                   />
                   <input
@@ -1374,7 +1379,7 @@ export default function Checkout() {
                       setFormData({...formData, phone2: limitedDigits});
                     }}
                     placeholder={language === "ar" ? "اتركه فارغاً إن لم يكن لديك رقم ثانٍ" : "Leave empty if not needed"}
-                    className="flex-1 h-10 bg-background px-3 text-sm focus:outline-none rounded-e-md"
+                    className="flex-1 h-12 bg-transparent px-3 text-sm focus:outline-none"
                     aria-invalid={phone2ValidationError}
                     data-testid="input-checkout-phone2"
                   />
@@ -1409,7 +1414,7 @@ export default function Checkout() {
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="rounded-md border-border focus-visible:ring-primary"
+                  className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
                   data-testid="input-guest-email"
                 />
                 <p id="guest-email-help" className="text-xs text-red-600" role="status">
@@ -1425,21 +1430,21 @@ export default function Checkout() {
               {deliveryMethod === "delivery" && (<>
               <div className="space-y-2">
                 <Label htmlFor="city" className="flex items-center gap-1">{t.checkout.city}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="city" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-city" />
+                <Input id="city" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25" data-testid="input-checkout-city" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address" className="flex items-center gap-1">{t.checkout.address}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-address" />
+                <Input id="address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25" data-testid="input-checkout-address" />
               </div>
               </>)}
               <div className="space-y-2">
                 <Label htmlFor="notes">{t.checkout.notes}</Label>
-                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="rounded-md border-border focus-visible:ring-primary resize-none" rows={4} data-testid="textarea-checkout-notes" />
+                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 resize-none" rows={3} data-testid="textarea-checkout-notes" />
               </div>
 
               {/* Auto-save notice — always on, no toggle needed */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground border border-dashed border-border rounded-lg px-4 py-3">
-                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-2xl bg-background px-4 py-3">
+                <CheckCircle2 className="w-4 h-4 text-berry flex-shrink-0" />
                 <span>
                   {language === "ar"
                     ? "ستُحفظ بياناتك تلقائياً لتسريع طلبك القادم"
@@ -1447,19 +1452,20 @@ export default function Checkout() {
                 </span>
               </div>
             </form>
+            </div>
           </div>
 
-          <div>
-            <div className="bg-secondary p-6 sm:p-8 sticky top-28">
-              <h2 className="text-xl font-semibold mb-6 uppercase tracking-widest border-b border-border pb-4">{t.checkout.yourOrder}</h2>
+          <div className="lg:sticky lg:top-28">
+            <div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+              <h2 className="mb-4 text-base font-bold text-foreground sm:text-lg">{t.checkout.yourOrder}</h2>
 
-              <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pt-3 pe-2">
+              <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pt-3 pe-2">
                 {items.map((item, idx) => {
                   const price = parseFloat(item.product.discountPrice?.toString() || item.product.price.toString());
                   return (
                     <div key={idx} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-[4.5rem] bg-muted relative shrink-0 rounded-xl">
+                        <div className="w-14 h-[4.5rem] bg-blush/40 relative shrink-0 rounded-xl">
                           <CheckoutItemImage
                             src={getItemImage(item)}
                             alt={item.product.name}
@@ -1479,7 +1485,7 @@ export default function Checkout() {
                             }}
                           />
                           <span
-                            className="absolute -top-2 -end-2 bg-primary text-primary-foreground text-[11px] font-bold min-w-[20px] h-5 px-1 flex justify-center items-center rounded-full ring-2 ring-secondary shadow-sm pointer-events-none z-10"
+                            className="absolute -top-2 -end-2 bg-berry text-white text-[11px] font-bold min-w-[20px] h-5 px-1 flex justify-center items-center rounded-full ring-2 ring-white shadow-sm pointer-events-none z-10"
                             data-testid={`badge-checkout-qty-${idx}`}
                           >
                             {item.quantity}
@@ -1499,7 +1505,7 @@ export default function Checkout() {
                 })}
               </div>
 
-              <div className="border-t border-border pt-4 mb-6 space-y-3 text-sm">
+              <div className="border-t border-dashed border-border pt-4 mb-4 space-y-3 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>{t.checkout.subtotal}</span>
                   <span className="ltr-num">₪{subtotal.toFixed(2)}</span>
@@ -1551,7 +1557,7 @@ export default function Checkout() {
                         value={discountInput}
                         onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError(""); }}
                         placeholder={language === "ar" ? "أدخلي كود الخصم..." : "Enter discount code..."}
-                        className="rounded-md h-10 text-xs uppercase ps-9 pe-10 tracking-widest placeholder:normal-case placeholder:tracking-normal"
+                        className="h-11 rounded-full border-border/60 bg-background text-xs uppercase ps-9 pe-11 tracking-widest placeholder:normal-case placeholder:tracking-normal focus-visible:border-berry/40 focus-visible:ring-berry/25"
                         onKeyDown={e => e.key === "Enter" && (e.preventDefault(), applyDiscount())}
                         data-testid="input-discount-code"
                       />
@@ -1559,7 +1565,7 @@ export default function Checkout() {
                         type="button"
                         onClick={applyDiscount}
                         disabled={discountLoading || !discountInput.trim()}
-                        className="absolute end-0 top-0 h-full px-3 text-foreground hover:text-foreground/70 transition-colors"
+                        className="absolute end-1 top-1 flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background transition-colors hover:bg-berry disabled:bg-foreground/25"
                         data-testid="button-apply-discount"
                       >
                         {discountLoading
@@ -1578,7 +1584,7 @@ export default function Checkout() {
               </div>
 
               {loyaltyPointsEnabled && user && (
-                <div className="border-t border-border pt-4 mb-4" data-testid="section-loyalty-credit">
+                <div className="mb-4" data-testid="section-loyalty-credit">
                   <div className={`relative rounded-2xl overflow-hidden border border-amber-200/70 dark:border-amber-800/70 shadow-sm transition-all ${creditCardExpanded ? "bg-white dark:bg-gray-900/40" : ""}`}>
                     {creditCardExpanded && (
                       <button
@@ -1747,17 +1753,17 @@ export default function Checkout() {
                 </div>
               )}
 
-              <div className="border-t border-border pt-4 mb-6">
-                <h3 className="text-sm font-semibold uppercase tracking-widest mb-3">{t.checkout.paymentMethod}</h3>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="border-t border-dashed border-border pt-4 mb-5">
+                <h3 className="text-sm font-bold mb-3">{t.checkout.paymentMethod}</h3>
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     disabled={deliveryMethod === "pickup"}
                     onClick={() => deliveryMethod !== "pickup" && setPaymentMethod("cod")}
-                    className={`flex items-center justify-center gap-2 p-3.5 border-2 rounded-md text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`flex items-center justify-center gap-2 p-3.5 border-2 rounded-2xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === "cod"
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "border-border bg-card text-foreground hover:border-primary/60 hover:bg-accent/40"
+                        ? "border-berry bg-blush/70 text-berry-deep shadow-sm"
+                        : "border-transparent bg-background text-foreground/70 hover:border-berry/30"
                     }`}
                     data-testid="button-payment-cod"
                   >
@@ -1768,12 +1774,12 @@ export default function Checkout() {
                     type="button"
                     disabled={!cardPaymentEnabled}
                     onClick={() => cardPaymentEnabled && setPaymentMethod("card")}
-                    className={`relative flex flex-col items-center justify-center gap-1 p-3.5 border-2 rounded-md text-sm font-semibold transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-1 p-3.5 border-2 rounded-2xl text-sm font-semibold transition-all ${
                       !cardPaymentEnabled
-                        ? "border-border/40 bg-muted/30 text-muted-foreground/40 cursor-not-allowed"
+                        ? "border-transparent bg-background text-muted-foreground/40 cursor-not-allowed"
                         : paymentMethod === "card"
-                          ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                          : "border-border bg-card text-foreground hover:border-primary/60 hover:bg-accent/40"
+                          ? "border-berry bg-blush/70 text-berry-deep shadow-sm"
+                          : "border-transparent bg-background text-foreground/70 hover:border-berry/30"
                     }`}
                     data-testid="button-payment-card"
                   >
@@ -1796,9 +1802,9 @@ export default function Checkout() {
                 </p>
               )}
 
-              <div className="border-t border-border pt-4 mb-4 flex justify-between items-center text-xl font-semibold">
-                <span>{t.checkout.total}</span>
-                <span data-testid="text-checkout-total" className="ltr-num">₪{total.toFixed(2)}</span>
+              <div className="border-t border-dashed border-border pt-4 mb-4 flex justify-between items-center">
+                <span className="text-base font-semibold">{t.checkout.total}</span>
+                <span key={total} data-testid="text-checkout-total" className="ltr-num price-text text-2xl font-bold text-berry-deep animate-in zoom-in-95 fade-in duration-300">₪{total.toFixed(2)}</span>
               </div>
 
               {loyaltyPointsEnabled && (() => {
@@ -1807,16 +1813,15 @@ export default function Checkout() {
                 if (pointsToEarn <= 0) return null;
                 return (
                   <div
-                    className="mb-4 relative overflow-hidden rounded-xl p-3.5 bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 text-white shadow-md"
+                    className="mb-3 rounded-2xl bg-blush p-3 text-berry-deep"
                     data-testid="text-checkout-points-preview"
                   >
-                    <div className="absolute -top-6 -end-6 w-20 h-20 rounded-full bg-white/15 blur-xl pointer-events-none" />
                     <div className="relative flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-white text-berry flex items-center justify-center shrink-0">
                         <Gift className="w-4 h-4" />
                       </div>
                       <div className="flex-1 leading-snug">
-                        <p className="text-sm font-bold">
+                        <p className="text-[13px] font-semibold">
                           {!user
                             ? (language === "ar"
                                 ? `سجّلي الدخول لتكسبي ${pointsToEarn} نقطة على هذا الطلب!`
@@ -1833,15 +1838,15 @@ export default function Checkout() {
 
               {/* Delivery promise */}
               {deliveryMethod === "delivery" ? (
-              <div className="mb-4 flex items-center gap-3 p-3 border border-green-500/25 bg-green-500/5 rounded-md" data-testid="banner-delivery-checkout">
+              <div className="mb-4 flex items-center gap-3 p-3 rounded-2xl bg-background" data-testid="banner-delivery-checkout">
                 <div className="relative flex-shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Truck className="w-4 h-4 text-green-600" strokeWidth={1.5} />
+                  <div className="w-9 h-9 rounded-full bg-blush flex items-center justify-center">
+                    <Truck className="w-4 h-4 text-berry" strokeWidth={1.5} />
                   </div>
-                  <span className="absolute -top-0.5 -end-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                  <span className="absolute -top-0.5 -end-0.5 w-3 h-3 bg-berry rounded-full border-2 border-white animate-pulse" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-green-700 dark:text-green-500 uppercase tracking-wider">
+                  <p className="text-xs font-bold text-berry-deep">
                     {language === "ar" ? "التوصيل خلال يومين من أيام العمل" : "Delivery within 2 business days"}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -1849,15 +1854,15 @@ export default function Checkout() {
                   </p>
                 </div>
                 <div className="flex-shrink-0 flex flex-col items-center">
-                  <span className="text-2xl font-black text-green-500/30 leading-none select-none">2</span>
+                  <span className="price-text text-2xl font-black text-berry/30 leading-none select-none">2</span>
                   <span className="text-[8px] text-muted-foreground/60 uppercase tracking-wider">
                     {language === "ar" ? "يوم" : "days"}
                   </span>
                 </div>
               </div>
               ) : (
-              <div className="mb-4 flex items-center gap-3 p-3 border border-primary/25 bg-primary/5 rounded-md" data-testid="banner-pickup-checkout">
-                <Store className="w-4 h-4 text-primary shrink-0" />
+              <div className="mb-4 flex items-center gap-3 p-3 rounded-2xl bg-background" data-testid="banner-pickup-checkout">
+                <Store className="w-4 h-4 text-berry shrink-0" />
                 <p className="text-xs font-semibold">
                   {language === "ar" ? "نخبرك على واتساب عندما يصبح طلبك جاهزاً للاستلام" : "We'll message you on WhatsApp when your order is ready for pickup"}
                 </p>
@@ -1885,7 +1890,7 @@ export default function Checkout() {
                 type="submit"
                 form="checkout-form"
                 disabled={isPending || guestLocked}
-                className={`w-full rounded-md py-6 uppercase tracking-widest text-sm font-semibold transition-shadow duration-500 ${unlockPulse ? "ring-4 ring-emerald-400/50" : ""}`}
+                className={`h-[3.25rem] w-full !rounded-full text-[15px] font-semibold transition-shadow duration-500 ${unlockPulse ? "ring-4 ring-emerald-400/50" : ""}`}
                 data-testid="button-place-order"
               >
                 {guestLocked && !isPending && <Lock className="w-4 h-4 me-2" />}
