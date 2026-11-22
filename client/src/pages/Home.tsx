@@ -203,13 +203,13 @@ function ProductRail({
               href={more.href}
               className={`group flex h-full min-h-[12rem] flex-col items-center justify-center gap-3 rounded-[1.15rem] border border-dashed p-4 text-center transition-colors duration-300 ${
                 sale
-                  ? "border-[#9B1C1C]/35 bg-white/60 text-[#9B1C1C] hover:bg-white"
+                  ? "border-transparent bg-blush text-foreground hover:bg-blush/80"
                   : "border-berry/35 bg-blush text-foreground hover:bg-blush/80"
               }`}
               data-testid={testId ? `${testId}-more` : undefined}
             >
               <span
-                className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-300 group-hover:scale-110 ${sale ? "bg-[#9B1C1C]" : "bg-berry"}`}
+                className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-300 group-hover:scale-110 bg-berry`}
               >
                 <Arrow className="h-5 w-5" />
               </span>
