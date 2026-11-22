@@ -378,7 +378,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
               e.stopPropagation();
               setLocation(`/product/${product.id}`);
             }}
-            className="absolute bottom-0 inset-x-0 z-30 flex items-center justify-center gap-2 bg-foreground/90 text-background text-xs font-semibold uppercase tracking-widest py-2.5 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"
+            className="absolute bottom-0 inset-x-0 z-30 flex items-center justify-center gap-2 bg-foreground/90 text-background text-xs font-semibold uppercase tracking-widest py-2.5 translate-y-[calc(100%+2px)] group-hover:translate-y-0 transition-transform duration-300 ease-out"
             data-testid={`button-view-product-${product.id}`}
           >
             <ShoppingBag className="w-3.5 h-3.5" />

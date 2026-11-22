@@ -325,11 +325,16 @@ function defaultCategoryRow(category: { name?: string | null; nameAr?: string | 
   return null;
 }
 
-/** A white (or nearly white) photo background is blended into the banner colour instead of shown. */
-function isNearWhite(hex: string) {
+/** Colour-matrix values that turn a photo's plain background colour into white (each channel
+ *  is scaled so that colour reaches 255). Empty for a background that is already white, or for
+ *  a colour too dark to be a plain studio backdrop. */
+function rowBackgroundWash(hex: string) {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec((hex || "").trim());
-  if (!m) return false;
-  return Math.min(parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)) >= 236;
+  if (!m) return "";
+  const [r, g, b] = [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+  if (Math.min(r, g, b) >= 250 || Math.min(r, g, b) < 150) return "";
+  const k = (v: number) => (255 / v).toFixed(4);
+  return `${k(r)} 0 0 0 0  0 ${k(g)} 0 0 0  0 0 ${k(b)} 0 0  0 0 0 1 0`;
 }
 
 function Section({
@@ -874,7 +879,7 @@ export default function Home() {
                   <Link
                     key={item.key}
                     href={item.href}
-                    className={`flex min-w-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush via-blush/90 to-blush/75 ring-1 ring-berry/10 ${
+                    className={`flex min-w-0 overflow-hidden rounded-2xl bg-blush ring-1 ring-berry/10 ${
                       stacked ? "aspect-[1/1.12] flex-col" : "aspect-[1.9/1]"
                     }`}
                     data-testid={`pill-m-${item.testId}`}
@@ -910,7 +915,7 @@ export default function Home() {
                   key={item.key}
                   href={item.href}
                   role="listitem"
-                  className="group relative flex aspect-[2.44/1] w-[58%] flex-none snap-start overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-blush via-blush/90 to-blush/75 ring-1 ring-berry/10 transition-all sm:rounded-[2.5rem] duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
+                  className="group relative flex aspect-[2.44/1] w-[58%] flex-none snap-start overflow-hidden rounded-[1.75rem] bg-blush ring-1 ring-berry/10 transition-all sm:rounded-[2.5rem] duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(0,0,0,0.4)] sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3.75rem)/4)]"
                   data-testid={`pill-${item.testId}`}
                 >
                   <span
@@ -1187,7 +1192,7 @@ export default function Home() {
         {/* ── Most wanted: soft panel of white tiles — photo, price, name ── */}
         {trending.length > 0 && (
           <Section>
-            <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush p-3 sm:rounded-[1.75rem] sm:p-5">
               <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
                 <h2
                   className="truncate text-xl font-semibold leading-none text-berry-deep sm:text-[1.75rem] rtl:leading-snug"
@@ -1255,7 +1260,7 @@ export default function Home() {
         {bestSellers.length > 0 && (
           <Section>
             {/* Same pink panel as the "most wanted" block */}
-            <div className="overflow-hidden rounded-[1.5rem] bg-blush/85 p-3 sm:rounded-[1.75rem] sm:p-5">
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush p-3 sm:rounded-[1.75rem] sm:p-5">
             <AnimatedBanner
               plain
               texts={bannerTexts(g("home_banner_best_texts"), ["BEST SELLERS", "MOST LOVED", "TOP PICKS", "FAVOURITES"])}
@@ -1421,7 +1426,7 @@ export default function Home() {
                 const row = own || builtIn?.src || "";
                 const rowBg = (own ? g(`home_cat_banner_${id}_row_bg`) : builtIn?.bg) || "";
                 const ar = (own ? parseFloat(g(`home_cat_banner_${id}_row_ar`)) : builtIn?.ar) || 5.8;
-                const blend = isNearWhite(rowBg);
+                const wash = rowBackgroundWash(rowBg);
                 const tall = !!row && ar < 4;
                 const wide = g(`home_cat_banner_${id}_image`);
                 const phone = g(`home_cat_banner_${id}_image_phone`);
@@ -1432,20 +1437,32 @@ export default function Home() {
                     aria-label={catName(section.category)}
                     className={`relative mb-4 block overflow-hidden rounded-[1.5rem] px-4 transition-shadow duration-300 hover:shadow-[0_14px_30px_-22px_rgba(0,0,0,0.4)] sm:mb-5 sm:px-8 ${
                       tall ? "h-32 sm:h-44" : "py-3.5 sm:py-5"
-                    } ${row ? (blend || !rowBg ? "bg-blush" : "") : "bg-white ring-1 ring-black/[0.05]"}`}
-                    style={row && rowBg && !blend ? { backgroundColor: rowBg } : undefined}
+                    } bg-blush`}
                     data-testid={`link-view-all-${section.href}`}
                   >
                     {row ? (
-                      /* One row, shown once, as large as the banner allows */
-                      <img
-                        src={optimizeCloudinaryUrl(row, 1600) || row}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className={`row-fade absolute inset-0 m-auto max-h-[90%] max-w-[96%] ${blend ? "mix-blend-multiply" : ""}`}
-                        data-testid={`img-category-row-${id}`}
-                      />
+                      /* One row, shown once, as large as the banner allows. Every banner keeps the
+                         site's own pink: the photo's background colour is washed out to white (an
+                         SVG colour filter built from that colour) and the white then blends into
+                         the pink, so photos shot on any plain colour all look the same. */
+                      <>
+                        {wash && (
+                          <svg width="0" height="0" className="absolute" aria-hidden="true">
+                            <filter id={`row-wash-${id}`} colorInterpolationFilters="sRGB">
+                              <feColorMatrix type="matrix" values={wash} />
+                            </filter>
+                          </svg>
+                        )}
+                        <img
+                          src={optimizeCloudinaryUrl(row, 1600) || row}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="row-fade absolute inset-0 m-auto max-h-[90%] max-w-[96%] mix-blend-multiply"
+                          style={wash ? { filter: `url(#row-wash-${id})` } : undefined}
+                          data-testid={`img-category-row-${id}`}
+                        />
+                      </>
                     ) : wide || phone ? (
                       <>
                         {wide && (

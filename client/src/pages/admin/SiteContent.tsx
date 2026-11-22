@@ -1784,18 +1784,35 @@ function RowPhotoUpload({ value, bg, ar, onChange, products, builtIn }: {
           </p>
           {(() => {
             const tall = shown.ar < 4;
-            const blend = nearWhite(shown.bg);
+            // Same treatment as the storefront: the shared pink banner, with the photo's own
+            // background colour washed out to white and blended in.
+            const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec((shown.bg || "").trim());
+            const rgb = m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+            const wash =
+              rgb && Math.min(...rgb) < 250 && Math.min(...rgb) >= 150
+                ? `${(255 / rgb[0]).toFixed(4)} 0 0 0 0  0 ${(255 / rgb[1]).toFixed(4)} 0 0 0  0 0 ${(255 / rgb[2]).toFixed(4)} 0 0  0 0 0 1 0`
+                : "";
+            const filterId = `row-wash-preview-${(shown.bg || "x").replace(/[^0-9a-z]/gi, "")}`;
             // The banner's real shapes: low strip for wide rows, taller banner for rows of tall pieces.
             const views = tall
               ? [{ label: "كمبيوتر", aspect: 7.7, width: "100%" }, { label: "هاتف", aspect: 2.86, width: "60%" }]
               : [{ label: "كمبيوتر", aspect: 15, width: "100%" }, { label: "هاتف", aspect: 4.6, width: "60%" }];
             return views.map((v) => (
               <div key={v.label} style={{ width: v.width }} className="ms-auto">
-                <div
-                  className={`relative overflow-hidden rounded-2xl ${blend || !shown.bg ? "bg-blush" : ""}`}
-                  style={{ aspectRatio: String(v.aspect), ...(shown.bg && !blend ? { backgroundColor: shown.bg } : {}) }}
-                >
-                  <img src={shown.src} alt="" className={`row-fade absolute inset-0 m-auto max-h-[90%] max-w-[96%] ${blend ? "mix-blend-multiply" : ""}`} />
+                <div className="relative overflow-hidden rounded-2xl bg-blush" style={{ aspectRatio: String(v.aspect) }}>
+                  {wash && (
+                    <svg width="0" height="0" className="absolute" aria-hidden="true">
+                      <filter id={filterId} colorInterpolationFilters="sRGB">
+                        <feColorMatrix type="matrix" values={wash} />
+                      </filter>
+                    </svg>
+                  )}
+                  <img
+                    src={shown.src}
+                    alt=""
+                    className="row-fade absolute inset-0 m-auto max-h-[90%] max-w-[96%] mix-blend-multiply"
+                    style={wash ? { filter: `url(#${filterId})` } : undefined}
+                  />
                 </div>
                 <p className="mt-1 text-center text-[10px] text-muted-foreground">{v.label}</p>
               </div>
