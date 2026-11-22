@@ -21,7 +21,7 @@ import {
   ArrowRight,
   ArrowLeft,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLanguage } from "@/i18n";
 import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
@@ -262,18 +262,24 @@ function AnimatedBanner({ texts, testId, plain }: { texts: string[]; testId?: st
       </div>
       <div className="absolute inset-0 flex items-center justify-center gap-2 px-3 sm:gap-5" dir="ltr">
         {!plain && <CurvedArrow flip />}
-        <h2
-          className="m-0 min-w-0 overflow-hidden text-center"
-        >
-          <span
-            key={`${idx}-${current}`}
-            className={`display-latin keep-tracking block whitespace-nowrap font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${
-              current.length <= 11 ? "text-[1.5rem]" : current.length <= 14 ? "text-[1.25rem]" : current.length <= 18 ? "text-[1.05rem]" : "text-[0.85rem]"
-            } ${texts.length > 1 ? "news-rise" : ""}`}
-            style={{ ["--tracking" as any]: "0.14em" }}
-          >
-            {current}
-          </span>
+        <h2 className="m-0 grid min-w-0 overflow-hidden text-center">
+          {/* The next phrase rises in while the previous one leaves, in the same moment — the
+              banner is never empty between two phrases. */}
+          <AnimatePresence initial={false}>
+            <motion.span
+              key={`${idx}-${current}`}
+              initial={{ y: "85%", opacity: 0 }}
+              animate={{ y: "0%", opacity: 1 }}
+              exit={{ y: "-85%", opacity: 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className={`display-latin keep-tracking col-start-1 row-start-1 block whitespace-nowrap font-semibold uppercase leading-none text-berry sm:text-[2.6rem] ${
+                current.length <= 11 ? "text-[1.5rem]" : current.length <= 14 ? "text-[1.25rem]" : current.length <= 18 ? "text-[1.05rem]" : "text-[0.85rem]"
+              }`}
+              style={{ ["--tracking" as any]: "0.14em" }}
+            >
+              {current}
+            </motion.span>
+          </AnimatePresence>
         </h2>
         {!plain && <CurvedArrow />}
       </div>
