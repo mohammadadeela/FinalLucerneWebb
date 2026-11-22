@@ -111,7 +111,7 @@ export default function AdminExchanges() {
   });
 
   // Exchange window (how many days after delivery a customer can request an exchange)
-  const savedExchangeWindowDays = getSetting(siteSettings, "exchange_window_days") || "1";
+  const savedExchangeWindowDays = getSetting(siteSettings, "exchange_window_days") || "3";
   const [exchangeWindowDays, setExchangeWindowDays] = useState(savedExchangeWindowDays);
   useEffect(() => { setExchangeWindowDays(savedExchangeWindowDays); }, [savedExchangeWindowDays]);
   const exchangeWindowDaysValid = /^\d+$/.test(exchangeWindowDays.trim()) && Number(exchangeWindowDays) > 0;

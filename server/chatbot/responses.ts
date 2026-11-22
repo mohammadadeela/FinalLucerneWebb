@@ -171,8 +171,8 @@ export function buildResponse(
     case "exchange_policy":
       return {
         reply: ar
-          ? "يمكنكِ طلب التبديل خلال يوم واحد من استلام الطرد 🔁\n\n1️⃣ سجّلي الدخول لحسابك\n2️⃣ افتحي «طلباتي»\n3️⃣ اختاري المنتج وابدئي طلب الاستبدال"
-          : "You can request an exchange within one day of receiving the parcel 🔁\n\n1️⃣ Log in to your account\n2️⃣ Go to 'My Orders'\n3️⃣ Select the item and start an exchange request",
+          ? "يمكنكِ طلب الاستبدال خلال 3 أيام من الاستلام 🔁\n\n1️⃣ سجّلي الدخول لحسابك\n2️⃣ افتحي «طلباتي»\n3️⃣ اختاري المنتج وابدئي طلب الاستبدال"
+          : "You can request an exchange within 3 days of receiving your order 🔁\n\n1️⃣ Log in to your account\n2️⃣ Go to 'My Orders'\n3️⃣ Select the item and start an exchange request",
         buttons: [
           { label: ar ? "طلباتي 👤" : "My Orders 👤", url: "/profile" },
           { label: ar ? "سياسة الاستبدال" : "Exchange Policy", url: "/shipping-returns" },
@@ -183,10 +183,10 @@ export function buildResponse(
     case "return_policy":
       return {
         reply: ar
-          ? "لا يوجد إرجاع. التبديل خلال يوم واحد من استلام الطرد."
-          : "There are no returns. Exchanges are accepted within one day of receiving the parcel.",
+          ? "لمعرفة سياسة الإرجاع الكاملة وشروطها يمكنكِ الاطلاع على صفحة الشحن والإرجاع:"
+          : "For our full return and refund policy, please see our shipping & returns page:",
         buttons: [
-          { label: ar ? "سياسة التبديل 🔄" : "Exchange Policy 🔄", url: "/shipping-returns" },
+          { label: ar ? "سياسة الإرجاع 🔄" : "Return Policy 🔄", url: "/shipping-returns" },
           { label: ar ? "تواصلي معنا 💬" : "Contact Us 💬", url: `https://wa.me/${whatsapp}` },
         ],
       };

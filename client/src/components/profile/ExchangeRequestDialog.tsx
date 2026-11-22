@@ -173,7 +173,7 @@ export function ExchangeRequestDialog({
   const exchangeWindowDays = (() => {
     const raw = siteSettings?.exchange_window_days;
     const n = raw ? parseFloat(raw) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    return Number.isFinite(n) && n > 0 ? n : 3;
   })();
   const { toast } = useToast();
   const [, navigate] = useLocation();

@@ -138,7 +138,7 @@ export default function Profile() {
   const exchangeWindowDays = (() => {
     const raw = siteSettings?.exchange_window_days;
     const n = raw ? parseFloat(raw) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    return Number.isFinite(n) && n > 0 ? n : 3;
   })();
   const EXCHANGE_WINDOW_MS = exchangeWindowDays * 24 * 60 * 60 * 1000;
   const parseIdList = (raw: string | undefined): Set<number> => {

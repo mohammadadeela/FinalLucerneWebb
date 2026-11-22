@@ -461,7 +461,7 @@ export const en = {
       {
         question: "Can I return a product if it doesn't fit?",
         answer:
-          "There are no returns. Exchanges are accepted within one day of receiving the parcel.",
+          "Yes, we accept returns within 7 days of delivery, provided the item is unused and in its original condition. See our Shipping & Returns page for details.",
       },
       {
         question: "How long does delivery take?",
@@ -495,11 +495,13 @@ export const en = {
     ],
     returnsTitle: "Exchange Policy",
     returnsDetails: [
-      "There are no returns.",
-      "Exchanges are accepted within one day of receiving the parcel.",
+      "We accept returns within 7 days of the delivery date.",
       "The item must be in its original condition, unused, and in its original packaging.",
+      "Sale items and special offers are non-returnable unless there is a manufacturing defect.",
+      "To start a return, contact us via WhatsApp or visit our store in person.",
+      "Refunds are processed within 3-5 business days after receiving the returned item.",
     ],
-    note: "For any questions about your shipment or to request an exchange, don't hesitate to contact us via WhatsApp or visit our store directly.",
+    note: "For any questions about your shipment or to request a return, don't hesitate to contact us via WhatsApp or visit our store directly.",
   },
 
   contact: {
