@@ -1440,6 +1440,22 @@ function ThumbImage({ src, alt, size = 300 }: { src: string; alt: string; size?:
   );
 }
 
+// ─── One frame for every product photo ───────────────────────────────────────
+// Product photos come in many shapes. The gallery frame is always 3:4; a photo of (nearly)
+// that shape fills it, and any other photo is shown whole, with the space beside it painted
+// as a continuation of the photo's own edge. The page looks the same for every product and
+// nothing of the product is ever cut off.
+const GALLERY_FRAME_ASPECT = 3 / 4;
+const photoAspects = new Map<string, { aspect: number; exact: boolean }>();
+type PhotoFit = "fill" | "narrow" | "wide";
+function photoFit(url: string | undefined): PhotoFit {
+  const known = url ? photoAspects.get(url) : undefined;
+  if (!known) return "fill";
+  const ratio = known.aspect / GALLERY_FRAME_ASPECT;
+  if (Math.abs(ratio - 1) <= 0.07) return "fill";
+  return ratio < 1 ? "narrow" : "wide";
+}
+
 // ─── ProductDetails ───────────────────────────────────────────────────────────
 /** Product description that stays short on phones: three lines, then "show more". */
 function ClampedDescription({ text, isAr }: { text: string; isAr: boolean }) {
@@ -1500,6 +1516,16 @@ const [showFindMySize, setShowFindMySize] = useState(false);
 const [zoomPos, setZoomPos] = useState<{ x: number; y: number } | null>(null);
 const [shareCopied, setShareCopied] = useState(false);
 const [mainImgReady, setMainImgReady] = useState(false);
+const [, setPhotoShapeTick] = useState(0);
+// Remembers the shape of a gallery photo. The tiny preview gives a first estimate at once;
+// the full photo gives the exact value.
+const rememberPhotoShape = useCallback((url: string | undefined, image: HTMLImageElement, exact: boolean) => {
+if (!url || !image.naturalWidth || !image.naturalHeight) return;
+const known = photoAspects.get(url);
+if (known && (known.exact || !exact)) return;
+photoAspects.set(url, { aspect: image.naturalWidth / image.naturalHeight, exact });
+setPhotoShapeTick((n) => n + 1);
+}, []);
 const [recentlyViewedIds, setRecentlyViewedIds] = useState<number[]>(() => {
 try {
 return JSON.parse(localStorage.getItem("recently_viewed") || "[]");
@@ -2171,6 +2197,33 @@ const isVideoSelected = currentMedia?.type === "video";
 const mainImgBlurSrc = blurCloudinaryUrl(
 currentMedia?.url || product.mainImage,
 );
+const mainPhotoUrl = currentMedia?.url || allMedia[0]?.url || product.mainImage;
+const mainPhotoFit = photoFit(mainPhotoUrl);
+// The photo's own edge, stretched across the empty part of the frame and smoothed along the
+// edge, so a wall or a floor simply continues to the border of the frame.
+const edgeFillSrc = optimizeCloudinaryUrl(mainPhotoUrl, 400) || mainImgBlurSrc;
+const edgeFill = (side: "start" | "end"): React.CSSProperties =>
+mainPhotoFit === "narrow"
+? {
+top: 0,
+bottom: 0,
+width: "50%",
+[side === "start" ? "left" : "right"]: 0,
+backgroundImage: `url(${edgeFillSrc})`,
+backgroundSize: "4000% 100%",
+backgroundPosition: side === "start" ? "0% 50%" : "100% 50%",
+filter: "url(#gallery-edge-v)",
+}
+: {
+left: 0,
+right: 0,
+height: "50%",
+[side === "start" ? "top" : "bottom"]: 0,
+backgroundImage: `url(${edgeFillSrc})`,
+backgroundSize: "100% 4000%",
+backgroundPosition: side === "start" ? "50% 0%" : "50% 100%",
+filter: "url(#gallery-edge-h)",
+};
 
 return (
 <div className="min-h-screen flex flex-col pt-navbar">
@@ -2179,14 +2232,14 @@ return (
 <div className="max-w-6xl mx-auto">
 <div className="grid grid-cols-1 lg:grid-cols-[48%_52%] gap-6 sm:gap-10 lg:gap-8">
 {/* ── Images + Video ── */}
-<div ref={galleryColRef} className="flex flex-col gap-4">
-<div className="flex gap-2 sm:gap-3 h-[62vh] min-h-[480px] max-h-[560px] sm:h-[620px] sm:max-h-none lg:h-[720px]">
+<div ref={galleryColRef} className="flex flex-col gap-4 w-full sm:max-w-[600px] sm:mx-auto lg:max-w-none">
+<div className="flex items-start justify-center gap-2 sm:gap-3">
 {/* Desktop thumbnail strip */}
 {allMedia.length > 1 && (
-<div className="hidden sm:block relative sm:w-[100px] lg:w-[120px] flex-none h-full group/thumbstrip">
+<div className="hidden sm:block relative sm:w-[100px] lg:w-[120px] flex-none self-stretch group/thumbstrip">
 <div
 ref={thumbsRef}
-className="flex flex-col gap-2 overflow-y-auto h-full py-1 px-1 scrollbar-hide"
+className="absolute inset-0 flex flex-col gap-2 overflow-y-auto py-1 px-1 scrollbar-hide"
 style={{
 scrollbarWidth: "none",
 msOverflowStyle: "none",
@@ -2256,9 +2309,9 @@ data-testid="button-thumb-scroll-down"
 </div>
 )}
 
-{/* ── Main viewer ── */}
+{/* ── Main viewer: the same 3:4 frame for every photo ── */}
 <div
-className="flex-1 w-0 relative overflow-hidden rounded-2xl"
+className="flex-1 w-0 lg:max-w-[480px] aspect-[3/4] relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/[0.06]"
 onTouchStart={handleTouchStart}
 onTouchEnd={handleTouchEnd}
 >
@@ -2288,15 +2341,34 @@ isVideoSelected
 : "opacity-100 z-10"
 }`}
 >
+{mainPhotoFit !== "fill" && edgeFillSrc && (
+<>
+<svg aria-hidden width="0" height="0" className="absolute">
+<filter id="gallery-edge-v" x="0" y="0" width="100%" height="100%">
+<feGaussianBlur stdDeviation="0 9" edgeMode="duplicate" />
+</filter>
+<filter id="gallery-edge-h" x="0" y="0" width="100%" height="100%">
+<feGaussianBlur stdDeviation="9 0" edgeMode="duplicate" />
+</filter>
+</svg>
+<div aria-hidden className="absolute pointer-events-none" style={edgeFill("start")} />
+<div aria-hidden className="absolute pointer-events-none" style={edgeFill("end")} />
+</>
+)}
+
 {!zoomPos && mainImgBlurSrc && (
 <img
+key={mainImgBlurSrc}
 src={mainImgBlurSrc}
 aria-hidden
-className={`absolute left-1/2 top-1/2 z-20 h-auto w-auto -translate-x-1/2 -translate-y-1/2 object-cover rounded-2xl pointer-events-none shadow-sm ring-1 ring-black/[0.06] transition-opacity duration-700
-max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)]
-sm:max-w-[calc(100%-1.5rem)] sm:max-h-[calc(100%-1.5rem)]
-lg:max-w-[calc(100%-0.5rem)] lg:max-h-[calc(100%-0.5rem)]
-${mainImgReady ? "opacity-0" : "opacity-100"}`}
+onLoad={(e) => rememberPhotoShape(mainPhotoUrl, e.currentTarget, false)}
+className={`absolute z-20 pointer-events-none transition-opacity duration-700 ${
+mainPhotoFit === "fill"
+? "inset-0 h-full w-full object-cover"
+: mainPhotoFit === "narrow"
+? "left-1/2 top-0 h-full w-auto max-w-none -translate-x-1/2"
+: "left-0 top-1/2 h-auto w-full max-h-none -translate-y-1/2"
+} ${mainImgReady ? "opacity-0" : "opacity-100"}`}
 />
 )}
 
@@ -2317,13 +2389,16 @@ fetchPriority="high"
 decoding="async"
 width={800}
 height={1067}
-className={`block h-auto w-auto object-contain rounded-2xl shadow-sm ring-1 ring-black/[0.06] transition-opacity duration-150
-max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)]
-sm:max-w-[calc(100%-1.5rem)] sm:max-h-[calc(100%-1.5rem)]
-lg:max-w-[calc(100%-0.5rem)] lg:max-h-[calc(100%-0.5rem)]
-${zoomPos ? "opacity-0" : "opacity-100"}`}
+className={`relative block transition-opacity duration-150 ${
+mainPhotoFit === "fill"
+? "h-full w-full object-cover"
+: mainPhotoFit === "narrow"
+? "h-full w-auto max-w-full object-contain"
+: "h-auto w-full max-h-full object-contain"
+} ${zoomPos ? "opacity-0" : "opacity-100"}`}
 data-testid="img-product-main"
-onLoad={() => {
+onLoad={(e) => {
+rememberPhotoShape(mainPhotoUrl, e.currentTarget, true);
 setMainImgReady(true);
 // Measure again after layout settles so the overlay is
 // always exactly the same size as the visible photo.
@@ -2339,7 +2414,7 @@ onError={() => setMainImgReady(true)}
 image, so it has exactly the same size and position. */}
 {!isVideoSelected && mainImageBox && (
 <div
-className="absolute overflow-hidden rounded-2xl"
+className="absolute overflow-hidden"
 style={{
 left: mainImageBox.left,
 top: mainImageBox.top,
