@@ -117,7 +117,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
       }}
       data-testid="hero-slider"
     >
-      <div className="relative h-[80vw] max-h-[400px] min-h-[310px] overflow-hidden sm:mx-4 sm:mt-3 sm:h-[clamp(320px,30.5vw,470px)] sm:max-h-none sm:rounded-[2rem] lg:mx-6">
+      <div className="relative h-[80vw] max-h-[400px] min-h-[310px] sm:h-[clamp(320px,30.5vw,470px)] sm:max-h-none">
         {slides.map((slide, i) => {
           const active = i === safeIndex;
           const showMedia = i === 0 || loadAll || active;
@@ -134,13 +134,8 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
               aria-roledescription="slide"
             >
               {/* Photo / video — fills the slide on phones, takes the start side with a diagonal cut on larger screens */}
-              {/* A thin white outline sits a step behind the photo, like the mount of a framed print */}
               <div
-                aria-hidden
-                className={`pointer-events-none absolute hidden rounded-[1.75rem] rounded-ee-[8rem] border-2 border-white/80 transition-all duration-1000 ease-out sm:inset-y-4 sm:start-4 sm:block sm:w-[57%] lg:rounded-ee-[11rem] ${active ? "translate-x-3 translate-y-3 opacity-100 rtl:-translate-x-3" : "opacity-0"}`}
-              />
-              <div
-                className={`absolute inset-0 overflow-hidden transition-[transform,opacity] duration-700 ease-out sm:inset-y-4 sm:end-auto sm:start-4 sm:w-[57%] sm:rounded-[1.75rem] sm:rounded-ee-[8rem] sm:shadow-[0_24px_50px_-28px_rgba(120,40,70,0.55)] lg:rounded-ee-[11rem] ${active ? "sm:translate-y-0" : "sm:translate-y-5"}`}
+                className="absolute inset-0 sm:inset-y-0 sm:end-auto sm:start-0 sm:w-[61%] overflow-hidden hero-cut [--hero-cut:5rem] lg:[--hero-cut:8.5rem]"
               >
                 <div
                   className="absolute inset-0 will-change-transform transition-transform ease-out"
@@ -196,32 +191,23 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
               {/* Panel decoration */}
               {!skin && (
                 <>
-                  <span
-                    aria-hidden
-                    className="hero-ghost display-latin pointer-events-none absolute -top-5 end-6 hidden select-none text-[9rem] font-semibold leading-none sm:block lg:end-10 lg:text-[13rem]"
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+                  <LucerneMark
+                    className="soft-float pointer-events-none absolute -end-4 -top-6 hidden h-44 w-auto text-berry/[0.09] sm:block lg:h-64"
+                    style={{ ["--float-rot" as any]: isAr ? "10deg" : "-10deg" }}
+                  />
                   <div
                     aria-hidden
-                    className={`pointer-events-none absolute bottom-6 start-[calc(57%-7.5rem)] hidden h-28 w-28 items-center justify-center rounded-full bg-white shadow-[0_14px_30px_-14px_rgba(120,40,70,0.5)] transition-transform duration-700 ease-out lg:flex xl:h-32 xl:w-32 ${active ? "scale-100" : "scale-50"}`}
-                  >
-                    <svg viewBox="0 0 120 120" direction="ltr" style={{ direction: "ltr" }} className="absolute inset-0 h-full w-full animate-[spin_22s_linear_infinite] motion-reduce:animate-none">
-                      <defs>
-                        <path id={`hero-stamp-${i}`} d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" />
-                      </defs>
-                      <text className="display-latin keep-tracking" style={{ direction: "ltr", unicodeBidi: "bidi-override", letterSpacing: "3.1px" }} fill="hsl(var(--berry-deep))" fontSize="10.5" fontWeight="600">
-                        <textPath href={`#hero-stamp-${i}`}>LUCERNE BOUTIQUE • NEW SEASON • </textPath>
-                      </text>
-                    </svg>
-                    <LucerneMark className="relative h-9 w-auto text-berry lg:h-11" />
-                  </div>
+                    className="pointer-events-none absolute -bottom-24 end-[12%] hidden h-56 w-56 rounded-full bg-white/50 blur-3xl sm:block"
+                  />
                 </>
               )}
 
               {/* Copy */}
               <div className="absolute inset-y-0 end-0 flex w-[56%] items-center pe-4 ps-1 sm:w-[43%] sm:justify-center sm:pe-8 sm:ps-2 lg:pe-14">
-                <div key={active ? `on-${cycle}` : "off"} className={`w-full max-w-[30rem] sm:pb-8 lg:pb-0 ${active ? "hero-stagger" : ""}`}>
+                <div
+                  key={active ? `on-${cycle}` : "off"}
+                  className={`w-full max-w-[30rem] ${active ? "animate-in fade-in slide-in-from-bottom-3 duration-700" : ""}`}
+                >
                   {slide.tag && (
                     <p
                       className="mb-2 inline-flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-berry sm:mb-4 sm:text-xs"
@@ -238,12 +224,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                   >
                     {lead}
                     {accent && (
-                      <em className="relative inline-block text-berry ltr:italic rtl:not-italic" style={skin ? { color: skin.accent } : undefined}>
-                        {accent}
-                        <svg aria-hidden viewBox="0 0 200 14" preserveAspectRatio="none" className="hero-underline pointer-events-none absolute inset-x-0 -bottom-1 hidden h-2.5 w-full sm:block" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                          <path pathLength={100} d="M3 9 C 40 2, 70 13, 105 7 S 170 3, 197 8" />
-                        </svg>
-                      </em>
+                      <em className="text-berry ltr:italic rtl:not-italic" style={skin ? { color: skin.accent } : undefined}>{accent}</em>
                     )}
                     {tail}
                   </TitleTag>
@@ -256,11 +237,11 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                       {slide.subtitle}
                     </p>
                   )}
-                  <div className="mt-3.5 flex flex-col items-start gap-2 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-3">
+                  <div className="mt-3.5 flex flex-col items-start gap-2 sm:mt-7 sm:flex-row sm:flex-wrap sm:gap-4">
                     <Link
                       href={slide.primary.href}
                       tabIndex={active ? 0 : -1}
-                      className="group inline-flex h-9 items-center justify-center gap-2 rounded-lg sm:rounded-full bg-[#E8257D] px-4 text-[12.5px] font-medium text-white shadow-[0_14px_30px_-14px_rgba(232,37,125,0.9)] transition-all duration-300 hover:bg-[#B3125C] hover:shadow-[0_18px_34px_-14px_rgba(232,37,125,1)] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
+                      className="group inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#E8257D] px-4 text-[12.5px] font-medium text-white shadow-[0_14px_30px_-14px_rgba(232,37,125,0.9)] transition-all duration-300 hover:bg-[#B3125C] hover:shadow-[0_18px_34px_-14px_rgba(232,37,125,1)] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
                       data-testid={i === 0 ? "button-shop-collection" : undefined}
                       style={skin ? { background: skin.accent, color: skin.night, boxShadow: "none" } : undefined}
                     >
@@ -271,7 +252,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                       <Link
                         href={slide.secondary.href}
                         tabIndex={active ? 0 : -1}
-                        className="inline-flex h-9 items-center justify-center rounded-lg sm:rounded-full border border-[#E8257D]/60 bg-white/55 px-4 text-[12.5px] font-medium text-foreground backdrop-blur-sm transition-colors duration-300 hover:border-[#E8257D] hover:bg-white hover:text-[#E8257D] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E8257D]/60 bg-white/55 px-4 text-[12.5px] font-medium text-foreground backdrop-blur-sm transition-colors duration-300 hover:border-[#E8257D] hover:bg-white hover:text-[#E8257D] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
                         style={skin ? { borderColor: `${skin.accent}99`, color: skin.ink, background: "rgba(255,255,255,.08)" } : undefined}
                       >
                         {slide.secondary.label}
@@ -294,7 +275,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
             <button
               type="button"
               onClick={() => go(safeIndex - 1)}
-              className="absolute start-7 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:start-10"
+              className="absolute start-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:start-6"
               aria-label={isAr ? "السابق" : "Previous slide"}
               data-testid="button-hero-prev"
             >
@@ -303,7 +284,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
             <button
               type="button"
               onClick={() => go(safeIndex + 1)}
-              className="absolute end-7 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:end-10"
+              className="absolute end-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:end-6"
               aria-label={isAr ? "التالي" : "Next slide"}
               data-testid="button-hero-next"
             >
@@ -311,12 +292,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
             </button>
 
             {/* Dots — the active one is a little progress bar */}
-            <div className="absolute bottom-3.5 start-4 z-30 flex items-center gap-2 sm:bottom-6 sm:start-auto sm:end-4 sm:w-[43%] sm:justify-center lg:end-6">
-              <span className="price-text hidden text-xs font-semibold text-foreground/70 sm:inline" style={skin ? { color: skin.ink } : undefined} data-testid="text-hero-counter">
-                {String(safeIndex + 1).padStart(2, "0")}
-                <span className="mx-1 opacity-40">/</span>
-                {String(count).padStart(2, "0")}
-              </span>
+            <div className="absolute bottom-3.5 start-4 z-30 flex items-center gap-2 sm:bottom-6 sm:start-auto sm:end-0 sm:w-[43%] sm:justify-center">
               {slides.map((s, i) => {
                 const active = i === safeIndex;
                 return (
