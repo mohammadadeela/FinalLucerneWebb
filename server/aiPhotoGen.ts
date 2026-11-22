@@ -12,8 +12,6 @@ const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-i
 
 export type PhotoShotType = "model" | "product";
 
-let productPhotoAspectSupported = true;
-
 // ── Randomized scene libraries ──────────────────────────────────────────────
 // Every generation gets ONE of each relevant bucket picked at random, so that
 // products never end up sharing an identical background/style, while every
@@ -413,10 +411,7 @@ export async function generateAiProductPhoto(
 
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`;
 
-  // Every generated product photo has the 3:4 shape of the storefront gallery and cards, so
-  // all products look the same size on the site. An image model that does not know the
-  // setting is asked again without it.
-  const buildBody = () => ({
+  const body = {
     contents: [
       {
         parts: [
@@ -427,11 +422,10 @@ export async function generateAiProductPhoto(
     ],
     generationConfig: {
       responseModalities: ["TEXT", "IMAGE"],
-      ...(productPhotoAspectSupported ? { imageConfig: { aspectRatio: "3:4" } } : {}),
     },
-  });
+  };
 
-  const MAX_ATTEMPTS = 4;
+  const MAX_ATTEMPTS = 3;
   const MAX_DELAY = 8000;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -443,7 +437,7 @@ export async function generateAiProductPhoto(
           "Content-Type": "application/json",
           "x-goog-api-key": apiKey,
         },
-        body: JSON.stringify(buildBody()),
+        body: JSON.stringify(body),
       });
     } catch (networkErr: any) {
       if (attempt < MAX_ATTEMPTS) {
@@ -455,10 +449,6 @@ export async function generateAiProductPhoto(
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      if (res.status === 400 && productPhotoAspectSupported && /imageConfig|aspectRatio|image_config|Unknown name/i.test(text)) {
-        productPhotoAspectSupported = false;
-        continue;
-      }
       const isRateLimit = res.status === 429 || /quota|rate limit/i.test(text);
       if (isRateLimit && attempt < MAX_ATTEMPTS) {
         const retryMatch = text.match(/retryDelay"?\s*[:=]\s*"?(\d+(?:\.\d+)?)s/i);
