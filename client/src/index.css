@@ -337,26 +337,8 @@ html.admin-theme {
   stroke-dasharray: 100;
   animation: arrow-draw 2.8s ease-in-out infinite;
 }
-/* Same arrow, but drawn once per phrase of a rotating heading: it draws as the new phrase
-   arrives, dips towards the products, rests, and fades just before the next phrase. */
-@keyframes arrow-draw-once {
-  0%   { stroke-dashoffset: 100; opacity: 0; }
-  3%   { opacity: 1; }
-  19%  { stroke-dashoffset: 0; opacity: 1; }
-  93%  { stroke-dashoffset: 0; opacity: 1; }
-  100% { stroke-dashoffset: 0; opacity: 0; }
-}
-@keyframes arrow-dip-once {
-  0%, 21%, 36%, 100% { transform: translateY(0); }
-  28%                { transform: translateY(5px); }
-}
-.curve-arrow-once { animation: arrow-dip-once 4.2s ease-in-out both; }
-.curve-arrow-once path {
-  stroke-dasharray: 100;
-  animation: arrow-draw-once 4.2s ease-out both;
-}
 @media (prefers-reduced-motion: reduce) {
-  .curve-arrow, .curve-arrow path, .curve-arrow-once, .curve-arrow-once path { animation: none; }
+  .curve-arrow, .curve-arrow path { animation: none; }
 }
 
 /* Phones: a wide strip photo shown at full height glides from one end to the other, so none of
