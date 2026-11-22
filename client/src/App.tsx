@@ -1,3 +1,4 @@
+import { StoreFx } from "@/components/fx/StoreFx";
 import { Switch, Route, useLocation } from "wouter";
 import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense, Component, type ReactNode } from "react";
 import { queryClient } from "./lib/queryClient";
@@ -451,6 +452,7 @@ function App() {
           <AbandonedCartReminder />
           <ProductImagePreloader />
           <Router />
+          <StoreFx />
 
           <ChatBot igVisible={!igDismissed} />
           <InstagramButton dismissed={igDismissed} onDismiss={handleIgDismiss} />

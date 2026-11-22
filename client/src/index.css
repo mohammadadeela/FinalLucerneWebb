@@ -399,3 +399,46 @@ html.admin-theme {
 .sima-btn:active { transform: translateY(0) scale(0.97); }
 @keyframes sima-pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
 .sima-pop { animation: sima-pop .45s cubic-bezier(.2,.9,.3,1.2) both; }
+
+/* ── Sima-style motion for the storefront (never the admin area) ── */
+/* The pink swipe that crosses the top of the screen when a page changes */
+@keyframes route-swipe {
+  0% { transform: scaleX(0); transform-origin: left; }
+  55% { transform: scaleX(1); transform-origin: left; }
+  56% { transform: scaleX(1); transform-origin: right; }
+  100% { transform: scaleX(0); transform-origin: right; }
+}
+.route-swipe { animation: route-swipe 0.75s cubic-bezier(0.6, 0, 0.2, 1) both; }
+/* Every page rises gently into place. No fill-mode on purpose: a held transform would trap fixed children. */
+@keyframes page-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+html:not(.admin-theme) main { animation: page-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
+/* Pink buttons: a light sweeps across on hover and the button lifts */
+html:not(.admin-theme) .store-btn.bg-primary { position: relative; overflow: hidden; isolation: isolate; }
+html:not(.admin-theme) .store-btn.bg-primary::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.38) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+html:not(.admin-theme) .store-btn.bg-primary:hover::after { transform: translateX(120%); }
+html:not(.admin-theme) .store-btn.bg-primary:hover { transform: translateY(-2px); }
+
+/* The 3D dress stage repaints itself in the chosen dress colour */
+@property --shade { syntax: "<color>"; inherits: true; initial-value: #E8257D; }
+.dress-stage {
+  transition: --shade 0.7s ease;
+  background-color: #4A0D33;
+  background-image: radial-gradient(60% 70% at 28% 50%, color-mix(in oklab, var(--shade) 70%, white) 0%, color-mix(in oklab, var(--shade) 80%, #4A0D33) 34%, color-mix(in oklab, var(--shade) 30%, #4A0D33) 64%, #4A0D33 100%);
+}
+[dir="ltr"] .dress-stage {
+  background-image: radial-gradient(60% 70% at 72% 50%, color-mix(in oklab, var(--shade) 70%, white) 0%, color-mix(in oklab, var(--shade) 80%, #4A0D33) 34%, color-mix(in oklab, var(--shade) 30%, #4A0D33) 64%, #4A0D33 100%);
+}
+@media (max-width: 1023px) {
+  .dress-stage, [dir="ltr"] .dress-stage {
+    background-image: radial-gradient(95% 48% at 50% 34%, color-mix(in oklab, var(--shade) 70%, white) 0%, color-mix(in oklab, var(--shade) 80%, #4A0D33) 34%, color-mix(in oklab, var(--shade) 30%, #4A0D33) 66%, #4A0D33 100%);
+  }
+}
+.ghost-type { -webkit-text-stroke: 1.5px rgba(255, 246, 250, 0.28); color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  html:not(.admin-theme) main, .route-swipe { animation: none; }
+}

@@ -22,6 +22,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { DressTwirl } from "@/components/home/DressTwirl";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLanguage } from "@/i18n";
 import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
@@ -950,6 +951,13 @@ export default function Home() {
               mobileGrid
               more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
             />
+          </Section>
+        )}
+
+        {/* 3D dress showpiece (admin can switch it off) */}
+        {g("home_dress3d_enabled") !== "false" && (
+          <Section>
+            <DressTwirl />
           </Section>
         )}
 

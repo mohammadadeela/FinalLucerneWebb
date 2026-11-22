@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { Link, useLocation } from "wouter";
 import { Heart, ShoppingBag } from "lucide-react";
+import { burstHearts } from "@/components/fx/StoreFx";
 import { type Product, type ColorVariant } from "@shared/schema";
 import { useLanguage } from "@/i18n";
 import { COLOR_FAMILIES, translateColorName } from "@/lib/colorFamilies";
@@ -49,6 +50,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
       return;
     }
     const activeColor = cv && effectiveColorIdx !== null ? cv[effectiveColorIdx]?.name : undefined;
+    if (!wishlisted) burstHearts(e);
     toggle(product.id, activeColor ?? undefined);
   };
 
@@ -397,7 +399,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             className={`absolute bottom-3 group-hover:bottom-12 end-3 z-30 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 focus:opacity-100 ${wishlisted ? "opacity-100 bg-white" : "opacity-0 group-hover:opacity-100 bg-white/80"}`}
           >
             <Heart
-              className={`w-4 h-4 transition-all duration-200 ${wishlisted ? "fill-rose-500 stroke-rose-500" : "stroke-foreground fill-transparent"}`}
+              className={`w-4 h-4 transition-all duration-200 ${wishlisted ? "sima-pop fill-primary stroke-primary" : "stroke-foreground fill-transparent"}`}
               strokeWidth={1.5}
             />
           </button>}
