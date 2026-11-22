@@ -116,8 +116,8 @@ export const defaultSettings: Record<string, string> = {
   shipping_details_en: "We deliver to all areas of the West Bank and Jerusalem.\nDelivery within Ramallah and Al-Bireh: 1-2 business days.\nDelivery to other areas in Palestine: 2-4 business days.\nShipping costs are calculated at checkout based on your location.\nOrders over 300 NIS receive free shipping within Ramallah.",
   returns_details_ar: "نقبل إرجاع المنتجات خلال 7 أيام من تاريخ الاستلام.\nيجب أن يكون المنتج بحالته الأصلية، غير مستخدم، وبعبوته الأصلية.\nالمنتجات المخفضة والعروض الخاصة غير قابلة للإرجاع إلا في حالة وجود عيب مصنعي.\nلبدء عملية الإرجاع، تواصلي معنا عبر واتساب أو حضوري مباشرة إلى المتجر.\nيتم استرداد المبلغ خلال 3-5 أيام عمل بعد استلام المنتج المُرجع.",
   returns_details_en: "We accept returns within 7 days of the delivery date.\nThe item must be in its original condition, unused, and in its original packaging.\nSale items and special offers are non-returnable unless there is a manufacturing defect.\nTo start a return, contact us via WhatsApp or visit our store in person.\nRefunds are processed within 3-5 business days after receiving the returned item.",
-  shipping_note_ar: "لأي استفسار حول شحنتك أو طلب إرجاع، لا تترددي في التواصل معنا عبر واتساب أو زيارة متجرنا مباشرة.",
-  shipping_note_en: "For any questions about your shipment or to request a return, don't hesitate to contact us via WhatsApp or visit our store directly.",
+  shipping_note_ar: "لأي استفسار حول شحنتك أو طلب تبديل، لا تترددي في التواصل معنا عبر واتساب أو زيارة متجرنا مباشرة.",
+  shipping_note_en: "For any questions about your shipment or to request an exchange, don't hesitate to contact us via WhatsApp or visit our store directly.",
 
   // Contact page
   contact_phone: "970597314193",
