@@ -11,41 +11,41 @@
   --news-bar-offset: 0px;
   --navbar-h: 4rem;
 
-  /* Storefront palette — warm cream surfaces with the original black for buttons, text and the footer.
+  /* Storefront palette — the Sima Beauty colours: milk background, plum ink text, hot pink buttons, blush panels.
      Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
-  --background: 332 65% 98.5%; /* pink-tinted white */
-  --foreground: 0 0% 10%;
+  --background: 333 100% 98.2%; /* Sima milk #FFF6FA */
+  --foreground: 318 50% 11.8%; /* Sima ink #2D0F24 */
 
   --card: 0 0% 100%; /* same white as every other card and tile */
-  --card-foreground: 0 0% 10%;
+  --card-foreground: 318 50% 11.8%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
+  --popover-foreground: 318 50% 11.8%;
 
-  --primary: 0 0% 12%;
-  --primary-foreground: 0 0% 98%;
+  --primary: 333 81% 52.7%; /* Sima pink #E8257D */
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 15%;
+  --secondary: 336 100% 96.1%; /* Sima blush-soft #FFEBF3 */
+  --secondary-foreground: 318 50% 11.8%;
 
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 45%;
+  --muted: 336 70% 96%;
+  --muted-foreground: 320 16% 44%;
 
-  --accent: 0 0% 94%;
-  --accent-foreground: 0 0% 10%;
+  --accent: 336 100% 96.1%;
+  --accent-foreground: 318 50% 11.8%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
-  --ring: 0 0% 12%;
+  --border: 328 35% 90%;
+  --input: 328 35% 88%;
+  --ring: 333 81% 52.7%;
 
   /* Named storefront tints used by the landing page */
-  --berry: 342 49% 42%;
-  --berry-deep: 342 52% 33%;
-  --blush: 332 72% 92%;
+  --berry: 333 81% 52.7%; /* Sima pink #E8257D */
+  --berry-deep: 332 82% 38.6%; /* Sima pink-deep #B3125C */
+  --blush: 337 100% 90.8%; /* Sima blush #FFD0E2 */
   --sage: 96 20% 84%;
   --sand: 30 42% 91%;
 
@@ -385,3 +385,17 @@ html.admin-theme {
 }
 .auth-float { animation: auth-float 7s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .auth-float { animation: none; transform: rotate(-12deg); } }
+
+/* Sima-style button: a light sweeps across on hover and the button lifts a little. */
+.sima-btn { position: relative; overflow: hidden; isolation: isolate; }
+.sima-btn::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.38) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.sima-btn:hover::after { transform: translateX(120%); }
+.sima-btn:hover { transform: translateY(-2px); }
+.sima-btn:active { transform: translateY(0) scale(0.97); }
+@keyframes sima-pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+.sima-pop { animation: sima-pop .45s cubic-bezier(.2,.9,.3,1.2) both; }

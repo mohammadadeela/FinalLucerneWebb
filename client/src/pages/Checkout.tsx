@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
-import { UserCheck, Coins, CreditCard, Banknote, MapPin, Truck, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn, Lock } from "lucide-react";
+import { UserCheck, Coins, CreditCard, Banknote, MapPin, Truck, CheckCircle2, Check, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn, Lock } from "lucide-react";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
@@ -1015,16 +1015,19 @@ export default function Checkout() {
     window.setTimeout(() => el?.focus({ preventScroll: true }), 350);
   };
 
+  // Section numbers are counted as the page renders, because some sections are optional.
+  let stepNo = 0;
+
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex-1 w-full px-3 pb-12 pt-5 sm:px-6 sm:pt-8 lg:px-8">
+      <main className="flex-1 w-full px-4 pb-12 pt-5 sm:px-6 sm:pt-8 lg:px-8">
         <div className="max-w-6xl mx-auto">
         <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} images={items.slice(0, 3).map((it: any) => getItemImage(it)).filter(Boolean)} />
         <CheckoutSteps current={2} />
         <div className="mb-4 mt-5 flex items-end justify-between gap-3 sm:mb-6 sm:mt-7">
-          <h1 className="text-2xl font-bold text-berry-deep sm:text-3xl" data-testid="text-checkout-title">{t.checkout.title}</h1>
-          <Link href="/cart" className="text-xs font-semibold text-berry hover:underline sm:text-sm" data-testid="link-back-to-cart">
+          <h1 className="text-[2.1rem] font-bold leading-none text-foreground sm:text-[3rem]" data-testid="text-checkout-title">{t.checkout.title}</h1>
+          <Link href="/cart" className="text-sm font-semibold text-primary hover:underline" data-testid="link-back-to-cart">
             {language === "ar" ? "تعديل السلة" : "Edit cart"}
           </Link>
         </div>
@@ -1102,11 +1105,11 @@ export default function Checkout() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-6">
-          <div className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_27rem] lg:gap-12">
+          <div className="space-y-8">
             {/* Guest notice: they can order, but points and discount codes belong to accounts */}
             {!user && guestCheckoutEnabled && (
-              <div className="relative overflow-hidden rounded-[1.5rem] bg-blush text-berry-deep" data-testid="banner-guest-checkout">
+              <div className="relative overflow-hidden rounded-[2rem] bg-secondary text-foreground" data-testid="banner-guest-checkout">
                 {/* Same pink as the points card on the profile page (pink stops only under the text, so it stays readable) */}
                 <Gift className="absolute -bottom-4 -end-3 w-24 h-24 text-berry/10" aria-hidden="true" />
                 <div className="relative flex items-start gap-4 p-5">
@@ -1127,7 +1130,7 @@ export default function Checkout() {
                     <button
                       type="button"
                       onClick={() => { rememberPostLoginTarget("/checkout"); setLocation("/auth"); }}
-                      className="mt-3.5 inline-flex items-center gap-2 rounded-full bg-foreground text-background px-5 py-2 text-xs font-semibold hover:bg-berry transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-berry/50"
+                      className="mt-3.5 inline-flex items-center gap-2 sima-btn rounded-full bg-foreground text-background px-5 py-2 text-xs font-semibold hover:bg-berry-deep transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-berry/50"
                       data-testid="button-guest-signin"
                     >
                       <LogIn className="w-4 h-4" />
@@ -1140,8 +1143,8 @@ export default function Checkout() {
 
             {/* Delivery or store pickup */}
             {pickupAvailable && (
-              <div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500" data-testid="section-delivery-method">
-                <h2 className="flex items-center gap-2.5 text-base font-bold text-foreground sm:text-lg mb-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blush text-berry"><Truck className="h-4 w-4" strokeWidth={1.8} /></span>{language === "ar" ? "طريقة الاستلام" : "How do you want it?"}</h2>
+              <div className="animate-in fade-in slide-in-from-bottom-3 duration-500" data-testid="section-delivery-method">
+                <h2 className="flex items-center gap-3 text-xl font-bold text-foreground sm:text-2xl mb-4"><span className="price-text flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">{++stepNo}</span>{language === "ar" ? "طريقة الاستلام" : "How do you want it?"}</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {([
                     { id: "delivery", icon: Truck, title: language === "ar" ? "توصيل" : "Delivery", sub: language === "ar" ? "إلى باب منزلك" : "To your door" },
@@ -1155,17 +1158,17 @@ export default function Checkout() {
                         type="button"
                         onClick={() => setDeliveryMethod(opt.id)}
                         aria-pressed={selected}
-                        className={`relative flex flex-col items-center gap-1.5 p-4 rounded-2xl border-2 text-sm transition-all duration-200 ${
+                        className={`relative flex flex-col items-center gap-1.5 p-4 rounded-3xl border-2 text-sm transition-all duration-200 ${
                           selected
-                            ? "border-berry bg-blush/70 text-berry-deep shadow-sm"
-                            : "border-transparent bg-background text-foreground/70 hover:border-berry/30"
+                            ? "border-primary bg-white text-foreground shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                            : "border-transparent bg-white text-foreground/80 hover:border-foreground/20"
                         }`}
                         data-testid={`button-delivery-${opt.id}`}
                       >
-                        {selected && <CheckCircle2 className="absolute top-2 end-2 w-4 h-4 text-berry" />}
+                        {selected && <span className="sima-pop absolute top-2.5 end-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white"><Check className="h-3 w-3" strokeWidth={3} /></span>}
                         <Icon className="w-5 h-5 text-berry" />
                         <span className="font-semibold">{opt.title}</span>
-                        <span className={`text-[11px] ${selected ? "text-berry/80" : "text-muted-foreground"}`}>{opt.sub}</span>
+                        <span className="text-[11px] text-muted-foreground">{opt.sub}</span>
                       </button>
                     );
                   })}
@@ -1174,7 +1177,7 @@ export default function Checkout() {
             )}
 
             {deliveryMethod === "pickup" && (
-              <div className="rounded-[1.5rem] bg-blush p-5" data-testid="box-pickup-info">
+              <div className="rounded-[2rem] bg-secondary p-5" data-testid="box-pickup-info">
                 <div className="flex items-center gap-2 mb-2">
                   <Store className="w-4 h-4 text-berry" />
                   <p className="text-sm font-bold">{language === "ar" ? "استلام من متجر لوسيرن" : "Pick up at Lucerne Boutique"}</p>
@@ -1189,9 +1192,9 @@ export default function Checkout() {
               </div>
             )}
 
-            {deliveryMethod === "delivery" && (<div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
+            {deliveryMethod === "delivery" && (<div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
             <div ref={shippingRegionRef} className="flex items-center justify-between mb-4 scroll-mt-28">
-              <h2 className="flex items-center gap-2.5 text-base font-bold text-foreground sm:text-lg"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blush text-berry"><MapPin className="h-4 w-4" strokeWidth={1.8} /></span>{t.checkout.shippingRegion}</h2>
+              <h2 className="flex items-center gap-3 text-xl font-bold text-foreground sm:text-2xl"><span className="price-text flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">{++stepNo}</span>{t.checkout.shippingRegion}</h2>
               {!shippingRegion && (
                 <span className="text-xs text-berry font-semibold animate-pulse">
                   {language === "ar" ? "← اختاري منطقتك" : "← Choose your region"}
@@ -1206,16 +1209,16 @@ export default function Checkout() {
                     key={zone.id}
                     type="button"
                     onClick={() => setShippingRegion(zone.id)}
-                    className={`relative flex flex-col items-center gap-1.5 px-1.5 py-3 sm:gap-2 sm:p-4 rounded-2xl border-2 text-[13px] sm:text-sm transition-all duration-200 ${
+                    className={`relative flex flex-col items-center gap-1.5 px-1.5 py-3 sm:gap-2 sm:p-4 rounded-3xl border-2 text-[13px] sm:text-sm transition-all duration-200 ${
                       selected
-                        ? "border-berry bg-blush/70 text-berry-deep shadow-sm scale-[1.03]"
-                        : "border-transparent bg-background text-foreground/70 hover:border-berry/30 hover:scale-[1.01]"
+                        ? "border-primary bg-white text-foreground shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)] scale-[1.03]"
+                        : "border-transparent bg-white text-foreground/80 hover:border-foreground/20 hover:scale-[1.01]"
                     } ${!shippingRegion ? "animate-shake-hint" : ""}`}
                     data-testid={`button-region-${zone.id}`}
                   >
                     {selected && (
-                      <span className="absolute top-2 end-2 w-4 h-4 rounded-full bg-white flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-berry" />
+                      <span className="sima-pop absolute top-2 end-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+                        <Check className="h-3 w-3" strokeWidth={3} />
                       </span>
                     )}
                     <MapPin className="w-5 h-5 shrink-0 text-berry" />
@@ -1228,12 +1231,12 @@ export default function Checkout() {
 
             </div>)}
 
-            <div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-            <h2 className="flex items-center gap-2.5 text-base font-bold text-foreground sm:text-lg mb-5"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blush text-berry"><UserCheck className="h-4 w-4" strokeWidth={1.8} /></span>{t.checkout.deliveryDetails}</h2>
+            <div className="animate-in fade-in slide-in-from-bottom-3 duration-500">
+            <h2 className="flex items-center gap-3 text-xl font-bold text-foreground sm:text-2xl mb-5"><span className="price-text flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">{++stepNo}</span>{t.checkout.deliveryDetails}</h2>
 
             {/* Auto-filled banner — shown only to returning customers whose data was pre-loaded */}
             {autoFilled && (
-              <div className="flex items-center gap-3 bg-blush rounded-2xl px-4 py-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-500">
                 <UserCheck className="w-5 h-5 text-berry shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-berry-deep">
@@ -1256,10 +1259,10 @@ export default function Checkout() {
               </div>
             )}
 
-            <form id="checkout-form" onSubmit={handleSubmit} className="space-y-4">
+            <form id="checkout-form" onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="flex items-center gap-1">{t.checkout.fullName}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25" data-testid="input-checkout-name" />
+                <Input id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0" data-testid="input-checkout-name" />
               </div>
               <div className="space-y-2">
                 {whatsappNotificationsEnabled && !!user && (
@@ -1275,10 +1278,10 @@ export default function Checkout() {
                 <Label htmlFor="phone" className="flex items-center gap-1">{t.checkout.phone}<span className="text-red-500 text-base leading-none">*</span></Label>
                 <div
                   key={`phone-${phoneShakeKey}`}
-                  className={`flex gap-0 overflow-hidden rounded-2xl border bg-background focus-within:ring-2 focus-within:ring-berry/25 ${
+                  className={`flex gap-0 overflow-hidden rounded-2xl border bg-white focus-within:ring-4 focus-within:ring-primary/10 ${
                     phoneValidationError
                       ? "border-red-500 focus-within:ring-red-500 animate-[shake-hint_0.45s_ease-in-out_1]"
-                      : "border-border/60 focus-within:border-berry/40"
+                      : "border-foreground/15 focus-within:border-primary"
                   }`}
                   dir="ltr"
                 >
@@ -1344,10 +1347,10 @@ export default function Checkout() {
                 </Label>
                 <div
                   key={`phone2-${phone2ShakeKey}`}
-                  className={`flex gap-0 overflow-hidden rounded-2xl border bg-background focus-within:ring-2 focus-within:ring-berry/25 ${
+                  className={`flex gap-0 overflow-hidden rounded-2xl border bg-white focus-within:ring-4 focus-within:ring-primary/10 ${
                     phone2ValidationError
                       ? "border-red-500 focus-within:ring-red-500 animate-[shake-hint_0.45s_ease-in-out_1]"
-                      : "border-border/60 focus-within:border-berry/40"
+                      : "border-foreground/15 focus-within:border-primary"
                   }`}
                   dir="ltr"
                 >
@@ -1414,7 +1417,7 @@ export default function Checkout() {
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                   data-testid="input-guest-email"
                 />
                 <p id="guest-email-help" className="text-xs text-red-600" role="status">
@@ -1430,20 +1433,20 @@ export default function Checkout() {
               {deliveryMethod === "delivery" && (<>
               <div className="space-y-2">
                 <Label htmlFor="city" className="flex items-center gap-1">{t.checkout.city}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="city" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25" data-testid="input-checkout-city" />
+                <Input id="city" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0" data-testid="input-checkout-city" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address" className="flex items-center gap-1">{t.checkout.address}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25" data-testid="input-checkout-address" />
+                <Input id="address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0" data-testid="input-checkout-address" />
               </div>
               </>)}
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="notes">{t.checkout.notes}</Label>
-                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 resize-none" rows={3} data-testid="textarea-checkout-notes" />
+                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 resize-none" rows={3} data-testid="textarea-checkout-notes" />
               </div>
 
               {/* Auto-save notice — always on, no toggle needed */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-2xl bg-background px-4 py-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground rounded-2xl bg-white px-4 py-3 sm:col-span-2">
                 <CheckCircle2 className="w-4 h-4 text-berry flex-shrink-0" />
                 <span>
                   {language === "ar"
@@ -1456,8 +1459,8 @@ export default function Checkout() {
           </div>
 
           <div className="lg:sticky lg:top-28">
-            <div className="rounded-[1.5rem] bg-white p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
-              <h2 className="mb-4 text-base font-bold text-foreground sm:text-lg">{t.checkout.yourOrder}</h2>
+            <div className="rounded-[2rem] bg-white p-5 sm:p-6 shadow-[0_6px_24px_-14px_rgba(45,15,36,0.35)] animate-in fade-in slide-in-from-bottom-3 duration-500">
+              <h2 className="mb-3 text-xl font-bold text-foreground sm:text-2xl">{t.checkout.yourOrder}</h2>
 
               <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pt-3 pe-2">
                 {items.map((item, idx) => {
@@ -1557,7 +1560,7 @@ export default function Checkout() {
                         value={discountInput}
                         onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError(""); }}
                         placeholder={language === "ar" ? "أدخلي كود الخصم..." : "Enter discount code..."}
-                        className="h-11 rounded-full border-border/60 bg-background text-xs uppercase ps-9 pe-11 tracking-widest placeholder:normal-case placeholder:tracking-normal focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                        className="h-11 rounded-2xl border-foreground/15 bg-white text-xs uppercase ps-9 pe-11 tracking-widest placeholder:normal-case placeholder:tracking-normal focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                         onKeyDown={e => e.key === "Enter" && (e.preventDefault(), applyDiscount())}
                         data-testid="input-discount-code"
                       />
@@ -1565,7 +1568,7 @@ export default function Checkout() {
                         type="button"
                         onClick={applyDiscount}
                         disabled={discountLoading || !discountInput.trim()}
-                        className="absolute end-1 top-1 flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background transition-colors hover:bg-berry disabled:bg-foreground/25"
+                        className="absolute end-1 top-1 flex h-9 w-9 items-center justify-center rounded-xl bg-foreground text-background transition-colors hover:bg-berry-deep disabled:bg-foreground/25"
                         data-testid="button-apply-discount"
                       >
                         {discountLoading
@@ -1762,8 +1765,8 @@ export default function Checkout() {
                     onClick={() => deliveryMethod !== "pickup" && setPaymentMethod("cod")}
                     className={`flex items-center justify-center gap-2 p-3.5 border-2 rounded-2xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === "cod"
-                        ? "border-berry bg-blush/70 text-berry-deep shadow-sm"
-                        : "border-transparent bg-background text-foreground/70 hover:border-berry/30"
+                        ? "border-primary bg-white text-foreground"
+                        : "border-transparent bg-secondary text-foreground/80 hover:border-foreground/20"
                     }`}
                     data-testid="button-payment-cod"
                   >
@@ -1778,8 +1781,8 @@ export default function Checkout() {
                       !cardPaymentEnabled
                         ? "border-transparent bg-background text-muted-foreground/40 cursor-not-allowed"
                         : paymentMethod === "card"
-                          ? "border-berry bg-blush/70 text-berry-deep shadow-sm"
-                          : "border-transparent bg-background text-foreground/70 hover:border-berry/30"
+                          ? "border-primary bg-white text-foreground"
+                          : "border-transparent bg-secondary text-foreground/80 hover:border-foreground/20"
                     }`}
                     data-testid="button-payment-card"
                   >
@@ -1804,7 +1807,7 @@ export default function Checkout() {
 
               <div className="border-t border-dashed border-border pt-4 mb-4 flex justify-between items-center">
                 <span className="text-base font-semibold">{t.checkout.total}</span>
-                <span key={total} data-testid="text-checkout-total" className="ltr-num price-text text-2xl font-bold text-berry-deep animate-in zoom-in-95 fade-in duration-300">₪{total.toFixed(2)}</span>
+                <span key={total} data-testid="text-checkout-total" className="ltr-num price-text text-[1.7rem] font-bold text-foreground animate-in zoom-in-95 fade-in duration-300">₪{total.toFixed(2)}</span>
               </div>
 
               {loyaltyPointsEnabled && (() => {
@@ -1813,7 +1816,7 @@ export default function Checkout() {
                 if (pointsToEarn <= 0) return null;
                 return (
                   <div
-                    className="mb-3 rounded-2xl bg-blush p-3 text-berry-deep"
+                    className="mb-3 rounded-2xl bg-secondary p-3 text-berry-deep"
                     data-testid="text-checkout-points-preview"
                   >
                     <div className="relative flex items-center gap-3">
@@ -1838,9 +1841,9 @@ export default function Checkout() {
 
               {/* Delivery promise */}
               {deliveryMethod === "delivery" ? (
-              <div className="mb-4 flex items-center gap-3 p-3 rounded-2xl bg-background" data-testid="banner-delivery-checkout">
+              <div className="mb-4 flex items-center gap-3 p-3 rounded-2xl bg-secondary" data-testid="banner-delivery-checkout">
                 <div className="relative flex-shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-blush flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center">
                     <Truck className="w-4 h-4 text-berry" strokeWidth={1.5} />
                   </div>
                   <span className="absolute -top-0.5 -end-0.5 w-3 h-3 bg-berry rounded-full border-2 border-white animate-pulse" />
@@ -1861,7 +1864,7 @@ export default function Checkout() {
                 </div>
               </div>
               ) : (
-              <div className="mb-4 flex items-center gap-3 p-3 rounded-2xl bg-background" data-testid="banner-pickup-checkout">
+              <div className="mb-4 flex items-center gap-3 p-3 rounded-2xl bg-secondary" data-testid="banner-pickup-checkout">
                 <Store className="w-4 h-4 text-berry shrink-0" />
                 <p className="text-xs font-semibold">
                   {language === "ar" ? "نخبرك على واتساب عندما يصبح طلبك جاهزاً للاستلام" : "We'll message you on WhatsApp when your order is ready for pickup"}
@@ -1890,10 +1893,10 @@ export default function Checkout() {
                 type="submit"
                 form="checkout-form"
                 disabled={isPending || guestLocked}
-                className={`h-[3.25rem] w-full !rounded-full text-[15px] font-semibold transition-shadow duration-500 ${unlockPulse ? "ring-4 ring-emerald-400/50" : ""}`}
+                className={`sima-btn h-14 w-full !rounded-full text-base font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)] transition-shadow duration-500 ${unlockPulse ? "ring-4 ring-emerald-400/50" : ""}`}
                 data-testid="button-place-order"
               >
-                {guestLocked && !isPending && <Lock className="w-4 h-4 me-2" />}
+                {!isPending && <Lock className="w-4 h-4 me-2" />}
                 {isPending
                   ? t.checkout.processing
                   : paymentMethod === "card"

@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { signInWithGoogle, signInWithFacebook, handleFirebaseRedirectResult, getExistingProviderLabel, sendPhoneVerificationCode, confirmPhoneCode, resetRecaptcha } from "@/lib/firebase";
 import { SiFacebook } from "react-icons/si";
-import { Loader2, Mail, Lock, ShieldX, X, ArrowLeft, ArrowRight, Eye, EyeOff, BookmarkCheck, Phone, MessageSquare, Package, ArrowLeftRight, Heart } from "lucide-react";
+import { Loader2, Mail, Lock, ShieldX, X, ArrowLeft, ArrowRight, Eye, EyeOff, BookmarkCheck, Phone, MessageSquare } from "lucide-react";
 import { motion } from "framer-motion";
 import { BrandButterfly } from "@/components/ui/BrandButterfly";
 import { PhoneCountrySelect, PHONE_COUNTRIES } from "@/components/ui/PhoneCountrySelect";
@@ -1093,7 +1093,7 @@ export default function Auth() {
     const baseBtn =
       "relative w-full h-12 flex items-center justify-center gap-3 rounded-full border text-sm font-semibold " +
       "transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none";
-    const normalBtn = "border-border/70 bg-white hover:border-berry/40 hover:bg-blush/40";
+    const normalBtn = "border-foreground/15 bg-white hover:border-primary hover:text-primary";
     const lastBtn = "border-berry/50 bg-blush/50 shadow-[0_0_0_3px] shadow-berry/10";
     const badge = (
       <span className="absolute -top-2 end-3 text-[10px] leading-none px-2 py-1 rounded-full bg-berry text-white font-medium shadow-sm">
@@ -1165,7 +1165,7 @@ export default function Auth() {
       : (language === "ar" ? "التسجيل عبر واتساب" : "Register with WhatsApp");
     const smsLabel = language === "ar" ? "التسجيل عبر SMS" : "Register with SMS";
     const isLast = (m: LastLoginMethod) => highlightLastUsed && lastLoginMethod === m;
-    const normalBtn = "border-border/70 bg-white hover:border-berry/40 hover:bg-blush/40";
+    const normalBtn = "border-foreground/15 bg-white hover:border-primary hover:text-primary";
     const lastBtn = "border-berry/50 bg-blush/50 shadow-[0_0_0_3px] shadow-berry/10";
     const badge = (
       <span className="absolute -top-2 end-3 text-[10px] leading-none px-2 py-1 rounded-full bg-berry text-white font-medium shadow-sm">
@@ -1257,60 +1257,44 @@ export default function Auth() {
   // Each step starts at the top of the page, so a new step never opens half-scrolled on a phone.
   useEffect(() => { window.scrollTo({ top: 0 }); }, [step]);
 
-  /* ─────────────────── Brand panel copy ─────────────────── */
-  const isAr = language === "ar";
-  const panel = step === "auth" || step === "phone-login"
-    ? { key: "in", title: isAr ? "أهلاً بعودتكِ" : "Welcome back", text: isAr ? "سجّلي دخولك وكمّلي من وين وقفتِ." : "Sign in and pick up where you left off." }
-    : step.startsWith("forgot") || step === "phone-reset-newpass" || (step.startsWith("phone") && phoneIntent === "reset")
-      ? { key: "reset", title: isAr ? "نرجّعلك حسابك" : "Let's get you back in", text: isAr ? "خطوتين صغار وبترجعي لحسابك." : "Two short steps and you're back in your account." }
-      : { key: "new", title: isAr ? "انضمّي إلى لوسيرن" : "Join Lucerne", text: isAr ? "حساب واحد لكل طلباتك ومفضلتك." : "One account for all your orders and favourites." };
-  const perks = [
-    { icon: Package, label: isAr ? "تتبّعي طلباتك أولاً بأول" : "Follow your orders step by step" },
-    { icon: ArrowLeftRight, label: isAr ? "طلبات التبديل من حسابك مباشرة" : "Request exchanges from your account" },
-    { icon: Heart, label: isAr ? "مفضلتك محفوظة على كل أجهزتك" : "Your favourites saved on every device" },
-  ];
-
   /* ─────────────────── Render ─────────────────── */
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex-1 sm:px-6 sm:py-10 lg:flex lg:items-center lg:py-14">
-        <div className="mx-auto grid w-full max-w-5xl lg:grid-cols-[minmax(0,1fr)_28rem] lg:gap-5">
-          {/* Brand panel: a pink welcome that changes with what the customer is doing */}
-          <aside className="relative overflow-hidden bg-blush px-6 pb-14 pt-7 text-center sm:rounded-[2rem] sm:pb-16 lg:flex lg:flex-col lg:justify-between lg:p-12 lg:text-start" data-testid="auth-brand-panel">
-            <BrandButterfly className="auth-float pointer-events-none absolute -top-3 h-28 w-28 opacity-25 ltr:-right-5 rtl:-left-5 lg:bottom-6 lg:top-auto lg:h-56 lg:w-56 lg:opacity-30" />
-            <div className="relative">
-              <BrandButterfly className="mx-auto h-11 w-11 lg:mx-0 lg:h-14 lg:w-14" />
-              <motion.div
-                key={panel.key}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <p className="mt-3 text-2xl font-bold leading-tight text-berry-deep sm:text-3xl lg:mt-6 lg:text-[2.6rem] lg:leading-[1.2]">{panel.title}</p>
-                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-foreground/65 lg:mx-0 lg:max-w-sm lg:text-base">{panel.text}</p>
-              </motion.div>
+      <main className="flex flex-1 justify-center px-4 py-8 sm:py-14">
+        <div className="w-full max-w-md self-start">
+          {/* One white card, like the Sima Beauty sign-in: the mark on top, then two tabs */}
+          <div className="rounded-[2rem] bg-white p-6 shadow-[0_6px_24px_-14px_rgba(45,15,36,0.35)] sm:p-9" data-testid="auth-card">
+            <div className="text-center">
+              <BrandButterfly className="auth-float mx-auto h-14 w-14" />
+              <p className="display-latin mt-1 text-[1.9rem] font-semibold leading-none tracking-[0.12em] text-foreground">LUCERNE</p>
+              <p className="display-latin mt-1 text-[10px] uppercase tracking-[0.42em] text-muted-foreground">Boutique</p>
             </div>
-            <ul className="relative mt-10 hidden space-y-3 lg:block">
-              {perks.map(({ icon: Icon, label }, i) => (
-                <motion.li
-                  key={label}
-                  initial={{ opacity: 0, x: language === "ar" ? 16 : -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.15 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex items-center gap-3 text-sm font-medium text-foreground/80"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-berry">
-                    <Icon className="h-4 w-4" strokeWidth={1.8} />
-                  </span>
-                  {label}
-                </motion.li>
-              ))}
-            </ul>
-          </aside>
-
-          {/* The form sits on a white sheet that slides over the pink panel on phones */}
-          <div className="relative -mt-8 rounded-t-[2rem] bg-white px-5 pb-10 pt-7 sm:mx-auto sm:w-full sm:max-w-md sm:rounded-[2rem] sm:p-8 sm:shadow-[0_20px_50px_-24px_rgba(120,40,70,0.35)] lg:mt-0 lg:max-w-none lg:p-10">
+            {(step === "auth" || step === "reg-email") && (
+              <div className="relative mt-6 grid grid-cols-2 rounded-full bg-secondary p-1 text-sm font-semibold" role="tablist">
+                {([
+                  { id: "auth", label: t.auth.signIn },
+                  { id: "reg-email", label: t.auth.createAccount },
+                ] as const).map((tab) => {
+                  const on = step === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => { if (!on) { if (tab.id === "reg-email") { setSignupEmail(""); setSignupCode(""); } setStep(tab.id); } }}
+                      className={`relative h-10 rounded-full transition-colors ${on ? "text-background" : "text-foreground/70 hover:text-foreground"}`}
+                      data-testid={`tab-auth-${tab.id}`}
+                    >
+                      {on && <motion.span layoutId="auth-tab" className="absolute inset-0 rounded-full bg-foreground" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                      <span className="relative">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          <div className="mt-6">
           <motion.div
             key={step}
             initial={{ opacity: 0, y: 12 }}
@@ -1321,12 +1305,8 @@ export default function Auth() {
           {/* ── LOGIN ── */}
           {step === "auth" && (
             <>
-              <div className="mb-6 text-center">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-auth-title">
-                  {t.auth.signIn}
-                </h1>
-                <p className="text-muted-foreground text-sm">{t.auth.welcomeBack}</p>
-              </div>
+              <h1 className="sr-only" data-testid="text-auth-title">{t.auth.signIn}</h1>
+              <p className="mb-5 text-center text-sm text-muted-foreground">{t.auth.welcomeBack}</p>
 
               <SocialButtons highlightLastUsed />
               <Divider />
@@ -1339,7 +1319,7 @@ export default function Auth() {
                     type="email"
                     value={loginEmail}
                     onChange={e => { setLoginEmail(e.target.value); setLoginError(null); }}
-                    className={`h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 ${loginError === "email_not_found" ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    className={`h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 ${loginError === "email_not_found" ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     required
                     data-testid="input-email"
                   />
@@ -1362,7 +1342,7 @@ export default function Auth() {
                       type={showLoginPassword ? "text" : "password"}
                       value={loginPassword}
                       onChange={e => { setLoginPassword(e.target.value); setLoginError(null); }}
-                      className={`h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10 ${loginError === "invalid_password" || loginError === "account_blocked" ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      className={`h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10 ${loginError === "invalid_password" || loginError === "account_blocked" ? "border-destructive focus-visible:ring-destructive" : ""}`}
                       required
                       data-testid="input-password"
                     />
@@ -1414,7 +1394,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={login.isPending}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98] mt-2"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)] mt-2"
                   data-testid="button-auth-submit"
                 >
                   {login.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.signIn}
@@ -1455,18 +1435,8 @@ export default function Auth() {
           {/* ── SIGNUP STEP 1: EMAIL ── */}
           {step === "reg-email" && (
             <div className="space-y-6">
-              <button
-                onClick={() => setStep("auth")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-blush text-berry transition-colors hover:bg-berry hover:text-white"
-                data-testid="button-back-arrow-step1"
-                aria-label="Go back"
-              >
-                {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
-              </button>
-              <div className="text-center mb-2">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-auth-title">{t.auth.createAccount}</h1>
-                <p className="text-muted-foreground text-sm">{t.auth.joinUs}</p>
-              </div>
+              <h1 className="sr-only" data-testid="text-auth-title">{t.auth.createAccount}</h1>
+              <p className="text-center text-sm text-muted-foreground">{t.auth.joinUs}</p>
 
               <SignupStepIndicator current={1} />
 
@@ -1481,7 +1451,7 @@ export default function Auth() {
                     type="email"
                     value={signupEmail}
                     onChange={e => setSignupEmail(e.target.value)}
-                    className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-signup-email"
                   />
@@ -1489,7 +1459,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={sendSignupCodeMutation.isPending}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-send-signup-code"
                 >
                   {sendSignupCodeMutation.isPending
@@ -1541,7 +1511,7 @@ export default function Auth() {
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-2">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-verify-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-verify-title">
                   {language === "ar" ? "تأكيد البريد" : "Verify Email"}
                 </h1>
                 <p className="text-muted-foreground text-sm">
@@ -1560,7 +1530,7 @@ export default function Auth() {
                   id="signup-code"
                   value={signupCode}
                   onChange={e => setSignupCode(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, 6))}
-                  className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 text-center text-2xl tracking-[0.5em] font-mono"
+                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
                   placeholder="000000"
                   maxLength={6}
                   data-testid="input-signup-code"
@@ -1570,7 +1540,7 @@ export default function Auth() {
               <Button
                 onClick={handleVerifySignupCode}
                 disabled={signupCode.length !== 6 || verifySignupCodeMutation.isPending}
-                className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                 data-testid="button-verify-signup-code"
               >
                 {verifySignupCodeMutation.isPending
@@ -1605,7 +1575,7 @@ export default function Auth() {
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-2">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-details-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-details-title">
                   {language === "ar" ? "أكملي تسجيلك" : "Complete Sign Up"}
                 </h1>
                 <p className="text-muted-foreground text-sm">
@@ -1622,7 +1592,7 @@ export default function Auth() {
                     id="fullName"
                     value={signupFullName}
                     onChange={e => setSignupFullName(e.target.value)}
-                    className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-fullname"
                   />
@@ -1635,7 +1605,7 @@ export default function Auth() {
                       type={showSignupPassword ? "text" : "password"}
                       value={signupPassword}
                       onChange={e => setSignupPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-signup-password"
                     />
@@ -1686,7 +1656,7 @@ export default function Auth() {
                       type={showSignupConfirmPassword ? "text" : "password"}
                       value={signupConfirmPassword}
                       onChange={e => setSignupConfirmPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-signup-confirm-password"
                     />
@@ -1703,7 +1673,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={register.isPending}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98] mt-2"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)] mt-2"
                   data-testid="button-complete-signup"
                 >
                   {register.isPending
@@ -1726,7 +1696,7 @@ export default function Auth() {
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-8">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-forgot-title">{t.auth.forgotPasswordTitle}</h1>
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-forgot-title">{t.auth.forgotPasswordTitle}</h1>
                 <p className="text-muted-foreground text-sm">{t.auth.forgotPasswordDesc}</p>
               </div>
               <form onSubmit={handleForgotSendCode} className="space-y-6">
@@ -1737,7 +1707,7 @@ export default function Auth() {
                     type="email"
                     value={forgotEmail}
                     onChange={e => { setForgotEmail(e.target.value); setForgotEmailNotFound(false); }}
-                    className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-forgot-email"
                   />
@@ -1770,7 +1740,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={forgotPasswordMutation.isPending}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-send-reset-code"
                 >
                   {forgotPasswordMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.sendCode}
@@ -1798,7 +1768,7 @@ export default function Auth() {
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-4">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-reset-title">{t.auth.checkEmail}</h1>
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-reset-title">{t.auth.checkEmail}</h1>
                 <p className="text-muted-foreground text-sm">{t.auth.verifyDesc} <span className="font-medium text-foreground">{forgotEmail}</span></p>
               </div>
               <div className="space-y-2">
@@ -1807,7 +1777,7 @@ export default function Auth() {
                   id="reset-code"
                   value={resetCode}
                   onChange={e => setResetCode(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, 6))}
-                  className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 text-center text-2xl tracking-[0.5em] font-mono"
+                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
                   placeholder="000000"
                   maxLength={6}
                   data-testid="input-reset-code"
@@ -1816,7 +1786,7 @@ export default function Auth() {
               <Button
                 onClick={() => verifyResetCodeMutation.mutate({ email: forgotEmail, code: resetCode })}
                 disabled={resetCode.length !== 6 || verifyResetCodeMutation.isPending}
-                className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                 data-testid="button-verify-reset-code"
               >
                 {verifyResetCodeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.verify}
@@ -1855,7 +1825,7 @@ export default function Auth() {
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-4">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-newpass-title">{t.auth.resetPassword}</h1>
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-newpass-title">{t.auth.resetPassword}</h1>
                 <p className="text-muted-foreground text-sm">{t.auth.enterCodeAndPassword}</p>
               </div>
               <form onSubmit={handleResetPassword} className="space-y-5">
@@ -1867,7 +1837,7 @@ export default function Auth() {
                       type={showNewPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-new-password"
                     />
@@ -1889,7 +1859,7 @@ export default function Auth() {
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-confirm-password"
                     />
@@ -1906,7 +1876,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={resetPasswordMutation.isPending}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-reset-password"
                 >
                   {resetPasswordMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.resetPassword}
@@ -1931,7 +1901,7 @@ export default function Auth() {
                 <div className="w-14 h-14 rounded-full bg-blush flex items-center justify-center mx-auto mb-4">
                   <Phone className="w-7 h-7 text-berry" />
                 </div>
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-phone-login-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-login-title">
                   {language === "ar" ? "الدخول برقم الهاتف" : "Sign in with Phone"}
                 </h1>
                 <p className="text-muted-foreground text-sm">
@@ -1978,7 +1948,7 @@ export default function Auth() {
               >
                 <div className="space-y-2">
                   <Label>{language === "ar" ? "رقم الهاتف" : "Phone Number"}</Label>
-                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-border/60 bg-background focus-within:border-berry/40 focus-within:ring-2 focus-within:ring-berry/25" dir="ltr">
+                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-foreground/15 bg-white focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10" dir="ltr">
                     <PhoneCountrySelect
                       value={phoneCountryCode}
                       onChange={setPhoneCountryCode}
@@ -2014,7 +1984,7 @@ export default function Auth() {
                       type={showPhoneLoginPwd ? "text" : "password"}
                       value={phoneLoginPassword}
                       onChange={(e) => { setPhoneLoginPassword(e.target.value); setPhoneLoginError(null); }}
-                      className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-phone-login-password"
                     />
@@ -2032,7 +2002,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneLoginMutation.isPending || phoneNumber.length < 7 || !phoneLoginPassword}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-submit-phone-login"
                 >
                   {phoneLoginMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.signIn}
@@ -2076,7 +2046,7 @@ export default function Auth() {
                     ? <MessageSquare className="w-7 h-7 text-berry" />
                     : <Phone className="w-7 h-7 text-berry" />}
                 </div>
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-phone-entry-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-entry-title">
                   {language === "ar"
                     ? (phoneIntent === "signup" ? "التسجيل برقم الهاتف" : "إعادة تعيين كلمة المرور")
                     : (phoneIntent === "signup" ? "Register with Phone" : "Reset Password")}
@@ -2099,7 +2069,7 @@ export default function Auth() {
               <form onSubmit={handleSendPhoneOtp} className="space-y-5">
                 <div className="space-y-2">
                   <Label>{language === "ar" ? "رقم الهاتف" : "Phone Number"}</Label>
-                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-border/60 bg-background focus-within:border-berry/40 focus-within:ring-2 focus-within:ring-berry/25" dir="ltr">
+                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-foreground/15 bg-white focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10" dir="ltr">
                     <PhoneCountrySelect
                       value={phoneCountryCode}
                       onChange={setPhoneCountryCode}
@@ -2133,7 +2103,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneSending || phoneNumber.length < 7}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-send-phone-otp"
                 >
                   {phoneSending
@@ -2178,7 +2148,7 @@ export default function Auth() {
                   </svg>
                   </div>
                 )}
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-phone-otp-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-otp-title">
                   {phoneChannel === "whatsapp"
                     ? (language === "ar" ? "رمز واتساب" : "WhatsApp Code")
                     : (language === "ar" ? "رمز SMS" : "SMS Code")}
@@ -2197,7 +2167,7 @@ export default function Auth() {
                   id="phone-otp-input"
                   value={phoneOtp}
                   onChange={e => setPhoneOtp(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, 6))}
-                  className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 text-center text-2xl tracking-[0.5em] font-mono"
+                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
                   placeholder="000000"
                   maxLength={6}
                   dir="ltr"
@@ -2208,7 +2178,7 @@ export default function Auth() {
               <Button
                 onClick={handleVerifyPhoneOtp}
                 disabled={phoneOtp.length !== 6 || phoneVerifying}
-                className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                 data-testid="button-verify-phone-otp"
               >
                 {phoneVerifying
@@ -2243,7 +2213,7 @@ export default function Auth() {
           {step === "phone-signup-name" && (
             <div className="space-y-6">
               <div className="text-center mb-2">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-phone-signup-name-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-signup-name-title">
                   {language === "ar" ? "ما اسمك؟" : "Your Name"}
                 </h1>
                 <p className="text-muted-foreground text-sm">
@@ -2265,7 +2235,7 @@ export default function Auth() {
                     id="phone-fullname"
                     value={phoneName}
                     onChange={(e) => setPhoneName(e.target.value)}
-                    className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-phone-fullname"
                   />
@@ -2273,7 +2243,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={!phoneName.trim()}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-phone-name-next"
                 >
                   {language === "ar" ? "التالي" : "Next"}
@@ -2294,7 +2264,7 @@ export default function Auth() {
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-2">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-phone-signup-pwd-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-signup-pwd-title">
                   {language === "ar" ? "أنشئي كلمة المرور" : "Create Password"}
                 </h1>
                 <p className="text-muted-foreground text-sm">
@@ -2325,7 +2295,7 @@ export default function Auth() {
                       type={showPhoneSignupPwd ? "text" : "password"}
                       value={phoneSignupPassword}
                       onChange={(e) => setPhoneSignupPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
                       minLength={6}
                       required
                       data-testid="input-phone-signup-password"
@@ -2342,7 +2312,7 @@ export default function Auth() {
                     type={showPhoneSignupPwd ? "text" : "password"}
                     value={phoneSignupConfirm}
                     onChange={(e) => setPhoneSignupConfirm(e.target.value)}
-                    className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                     minLength={6}
                     required
                     data-testid="input-phone-signup-password-confirm"
@@ -2351,7 +2321,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneSignupMutation.isPending}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-create-phone-account"
                 >
                   {phoneSignupMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === "ar" ? "إنشاء الحساب" : "Create Account")}
@@ -2364,7 +2334,7 @@ export default function Auth() {
           {step === "phone-reset-newpass" && (
             <div className="space-y-6">
               <div className="text-center mb-2">
-                <h1 className="mb-1.5 text-2xl font-bold text-berry-deep sm:text-[1.75rem]" data-testid="text-phone-reset-pwd-title">
+                <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-reset-pwd-title">
                   {language === "ar" ? "كلمة المرور الجديدة" : "New Password"}
                 </h1>
                 <p className="text-muted-foreground text-sm">
@@ -2395,7 +2365,7 @@ export default function Auth() {
                       type={showPhoneResetPwd ? "text" : "password"}
                       value={phoneResetPassword}
                       onChange={(e) => setPhoneResetPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
                       minLength={6}
                       required
                       data-testid="input-phone-reset-password"
@@ -2412,7 +2382,7 @@ export default function Auth() {
                     type={showPhoneResetPwd ? "text" : "password"}
                     value={phoneResetConfirm}
                     onChange={(e) => setPhoneResetConfirm(e.target.value)}
-                    className="h-12 rounded-2xl border-border/60 bg-background focus-visible:border-berry/40 focus-visible:ring-berry/25"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
                     minLength={6}
                     required
                     data-testid="input-phone-reset-password-confirm"
@@ -2421,7 +2391,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneResetMutation.isPending}
-                  className="w-full !rounded-full h-12 text-sm font-semibold transition-transform active:scale-[0.98]"
+                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
                   data-testid="button-phone-reset-submit"
                 >
                   {phoneResetMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === "ar" ? "حفظ" : "Save")}
@@ -2431,6 +2401,7 @@ export default function Auth() {
           )}
 
           </motion.div>
+          </div>
           </div>
         </div>
       </main>

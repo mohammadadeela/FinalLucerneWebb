@@ -193,10 +193,10 @@ export default function Cart() {
           >
             <ShoppingBag className="h-11 w-11 text-berry" strokeWidth={1.4} />
           </motion.div>
-          <h1 className="mb-2 text-2xl font-bold text-berry-deep sm:text-3xl" data-testid="text-cart-empty">{t.cart.empty}</h1>
+          <h1 className="mb-2 text-3xl font-bold text-foreground sm:text-4xl" data-testid="text-cart-empty">{t.cart.empty}</h1>
           <p className="mb-7 max-w-xs text-sm text-muted-foreground">{t.cart.emptyDesc}</p>
           <Link href="/shop">
-            <Button className="h-12 !rounded-full px-8 text-sm font-semibold" data-testid="button-continue-shopping">
+            <Button className="sima-btn h-12 !rounded-full px-8 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]" data-testid="button-continue-shopping">
               {t.cart.continueShopping} <Arrow className="ms-2 h-4 w-4" />
             </Button>
           </Link>
@@ -213,13 +213,13 @@ export default function Cart() {
         <CheckoutSteps current={1} />
 
         <div className="mb-4 mt-5 flex items-end justify-between gap-3 sm:mb-6 sm:mt-7">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-berry-deep sm:text-3xl" data-testid="text-cart-title">{t.cart.title}</h1>
+          <div className="flex items-end gap-3">
+            <h1 className="text-[2.1rem] font-bold leading-none text-foreground sm:text-[3rem]" data-testid="text-cart-title">{t.cart.title}</h1>
             <span className="price-text rounded-full bg-blush px-3 py-1 text-xs font-semibold text-berry-deep" data-testid="text-cart-count">
               {isAr ? `${itemCount} ${itemCount === 1 ? "قطعة" : itemCount === 2 ? "قطعتان" : itemCount <= 10 ? "قطع" : "قطعة"}` : `${itemCount} ${itemCount === 1 ? "item" : "items"}`}
             </span>
           </div>
-          <Link href="/shop" className="text-xs font-semibold text-berry hover:underline sm:text-sm" data-testid="link-continue-shopping">
+          <Link href="/shop" className="text-sm font-semibold text-primary hover:underline" data-testid="link-continue-shopping">
             {t.cart.continueShopping}
           </Link>
         </div>
@@ -233,8 +233,8 @@ export default function Cart() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6">
-          <div className="space-y-2.5 sm:space-y-3">
+        <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-10">
+          <div className="divide-y divide-foreground/10 rounded-[2rem] bg-white px-4 shadow-[0_6px_24px_-14px_rgba(45,15,36,0.35)] sm:px-6">
             <AnimatePresence initial={false}>
               {items.map((item, idx) => {
                 const price = parseFloat(item.product.discountPrice?.toString() || item.product.price.toString());
@@ -247,12 +247,12 @@ export default function Cart() {
                   <motion.div
                     key={key}
                     layout
-                    initial={{ opacity: 0, y: 14 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: isAr ? 60 : -60, transition: { duration: 0.25 } }}
+                    initial={{ opacity: 0, x: isAr ? -30 : 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, overflow: "hidden", transition: { duration: 0.3 } }}
                     transition={{ duration: 0.4, ease: EASE }}
                     ref={(el) => { itemRefs.current[key] = el; }}
-                    className={`relative flex gap-3 rounded-2xl bg-white p-3 sm:gap-5 sm:p-4 ${soldOut ? "opacity-70" : ""}`}
+                    className={`relative flex gap-3.5 py-4 sm:gap-5 sm:py-5 ${soldOut ? "opacity-70" : ""}`}
                     data-testid={`cart-item-${idx}`}
                   >
                     <Link href={`/product/${item.product.id}`} className="flex-shrink-0">
@@ -267,7 +267,7 @@ export default function Cart() {
                         <button
                           onClick={() => removeFromCart(item.product.id, item.size, item.color)}
                           aria-label={isAr ? "حذف من السلة" : "Remove from cart"}
-                          className={`relative z-20 -me-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${soldOut ? "bg-red-50 text-red-600" : "text-muted-foreground hover:bg-red-50 hover:text-red-600"}`}
+                          className={`relative z-20 -me-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${soldOut ? "bg-red-50 text-red-600" : "text-muted-foreground hover:bg-blush hover:text-primary"}`}
                           data-testid={`button-remove-item-${idx}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -277,10 +277,10 @@ export default function Cart() {
                       {(item.size || item.color) && (
                         <div className={`mt-1.5 flex flex-wrap gap-1.5 ${soldOut ? "opacity-60" : ""}`}>
                           {item.size && (
-                            <span className="rounded-full bg-blush/70 px-2.5 py-0.5 text-[11px] font-medium text-berry-deep">{t.cart.sizeLabel}: <span className="price-text">{item.size}</span></span>
+                            <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-berry-deep">{t.cart.sizeLabel}: <span className="price-text">{item.size}</span></span>
                           )}
                           {item.color && (
-                            <span className="rounded-full bg-blush/70 px-2.5 py-0.5 text-[11px] font-medium text-berry-deep">{translateColorName(item.color, language === "ar" ? "ar" : "en")}</span>
+                            <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-medium text-berry-deep">{translateColorName(item.color, language === "ar" ? "ar" : "en")}</span>
                           )}
                         </div>
                       )}
@@ -297,11 +297,11 @@ export default function Cart() {
                           </p>
                         ) : (
                           <div>
-                            <div className="flex h-9 items-center rounded-full bg-background p-0.5">
+                            <div className="flex h-9 items-center rounded-full border border-foreground/15 bg-white p-0.5">
                               <button
                                 onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.size, item.color)}
                                 aria-label={isAr ? "إنقاص الكمية" : "Decrease quantity"}
-                                className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-foreground transition-colors hover:bg-blush hover:text-berry-deep"
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary hover:text-primary"
                                 data-testid={`button-qty-minus-${idx}`}
                               ><Minus className="h-3 w-3" /></button>
                               <motion.span
@@ -316,7 +316,7 @@ export default function Cart() {
                                 onClick={() => updateQuantity(item.product.id, Math.min(item.quantity + 1, maxStock), item.size, item.color)}
                                 disabled={atMax}
                                 aria-label={isAr ? "زيادة الكمية" : "Increase quantity"}
-                                className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-foreground transition-colors hover:bg-blush hover:text-berry-deep disabled:cursor-not-allowed disabled:opacity-30"
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-foreground transition-colors hover:bg-secondary hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
                                 data-testid={`button-qty-plus-${idx}`}
                               ><Plus className="h-3 w-3" /></button>
                             </div>
@@ -340,9 +340,9 @@ export default function Cart() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.1, ease: EASE }}
-            className="rounded-[1.5rem] bg-white p-5 sm:p-6 lg:sticky lg:top-28"
+            className="rounded-[2rem] bg-white p-5 shadow-[0_6px_24px_-14px_rgba(45,15,36,0.35)] sm:p-6 lg:sticky lg:top-28"
           >
-            <h2 className="mb-4 text-lg font-bold text-foreground" data-testid="text-order-summary">{t.cart.orderSummary}</h2>
+            <h2 className="mb-4 text-xl font-bold text-foreground sm:text-2xl" data-testid="text-order-summary">{t.cart.orderSummary}</h2>
 
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -361,16 +361,16 @@ export default function Cart() {
               <span className="text-base font-semibold">{t.cart.total}</span>
               <motion.span
                 key={availableTotal}
-                initial={{ scale: 1.12, color: "hsl(342 49% 42%)" }}
-                animate={{ scale: 1, color: "hsl(342 52% 33%)" }}
+                initial={{ scale: 1.12, color: "hsl(333 81% 52.7%)" }}
+                animate={{ scale: 1, color: "hsl(318 50% 11.8%)" }}
                 transition={{ duration: 0.35 }}
-                className="price-text text-2xl font-bold"
+                className="price-text text-[1.7rem] font-bold"
                 data-testid="text-cart-total"
               >₪{availableTotal.toFixed(2)}</motion.span>
             </div>
 
             {loyaltyPointsEnabled && availableTotal > 0 && points > 0 && (
-              <div className="mb-4 flex items-center gap-3 rounded-2xl bg-blush p-3" data-testid="text-cart-points-preview">
+              <div className="mb-4 flex items-center gap-3 rounded-2xl bg-secondary p-3" data-testid="text-cart-points-preview">
                 <LucerneCoin className="h-10 w-10 shrink-0 drop-shadow-sm" />
                 <p className="flex-1 text-[13px] font-semibold leading-snug text-berry-deep">
                   {language === "ar"
@@ -388,7 +388,7 @@ export default function Cart() {
 
             <Button
               onClick={() => setLocation("/checkout")}
-              className="h-12 w-full !rounded-full text-sm font-semibold"
+              className="sima-btn h-14 w-full !rounded-full text-base font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
               disabled={hasSoldOut || availableItems.length === 0}
               data-testid="button-proceed-checkout"
             >
