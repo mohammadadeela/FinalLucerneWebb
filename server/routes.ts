@@ -25,6 +25,7 @@ import { detectIntent } from "./chatbot/intentDetector";
 import { extractEntities } from "./chatbot/entityExtractor";
 import { buildResponse, orderStatusReply } from "./chatbot/responses";
 import { registerOllamaRoutes } from "./ollama";
+import { registerAiStudioRoutes } from "./aiStudioRoutes";
 import { SITE_URL } from "./seo";
 import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCategoryReportResponse, parseMonthParam } from "./reports";
 import { getEnvEmployees } from "./staff-env";
@@ -387,7 +388,7 @@ function normalizeMediaArray(value: unknown, field: string): any[] {
       url,
       poster: cleanOptionalString(raw.poster) || (raw.type === "video" ? derivePosterFromVideoUrl(url) : undefined),
       isPrimary: raw.isPrimary === true || undefined,
-      aiGenerated: raw.type === "image" && raw.aiGenerated === true || undefined,
+      aiGenerated: raw.aiGenerated === true || undefined,
     });
   }
   let primaryIndex = media.findIndex((item) => item.type === "image" && item.isPrimary);
@@ -6924,6 +6925,14 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
 
   // ── Ollama backend proxy (tags / chat / health / url) ──────────────────────
   registerOllamaRoutes(app);
+
+  // ── AI Studio: product videos, Instagram content, downloads ───────────────
+  registerAiStudioRoutes(app, {
+    uploadImage: uploadToCloudinary,
+    uploadVideo: uploadVideoToCloudinary,
+    normalizeProductPayload,
+    derivePoster: derivePosterFromVideoUrl,
+  });
 
   // ── Bulk product creation ──────────────────────────────────────────────────
   app.post("/api/admin/bulk-create", async (req, res) => {

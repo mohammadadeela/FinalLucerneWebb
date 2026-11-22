@@ -28,6 +28,8 @@ import AdminCategoryReports from "@/pages/admin/CategoryReports";
 import AdminCategoryReportDetail from "@/pages/admin/CategoryReportDetail";
 import AdminExchanges from "@/pages/admin/Exchanges";
 import AdminBulkUpload from "@/pages/admin/BulkUpload";
+import AdminVideoStudio from "@/pages/admin/VideoStudio";
+import AdminInstagramStudio from "@/pages/admin/InstagramStudio";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
 import TermsOfService from "@/pages/TermsOfService";
 import Cart from "@/pages/Cart";
@@ -393,6 +395,8 @@ function Router() {
         <Route path="/admin/reports/categories" component={AdminCategoryReports} />
         <Route path="/admin/exchanges" component={AdminExchanges} />
         <Route path="/admin/bulk-upload" component={AdminBulkUpload} />
+        <Route path="/admin/video-studio" component={AdminVideoStudio} />
+        <Route path="/admin/instagram-studio" component={AdminInstagramStudio} />
         <Route path="/category/:slug" component={DynamicCategoryPage} />
 
         <Route component={NotFound} />

@@ -4,7 +4,7 @@ import os from "os";
 import path from "path";
 import { Readable } from "stream";
 import sharp from "sharp";
-import { optimizeVideo } from "./mediaOptimizer";
+import { optimizeVideo, type OptimizeVideoOptions } from "./mediaOptimizer";
 
 const DEFAULT_PUBLIC_BASE = "https://media.lucerne-boutique.com";
 const REGION = "auto";
@@ -335,7 +335,11 @@ export async function uploadImageToR2(buffer: Buffer, originalName: string): Pro
   }
 }
 
-export async function uploadVideoToR2(source: Buffer | string, originalName: string): Promise<string> {
+export async function uploadVideoToR2(
+  source: Buffer | string,
+  originalName: string,
+  options: OptimizeVideoOptions = {},
+): Promise<string> {
   const id = crypto.randomUUID();
   const prefix = `media/videos/${id}`;
   const ext = safeExtension(originalName, ".mp4");
@@ -354,7 +358,7 @@ export async function uploadVideoToR2(source: Buffer | string, originalName: str
       await fs.promises.copyFile(sourcePath, workPath);
     }
 
-    const optimized = await optimizeVideo(workPath);
+    const optimized = await optimizeVideo(workPath, options);
     const posterWebp = await fs.promises.readFile(optimized.posterPath);
     const posterJpeg = await sharp(posterWebp).jpeg({ quality: 82 }).toBuffer();
 

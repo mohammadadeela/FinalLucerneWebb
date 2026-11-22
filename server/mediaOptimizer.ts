@@ -51,7 +51,24 @@ export async function optimizeImage(filePath: string): Promise<string> {
  * - Also generates a poster thumbnail (first frame, saved as WebP)
  * Returns { videoPath, posterPath } — both in /uploads/
  */
-export async function optimizeVideo(filePath: string): Promise<{ videoPath: string; posterPath: string }> {
+export interface OptimizeVideoOptions {
+  /** Widest the stored video may be. Default 720 (uploaded phone videos). */
+  maxWidth?: number;
+  /** H.264 quality: lower is better. Default 26. */
+  crf?: number;
+  /**
+   * The file is already a finished, web-ready H.264 MP4 (AI studio clips are encoded once, at
+   * high quality). It is stored as it is — encoding it a second time would only lose quality.
+   */
+  passthrough?: boolean;
+}
+
+export async function optimizeVideo(
+  filePath: string,
+  options: OptimizeVideoOptions = {},
+): Promise<{ videoPath: string; posterPath: string }> {
+  const maxWidth = Math.max(240, Math.min(2160, Math.round(options.maxWidth || 720)));
+  const crf = Math.max(14, Math.min(34, Math.round(options.crf || 26)));
   const dir = path.dirname(filePath);
   const ext = path.extname(filePath).toLowerCase();
   const base = path.basename(filePath, ext);
@@ -64,26 +81,30 @@ export async function optimizeVideo(filePath: string): Promise<{ videoPath: stri
   // -preset fast: fast encode, reasonable compression
   // -movflags +faststart: put index at front so video starts playing immediately
   // -an: strip audio (fashion product videos are silent)
-  await execFileAsync("ffmpeg", [
-    "-i", filePath,
-    "-vf", "scale='min(720,iw)':-2",
-    "-c:v", "libx264",
-    "-crf", "26",
-    "-preset", "fast",
-    "-profile:v", "main",
-    "-pix_fmt", "yuv420p",
-    "-movflags", "+faststart",
-    "-an",
-    "-y",
-    outVideo,
-  ]);
+  if (options.passthrough) {
+    await fs.promises.copyFile(filePath, outVideo);
+  } else {
+    await execFileAsync("ffmpeg", [
+      "-i", filePath,
+      "-vf", `scale='min(${maxWidth},iw)':-2`,
+      "-c:v", "libx264",
+      "-crf", String(crf),
+      "-preset", "fast",
+      "-profile:v", "main",
+      "-pix_fmt", "yuv420p",
+      "-movflags", "+faststart",
+      "-an",
+      "-y",
+      outVideo,
+    ]);
+  }
 
   // Step 2: Extract poster frame (frame at 0.5s for a non-black first frame)
   await execFileAsync("ffmpeg", [
     "-i", outVideo,
     "-ss", "0.5",
     "-frames:v", "1",
-    "-vf", "scale='min(720,iw)':-2",
+    "-vf", `scale='min(${options.passthrough ? 1080 : maxWidth},iw)':-2`,
     "-y",
     outPoster,
   ]);

@@ -120,7 +120,7 @@ export function buildModelScene() {
   };
 }
 
-const FIDELITY_RULES = `Treat the uploaded photo as GROUND TRUTH. This is not a "create an image inspired by this" task — it is a re-photograph/re-shoot task. The garment or item in the photo has ALREADY been manufactured exactly as shown, and a real customer will compare the photo you generate side-by-side with the physical item before buying. If the generated photo does not match the real product, the business loses the sale and the customer's trust. Accuracy is not optional and is more important than making the image look impressive.
+export const FIDELITY_RULES = `Treat the uploaded photo as GROUND TRUTH. This is not a "create an image inspired by this" task — it is a re-photograph/re-shoot task. The garment or item in the photo has ALREADY been manufactured exactly as shown, and a real customer will compare the photo you generate side-by-side with the physical item before buying. If the generated photo does not match the real product, the business loses the sale and the customer's trust. Accuracy is not optional and is more important than making the image look impressive.
 
 ═══════════════════════════════════════
 🚫 NEVER CHANGE — copy these EXACTLY from the source photo, do not reinterpret or "improve" any of them:
@@ -155,7 +155,7 @@ If the product is APPAREL (dresses, tops, skirts, pants, outerwear):
 
 Do NOT: redesign, "improve", restyle, add or remove any physical detail, change the fit, alter proportions, invent new decorations, change the garment's length, neckline, or pleat style, or reinterpret the product in any way — even slightly. A customer receiving the real product must see ZERO difference between this photo and the item they ordered. Before finalizing, mentally compare your output against the source image feature-by-feature (neckline shape, hemline length, color, pleats, hardware) and correct anything that drifted.`;
 
-const TECH_QUALITY = `Technical quality: this must be indistinguishable from a REAL photograph taken on a full-frame camera (e.g. Canon EOS R5, 50mm or 85mm lens, f/2.8–f/4). Natural photographic depth of field with the background slightly and smoothly out of focus. Subtle, realistic fine photographic grain — NOT a perfectly clean digital-render look. True-to-life color, slightly muted like a real fashion editorial — never oversaturated, never HDR, never glowing. Sharp focus on the product, no text, no watermark, no added logos, no extra clutter.`;
+export const TECH_QUALITY = `Technical quality: this must be indistinguishable from a REAL photograph taken on a full-frame camera (e.g. Canon EOS R5, 50mm or 85mm lens, f/2.8–f/4). Natural photographic depth of field with the background slightly and smoothly out of focus. Subtle, realistic fine photographic grain — NOT a perfectly clean digital-render look. True-to-life color, slightly muted like a real fashion editorial — never oversaturated, never HDR, never glowing. Sharp focus on the product, no text, no watermark, no added logos, no extra clutter.`;
 
 // Rules that specifically fight the "obviously AI-generated" look. Appended to
 // every prompt that includes a human model.
@@ -494,7 +494,7 @@ export async function generateAiProductPhoto(
    plain soft colour. Each photo slot on the site adds its own composition rule, written from
    the slot's measured shape, so the subject survives the desktop and the phone crop. */
 
-const THEME_BACKGROUNDS = [
+export const THEME_BACKGROUNDS = [
   "soft pink (#F9DCEA)",
   "warm sand beige (#F3E9DD)",
   "pale sage green (#E7EDE2)",
@@ -569,7 +569,7 @@ export function canHang(subject: string): boolean {
 }
 
 /** How this kind of product is presented, so nothing is shown in a way that makes no sense. */
-function displayRule(subject: string): string {
+export function displayRule(subject: string): string {
   if (canHang(subject)) {
     return "Garments may hang on a slim gold hanger (no rail or pole), be worn by a model, or be neatly folded.";
   }

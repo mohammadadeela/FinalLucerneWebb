@@ -15,7 +15,7 @@ import sharp from "sharp";
 // The exact same butterfly + wordmark used by <ProductWatermark /> on the
 // storefront, rendered as a standalone SVG so librsvg (inside sharp) can
 // rasterize it. viewBox height leaves room for the wordmark under the logo.
-function buildWatermarkSvg(widthPx: number): Buffer {
+export function buildWatermarkSvg(widthPx: number): Buffer {
   // Logo art is 393x297; add a text band below → total design box 393x360.
   const heightPx = Math.round((360 / 393) * widthPx);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${widthPx}" height="${heightPx}" viewBox="0 0 393 360">

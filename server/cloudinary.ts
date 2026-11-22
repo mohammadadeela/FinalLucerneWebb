@@ -7,6 +7,7 @@ import {
   uploadImageToR2,
   uploadVideoToR2,
 } from "./r2";
+import type { OptimizeVideoOptions } from "./mediaOptimizer";
 
 function applyConfig() {
   cloudinary.config({
@@ -71,10 +72,11 @@ export async function uploadToCloudinary(
 
 export async function uploadVideoToCloudinary(
   source: Buffer | string,
-  originalName: string
+  originalName: string,
+  options: OptimizeVideoOptions = {},
 ): Promise<string> {
   if (isR2Enabled()) {
-    return uploadVideoToR2(source, originalName);
+    return uploadVideoToR2(source, originalName, options);
   }
 
   applyConfig();

@@ -93,6 +93,7 @@ import {
   PackageX,
   FolderX,
   Barcode,
+  Clapperboard,
 } from "lucide-react";
 import { useSiteSettings, getSetting } from "@/hooks/use-site-settings";
 import {
@@ -5686,6 +5687,16 @@ export default function Products() {
               </Button>
             </PopoverContent>
           </Popover>
+          <Button
+            size="sm"
+            type="button"
+            onClick={() => navigate(`/admin/video-studio?ids=${Array.from(selectedIds).join(",")}`)}
+            className="rounded bg-slate-700 hover:bg-slate-800 text-white gap-1.5"
+            data-testid="button-bulk-ai-videos"
+          >
+            <Clapperboard className="w-4 h-4" />
+            {language === "ar" ? "فيديو AI" : "AI Videos"}
+          </Button>
           <Button
             variant="destructive"
             size="sm"
