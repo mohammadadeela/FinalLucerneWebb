@@ -1620,22 +1620,6 @@ function HomeBannersCard({ values, onChange }: { values: Record<string, string>;
           <p className="text-xs text-muted-foreground text-right">
             شريطان ورديان بنص عنابي متحرك، فوق «وصل حديثاً» وفوق «الأكثر مبيعاً». اكتبي العبارات وافصلي بينها بـ | لتظهر واحدة تلو الأخرى. عبارة واحدة فقط تبقى ثابتة بدون حركة. إذا تُرك الحقل فارغاً تُستخدم العبارات الافتراضية الظاهرة فيه. يفضّل أن تكون العبارات قصيرة لتظهر كاملة على الهاتف.
           </p>
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-border p-4">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={values["home_dress3d_enabled"] !== "false"}
-              onClick={() => onChange("home_dress3d_enabled", values["home_dress3d_enabled"] !== "false" ? "false" : "true")}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${values["home_dress3d_enabled"] !== "false" ? "bg-foreground" : "bg-muted-foreground/25"}`}
-              data-testid="switch-home-dress3d"
-            >
-              <span className={`absolute top-[3px] left-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform ${values["home_dress3d_enabled"] !== "false" ? "translate-x-[20px]" : "translate-x-0"}`} />
-            </button>
-            <div className="text-right">
-              <p className="text-sm font-semibold">الفستان ثلاثي الأبعاد في الصفحة الرئيسية</p>
-              <p className="text-xs text-muted-foreground">قسم متحرك تسحبه العميلة ليدور وتغيّر لونه، مع زر يفتح صفحة الفساتين.</p>
-            </div>
-          </div>
           {rows.map((r) => (
             <div key={r.key} className="rounded-xl border border-border p-4 space-y-3">
               <p className="text-sm font-semibold text-right">{r.label}</p>

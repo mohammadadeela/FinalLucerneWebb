@@ -1093,7 +1093,7 @@ export default function Auth() {
     const baseBtn =
       "relative w-full h-12 flex items-center justify-center gap-3 rounded-full border text-sm font-semibold " +
       "transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:pointer-events-none";
-    const normalBtn = "border-foreground/15 bg-white hover:border-primary hover:text-primary";
+    const normalBtn = "border-foreground/15 bg-white hover:border-berry hover:text-berry-deep";
     const lastBtn = "border-berry/50 bg-blush/50 shadow-[0_0_0_3px] shadow-berry/10";
     const badge = (
       <span className="absolute -top-2 end-3 text-[10px] leading-none px-2 py-1 rounded-full bg-berry text-white font-medium shadow-sm">
@@ -1165,7 +1165,7 @@ export default function Auth() {
       : (language === "ar" ? "التسجيل عبر واتساب" : "Register with WhatsApp");
     const smsLabel = language === "ar" ? "التسجيل عبر SMS" : "Register with SMS";
     const isLast = (m: LastLoginMethod) => highlightLastUsed && lastLoginMethod === m;
-    const normalBtn = "border-foreground/15 bg-white hover:border-primary hover:text-primary";
+    const normalBtn = "border-foreground/15 bg-white hover:border-berry hover:text-berry-deep";
     const lastBtn = "border-berry/50 bg-blush/50 shadow-[0_0_0_3px] shadow-berry/10";
     const badge = (
       <span className="absolute -top-2 end-3 text-[10px] leading-none px-2 py-1 rounded-full bg-berry text-white font-medium shadow-sm">
@@ -1266,12 +1266,12 @@ export default function Auth() {
           {/* One white card, like the Sima Beauty sign-in: the mark on top, then two tabs */}
           <div className="rounded-[2rem] bg-white p-6 shadow-[0_6px_24px_-14px_rgba(45,15,36,0.35)] sm:p-9" data-testid="auth-card">
             <div className="text-center">
-              <BrandButterfly className="auth-float mx-auto h-14 w-14" />
+              <BrandButterfly className="mx-auto h-14 w-14" />
               <p className="display-latin mt-1 text-[1.9rem] font-semibold leading-none tracking-[0.12em] text-foreground">LUCERNE</p>
               <p className="display-latin mt-1 text-[10px] uppercase tracking-[0.42em] text-muted-foreground">Boutique</p>
             </div>
             {(step === "auth" || step === "reg-email") && (
-              <div className="relative mt-6 grid grid-cols-2 rounded-full bg-secondary p-1 text-sm font-semibold" role="tablist">
+              <div className="relative mt-6 grid grid-cols-2 rounded-full bg-blush/60 p-1 text-sm font-semibold" role="tablist">
                 {([
                   { id: "auth", label: t.auth.signIn },
                   { id: "reg-email", label: t.auth.createAccount },
@@ -1319,7 +1319,7 @@ export default function Auth() {
                     type="email"
                     value={loginEmail}
                     onChange={e => { setLoginEmail(e.target.value); setLoginError(null); }}
-                    className={`h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 ${loginError === "email_not_found" ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    className={`h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 ${loginError === "email_not_found" ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     required
                     data-testid="input-email"
                   />
@@ -1342,7 +1342,7 @@ export default function Auth() {
                       type={showLoginPassword ? "text" : "password"}
                       value={loginPassword}
                       onChange={e => { setLoginPassword(e.target.value); setLoginError(null); }}
-                      className={`h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10 ${loginError === "invalid_password" || loginError === "account_blocked" ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                      className={`h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10 ${loginError === "invalid_password" || loginError === "account_blocked" ? "border-destructive focus-visible:ring-destructive" : ""}`}
                       required
                       data-testid="input-password"
                     />
@@ -1394,7 +1394,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={login.isPending}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)] mt-2"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold mt-2"
                   data-testid="button-auth-submit"
                 >
                   {login.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.signIn}
@@ -1451,7 +1451,7 @@ export default function Auth() {
                     type="email"
                     value={signupEmail}
                     onChange={e => setSignupEmail(e.target.value)}
-                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-signup-email"
                   />
@@ -1459,7 +1459,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={sendSignupCodeMutation.isPending}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-send-signup-code"
                 >
                   {sendSignupCodeMutation.isPending
@@ -1530,7 +1530,7 @@ export default function Auth() {
                   id="signup-code"
                   value={signupCode}
                   onChange={e => setSignupCode(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, 6))}
-                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
+                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
                   placeholder="000000"
                   maxLength={6}
                   data-testid="input-signup-code"
@@ -1540,7 +1540,7 @@ export default function Auth() {
               <Button
                 onClick={handleVerifySignupCode}
                 disabled={signupCode.length !== 6 || verifySignupCodeMutation.isPending}
-                className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                className="w-full !rounded-full h-12 text-[15px] font-semibold"
                 data-testid="button-verify-signup-code"
               >
                 {verifySignupCodeMutation.isPending
@@ -1592,7 +1592,7 @@ export default function Auth() {
                     id="fullName"
                     value={signupFullName}
                     onChange={e => setSignupFullName(e.target.value)}
-                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-fullname"
                   />
@@ -1605,7 +1605,7 @@ export default function Auth() {
                       type={showSignupPassword ? "text" : "password"}
                       value={signupPassword}
                       onChange={e => setSignupPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-signup-password"
                     />
@@ -1656,7 +1656,7 @@ export default function Auth() {
                       type={showSignupConfirmPassword ? "text" : "password"}
                       value={signupConfirmPassword}
                       onChange={e => setSignupConfirmPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-signup-confirm-password"
                     />
@@ -1673,7 +1673,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={register.isPending}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)] mt-2"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold mt-2"
                   data-testid="button-complete-signup"
                 >
                   {register.isPending
@@ -1707,7 +1707,7 @@ export default function Auth() {
                     type="email"
                     value={forgotEmail}
                     onChange={e => { setForgotEmail(e.target.value); setForgotEmailNotFound(false); }}
-                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-forgot-email"
                   />
@@ -1740,7 +1740,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={forgotPasswordMutation.isPending}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-send-reset-code"
                 >
                   {forgotPasswordMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.sendCode}
@@ -1777,7 +1777,7 @@ export default function Auth() {
                   id="reset-code"
                   value={resetCode}
                   onChange={e => setResetCode(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, 6))}
-                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
+                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
                   placeholder="000000"
                   maxLength={6}
                   data-testid="input-reset-code"
@@ -1786,7 +1786,7 @@ export default function Auth() {
               <Button
                 onClick={() => verifyResetCodeMutation.mutate({ email: forgotEmail, code: resetCode })}
                 disabled={resetCode.length !== 6 || verifyResetCodeMutation.isPending}
-                className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                className="w-full !rounded-full h-12 text-[15px] font-semibold"
                 data-testid="button-verify-reset-code"
               >
                 {verifyResetCodeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.verify}
@@ -1837,7 +1837,7 @@ export default function Auth() {
                       type={showNewPassword ? "text" : "password"}
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-new-password"
                     />
@@ -1859,7 +1859,7 @@ export default function Auth() {
                       type={showConfirmPassword ? "text" : "password"}
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-confirm-password"
                     />
@@ -1876,7 +1876,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={resetPasswordMutation.isPending}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-reset-password"
                 >
                   {resetPasswordMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.resetPassword}
@@ -1948,7 +1948,7 @@ export default function Auth() {
               >
                 <div className="space-y-2">
                   <Label>{language === "ar" ? "رقم الهاتف" : "Phone Number"}</Label>
-                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-foreground/15 bg-white focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10" dir="ltr">
+                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-foreground/15 bg-white focus-within:border-berry focus-within:ring-4 focus-within:ring-berry/10" dir="ltr">
                     <PhoneCountrySelect
                       value={phoneCountryCode}
                       onChange={setPhoneCountryCode}
@@ -1984,7 +1984,7 @@ export default function Auth() {
                       type={showPhoneLoginPwd ? "text" : "password"}
                       value={phoneLoginPassword}
                       onChange={(e) => { setPhoneLoginPassword(e.target.value); setPhoneLoginError(null); }}
-                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10"
                       required
                       data-testid="input-phone-login-password"
                     />
@@ -2002,7 +2002,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneLoginMutation.isPending || phoneNumber.length < 7 || !phoneLoginPassword}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-submit-phone-login"
                 >
                   {phoneLoginMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : t.auth.signIn}
@@ -2069,7 +2069,7 @@ export default function Auth() {
               <form onSubmit={handleSendPhoneOtp} className="space-y-5">
                 <div className="space-y-2">
                   <Label>{language === "ar" ? "رقم الهاتف" : "Phone Number"}</Label>
-                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-foreground/15 bg-white focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10" dir="ltr">
+                  <div className="flex gap-0 overflow-hidden rounded-2xl border border-foreground/15 bg-white focus-within:border-berry focus-within:ring-4 focus-within:ring-berry/10" dir="ltr">
                     <PhoneCountrySelect
                       value={phoneCountryCode}
                       onChange={setPhoneCountryCode}
@@ -2103,7 +2103,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneSending || phoneNumber.length < 7}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-send-phone-otp"
                 >
                   {phoneSending
@@ -2167,7 +2167,7 @@ export default function Auth() {
                   id="phone-otp-input"
                   value={phoneOtp}
                   onChange={e => setPhoneOtp(normalizeArabicDigits(e.target.value).replace(/\D/g, "").slice(0, 6))}
-                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
+                  className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 text-center text-2xl tracking-[0.5em] font-mono"
                   placeholder="000000"
                   maxLength={6}
                   dir="ltr"
@@ -2178,7 +2178,7 @@ export default function Auth() {
               <Button
                 onClick={handleVerifyPhoneOtp}
                 disabled={phoneOtp.length !== 6 || phoneVerifying}
-                className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                className="w-full !rounded-full h-12 text-[15px] font-semibold"
                 data-testid="button-verify-phone-otp"
               >
                 {phoneVerifying
@@ -2235,7 +2235,7 @@ export default function Auth() {
                     id="phone-fullname"
                     value={phoneName}
                     onChange={(e) => setPhoneName(e.target.value)}
-                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0"
                     required
                     data-testid="input-phone-fullname"
                   />
@@ -2243,7 +2243,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={!phoneName.trim()}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-phone-name-next"
                 >
                   {language === "ar" ? "التالي" : "Next"}
@@ -2295,7 +2295,7 @@ export default function Auth() {
                       type={showPhoneSignupPwd ? "text" : "password"}
                       value={phoneSignupPassword}
                       onChange={(e) => setPhoneSignupPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10"
                       minLength={6}
                       required
                       data-testid="input-phone-signup-password"
@@ -2312,7 +2312,7 @@ export default function Auth() {
                     type={showPhoneSignupPwd ? "text" : "password"}
                     value={phoneSignupConfirm}
                     onChange={(e) => setPhoneSignupConfirm(e.target.value)}
-                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0"
                     minLength={6}
                     required
                     data-testid="input-phone-signup-password-confirm"
@@ -2321,7 +2321,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneSignupMutation.isPending}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-create-phone-account"
                 >
                   {phoneSignupMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === "ar" ? "إنشاء الحساب" : "Create Account")}
@@ -2365,7 +2365,7 @@ export default function Auth() {
                       type={showPhoneResetPwd ? "text" : "password"}
                       value={phoneResetPassword}
                       onChange={(e) => setPhoneResetPassword(e.target.value)}
-                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0 pe-10"
+                      className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0 pe-10"
                       minLength={6}
                       required
                       data-testid="input-phone-reset-password"
@@ -2382,7 +2382,7 @@ export default function Auth() {
                     type={showPhoneResetPwd ? "text" : "password"}
                     value={phoneResetConfirm}
                     onChange={(e) => setPhoneResetConfirm(e.target.value)}
-                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:ring-offset-0"
+                    className="h-12 rounded-2xl border-foreground/15 bg-white focus-visible:border-berry focus-visible:ring-4 focus-visible:ring-berry/10 focus-visible:ring-offset-0"
                     minLength={6}
                     required
                     data-testid="input-phone-reset-password-confirm"
@@ -2391,7 +2391,7 @@ export default function Auth() {
                 <Button
                   type="submit"
                   disabled={phoneResetMutation.isPending}
-                  className="sima-btn w-full !rounded-full h-12 text-[15px] font-semibold shadow-[0_18px_40px_-22px_rgba(179,18,92,0.45)]"
+                  className="w-full !rounded-full h-12 text-[15px] font-semibold"
                   data-testid="button-phone-reset-submit"
                 >
                   {phoneResetMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : (language === "ar" ? "حفظ" : "Save")}

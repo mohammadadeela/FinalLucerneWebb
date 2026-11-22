@@ -11,41 +11,41 @@
   --news-bar-offset: 0px;
   --navbar-h: 4rem;
 
-  /* Storefront palette — the Sima Beauty colours: milk background, plum ink text, hot pink buttons, blush panels.
+  /* Storefront palette — warm cream surfaces with the original black for buttons, text and the footer.
      Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
-  --background: 333 100% 98.2%; /* Sima milk #FFF6FA */
-  --foreground: 318 50% 11.8%; /* Sima ink #2D0F24 */
+  --background: 332 65% 98.5%; /* pink-tinted white */
+  --foreground: 0 0% 10%;
 
   --card: 0 0% 100%; /* same white as every other card and tile */
-  --card-foreground: 318 50% 11.8%;
+  --card-foreground: 0 0% 10%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 318 50% 11.8%;
+  --popover-foreground: 0 0% 10%;
 
-  --primary: 333 81% 52.7%; /* Sima pink #E8257D */
-  --primary-foreground: 0 0% 100%;
+  --primary: 0 0% 12%;
+  --primary-foreground: 0 0% 98%;
 
-  --secondary: 336 100% 96.1%; /* Sima blush-soft #FFEBF3 */
-  --secondary-foreground: 318 50% 11.8%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 15%;
 
-  --muted: 336 70% 96%;
-  --muted-foreground: 320 16% 44%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 45%;
 
-  --accent: 336 100% 96.1%;
-  --accent-foreground: 318 50% 11.8%;
+  --accent: 0 0% 94%;
+  --accent-foreground: 0 0% 10%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 328 35% 90%;
-  --input: 328 35% 88%;
-  --ring: 333 81% 52.7%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 12%;
 
   /* Named storefront tints used by the landing page */
-  --berry: 333 81% 52.7%; /* Sima pink #E8257D */
-  --berry-deep: 332 82% 38.6%; /* Sima pink-deep #B3125C */
-  --blush: 337 100% 90.8%; /* Sima blush #FFD0E2 */
+  --berry: 342 49% 42%;
+  --berry-deep: 342 52% 33%;
+  --blush: 332 72% 92%;
   --sage: 96 20% 84%;
   --sand: 30 42% 91%;
 
@@ -376,69 +376,4 @@ html.admin-theme {
   mask-image: linear-gradient(to right, transparent 0, #000 6%, #000 94%, transparent 100%),
     linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
   mask-composite: intersect;
-}
-
-/* Sign-in page: the big butterfly behind the welcome drifts slowly, like it is breathing. */
-@keyframes auth-float {
-  0%, 100% { transform: translateY(0) rotate(-12deg); }
-  50%      { transform: translateY(-10px) rotate(-6deg); }
-}
-.auth-float { animation: auth-float 7s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .auth-float { animation: none; transform: rotate(-12deg); } }
-
-/* Sima-style button: a light sweeps across on hover and the button lifts a little. */
-.sima-btn { position: relative; overflow: hidden; isolation: isolate; }
-.sima-btn::after {
-  content: ""; position: absolute; inset: 0; z-index: -1;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.38) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.sima-btn:hover::after { transform: translateX(120%); }
-.sima-btn:hover { transform: translateY(-2px); }
-.sima-btn:active { transform: translateY(0) scale(0.97); }
-@keyframes sima-pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
-.sima-pop { animation: sima-pop .45s cubic-bezier(.2,.9,.3,1.2) both; }
-
-/* ── Sima-style motion for the storefront (never the admin area) ── */
-/* The pink swipe that crosses the top of the screen when a page changes */
-@keyframes route-swipe {
-  0% { transform: scaleX(0); transform-origin: left; }
-  55% { transform: scaleX(1); transform-origin: left; }
-  56% { transform: scaleX(1); transform-origin: right; }
-  100% { transform: scaleX(0); transform-origin: right; }
-}
-.route-swipe { animation: route-swipe 0.75s cubic-bezier(0.6, 0, 0.2, 1) both; }
-/* Every page rises gently into place. No fill-mode on purpose: a held transform would trap fixed children. */
-@keyframes page-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-html:not(.admin-theme) main { animation: page-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1); }
-/* Pink buttons: a light sweeps across on hover and the button lifts */
-html:not(.admin-theme) .store-btn.bg-primary { position: relative; overflow: hidden; isolation: isolate; }
-html:not(.admin-theme) .store-btn.bg-primary::after {
-  content: ""; position: absolute; inset: 0; z-index: -1;
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.38) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-html:not(.admin-theme) .store-btn.bg-primary:hover::after { transform: translateX(120%); }
-html:not(.admin-theme) .store-btn.bg-primary:hover { transform: translateY(-2px); }
-
-/* The 3D dress stage repaints itself in the chosen dress colour */
-@property --shade { syntax: "<color>"; inherits: true; initial-value: #E8257D; }
-.dress-stage {
-  transition: --shade 0.7s ease;
-  background-color: #4A0D33;
-  background-image: radial-gradient(60% 70% at 28% 50%, color-mix(in oklab, var(--shade) 70%, white) 0%, color-mix(in oklab, var(--shade) 80%, #4A0D33) 34%, color-mix(in oklab, var(--shade) 30%, #4A0D33) 64%, #4A0D33 100%);
-}
-[dir="ltr"] .dress-stage {
-  background-image: radial-gradient(60% 70% at 72% 50%, color-mix(in oklab, var(--shade) 70%, white) 0%, color-mix(in oklab, var(--shade) 80%, #4A0D33) 34%, color-mix(in oklab, var(--shade) 30%, #4A0D33) 64%, #4A0D33 100%);
-}
-@media (max-width: 1023px) {
-  .dress-stage, [dir="ltr"] .dress-stage {
-    background-image: radial-gradient(95% 48% at 50% 34%, color-mix(in oklab, var(--shade) 70%, white) 0%, color-mix(in oklab, var(--shade) 80%, #4A0D33) 34%, color-mix(in oklab, var(--shade) 30%, #4A0D33) 66%, #4A0D33 100%);
-  }
-}
-.ghost-type { -webkit-text-stroke: 1.5px rgba(255, 246, 250, 0.28); color: transparent; }
-@media (prefers-reduced-motion: reduce) {
-  html:not(.admin-theme) main, .route-swipe { animation: none; }
 }
