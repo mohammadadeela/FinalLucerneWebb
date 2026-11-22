@@ -353,7 +353,7 @@ function escHtml(s: string | number | null | undefined): string {
 // path, which can't wait around for an external script tag to load.
 function renderBarcodeSvg(
   value: string,
-  opts: { height?: number; width?: number; fontSize?: number } = {},
+  opts: { height?: number; width?: number; fontSize?: number; textMargin?: number } = {},
 ): string {
   try {
     const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -364,7 +364,7 @@ function renderBarcodeSvg(
       displayValue: true,
       fontSize: opts.fontSize ?? 12,
       fontOptions: "bold",
-      textMargin: 4,
+      textMargin: opts.textMargin ?? 4,
       margin: 2,
       background: "#ffffff",
       lineColor: "#000000",
@@ -3478,56 +3478,169 @@ export default function POS() {
   }, [cart.length]);
 
   /* ── Print barcode for a product ────────────────────────────────── */
-  // Renders the barcode locally via renderBarcodeSvg (bundled JsBarcode,
-  // no CDN script) so the name/price/barcode are all embedded as plain
-  // markup in the popup from the start — nothing depends on an external
-  // script loading in time before window.print() fires, which was why
-  // the product name and price sometimes never made it onto the page.
-  const printProductBarcode = (product: Product, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const priceValue = (product as any).discountPrice
-      ? parseFloat((product as any).discountPrice).toFixed(2)
-      : parseFloat(product.price as string).toFixed(2);
-    // Some products have an extra barcode per color (a different physical
-    // tag than the main one) — print a label for each of those too, right
-    // alongside the main label, instead of only ever printing the main one.
-    const colorVariants = ((product as any).colorVariants as ColorVariant[] | undefined) || [];
-    const colorLabels = colorVariants.filter((c) => c.barcode && c.barcode.trim());
-    const labels: { title: string; value: string }[] = [
-      { title: product.name, value: (product as any).barcode || String(product.id) },
-      ...colorLabels.map((c) => ({ title: `${product.name} — ${c.name}`, value: c.barcode! })),
-    ];
+  // Labels are the same as the ones printed from the admin products page:
+  // 6cm × 4cm, product name, color, brand, barcode, price — same barcode
+  // settings and the same stylesheet, so a tag printed here is identical
+  // to one printed there. The barcode is rendered locally via
+  // renderBarcodeSvg (bundled JsBarcode, no CDN script), so everything is
+  // embedded in the popup from the start.
+  type BarcodeLabel = { key: string; colorName: string | null; barcode: string };
+  const [barcodePick, setBarcodePick] = useState<{
+    product: Product;
+    labels: BarcodeLabel[];
+    picked: Record<string, boolean>;
+  } | null>(null);
+
+  // One label per color for a multi-color product (a color's own barcode if
+  // it has one, otherwise the main barcode) — the same rule as the products
+  // page. Single-color / no-color products get exactly one label.
+  const barcodeLabelsFor = (product: Product): BarcodeLabel[] => {
+    const main = ((product as any).barcode as string | null)?.trim() || String(product.id);
+    const colors = (((product as any).colorVariants as ColorVariant[] | undefined) || [])
+      .map((v) => ({ name: (v.name || "").trim(), barcode: v.barcode?.trim() || null }))
+      .filter((v) => v.name);
+    const uniqueColors = Array.from(new Map(colors.map((c) => [c.name, c])).values());
+    if (uniqueColors.length > 1) {
+      return uniqueColors.map((c, i) => ({ key: `c${i}`, colorName: c.name, barcode: c.barcode || main }));
+    }
+    return [{ key: "main", colorName: null, barcode: main }];
+  };
+
+  const printBarcodeLabelsFor = (product: Product, labels: BarcodeLabel[]) => {
+    if (labels.length === 0) return;
+    const price = (product as any).price;
+    const discountPrice = (product as any).discountPrice;
+    const hasDiscount = discountPrice && Number(discountPrice) > 0 && price;
+    const displayPrice = hasDiscount
+      ? Number(discountPrice).toFixed(0)
+      : price ? Number(price).toFixed(0) : null;
     const labelsHtml = labels
-      .map((l, i) => {
-        const svg = renderBarcodeSvg(l.value, { height: 65, width: 2.6, fontSize: 15 });
-        return `<div class="wrap${i < labels.length - 1 ? " page-break" : ""}">
-<div class="name">${escHtml(l.title)}</div>
-<div class="barcode-wrapper">${svg}</div>
-<div class="price" style="direction:ltr;unicode-bidi:isolate;">&#8362;${priceValue}</div>
-</div>`;
+      .map(({ colorName, barcode }, i) => {
+        const barcodeSvg = renderBarcodeSvg(barcode, { height: 28, width: 1.4, fontSize: 10, textMargin: 2 });
+        return `
+        <div class="label" id="wrap_${product.id}_${i}">
+          <div class="pname">${escHtml(product.name.slice(0, 34))}</div>
+          ${colorName ? `<div class="color">${escHtml(colorName.slice(0, 24))}</div>` : ""}
+          <div class="brand">LUCERNE BOUTIQUE</div>
+          <div class="bc-wrap">${barcodeSvg}</div>
+          ${displayPrice ? `
+          <div class="price-row">
+            ${hasDiscount ? `<span class="price-original">&#8362;${Number(price).toFixed(0)}</span>` : ""}
+            <span class="price-main">&#8362;${displayPrice}</span>
+          </div>` : ""}
+        </div>`;
       })
       .join("");
-    const w = window.open("", "_blank", "width=360,height=260");
+    const w = window.open("", "_blank", "width=900,height=700");
     if (!w) return;
-    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Barcode</title>
+    w.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Barcodes</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%}
-body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;background:#fff;color:#000}
-.wrap{text-align:center;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;max-width:100%}
-.wrap.page-break{page-break-after:always}
-.name{font-size:14px;font-weight:800;margin-bottom:8px;max-width:100%;overflow-wrap:break-word;text-align:center;width:100%;color:#000}
-.price{font-size:18px;font-weight:800;margin-top:8px;text-align:center;width:100%;color:#000}
-.barcode-wrapper{display:flex;justify-content:center;width:100%}
-.barcode-wrapper svg{max-width:100%;height:auto}
-@media print{
-  html,body{width:auto;height:auto;min-height:unset}
-  @page{margin:4mm}
-  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
-  .name,.price{color:#000 !important;}
-}
-</style></head>
-<body>${labelsHtml}</body></html>`);
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; color: #000; }
+  .grid { display: flex; flex-wrap: wrap; gap: 0; }
+
+  /* 6cm wide × 4cm tall — identical to the products page labels */
+  .label {
+    width: 6cm;
+    height: 4cm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 4px;
+    border: 0.5px dashed #ccc;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    overflow: visible;
+  }
+  .pname {
+    width: 100%;
+    max-width: 100%;
+    font-size: 7.5pt;
+    line-height: 1.15;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 700;
+    color: #000;
+    max-height: 2.4em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    direction: rtl;
+    text-align: center;
+    margin-bottom: 1px;
+  }
+  .color {
+    font-size: 7pt;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 600;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .brand {
+    font-size: 7.5pt;
+    font-family: Georgia, "Times New Roman", serif;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #000;
+    font-weight: 700;
+    margin-bottom: 1px;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .bc-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .bc-wrap svg {
+    width: 90%;
+    max-width: 90%;
+    max-height: 1.5cm;
+  }
+  .price-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 1px;
+  }
+  .price-main {
+    font-size: 10.5pt;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    font-weight: 800;
+    color: #000;
+  }
+  .price-original {
+    font-size: 7pt;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    color: #000;
+    text-decoration: line-through;
+  }
+
+  @page { size: auto; margin: 5mm; }
+  @media print {
+    html, body { margin: 0; }
+    .grid { gap: 0; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    .pname, .brand, .color, .price-main, .price-original { color: #000 !important; }
+  }
+</style>
+</head>
+<body>
+<div class="grid">${labelsHtml}</div>
+</body>
+</html>`);
     w.document.close();
     // Give the popup a moment to lay out the embedded SVG/fonts before
     // invoking the browser's print dialog.
@@ -3535,6 +3648,18 @@ body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;display:flex;flex-direction:
       w.focus();
       w.print();
     }, 250);
+  };
+
+  // One label → print straight away. Several color labels → let the
+  // cashier choose which ones to print (all ticked to start with).
+  const printProductBarcode = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const labels = barcodeLabelsFor(product);
+    if (labels.length > 1) {
+      setBarcodePick({ product, labels, picked: Object.fromEntries(labels.map((l) => [l.key, true])) });
+      return;
+    }
+    printBarcodeLabelsFor(product, labels);
   };
 
   /* ── Print invoice ───────────────────────────────────────────────── */
@@ -8507,6 +8632,105 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
             setOskTarget(null);
           }}
         />
+      )}
+      {/* Choose which color labels to print for a multi-color product */}
+      {barcodePick && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setBarcodePick(null)}
+          data-testid="dialog-barcode-pick"
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border bg-background shadow-2xl"
+            dir={ar ? "rtl" : "ltr"}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{ar ? "طباعة الباركود" : "Print barcode"}</p>
+                <p className="truncate text-xs text-muted-foreground">{barcodePick.product.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBarcodePick(null)}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label={ar ? "إغلاق" : "Close"}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-4 py-3">
+              {(() => {
+                const all = barcodePick.labels.every((l) => barcodePick.picked[l.key]);
+                return (
+                  <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-medium">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={all}
+                      onChange={(e) =>
+                        setBarcodePick({
+                          ...barcodePick,
+                          picked: Object.fromEntries(barcodePick.labels.map((l) => [l.key, e.target.checked])),
+                        })
+                      }
+                      data-testid="barcode-pick-all"
+                    />
+                    {ar ? "تحديد الكل" : "Select all"}
+                  </label>
+                );
+              })()}
+              <div className="mt-2 max-h-[45vh] space-y-1.5 overflow-y-auto">
+                {barcodePick.labels.map((l) => (
+                  <label
+                    key={l.key}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border px-3 py-2 text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={!!barcodePick.picked[l.key]}
+                      onChange={(e) =>
+                        setBarcodePick({
+                          ...barcodePick,
+                          picked: { ...barcodePick.picked, [l.key]: e.target.checked },
+                        })
+                      }
+                      data-testid={`barcode-pick-${l.key}`}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{l.colorName}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground" dir="ltr">{l.barcode}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2 border-t border-border px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setBarcodePick(null)}
+                className="h-10 flex-1 rounded-lg border border-border text-sm font-medium hover:bg-muted"
+              >
+                {ar ? "إلغاء" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                disabled={!barcodePick.labels.some((l) => barcodePick.picked[l.key])}
+                onClick={() => {
+                  const chosen = barcodePick.labels.filter((l) => barcodePick.picked[l.key]);
+                  printBarcodeLabelsFor(barcodePick.product, chosen);
+                  setBarcodePick(null);
+                }}
+                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-foreground text-sm font-semibold text-background disabled:opacity-50"
+                data-testid="button-barcode-pick-print"
+              >
+                <Printer className="h-4 w-4" />
+                {ar
+                  ? `طباعة (${barcodePick.labels.filter((l) => barcodePick.picked[l.key]).length})`
+                  : `Print (${barcodePick.labels.filter((l) => barcodePick.picked[l.key]).length})`}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </AdminLayout>
   );
