@@ -3,8 +3,9 @@ import { Footer } from "@/components/layout/Footer";
 import { useLanguage } from "@/i18n";
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { Truck, RotateCcw, AlertCircle, LogIn, ArrowLeftRight, Ruler, Send, ArrowLeft, ArrowRight, Clock } from "lucide-react";
+import { Truck, RotateCcw, AlertCircle, ArrowLeftRight, Ruler, Send, ArrowLeft, ArrowRight, Clock } from "lucide-react";
 import { useSiteSettings, defaultSettings } from "@/hooks/use-site-settings";
+import { rememberPostLoginTarget } from "@/lib/post-login";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function ShippingReturns() {
@@ -37,7 +38,6 @@ export default function ShippingReturns() {
       : windowDays === 1 ? "one day" : `${windowDays} days`;
   const exchangeNote = (settings?.exchange_note ?? "").trim();
   const exchangeSteps = [
-    { icon: LogIn, ar: "سجّلي الدخول", en: "Sign in", dAr: "ادخلي إلى حسابك الذي طلبتِ منه.", dEn: "Open the account you ordered with." },
     { icon: ArrowLeftRight, ar: "افتحي «الاستبدال»", en: "Open “Exchanges”", dAr: "في صفحة حسابك تجدين طلباتك المؤهلة للتبديل.", dEn: "Your account page lists the orders you can exchange." },
     { icon: Ruler, ar: "اختاري القطعة", en: "Pick the piece", dAr: "حددي القطعة والمقاس المطلوب واكتبي السبب.", dEn: "Choose the piece, the size you want, and the reason." },
     { icon: Send, ar: "أرسلي الطلب", en: "Send the request", dAr: "يصلك إشعار بالرد على طلبك.", dEn: "You get a notification with our answer." },
@@ -117,14 +117,14 @@ export default function ShippingReturns() {
                   )}
                 </div>
                 <p className="mt-1.5 text-sm text-foreground/70">
-                  {isAr ? "من حسابك على الموقع، في أربع خطوات:" : "From your account on the site, in four steps:"}
+                  {isAr ? "من حسابك على الموقع، في ثلاث خطوات:" : "From your account on the site, in three steps:"}
                 </p>
-                <ol className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <ol className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {exchangeSteps.map((step, i) => {
                     const Icon = step.icon;
                     return (
                       <li key={i} className="relative rounded-2xl bg-white p-4" data-testid={`exchange-step-${i + 1}`}>
-                        <div className="flex items-center gap-3 lg:flex-col lg:items-start">
+                        <div className="flex items-center gap-3 sm:flex-col sm:items-start">
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-berry text-white">
                             <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
                           </span>
@@ -150,11 +150,10 @@ export default function ShippingReturns() {
                   <Link
                     href={user ? "/profile?tab=exchanges&subtab=eligible" : "/auth"}
                     className="inline-flex h-11 items-center gap-2 rounded-full bg-foreground px-6 text-sm font-semibold text-background transition-colors hover:bg-berry"
+                    onClick={() => { if (!user) rememberPostLoginTarget("/profile?tab=exchanges&subtab=eligible"); }}
                     data-testid="button-start-exchange"
                   >
-                    {user
-                      ? isAr ? "ابدئي طلب تبديل" : "Start an exchange"
-                      : isAr ? "سجّلي الدخول لبدء التبديل" : "Sign in to start an exchange"}
+                    {isAr ? "ابدئي طلب تبديل" : "Start an exchange"}
                     <Arrow className="h-4 w-4" />
                   </Link>
                 </div>

@@ -1,7 +1,7 @@
-/* After logging in, return a customer to where they were (checkout or cart) instead of the home page.
+/* After logging in, return a customer to where they were (checkout, cart or the exchanges tab) instead of the home page.
    Only these exact paths are ever honoured, so this can never be used as an open redirect. */
 const KEY = "lucerne_post_login";
-const ALLOWED = new Set(["/checkout", "/cart"]);
+const ALLOWED = new Set(["/checkout", "/cart", "/profile?tab=exchanges&subtab=eligible"]);
 
 export function rememberPostLoginTarget(path: string) {
   if (!ALLOWED.has(path)) return;
