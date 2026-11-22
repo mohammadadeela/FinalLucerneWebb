@@ -85,7 +85,7 @@ export function Rail({
   };
 
   const arrow =
-    "hidden sm:flex absolute top-[38%] z-20 h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-card text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-berry hover:text-white hover:border-berry";
+    "hidden sm:flex absolute top-[38%] z-20 h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#E8257D] text-white shadow-[0_8px_24px_-10px_rgba(232,37,125,0.7)] transition-all duration-200 hover:bg-[#B3125C]";
 
   return (
     <div className={`relative ${className}`}>

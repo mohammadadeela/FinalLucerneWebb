@@ -1280,7 +1280,7 @@ className={`block mt-2 h-px w-10 ${accentColor.replace("text-", "bg-")}`}
 type="button"
 onClick={() => scroll("prev")}
 disabled={atStart}
-className="absolute start-2 sm:start-3 lg:start-4 top-[40%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all hover:bg-foreground/85 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+className="absolute start-2 sm:start-3 lg:start-4 top-[40%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#E8257D] text-white shadow-lg transition-all hover:bg-[#B3125C] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
 aria-label="Previous products"
 >
 <ChevronRight className="h-5 w-5" />
@@ -1290,7 +1290,7 @@ aria-label="Previous products"
 type="button"
 onClick={() => scroll("next")}
 disabled={atEnd}
-className="absolute end-2 sm:end-3 lg:end-4 top-[40%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-all hover:bg-foreground/85 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
+className="absolute end-2 sm:end-3 lg:end-4 top-[40%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#E8257D] text-white shadow-lg transition-all hover:bg-[#B3125C] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
 aria-label="Next products"
 >
 <ChevronLeft className="h-5 w-5" />
