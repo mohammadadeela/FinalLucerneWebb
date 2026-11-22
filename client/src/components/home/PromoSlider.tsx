@@ -23,7 +23,7 @@ export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: bool
 
   useEffect(() => {
     if (count < 2 || paused) return;
-    const id = window.setTimeout(() => setIndex((v) => (v + 1) % count), 5500);
+    const id = window.setTimeout(() => setIndex((v) => (v + 1) % count), 4300);
     return () => window.clearTimeout(id);
   }, [count, paused, i]);
 

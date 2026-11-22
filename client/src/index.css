@@ -269,7 +269,7 @@ html.admin-theme {
   100% { opacity: 0; transform: translateY(-70%); }
 }
 .news-rise {
-  animation: news-rise 4.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: news-rise 3.2s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes soft-float {
@@ -347,7 +347,7 @@ html.admin-theme {
   0%, 8%    { transform: translateX(0); }
   92%, 100% { transform: translateX(calc(-100% + 100vw - 1.5rem)); }
 }
-.strip-pan { animation: strip-pan 14s ease-in-out infinite alternate; }
+.strip-pan { animation: strip-pan 11s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) {
   .strip-pan { animation: none; left: 50%; transform: translateX(-50%); }
 }
