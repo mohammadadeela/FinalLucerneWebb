@@ -1275,12 +1275,12 @@ className={`block mt-2 h-px w-10 ${accentColor.replace("text-", "bg-")}`}
 </div>
 
 {/* Desktop/tablet: exact-width cards, so no card is cut in half. */}
-<div className="relative hidden sm:block overflow-hidden px-4 sm:px-6 lg:px-8">
+<div className="relative isolate hidden sm:block overflow-hidden px-4 sm:px-6 lg:px-8">
 <button
 type="button"
 onClick={() => scroll("prev")}
 disabled={atStart}
-className="absolute start-2 sm:start-3 lg:start-4 top-[40%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-blush hover:text-berry-deep active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
+className="absolute start-2 sm:start-3 lg:start-4 top-[40%] -translate-y-1/2 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-blush hover:text-berry-deep active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
 aria-label="Previous products"
 >
 <ChevronRight className="h-5 w-5" />
@@ -1290,7 +1290,7 @@ aria-label="Previous products"
 type="button"
 onClick={() => scroll("next")}
 disabled={atEnd}
-className="absolute end-2 sm:end-3 lg:end-4 top-[40%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-blush hover:text-berry-deep active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
+className="absolute end-2 sm:end-3 lg:end-4 top-[40%] -translate-y-1/2 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-blush hover:text-berry-deep active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
 aria-label="Next products"
 >
 <ChevronLeft className="h-5 w-5" />

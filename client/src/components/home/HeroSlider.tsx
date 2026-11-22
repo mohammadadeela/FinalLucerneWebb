@@ -275,7 +275,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
             <button
               type="button"
               onClick={() => go(safeIndex - 1)}
-              className="absolute start-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-all hover:bg-berry hover:text-white sm:flex lg:start-6"
+              className="absolute start-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:start-6"
               aria-label={isAr ? "السابق" : "Previous slide"}
               data-testid="button-hero-prev"
             >
@@ -284,7 +284,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
             <button
               type="button"
               onClick={() => go(safeIndex + 1)}
-              className="absolute end-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-foreground shadow-md transition-all hover:bg-berry hover:text-white sm:flex lg:end-6"
+              className="absolute end-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:end-6"
               aria-label={isAr ? "التالي" : "Next slide"}
               data-testid="button-hero-next"
             >
@@ -302,14 +302,14 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                     onClick={() => go(i)}
                     aria-label={`${isAr ? "الشريحة" : "Slide"} ${i + 1}`}
                     aria-current={active}
-                    className={`relative h-2 overflow-hidden rounded-full transition-all duration-500 ${active ? "w-8 bg-berry/25" : "w-2 bg-foreground/25 hover:bg-foreground/45"}`}
+                    className={`relative h-2 overflow-hidden rounded-full transition-all duration-500 ${active ? "w-8 bg-[#E8257D]/25" : "w-2 bg-foreground/25 hover:bg-foreground/45"}`}
                     style={skin ? { background: `${skin.ink}40` } : undefined}
                     data-testid={`button-hero-dot-${i}`}
                   >
                     {active && (
                       <span
                         key={`${cycle}-${paused}`}
-                        className={`absolute inset-0 rounded-full bg-berry ${paused || reducedMotion ? "" : "hero-progress"}`}
+                        className={`absolute inset-0 rounded-full bg-[#E8257D] ${paused || reducedMotion ? "" : "hero-progress"}`}
                         style={{ animationDuration: `${SLIDE_MS}ms`, ...(skin ? { background: skin.accent } : {}) }}
                       />
                     )}

@@ -85,10 +85,10 @@ export function Rail({
   };
 
   const arrow =
-    "hidden sm:flex absolute top-[38%] z-20 h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-blush hover:text-berry-deep";
+    "hidden sm:flex absolute top-[38%] z-50 h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all duration-200 hover:bg-blush hover:text-berry-deep";
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative isolate ${className}`}>
       {!atStart && (
         <button
           type="button"
