@@ -377,3 +377,18 @@ html.admin-theme {
     linear-gradient(to bottom, transparent 0, #000 9%, #000 91%, transparent 100%);
   mask-composite: intersect;
 }
+
+/* Hero: outlined slide number, staggered copy, and the underline that draws under the accent word */
+.hero-ghost { -webkit-text-stroke: 1.5px hsl(var(--berry) / 0.16); color: transparent; }
+@keyframes hero-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.hero-stagger > * { animation: hero-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+.hero-stagger > *:nth-child(3) { animation-delay: 0.2s; }
+.hero-stagger > *:nth-child(4) { animation-delay: 0.3s; }
+@keyframes hero-underline { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+.hero-underline path { stroke-dasharray: 100; stroke-dashoffset: 100; opacity: 0.55; }
+.hero-stagger .hero-underline path { animation: hero-underline 0.9s ease-out 0.55s forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-stagger > * { animation: none; }
+  .hero-stagger .hero-underline path { animation: none; stroke-dashoffset: 0; }
+}
