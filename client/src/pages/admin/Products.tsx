@@ -1423,6 +1423,7 @@ export default function Products() {
   const [videoDialogIds, setVideoDialogIds] = useState<number[] | null>(null);
   const [videoMenuOpen, setVideoMenuOpen] = useState(false);
   const [photoWatermark, setPhotoWatermark] = useState(false);
+  const [videoWatermark, setVideoWatermark] = useState(false);
   const [bulkVideoDownloading, setBulkVideoDownloading] = useState("");
   const [photoDownloadProgress, setPhotoDownloadProgress] = useState("");
   const [photoCounts, setPhotoCounts] = useState<{
@@ -5760,24 +5761,22 @@ export default function Products() {
                 return (
                   <>
                     <Button variant="ghost" className={row} type="button" disabled={!videoCount}
-                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), false, false)}
+                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), false, videoWatermark)}
                       data-testid="download-selected-videos">
                       <Clapperboard className="w-4 h-4 shrink-0 me-2" />
                       <span className="min-w-0 flex-1">{language === "ar" ? "فيديوهات المنتجات" : "Product videos"}</span>
                       <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-videos">{videoCount}</span>
                     </Button>
                     <Button variant="ghost" className={row} type="button" disabled={!videoCount}
-                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), false, true)}
-                      data-testid="download-selected-videos-watermark">
-                      <Clapperboard className="w-4 h-4 shrink-0 me-2" />
-                      <span className="min-w-0 flex-1">{language === "ar" ? "الفيديوهات مع العلامة المائية" : "Videos with watermark"}</span>
-                    </Button>
-                    <Button variant="ghost" className={row} type="button" disabled={!videoCount}
-                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), true, false)}
+                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), true, videoWatermark)}
                       data-testid="download-selected-photos-videos">
                       <Images className="w-4 h-4 shrink-0 me-2" />
                       <span className="min-w-0 flex-1">{language === "ar" ? "الصور الرئيسية + الفيديوهات" : "Main photos + videos"}</span>
                     </Button>
+                    <label className="flex items-center justify-between gap-3 border-t px-2.5 pt-2.5 pb-1.5 text-sm cursor-pointer">
+                      <span>{language === "ar" ? "مع العلامة المائية" : "With watermark"}</span>
+                      <Switch checked={videoWatermark} onCheckedChange={setVideoWatermark} data-testid="switch-video-watermark" />
+                    </label>
                     {!videoCount && (
                       <p className="px-2 pb-1 text-[11px] text-muted-foreground">
                         {language === "ar" ? "المنتجات المحددة ليس لها فيديوهات بعد." : "The selected products have no videos yet."}
