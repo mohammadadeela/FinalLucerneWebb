@@ -497,6 +497,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             // with the controller's corrections until it matches (three tries at most).
             let best: { frame: Buffer; score: number } | null = null;
             let fixes: string[] = [];
+            let bestRank = -1;
             for (let attempt = 1; attempt <= 3; attempt++) {
               const frame = await generateStudioImage(
                 buildStyleFramePrompt({ style, isFootwear, photoCount: references.length, hasLogo: !!logo, spec, fixes }),
@@ -509,8 +510,13 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
                 if (!best) best = { frame, score: -1 };
                 break;
               }
-              if (!best || verdict.score > best.score) best = { frame, score: verdict.score };
-              if (verdict.score >= 9) break;
+              // The product comes first; among equally exact frames the more real-looking one wins.
+              const rank = verdict.score + (verdict.realism ?? 8) / 100;
+              if (!best || rank > bestRank) {
+                best = { frame, score: verdict.score };
+                bestRank = rank;
+              }
+              if (verdict.score >= 9 && (verdict.realism ?? 10) >= 8) break;
               fixes = verdict.issues;
             }
             if (!best) throw new Error("The opening frame could not be generated.");

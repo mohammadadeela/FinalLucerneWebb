@@ -220,7 +220,12 @@ ${FIDELITY_RULES}
 - ${scene[opts.style]}
 - The product is reproduced EXACTLY from the photos: same shape, proportions, colour, material and texture, same stitching, sole, heel, hardware, zips, straps and trims, in the same places. Use every attached product photo to get each side right. Do not simplify, restyle or "improve" anything. Do not add any detail the photos do not show.
 - The product is the hero: sharp, well lit, fully inside the central part of the frame, with clear space above and below it.
-- Skin, hands and legs look real and natural, never retouched or plastic.
+- REAL PEOPLE, REAL PHOTOGRAPH. This must look like an unedited frame from a phone video of a real woman in a real room, not like an illustration, a render or an AI picture:
+  • skin with true texture: visible pores, fine lines on knuckles and knees, faint veins and tendons, tiny hairs, slight natural unevenness of tone, a small mole or freckle is welcome. Never smooth, waxy, airbrushed, glossy or doll-like.
+  • anatomically correct hands and feet: five fingers, real knuckles and nail beds, natural short nails, normal proportions, a relaxed natural grip with real pressure on what they touch.
+  • real ankles, calves and knees with normal anatomy and weight on the floor; tights, if any, show their real weave and slight creases.
+  • real contact: soft true shadows under the shoes and hands, the floor slightly reflecting, fabric and leather creasing where they bend.
+  • real camera: natural daylight with its small imperfections, true colours, slight sensor grain, natural depth of field. No HDR glow, no over-sharpening, no perfect symmetry, no studio-render lighting.
 - No text anywhere${opts.style === "unbox" && opts.hasLogo ? " except the logo on the box lid" : ""}. No other brand names, no price tags, no watermarks, no captions.
 - Vertical 9:16 frame.
 ${opts.spec ? `\n═══════════════════════════════════════\n📋 PRODUCT SPEC — written from the real photos. Every point must be true in your image:\n═══════════════════════════════════════\n${opts.spec}\n` : ""}${opts.fixes?.length ? `\n⚠️ YOUR PREVIOUS ATTEMPT WAS REJECTED by quality control because the product did not match the photos. Fix exactly these points this time:\n${opts.fixes.map((f) => `- ${f}`).join("\n")}\n` : ""}
@@ -251,7 +256,9 @@ export function buildStyleVideoPrompt(opts: { style: Exclude<VideoStyle, "photo"
 - Any logo or lettering visible in the first frame stays exactly as it is, sharp and unchanged. No new text, captions, stickers or graphics appear.
 - ONE continuous shot of about ${opts.seconds} seconds. No cuts, no transitions, no speed changes.
 - Keep the product inside the central area of the frame at all times; the top and bottom edges are cut away later.
-- Look: real camera footage with natural colour. Never a 3D render, never a glow or beauty filter.
+- REAL FOOTAGE, NOT ANIMATION. It must look like a real phone video of a real woman: skin keeps its pores, lines and texture in every frame and never turns smooth or waxy; hands keep five correct fingers and never merge, bend wrongly or slide through the product; muscles and tendons move under the skin; feet carry real weight and press on the floor.
+- Real-world physics and timing: movement at normal human speed with tiny natural hesitations, never floaty, never slow-motion, never gliding or sliding. Leather creases a little where the foot bends and springs back. Shadows and reflections move with the movement.
+- Real camera feel: a hand-held phone with very slight natural sway and breathing, natural motion blur on fast parts, slight sensor grain, constant exposure and white balance. Never a 3D render, never a glow or beauty filter, no morphing, no warping backgrounds.
 - No dialogue, no voice, no music.
 ${opts.spec ? `\nPRODUCT SPEC — these facts about the product stay true in every frame:\n${opts.spec}\n` : ""}
 FINAL REMINDER: the product stays exactly as in the first frame from start to end.`;
@@ -304,7 +311,7 @@ Return JSON: {"spec": ["...", "..."]} with 8 to 14 short bullet strings covering
   return list.map((line) => `- ${line.slice(0, 220)}`).join("\n");
 }
 
-export interface FidelityVerdict { score: number; issues: string[] }
+export interface FidelityVerdict { score: number; issues: string[]; realism: number | null }
 
 /**
  * Compares a generated picture (the LAST image) with the real product photos (all images before it).
@@ -314,7 +321,8 @@ export async function judgeFidelity(photos: Buffer[], candidate: Buffer, candida
   const data = await visionJson(
     `You are the strict quality controller of an online fashion boutique. The first ${photos.length} image(s) are REAL photos of a product. The LAST image is ${candidateIs === "still" ? "an AI-generated picture" : "a strip of frames taken from an AI-generated video"} that is supposed to show that same product. A customer will receive the real product, so any difference is a false advertisement.
 Compare ONLY the product itself (ignore background, model, hands, lighting, pose and camera angle). Check: overall shape and proportions; exact colour; material and surface texture; toe shape, heel shape and height, sole thickness and tread; shaft height; closures (zips, elastic, buckles, straps, laces, bows) and their positions; stitching and panel lines; trims and hardware; anything added that the real product does not have; anything missing.${candidateIs === "video frames" ? " Also check that the product looks the same in every frame of the strip and never deforms." : ""}
-Return JSON: {"score": <integer 0-10>, "issues": ["short, concrete instruction to fix one difference", ...]}.
+Separately, judge REALISM of the whole picture: would a viewer believe it is real camera footage of a real person? Mark it down for waxy or over-smooth skin, wrong hands or fingers, impossible anatomy, a rendered or illustrated look, or objects that melt into each other.
+Return JSON: {"score": <integer 0-10>, "realism": <integer 0-10>, "issues": ["short, concrete instruction to fix one difference or one unreal-looking thing", ...]}.
 Scoring: 10 = indistinguishable product; 8-9 = same product, only tiny differences a customer would not notice; 6-7 = clearly the same style but a visible detail is wrong; 0-5 = a different product. Be strict. List at most 6 issues, most important first; an empty list only if the score is 10.`,
     [...photos.slice(0, 4), candidate],
   );
@@ -322,6 +330,7 @@ Scoring: 10 = indistinguishable product; 8-9 = same product, only tiny differenc
   if (!Number.isFinite(score)) return null;
   return {
     score: Math.max(0, Math.min(10, Math.round(score))),
+    realism: Number.isFinite(Number(data?.realism)) ? Math.max(0, Math.min(10, Math.round(Number(data.realism)))) : null,
     issues: (Array.isArray(data?.issues) ? data.issues : []).map((x: unknown) => String(x).trim().slice(0, 200)).filter(Boolean).slice(0, 6),
   };
 }
