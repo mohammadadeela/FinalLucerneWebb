@@ -4227,7 +4227,7 @@ export default function Products() {
             {t.admin.manageProducts}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           <Popover open={toolsOpen} onOpenChange={setToolsOpen}>
             <PopoverTrigger asChild>
               <Button variant="outline" className="h-10 gap-2 shadow-sm" data-testid="button-products-tools">
@@ -4241,11 +4241,6 @@ export default function Products() {
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-64 p-1.5 space-y-0.5" dir={language === "ar" ? "rtl" : "ltr"}>
-              <Button variant="ghost" className="w-full justify-start gap-2.5" data-testid="button-view-bulk-upload"
-                onClick={() => { setToolsOpen(false); setViewMode(viewMode === "bulk-upload" ? "table" : "bulk-upload"); }}>
-                <CloudUpload className="w-4 h-4" />
-                {viewMode === "bulk-upload" ? (language === "ar" ? "إغلاق الرفع الجماعي" : "Close bulk upload") : (language === "ar" ? "رفع جماعي للصور" : "Bulk photo upload")}
-              </Button>
               <Button variant="ghost" className="w-full justify-start gap-2.5" data-testid="button-bulk-import"
                 onClick={() => {
                   setToolsOpen(false);
@@ -4285,9 +4280,18 @@ export default function Products() {
             <Printer className="w-4 h-4" />
             {language === "ar" ? "طباعة الباركود" : "Print Barcodes"}
           </Button>
+          <Button
+            onClick={() => setViewMode(viewMode === "bulk-upload" ? "table" : "bulk-upload")}
+            variant="outline"
+            className={`h-10 gap-2 shadow-sm ${viewMode === "bulk-upload" ? "border-foreground bg-muted" : ""}`}
+            data-testid="button-view-bulk-upload"
+          >
+            {viewMode === "bulk-upload" ? <X className="w-4 h-4" /> : <CloudUpload className="w-4 h-4" />}
+            {viewMode === "bulk-upload" ? (language === "ar" ? "إغلاق الرفع الجماعي" : "Close bulk upload") : (language === "ar" ? "رفع جماعي للصور" : "Bulk photo upload")}
+          </Button>
             <Button
               onClick={openCreate}
-              className="h-10 bg-foreground text-background hover:bg-foreground/90 shadow-sm hover:shadow-md transition-all gap-1 group"
+              className="order-first sm:order-none h-10 bg-foreground text-background hover:bg-foreground/90 shadow-sm hover:shadow-md transition-all gap-1 group"
               data-testid="button-add-product"
             >
               <Plus className="w-4 h-4 me-2 group-hover:rotate-90 transition-transform duration-200" />{" "}
@@ -4298,7 +4302,7 @@ export default function Products() {
 
       {/* ── Find and filter: search, category, subcategory, low stock, table or grid ── */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
-          <div className="flex h-10 items-stretch rounded-lg border border-border bg-background overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full sm:w-80 shadow-sm">
+          <div className="flex h-10 items-stretch rounded-full border border-border bg-background shadow-sm overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full sm:w-80 shadow-sm">
             <span className="flex items-center ps-3 text-muted-foreground flex-shrink-0">
               <Search className="w-4 h-4" />
             </span>
@@ -4518,7 +4522,7 @@ export default function Products() {
                 setLowStockSubcategoryFilter("");
                 setSelectedLowStockIds(new Set());
               }}
-              className={`flex items-center gap-1.5 h-10 px-3 text-xs font-semibold border transition-all rounded-md shadow-sm ${showLowStock ? "bg-amber-500 text-white border-amber-500 shadow-md" : "bg-background text-amber-600 border-amber-400/70 hover:bg-amber-50 hover:border-amber-500 dark:hover:bg-amber-950/30"}`}
+              className={`flex items-center gap-1.5 h-10 px-3.5 text-xs font-semibold border transition-all rounded-full shadow-sm ${showLowStock ? "bg-amber-500 text-white border-amber-500 shadow-md" : "bg-background text-amber-600 border-amber-400/70 hover:bg-amber-50 hover:border-amber-500 dark:hover:bg-amber-950/30"}`}
               data-testid="button-low-stock-filter"
             >
               <AlertCircle className="w-3.5 h-3.5" />
@@ -4536,7 +4540,7 @@ export default function Products() {
                 </span>
               )}
             </button>
-            <div className="inline-flex h-10 items-center rounded-md border border-input bg-background p-0.5 shadow-sm">
+            <div className="ms-auto inline-flex h-10 items-center rounded-md border border-input bg-background p-0.5 shadow-sm">
               <button
                 onClick={() => setViewMode("table")}
                 className={`flex items-center justify-center w-8 h-8 rounded transition-all ${viewMode === "table" ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
