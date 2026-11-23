@@ -293,6 +293,10 @@ ${knowledge}`;
 
 /* ───────────────────────────── The conversation loop ───────────────────────────── */
 
+// When Google refuses for lack of credit, the AI is paused so customers' messages stop
+// calling the API; the keyword replies answer meanwhile.
+let pausedUntil = 0;
+
 async function callGemini(body: unknown, key: string): Promise<any> {
   const res = await fetch(ENDPOINT, {
     method: "POST",
@@ -300,7 +304,12 @@ async function callGemini(body: unknown, key: string): Promise<any> {
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(20_000),
   });
-  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok) {
+    const text = (await res.text()).slice(0, 300);
+    if (res.status === 402 || /prepayment credits|credits are depleted|enable billing/i.test(text)) pausedUntil = Date.now() + 15 * 60_000;
+    else if (res.status === 429) pausedUntil = Date.now() + 60_000;
+    throw new Error(`Gemini ${res.status}: ${text.slice(0, 200)}`);
+  }
   return res.json();
 }
 
@@ -310,7 +319,7 @@ async function callGemini(body: unknown, key: string): Promise<any> {
  */
 export async function askLucy(opts: { message: string; history: LucyTurn[]; user: LucyUser | null; siteLang: "ar" | "en" }): Promise<LucyAnswer | null> {
   const key = process.env.GEMINI_API_KEY;
-  if (!key || process.env.CHATBOT_AI === "off") return null;
+  if (!key || process.env.CHATBOT_AI === "off" || Date.now() < pausedUntil) return null;
   try {
     const [catalog, knowledge] = await Promise.all([loadCatalog(), loadKnowledge()]);
     const isArabic = /[؀-ۿ]/.test(opts.message) || (opts.siteLang === "ar" && !/[a-z]{3}/i.test(opts.message));

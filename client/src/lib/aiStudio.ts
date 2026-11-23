@@ -22,6 +22,10 @@ export interface StudioJob {
   status: "queued" | "running" | "done" | "error";
   message?: string;
   noKey?: boolean;
+  /** The Gemini account has no money left. */
+  noCredit?: boolean;
+  /** Never started: the batch was stopped after an error. */
+  stopped?: boolean;
   result?: { media?: StudioMedia; publishSkipped?: string };
 }
 
@@ -79,6 +83,8 @@ export function useStudioJobs(storageKey: string, onFinished?: () => void) {
   });
   const finishedRef = useRef(onFinished);
   finishedRef.current = onFinished;
+  const jobsRef = useRef(jobs);
+  jobsRef.current = jobs;
 
   useEffect(() => {
     try {
@@ -100,13 +106,23 @@ export function useStudioJobs(storageKey: string, onFinished?: () => void) {
         const data = await res.json();
         if (stopped || !Array.isArray(data.jobs)) return;
         const byId = new Map<string, any>(data.jobs.map((j: any) => [j.id, j]));
-        let someFinished = false;
+        // Worked out from the current list, not inside the state update: React runs that later,
+        // which used to leave the video list un-refreshed after a job finished.
+        const someFinished = jobsRef.current.some((job) => {
+          const fresh = byId.get(job.id);
+          return !!fresh && (fresh.status === "done" || fresh.status === "error") && job.status !== fresh.status;
+        });
+        // The server forgets jobs when it restarts; such a job can never finish.
+        const known = new Set(data.jobs.map((j: any) => j.id));
         setJobs((prev) =>
           prev.map((job) => {
             const fresh = byId.get(job.id);
-            if (!fresh) return job;
-            if ((fresh.status === "done" || fresh.status === "error") && job.status !== fresh.status) someFinished = true;
-            return { ...job, status: fresh.status, message: fresh.message, noKey: fresh.noKey, result: fresh.result };
+            if (!fresh) {
+              return (job.status === "queued" || job.status === "running") && !known.has(job.id)
+                ? { ...job, status: "error" as const, message: "The server restarted before this finished. Generate it again." }
+                : job;
+            }
+            return { ...job, status: fresh.status, message: fresh.message, noKey: fresh.noKey, noCredit: fresh.noCredit, stopped: fresh.stopped, result: fresh.result };
           }),
         );
         if (someFinished) finishedRef.current?.();

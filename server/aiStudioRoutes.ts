@@ -276,6 +276,8 @@ interface Job {
   result?: any;
   message?: string;
   noKey?: boolean;
+  noCredit?: boolean;
+  stopped?: boolean;
 }
 
 const jobs = new Map<string, Job>();
@@ -283,11 +285,27 @@ const waiting: string[] = [];
 let active = 0;
 const CONCURRENCY = Math.max(1, Math.min(4, Number(process.env.AI_STUDIO_CONCURRENCY) || 2));
 let keyMissing = false;
+// Circuit breaker. An empty Gemini balance, or two failures in a row, stops everything that is
+// still waiting, so a large batch can never keep sending paid requests into a problem.
+let stopReason: "" | "noCredit" | "errors" = "";
+let failuresInARow = 0;
+const MAX_FAILURES_IN_A_ROW = 2;
 
 function pump() {
   while (active < CONCURRENCY && waiting.length) {
     const job = jobs.get(waiting.shift() as string);
     if (!job) continue;
+    if (stopReason) {
+      job.status = "error";
+      job.stopped = true;
+      job.noCredit = stopReason === "noCredit";
+      job.message =
+        stopReason === "noCredit"
+          ? "Not started: the Gemini API balance is empty."
+          : "Not started: the batch was stopped after repeated errors, so nothing more is charged. Check the error above, then try again.";
+      job.at = Date.now();
+      continue;
+    }
     if (keyMissing) {
       // Nothing else can work without the key: fail the rest of the batch at once.
       job.status = "error";
@@ -302,6 +320,7 @@ function pump() {
       .then((result) => {
         job.status = "done";
         job.result = result;
+        failuresInARow = 0;
       })
       .catch((err: any) => {
         console.error("[ai-studio] job failed:", job.label, err?.message || err);
@@ -309,6 +328,10 @@ function pump() {
         job.message = String(err?.message || "Generation failed").slice(0, 400);
         job.noKey = !!err?.noKey;
         if (err?.noKey) keyMissing = true;
+        job.noCredit = !!err?.noCredit;
+        failuresInARow++;
+        if (err?.noCredit) stopReason = "noCredit";
+        else if (failuresInARow >= MAX_FAILURES_IN_A_ROW && !stopReason) stopReason = "errors";
       })
       .finally(() => {
         job.at = Date.now();
@@ -326,6 +349,12 @@ function addJob(label: string, run: () => Promise<any>): string {
   jobs.set(id, { id, status: "queued", label, at: Date.now(), run });
   waiting.push(id);
   keyMissing = false;
+  // A new batch is the owner's decision to try again. If the balance is still empty the first
+  // request is refused for free and the breaker stops the rest again.
+  if (!active && waiting.length === 1) {
+    stopReason = "";
+    failuresInARow = 0;
+  }
   pump();
   return id;
 }
@@ -669,7 +698,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
       jobs: ids.map((id) => {
         const job = jobs.get(id);
         if (!job) return { id, status: "error", message: "The job was lost (the server restarted). Start it again." };
-        return { id, status: job.status, label: job.label, message: job.message, noKey: job.noKey, result: job.status === "done" ? job.result : undefined };
+        return { id, status: job.status, label: job.label, message: job.message, noKey: job.noKey, noCredit: job.noCredit, stopped: job.stopped, result: job.status === "done" ? job.result : undefined };
       }),
     });
   });

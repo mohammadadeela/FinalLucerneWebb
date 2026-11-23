@@ -377,7 +377,13 @@ export function JobList({ jobs, isAr, onClear }: { jobs: StudioJob[]; isAr: bool
                     ? tr("جاهز ومنشور", "Ready and published")
                     : tr("جاهز", "Ready"))}
               {job.status === "error" &&
-                (job.noKey ? tr("مفتاح GEMINI_API_KEY غير موجود على السيرفر", "GEMINI_API_KEY is missing on the server") : job.message)}
+                (job.noKey
+                  ? tr("مفتاح GEMINI_API_KEY غير موجود على السيرفر", "GEMINI_API_KEY is missing on the server")
+                  : job.noCredit
+                    ? tr("رصيد Gemini خلص. اشحنه من Google AI Studio ثم حاول. تم إيقاف الباقي.", "Gemini balance is empty. Top it up in Google AI Studio, then retry. The rest was stopped.")
+                    : job.stopped
+                      ? tr("لم يبدأ: تم إيقاف الباقي بعد تكرار الأخطاء حتى لا يُخصم شيء.", "Not started: the rest was stopped after repeated errors so nothing is charged.")
+                      : job.message)}
             </span>
           </li>
         ))}

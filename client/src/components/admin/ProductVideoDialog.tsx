@@ -67,12 +67,16 @@ export function ProductVideoDialog({
     queryClient.invalidateQueries({ queryKey: LIBRARY_KEY });
     queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
   };
-  const { jobs, add, clearFinished } = useStudioJobs("lucerne-video-studio-jobs", refreshAll);
+  const { jobs, add, clearFinished, running } = useStudioJobs("lucerne-video-studio-jobs", refreshAll);
 
   const { data: library = [], isLoading: libraryLoading } = useQuery<StudioMedia[]>({
     queryKey: LIBRARY_KEY,
     queryFn: () => fetchStudioMedia("product"),
     enabled: open,
+    // Always the real list from the server: never a remembered, older one.
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchInterval: open && running ? 5000 : false,
   });
 
   const count = selectionCount(selection);

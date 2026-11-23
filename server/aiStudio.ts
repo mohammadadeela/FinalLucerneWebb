@@ -32,6 +32,21 @@ function log(...args: any[]) {
   console.log("[ai-studio]", ...args);
 }
 
+/**
+ * True when Google refused the request because the account has no money left (or billing is
+ * off). Nothing can work until the owner tops up, so the caller must stop instead of retrying.
+ */
+export function isBillingProblem(status: number, body: string): boolean {
+  return status === 402 || /prepayment credits|credits are depleted|billing (?:is )?(?:not enabled|disabled|account)|enable billing/i.test(body);
+}
+
+/** The error every caller throws for an empty account. `noCredit` tells the queue to stop the whole batch. */
+export function noCreditError(): Error {
+  const err: any = new Error("Your Gemini API balance is empty. Top it up in Google AI Studio (ai.studio/projects), then try again. Nothing more was sent to the API.");
+  err.noCredit = true;
+  return err;
+}
+
 function apiKey(): string {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
@@ -262,11 +277,16 @@ async function visionJson(prompt: string, images: Buffer[]): Promise<any | null>
       body: JSON.stringify({ contents: [{ parts }], generationConfig: { temperature: 0.1, responseMimeType: "application/json" } }),
       signal: AbortSignal.timeout(60000),
     });
-    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160)}`);
+    if (!res.ok) {
+      const body = await res.text();
+      if (isBillingProblem(res.status, body)) throw noCreditError();
+      throw new Error(`${res.status} ${body.slice(0, 160)}`);
+    }
     const data: any = await res.json();
     const text = (data?.candidates?.[0]?.content?.parts || []).filter((p: any) => typeof p?.text === "string" && !p.thought).map((p: any) => p.text).join("");
     return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
   } catch (err: any) {
+    if (err?.noCredit) throw err;
     // Quality control is a safety net; if it is unavailable the video is still made.
     log("quality check unavailable:", err?.message || err);
     return null;
@@ -437,6 +457,7 @@ export async function generateStudioImage(prompt: string, references: Buffer[], 
         log("image model rejected imageConfig; continuing without it");
         continue;
       }
+      if (isBillingProblem(res.status, text)) throw noCreditError();
       const isRateLimit = res.status === 429 || /quota|rate limit/i.test(text);
       if ((isRateLimit || res.status >= 500) && attempt < MAX_ATTEMPTS) {
         const retryMatch = text.match(/retryDelay"?\s*[:=]\s*"?(\d+(?:\.\d+)?)s/i);
@@ -523,14 +544,14 @@ export async function generateStudioVideo(opts: {
         signal: AbortSignal.timeout(14 * 60 * 1000),
       });
     } catch (networkErr: any) {
-      lastError = `Network error contacting Gemini: ${networkErr?.message || networkErr}`;
-      if (attempt >= 2) break;
-      await sleep(4000);
-      continue;
+      // Never ask again after a dropped connection: the first request may still be running
+      // (and billed) on Google's side, so a second one could be paid for twice.
+      throw new Error(`The connection to Gemini was lost while the video was being made (${networkErr?.message || networkErr}). It was not sent again, to avoid paying twice. Try again in a few minutes.`);
     }
 
     const text = await res.text();
     if (!res.ok) {
+      if (isBillingProblem(res.status, text)) throw noCreditError();
       const isRateLimit = res.status === 429 || /quota|rate limit/i.test(text);
       if (res.status === 400 && level < 3 && /response_format|aspect_ratio|resolution|duration|Unknown name/i.test(text)) {
         level++;
