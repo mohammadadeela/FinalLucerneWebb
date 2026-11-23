@@ -213,6 +213,33 @@ async function publishVideo(
   return { published: true };
 }
 
+/** Takes a generated video off its product (every colour that shows it), so deleting it really removes it from the site. */
+async function unpublishVideo(deps: AiStudioDeps, row: MediaRow): Promise<void> {
+  if (row.kind !== "product_video" || !row.product_id) return;
+  const product: any = await storage.getProduct(row.product_id);
+  if (!product) return;
+  const variants = JSON.parse(JSON.stringify(variantsOf(product)));
+  const payload: any = {};
+  let changed = false;
+  for (const variant of variants) {
+    if (!Array.isArray(variant?.media)) continue;
+    const kept = variant.media.filter((m: any) => !(m?.type === "video" && m.url === row.url));
+    if (kept.length !== variant.media.length) {
+      variant.media = kept;
+      changed = true;
+    }
+  }
+  if (changed) payload.colorVariants = variants;
+  if (product.videoUrl === row.url) {
+    payload.videoUrl = null;
+    changed = true;
+  }
+  if (!changed) return;
+  const clean = await deps.normalizeProductPayload(payload, { partial: true });
+  const input: any = api.products.update.input.parse(clean);
+  await storage.updateProduct(row.product_id, input);
+}
+
 /* ───────────────────────────── Job queue ───────────────────────────── */
 
 interface Job {
@@ -594,7 +621,11 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
     if (!isAdmin(req, res)) return;
     try {
       await ensureTable();
-      await db.execute(sql`DELETE FROM ai_studio_media WHERE id = ${Number(req.params.id) || 0}`);
+      const id = Number(req.params.id) || 0;
+      const row = await getMedia(id);
+      // Deleting a video also takes it off the product page.
+      if (row) await unpublishVideo(deps, row);
+      await db.execute(sql`DELETE FROM ai_studio_media WHERE id = ${id}`);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ message: "Could not remove it from the library." });

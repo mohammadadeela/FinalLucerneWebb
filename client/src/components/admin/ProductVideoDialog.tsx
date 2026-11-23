@@ -47,12 +47,8 @@ export function ProductVideoDialog({
 
   const [tab, setTab] = useState("generate");
   const [selection, setSelection] = useState<Selection>({});
-  const [source, setSource] = useState<"main" | "original">("original");
   const [motion, setMotion] = useState<"pushIn" | "drift" | "light">("pushIn");
   const [seconds, setSeconds] = useState(6);
-  const [quality, setQuality] = useState<"high" | "standard">("high");
-  const [autoPublish, setAutoPublish] = useState(false);
-  const [replace, setReplace] = useState(false);
   const [starting, setStarting] = useState(false);
 
   const chosen = useMemo(() => productIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as any[], [productIds, products]);
@@ -62,7 +58,7 @@ export function ProductVideoDialog({
   useEffect(() => {
     if (!open) return;
     const next: Selection = {};
-    for (const product of chosen) next[product.id] = [0];
+    for (const product of chosen) next[product.id] = productVariants(product).map((v) => v.index);
     setSelection(next);
     setTab(chosen.length ? "generate" : "review");
   }, [open, idsKey]);
@@ -80,26 +76,12 @@ export function ProductVideoDialog({
   });
 
   const count = selectionCount(selection);
-  const toggleColour = (productId: number, index: number) =>
-    setSelection((prev) => {
-      const current = prev[productId] || [];
-      const nextList = current.includes(index) ? current.filter((i) => i !== index) : [...current, index].sort((a, b) => a - b);
-      return { ...prev, [productId]: nextList };
-    });
-  const setAllColours = (on: boolean) => {
-    const next: Selection = {};
-    for (const product of chosen) next[product.id] = on ? productVariants(product).map((v) => v.index) : [0];
-    setSelection(next);
-  };
-  const allColoursOn = chosen.length > 0 && chosen.every((p) => (selection[p.id] || []).length === productVariants(p).length);
-  const hasSeveralColours = chosen.some((p) => productVariants(p).length > 1);
-
   const start = async () => {
     if (!count) return;
     const ok = window.confirm(
       tr(
-        `سيتم توليد ${count} فيديو. كل فيديو يُحسب على حساب Gemini الخاص بك. متابعة؟`,
-        `${count} video(s) will be generated. Each one is billed to your Gemini account. Continue?`,
+        `سيتم توليد ${count} فيديو (واحد لكل لون) ونشرها على الموقع مباشرة. كل فيديو يُحسب على حساب Gemini الخاص بك. متابعة؟`,
+        `${count} video(s) will be generated (one per colour) and put on the site right away. Each one is billed to your Gemini account. Continue?`,
       ),
     );
     if (!ok) return;
@@ -107,12 +89,12 @@ export function ProductVideoDialog({
     try {
       const data = await studioPost("/api/admin/ai-studio/product-videos", {
         items: selectionItems(selection),
-        source,
+        source: "original",
         motion,
         seconds,
-        quality,
-        autoPublish,
-        replace: autoPublish && replace,
+        quality: "high",
+        autoPublish: true,
+        replace: true,
       });
       add(data.jobs || []);
       setTab("review");
@@ -178,14 +160,14 @@ export function ProductVideoDialog({
   const removeOne = async (item: StudioMedia) => {
     const ok = window.confirm(
       item.status === "published"
-        ? tr("إزالة من القائمة؟ الفيديو سيبقى على المنتج.", "Remove from the list? The video stays on the product.")
+        ? tr("حذف هذا الفيديو؟ سيُزال من المنتج على الموقع أيضاً.", "Delete this video? It will also be removed from the product on the site.")
         : tr("حذف هذا الفيديو؟", "Delete this video?"),
     );
     if (!ok) return;
     setBusy(item.id, true);
     try {
       await deleteStudioMedia(item.id);
-      queryClient.invalidateQueries({ queryKey: LIBRARY_KEY });
+      refreshAll();
     } catch (err: any) {
       toast({ title: tr("تعذر الحذف", "Could not remove"), description: err?.message, variant: "destructive" });
     } finally {
@@ -229,7 +211,7 @@ export function ProductVideoDialog({
           <TabsList className="mx-5 mt-3 h-auto w-fit flex-wrap justify-start gap-1">
             <TabsTrigger value="generate" data-testid="tab-video-generate">{tr("توليد", "Generate")}</TabsTrigger>
             <TabsTrigger value="review" data-testid="tab-video-review">
-              {tr("المراجعة والنشر", "Review & publish")}
+              {tr("الفيديوهات", "Videos")}
               {drafts > 0 && <span className="ms-1.5 rounded-full bg-foreground px-1.5 text-[10px] font-bold text-background tabular-nums">{drafts}</span>}
             </TabsTrigger>
           </TabsList>
@@ -245,12 +227,6 @@ export function ProductVideoDialog({
                 <section className="space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold">{tr(`المنتجات المحددة (${chosen.length})`, `Selected products (${chosen.length})`)}</h3>
-                    {hasSeveralColours && (
-                      <label className="flex cursor-pointer items-center gap-2 text-xs font-medium">
-                        <Switch checked={allColoursOn} onCheckedChange={setAllColours} data-testid="switch-video-all-colours" />
-                        {tr("فيديو لكل الألوان", "A video for every colour")}
-                      </label>
-                    )}
                   </div>
                   <ul className="divide-y divide-border/60 rounded-xl border border-border">
                     {chosen.map((product) => {
@@ -262,23 +238,13 @@ export function ProductVideoDialog({
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{isAr ? product.nameAr || product.name : product.name}</p>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {variants.map((variant) => {
-                                const active = on.includes(variant.index);
-                                return (
-                                  <button
-                                    key={variant.index}
-                                    type="button"
-                                    onClick={() => toggleColour(product.id, variant.index)}
-                                    aria-pressed={active}
-                                    className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium transition-colors ${active ? "border-foreground bg-foreground text-background" : "border-border bg-background text-muted-foreground hover:border-foreground/50"}`}
-                                    data-testid={`chip-video-colour-${product.id}-${variant.index}`}
-                                  >
-                                    {variant.colorCode && <span className="h-3 w-3 rounded-full border border-black/15" style={{ background: variant.colorCode }} />}
-                                    {variant.name || tr("المنتج", "Product")}
-                                    {variant.video && <Film className="h-3 w-3" aria-label={tr("له فيديو", "Has a video")} />}
-                                  </button>
-                                );
-                              })}
+                              {variants.map((variant) => (
+                                <span key={variant.index} className="inline-flex h-6 items-center gap-1.5 rounded-full border border-border px-2 text-[11px] text-muted-foreground">
+                                  {variant.colorCode && <span className="h-3 w-3 rounded-full border border-black/15" style={{ background: variant.colorCode }} />}
+                                  {variant.name || tr("المنتج", "Product")}
+                                  {variant.video && <Film className="h-3 w-3" aria-label={tr("له فيديو", "Has a video")} />}
+                                </span>
+                              ))}
                             </div>
                           </div>
                         </li>
@@ -287,18 +253,11 @@ export function ProductVideoDialog({
                   </ul>
                   <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <Film className="h-3 w-3" />
-                    {tr("اللون الذي عليه هذه العلامة له فيديو حالياً.", "A colour with this mark already has a video.")}
+                    {tr("اللون الذي عليه هذه العلامة له فيديو حالياً، والجديد سيأخذ مكانه.", "A colour with this mark already has a video; the new one will take its place.")}
                   </p>
                 </section>
 
                 <section className="space-y-4 lg:sticky lg:top-0 lg:self-start">
-                  <Field
-                    label={tr("الصورة التي يبدأ منها الفيديو", "Photo the video starts from")}
-                    hint={tr("صورة الموقع تعطي نفس شكل صفحة المنتج. الصورة الأصلية هي صورتك الحقيقية للقطعة.", "The site photo matches the product page. The original is your own real photo of the item.")}
-                  >
-                    <Choice value={source} onChange={setSource} testId="choice-video-source"
-                      options={[{ value: "original", label: tr("الصورة الأصلية", "Original photo") }, { value: "main", label: tr("صورة الموقع", "Site photo") }]} />
-                  </Field>
                   <Field label={tr("الحركة", "Motion")} hint={tr("المنتج ثابت ولا يدور، حتى لا يُخترع أي تفصيل غير موجود في الصورة.", "The product stays still and never turns, so no detail is invented.")}>
                     <Choice value={motion} onChange={setMotion} testId="choice-video-motion"
                       options={[
@@ -307,45 +266,15 @@ export function ProductVideoDialog({
                         { value: "light", label: tr("إضاءة متحركة", "Moving light") },
                       ]} />
                   </Field>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label={tr("المدة", "Length")}>
-                      <Choice value={seconds} onChange={setSeconds} testId="choice-video-seconds" options={[5, 6, 8].map((value) => ({ value, label: tr(`${value} ث`, `${value}s`) }))} />
-                    </Field>
-                    <Field label={tr("الجودة", "Quality")}>
-                      <Choice value={quality} onChange={setQuality} testId="choice-video-quality"
-                        options={[{ value: "high", label: "1080p" }, { value: "standard", label: "720p" }]} />
-                    </Field>
-                  </div>
-                  <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3">
-                    <p className="text-xs font-semibold">{tr("بعد ما يجهز الفيديو", "When the video is ready")}</p>
-                    <label className="flex cursor-pointer items-start justify-between gap-3">
-                      <span className="min-w-0">
-                        <span className="block text-xs font-medium">{tr("انشره على المنتج مباشرة", "Put it on the product right away")}</span>
-                        <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
-                          {autoPublish
-                            ? tr("شغّال: الفيديو يظهر للزبائن في صفحة المنتج فور انتهائه، بدون مراجعتك.", "On: customers see the video on the product page as soon as it is done, without your review.")
-                            : tr("مطفي: الفيديو يُحفظ مسودة. تشوفه أولاً في تبويب المراجعة ثم تنشره بنفسك.", "Off: the video is saved as a draft. You watch it in the review tab first, then publish it yourself.")}
-                        </span>
-                      </span>
-                      <Switch className="mt-0.5 shrink-0" checked={autoPublish} onCheckedChange={setAutoPublish} data-testid="switch-video-autopublish" />
-                    </label>
-                    {autoPublish && (
-                      <label className="flex cursor-pointer items-start justify-between gap-3 border-t border-border pt-3">
-                        <span className="min-w-0">
-                          <span className="block text-xs font-medium">{tr("بدّل الفيديو القديم", "Replace the old video")}</span>
-                          <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
-                            {replace
-                              ? tr("شغّال: إذا المنتج عليه فيديو، الجديد يأخذ مكانه.", "On: if the product already has a video, the new one takes its place.")
-                              : tr("مطفي: إذا المنتج عليه فيديو يبقى كما هو، والجديد يُحفظ مسودة.", "Off: a product that already has a video keeps it, and the new one is saved as a draft.")}
-                          </span>
-                        </span>
-                        <Switch className="mt-0.5 shrink-0" checked={replace} onCheckedChange={setReplace} data-testid="switch-video-replace" />
-                      </label>
-                    )}
-                  </div>
+                  <Field label={tr("المدة", "Length")}>
+                    <Choice value={seconds} onChange={setSeconds} testId="choice-video-seconds" options={[5, 6, 8].map((value) => ({ value, label: tr(`${value} ث`, `${value}s`) }))} />
+                  </Field>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {tr("فيديو لكل لون من صورته الأصلية، وينزل على المنتج في الموقع تلقائياً. ما عجبك؟ احذفه من تبويب الفيديوهات.", "One video per colour from its original photo, put on the product automatically. Don't like one? Delete it in the Videos tab.")}
+                  </p>
                   <Button type="button" className="h-11 w-full gap-2" disabled={!count || starting} onClick={start} data-testid="button-video-generate">
                     {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clapperboard className="h-4 w-4" />}
-                    {count ? tr(`توليد ${count} فيديو`, `Generate ${count} video(s)`) : tr("اختر لوناً واحداً على الأقل", "Choose at least one colour")}
+                    {tr(`توليد ${count} فيديو`, `Generate ${count} video(s)`)}
                   </Button>
                 </section>
               </div>
@@ -376,10 +305,10 @@ export function ProductVideoDialog({
                   {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                   {downloading || tr("تنزيل المحدد", "Download selected")}
                 </Button>
-                <Button type="button" size="sm" className="gap-1.5" disabled={!library.some((m) => picked.has(m.id) && m.status !== "published")} onClick={publishPicked} data-testid="button-review-publish">
+                {drafts > 0 && <Button type="button" size="sm" className="gap-1.5" disabled={!library.some((m) => picked.has(m.id) && m.status !== "published")} onClick={publishPicked} data-testid="button-review-publish">
                   <Upload className="h-4 w-4" />
                   {tr("نشر المحدد", "Publish selected")}
-                </Button>
+                </Button>}
               </div>
             </div>
 
@@ -387,7 +316,7 @@ export function ProductVideoDialog({
               <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : library.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border px-4 py-14 text-center text-sm text-muted-foreground">
-                {tr("لا توجد فيديوهات بعد. كل فيديو تولّده يظهر هنا لتراجعه قبل النشر.", "No videos yet. Every video you generate shows up here for review before it is published.")}
+                {tr("لا توجد فيديوهات بعد. كل فيديو تولّده يظهر هنا.", "No videos yet. Every video you generate shows up here.")}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
