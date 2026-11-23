@@ -49,6 +49,7 @@ export function ProductVideoDialog({
   const [selection, setSelection] = useState<Selection>({});
   const [style, setStyle] = useState<"tryOn" | "hands" | "unbox" | "photo">("tryOn");
   const [seconds, setSeconds] = useState(6);
+  const [combine, setCombine] = useState(true);
   const [starting, setStarting] = useState(false);
 
   const chosen = useMemo(() => productIds.map((id) => products.find((p) => p.id === id)).filter(Boolean) as any[], [productIds, products]);
@@ -79,13 +80,23 @@ export function ProductVideoDialog({
     refetchInterval: open && running ? 5000 : false,
   });
 
-  const count = selectionCount(selection);
+  const hasSeveralColours = chosen.some((p) => productVariants(p).length > 1);
+  // Together: one video per product (a product with more than 6 colours is split). Apart: one per colour.
+  const count = combine
+    ? chosen.reduce((sum, p) => sum + Math.ceil((selection[p.id] || []).length / 6), 0)
+    : selectionCount(selection);
+  const toggleColour = (productId: number, index: number) =>
+    setSelection((prev) => {
+      const current = prev[productId] || [];
+      const nextList = current.includes(index) ? current.filter((i) => i !== index) : [...current, index].sort((a, b) => a - b);
+      return { ...prev, [productId]: nextList };
+    });
   const start = async () => {
     if (!count) return;
     const ok = window.confirm(
       tr(
-        `سيتم توليد ${count} فيديو (واحد لكل لون) ونشرها على الموقع مباشرة. كل فيديو يُحسب على حساب Gemini الخاص بك. متابعة؟`,
-        `${count} video(s) will be generated (one per colour) and put on the site right away. Each one is billed to your Gemini account. Continue?`,
+        `سيتم توليد ${count} فيديو ونشرها على الموقع مباشرة. كل فيديو يُحسب على حساب Gemini الخاص بك. متابعة؟`,
+        `${count} video(s) will be generated and put on the site right away. Each one is billed to your Gemini account. Continue?`,
       ),
     );
     if (!ok) return;
@@ -98,6 +109,7 @@ export function ProductVideoDialog({
         style,
         seconds,
         quality: "high",
+        combineColours: combine,
         autoPublish: true,
         replace: true,
       });
@@ -243,19 +255,34 @@ export function ProductVideoDialog({
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{isAr ? product.nameAr || product.name : product.name}</p>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
-                              {variants.map((variant) => (
-                                <span key={variant.index} className="inline-flex h-6 items-center gap-1.5 rounded-full border border-border px-2 text-[11px] text-muted-foreground">
-                                  {variant.colorCode && <span className="h-3 w-3 rounded-full border border-black/15" style={{ background: variant.colorCode }} />}
-                                  {variant.name || tr("المنتج", "Product")}
-                                  {variant.video && <Film className="h-3 w-3" aria-label={tr("له فيديو", "Has a video")} />}
-                                </span>
-                              ))}
+                              {variants.map((variant) => {
+                                const active = on.includes(variant.index);
+                                return (
+                                  <button
+                                    key={variant.index}
+                                    type="button"
+                                    onClick={() => toggleColour(product.id, variant.index)}
+                                    aria-pressed={active}
+                                    className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-medium transition-colors ${active ? "border-foreground bg-foreground text-background" : "border-border bg-background text-muted-foreground line-through decoration-muted-foreground/50 hover:border-foreground/50"}`}
+                                    data-testid={`chip-video-colour-${product.id}-${variant.index}`}
+                                  >
+                                    {variant.colorCode && <span className="h-3 w-3 rounded-full border border-black/15" style={{ background: variant.colorCode }} />}
+                                    {variant.name || tr("المنتج", "Product")}
+                                    {variant.video && <Film className="h-3 w-3" aria-label={tr("له فيديو", "Has a video")} />}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         </li>
                       );
                     })}
                   </ul>
+                  {hasSeveralColours && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {tr("اضغط على اللون لإلغائه أو اختياره. الألوان الغامقة هي التي سيُعمل لها فيديو.", "Tap a colour to leave it out or put it back. The dark ones get a video.")}
+                    </p>
+                  )}
                   <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                     <Film className="h-3 w-3" />
                     {tr("اللون الذي عليه هذه العلامة له فيديو حالياً، والجديد سيأخذ مكانه.", "A colour with this mark already has a video; the new one will take its place.")}
@@ -266,7 +293,7 @@ export function ProductVideoDialog({
                   <Field
                     label={tr("نوع الفيديو", "Video style")}
                     hint={
-                      style === "tryOn" ? tr("القطعة ملبوسة في ستوديو مضيء، لقطة قريبة بدون وجه.", "The piece is worn in a bright studio, close shot, no face.")
+                      style === "tryOn" ? tr("موديل تلبس القطعة في ستوديو أو بوتيك ناعم.", "A model wears the piece in a soft studio or boutique.")
                       : style === "hands" ? tr("يدان تعرضان القطعة عن قرب.", "Hands show the piece up close.")
                       : style === "unbox" ? tr("القطعة تخرج من علبة عليها شعار لوسيرن بوتيك.", "The piece comes out of a box with the Lucerne Boutique logo.")
                       : tr("صورتك نفسها مع حركة كاميرا هادئة. الأدق لتفاصيل القطعة.", "Your own photo with a slow camera move. The most exact for product details.")
@@ -283,12 +310,25 @@ export function ProductVideoDialog({
                   <Field label={tr("المدة", "Length")}>
                     <Choice value={seconds} onChange={setSeconds} testId="choice-video-seconds" options={[5, 6, 8].map((value) => ({ value, label: tr(`${value} ث`, `${value}s`) }))} />
                   </Field>
+                  {hasSeveralColours && (
+                    <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3">
+                      <span className="min-w-0">
+                        <span className="block text-xs font-medium">{tr("كل الألوان في فيديو واحد", "All colours in one video")}</span>
+                        <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
+                          {combine
+                            ? tr("شغّال: فيديو واحد للمنتج تظهر فيه الألوان المختارة كلها بوضوح، وينزل عليها كلها.", "On: one video per product showing all the chosen colours clearly, placed on each of them.")
+                            : tr("مطفي: فيديو منفصل لكل لون مختار، من صورته.", "Off: a separate video for each chosen colour, from its own photo.")}
+                        </span>
+                      </span>
+                      <Switch className="mt-0.5 shrink-0" checked={combine} onCheckedChange={setCombine} data-testid="switch-video-combine" />
+                    </label>
+                  )}
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    {tr("فيديو لكل لون من صورته الأصلية، وينزل على المنتج في الموقع تلقائياً. ما عجبك؟ احذفه من تبويب الفيديوهات.", "One video per colour from its original photo, put on the product automatically. Don't like one? Delete it in the Videos tab.")}
+                    {tr("الفيديو ينزل على المنتج في الموقع تلقائياً. ما عجبك؟ احذفه من تبويب الفيديوهات.", "The video goes onto the product automatically. Don't like one? Delete it in the Videos tab.")}
                   </p>
                   <Button type="button" className="h-11 w-full gap-2" disabled={!count || starting} onClick={start} data-testid="button-video-generate">
                     {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clapperboard className="h-4 w-4" />}
-                    {tr(`توليد ${count} فيديو`, `Generate ${count} video(s)`)}
+                    {count ? tr(`توليد ${count} فيديو`, `Generate ${count} video(s)`) : tr("اختر لوناً واحداً على الأقل", "Choose at least one colour")}
                   </Button>
                 </section>
               </div>

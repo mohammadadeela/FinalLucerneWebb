@@ -19,6 +19,7 @@ import sharp from "sharp";
 import {
   buildInstagramImagePrompt,
   buildProductVideoPrompt,
+  buildColourLineupPrompt,
   buildStyleFramePrompt,
   buildStyleVideoPrompt,
   describeProduct,
@@ -205,10 +206,12 @@ async function publishVideo(
     if (current && current !== row.url && !replace) return { published: false, reason: "has_video" };
     payload = { videoUrl: row.url };
   } else {
-    const index = Number(row.variant_index) || 0;
-    const variant = variants[index];
-    if (!variant) throw new Error("This colour no longer exists on the product.");
-    const media: any[] =
+    // A video that shows several colours goes on every one of those colours.
+    const listed: number[] = Array.isArray(row.meta?.variantIndexes) ? row.meta.variantIndexes.map(Number).filter((i: number) => Number.isInteger(i) && i >= 0) : [];
+    const indexes = listed.length ? listed : [Number(row.variant_index) || 0];
+    const present = indexes.filter((i) => variants[i]);
+    if (!present.length) throw new Error("This colour no longer exists on the product.");
+    const mediaOf = (variant: any): any[] =>
       Array.isArray(variant.media) && variant.media.length
         ? variant.media
         : [
@@ -217,14 +220,17 @@ async function publishVideo(
               .filter((url) => validUrl(url) && url !== variant.mainImage)
               .map((url) => ({ type: "image", url })),
           ];
-    const others = media.filter((m) => m?.type === "video" && m.url !== row.url);
-    if (others.length && !replace) return { published: false, reason: "has_video" };
-    // The gallery plays one video per colour, so the new clip takes the place of the old one.
-    variant.media = [
-      ...media.filter((m) => m?.type !== "video"),
-      { type: "video", url: row.url, poster: row.poster || deps.derivePoster(row.url), aiGenerated: true },
-    ];
-    payload = { colorVariants: variants, ...(index === 0 ? { videoUrl: row.url } : {}) };
+    if (!replace && present.some((i) => mediaOf(variants[i]).some((m) => m?.type === "video" && m.url !== row.url))) {
+      return { published: false, reason: "has_video" };
+    }
+    for (const i of present) {
+      // The gallery plays one video per colour, so the new clip takes the place of the old one.
+      variants[i].media = [
+        ...mediaOf(variants[i]).filter((m) => m?.type !== "video"),
+        { type: "video", url: row.url, poster: row.poster || deps.derivePoster(row.url), aiGenerated: true },
+      ];
+    }
+    payload = { colorVariants: variants, ...(present.includes(0) ? { videoUrl: row.url } : {}) };
   }
 
   const clean = await deps.normalizeProductPayload(payload, { partial: true });
@@ -453,15 +459,35 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
     const quality = asQuality(req.body?.quality);
     const autoPublish = req.body?.autoPublish === true;
     const replace = req.body?.replace === true;
+    const combineColours = req.body?.combineColours === true;
 
     try {
       await ensureTable();
       const started: any[] = [];
-      for (const item of items) {
+      // One video per colour, or (combineColours) one video per product showing all its chosen colours.
+      const MAX_COLOURS = 6;
+      const units: { productId: number; variantIndex: number; all: number[] }[] = [];
+      if (combineColours) {
+        const byProduct = new Map<number, number[]>();
+        for (const it of items) byProduct.set(it.productId, [...(byProduct.get(it.productId) || []), it.variantIndex]);
+        for (const [productId, indexes] of byProduct) {
+          const sorted = [...indexes].sort((a, b) => a - b);
+          // More colours than fit clearly in one frame are split into several videos.
+          for (let i = 0; i < sorted.length; i += MAX_COLOURS) {
+            const chunk = sorted.slice(i, i + MAX_COLOURS);
+            units.push({ productId, variantIndex: chunk[0], all: chunk });
+          }
+        }
+      } else {
+        for (const it of items) units.push({ productId: it.productId, variantIndex: it.variantIndex, all: [it.variantIndex] });
+      }
+      for (const item of units) {
         const product: any = await storage.getProduct(item.productId);
         if (!product) continue;
+        const multi = item.all.length > 1;
         const colour = colourName(product, item.variantIndex);
-        const label = colour ? `${product.name} — ${colour}` : String(product.name);
+        const colourNames = item.all.map((i) => colourName(product, i) || `colour ${i + 1}`);
+        const label = multi ? `${product.name} — ${colourNames.join(" + ")}` : colour ? `${product.name} — ${colour}` : String(product.name);
         const jobId = addJob(label, async () => {
           const fresh: any = (await storage.getProduct(item.productId)) || product;
           const photoUrl =
@@ -482,24 +508,45 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
           let firstFrame: Buffer;
           let prompt: string;
           // Every photo of this colour: what the quality controller compares against.
-          const photoUrls = [photoUrl, ...colourPhotos(fresh, item.variantIndex).filter((u) => u !== photoUrl)].slice(0, 4);
           const references: Buffer[] = [];
-          for (const u of photoUrls) {
-            try {
-              references.push(await loadMedia(u));
-            } catch {
-              /* a side photo that cannot be loaded is simply left out */
+          const shownColours: string[] = [];
+          const shownIndexes: number[] = [];
+          if (multi) {
+            // One photo per colour, in order; a colour without a usable photo is left out of the video.
+            for (let k = 0; k < item.all.length; k++) {
+              const idx = item.all[k];
+              const u = (source === "original" ? await originalPhoto(fresh, idx) : mainPhoto(fresh, idx)) || mainPhoto(fresh, idx);
+              if (!u) continue;
+              try {
+                references.push(await loadMedia(u));
+                shownColours.push(colourNames[k]);
+                shownIndexes.push(idx);
+              } catch {
+                /* this colour's photo could not be loaded */
+              }
             }
+            if (references.length < 2) throw new Error("Fewer than two colours of this product have a photo, so they cannot be shown together.");
+          } else {
+            const photoUrls = [photoUrl, ...colourPhotos(fresh, item.variantIndex).filter((u) => u !== photoUrl)].slice(0, 4);
+            for (const u of photoUrls) {
+              try {
+                references.push(await loadMedia(u));
+              } catch {
+                /* a side photo that cannot be loaded is simply left out */
+              }
+            }
+            if (!references.length) throw new Error("This colour's photo could not be loaded.");
+            shownIndexes.push(item.variantIndex);
           }
-          if (!references.length) throw new Error("This colour's photo could not be loaded.");
+          const together = shownColours.length > 1;
           let frameScore: number | null = null;
 
-          if (style === "photo") {
+          if (style === "photo" && !together) {
             firstFrame = await buildSiteFirstFrame(references[0]);
             prompt = buildProductVideoPrompt({ isFootwear, motion, seconds, centralCrop: true });
           } else {
             // Step 1: write down what the product really looks like.
-            const spec = await describeProduct(references, kind);
+            const spec = await describeProduct(together ? references.slice(0, 1) : references, kind);
             const logo = style === "unbox"
               ? await sharp(buildWatermarkSvg(900)).flatten({ background: "#ffffff" }).extend({ top: 60, bottom: 60, left: 60, right: 60, background: "#ffffff" }).png().toBuffer()
               : null;
@@ -512,11 +559,13 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             const set = REEL_SETS[Math.floor(Math.random() * REEL_SETS.length)];
             for (let attempt = 1; attempt <= 3; attempt++) {
               const frame = await generateStudioImage(
-                buildStyleFramePrompt({ style, kind, photoCount: references.length, hasLogo: !!logo, spec, fixes, set }),
-                logo ? [...references, logo] : references,
+                style === "photo"
+                  ? buildColourLineupPrompt({ kind, colours: shownColours, set, spec, fixes })
+                  : buildStyleFramePrompt({ style, kind, photoCount: references.length, hasLogo: !!logo, spec, fixes, set, colours: shownColours }),
+                logo && style !== "photo" ? [...references, logo] : references,
                 "9:16",
               );
-              const verdict = await judgeFidelity(references, frame, "still");
+              const verdict = await judgeFidelity(references, frame, "still", shownColours);
               if (!verdict) {
                 // No controller available: use this frame as it is.
                 if (!best) best = { frame, score: -1 };
@@ -538,7 +587,10 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             }
             firstFrame = await sharp(best.frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
             // Step 3: the video model animates that frame.
-            prompt = buildStyleVideoPrompt({ style, kind, seconds, spec });
+            prompt =
+              style === "photo"
+                ? buildProductVideoPrompt({ isFootwear, motion: "drift", seconds, centralCrop: true, productCount: shownColours.length })
+                : buildStyleVideoPrompt({ style, kind, seconds, spec, colourCount: shownColours.length });
           }
 
           // The clip is checked too: if the product changes while moving, it is made once more.
@@ -546,13 +598,13 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
           let videoScore: number | null = null;
           for (let attempt = 1; attempt <= 2; attempt++) {
             const strip = await videoFrameStrip(raw, seconds);
-            const verdict = strip ? await judgeFidelity(references, strip, "video frames") : null;
+            const verdict = strip ? await judgeFidelity(references, strip, "video frames", shownColours) : null;
             if (!verdict) break;
             if (videoScore === null || verdict.score > videoScore) videoScore = verdict.score;
             if (verdict.score >= 8 || attempt === 2) break;
             const second = await generateStudioVideo({ firstFrame, prompt, seconds, quality });
             const secondStrip = await videoFrameStrip(second, seconds);
-            const secondVerdict = secondStrip ? await judgeFidelity(references, secondStrip, "video frames") : null;
+            const secondVerdict = secondStrip ? await judgeFidelity(references, secondStrip, "video frames", shownColours) : null;
             if (secondVerdict && secondVerdict.score > verdict.score) {
               raw = second;
               videoScore = secondVerdict.score;
@@ -570,7 +622,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             product_id: item.productId,
             variant_index: item.variantIndex,
             label,
-            meta: { source, sourceUrl: photoUrl, motion, style, kind, seconds, quality, width: size.width, height: size.height, frameScore, videoScore },
+            meta: { source, sourceUrl: photoUrl, motion, style, kind, variantIndexes: shownIndexes, colours: shownColours, seconds, quality, width: size.width, height: size.height, frameScore, videoScore },
           });
           if (lowFidelity) return { media: row, publishSkipped: "low_fidelity" };
           if (autoPublish) {

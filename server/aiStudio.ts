@@ -325,7 +325,7 @@ const VIDEO_ACTIONS: Record<ProductKind, Record<Styled, string>> = {
 };
 
 /** Prompt for the opening frame of a styled video. The attached photos are the same product; a logo image may follow them. */
-export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[]; set?: string }): string {
+export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[]; set?: string; colours?: string[] }): string {
   const lid = opts.hasLogo
     ? " The box lid lies beside it, face up, printed with the logo from the LAST attached image, copied exactly: the butterfly mark with the words LUCERNE BOUTIQUE below it, flat and centred on the lid, spelled exactly like that."
     : " The box lid lies beside it, face up and completely plain.";
@@ -334,8 +334,33 @@ export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; 
     hands: FRAME_SCENES[opts.kind].hands,
     unbox: FRAME_SCENES[opts.kind].unbox + lid,
   };
+  const colours = (opts.colours || []).filter(Boolean);
+  const many = colours.length > 1;
+  const one = opts.kind === "shoes" ? "pair" : "piece";
+  // All the colours of one model in a single shot: one is worn or held, the others are laid out beside it.
+  const others: Record<Styled, string> = {
+    tryOn: opts.kind === "shoes"
+      ? `She wears the FIRST colour. The other ${colours.length - 1} colour(s) stand on the floor right beside her feet as complete pairs, in a neat staggered row, each pair fully visible, in focus and not overlapping another.`
+      : opts.kind === "bag" || opts.kind === "belt"
+        ? `She carries or wears the FIRST colour. The other ${colours.length - 1} colour(s) are displayed right beside her on a low pale plinth, side by side, each one fully visible, in focus and not overlapping another.`
+        : `She wears the FIRST colour. The other ${colours.length - 1} colour(s) hang right beside her on a slim clothes rail, each on its own hanger, spaced apart, facing the camera, fully visible from top to hem and in focus.`,
+    hands: `The hands hold or touch the FIRST colour. The other ${colours.length - 1} colour(s) are arranged right beside it in a neat row, each ${one} fully visible, in focus and not overlapping another.`,
+    unbox: `The box holds the FIRST colour. The other ${colours.length - 1} colour(s) lie on the floor right beside the box on their own sheets of white tissue paper, in a neat row, each ${one} fully visible and not overlapping another.`,
+  };
+  const colourBlock = many
+    ? `
+═══════════════════════════════════════
+🎨 ALL ${colours.length} COLOURS IN ONE SHOT:
+═══════════════════════════════════════
+- This model is sold in ${colours.length} colours. The attached product photos are in this order, one photo per colour: ${colours.map((c, i) => `image ${i + 1} = ${c}`).join("; ")}.
+- Show exactly ${colours.length} ${opts.kind === "shoes" ? "pairs" : "pieces"}: one of each colour. No colour twice, none missing, no extra colour invented.
+- ${others[opts.style]}
+- Every colour is the SAME design: identical shape, size, material and details. ONLY the colour differs, and each colour matches its own photo exactly (hue, depth and sheen). Never mix colours between pieces and never blend two colours into one piece.
+- All ${colours.length} colours are clearly visible at the same time, evenly lit, with a little space between them, so a customer can count and compare them at a glance.
+`
+    : "";
   const lens = opts.kind === "shoes" ? "camera at knee height" : opts.kind === "belt" || opts.kind === "bag" ? "camera at waist height" : "camera at chest height, far enough back to show the whole piece";
-  return `You are re-shooting a REAL product for an online boutique. The first ${opts.photoCount > 1 ? `${opts.photoCount} attached images are photos of the SAME physical product from different sides` : "attached image is a photo of the product"}. It is a ${KIND_NOUN[opts.kind]} and will be shipped to paying customers exactly as shown. Product accuracy is your HIGHEST PRIORITY — higher than styling, higher than aesthetics.
+  return `You are re-shooting a REAL product for an online boutique. The first ${many ? `${opts.photoCount} attached images are photos of the SAME model in ${colours.length} different colours, one photo per colour` : opts.photoCount > 1 ? `${opts.photoCount} attached images are photos of the SAME physical product from different sides` : "attached image is a photo of the product"}. It is a ${KIND_NOUN[opts.kind]} and will be shipped to paying customers exactly as shown. Product accuracy is your HIGHEST PRIORITY — higher than styling, higher than aesthetics.
 
 ${FIDELITY_RULES}
 
@@ -353,13 +378,40 @@ ${FIDELITY_RULES}
   • real contact: soft true shadows under the shoes and hands, the floor slightly reflecting, fabric and leather creasing where they bend.
   • real camera: natural daylight with its small imperfections, true colours, slight sensor grain, natural depth of field. No HDR glow, no over-sharpening, no perfect symmetry, no studio-render lighting.
 - No text anywhere${opts.style === "unbox" && opts.hasLogo ? " except the logo on the box lid" : ""}. No other brand names, no price tags, no watermarks, no captions.
-- Vertical 9:16 frame. The top eighth and the bottom eighth of the picture are trimmed off later, so keep her head, the whole product and everything important inside the middle three quarters of the height, with only background or floor in the top and bottom strips.
+${colourBlock}- Vertical 9:16 frame. The top eighth and the bottom eighth of the picture are trimmed off later, so keep her head, the whole product and everything important inside the middle three quarters of the height, with only background or floor in the top and bottom strips.
 ${opts.spec ? `\n═══════════════════════════════════════\n📋 PRODUCT SPEC — written from the real photos. Every point must be true in your image:\n═══════════════════════════════════════\n${opts.spec}\n` : ""}${opts.fixes?.length ? `\n⚠️ YOUR PREVIOUS ATTEMPT WAS REJECTED by quality control because the product did not match the photos. Fix exactly these points this time:\n${opts.fixes.map((f) => `- ${f}`).join("\n")}\n` : ""}
 ${TECH_QUALITY}`;
 }
 
+/** Opening frame for the product-only style when all colours share one video: a clean line-up, nobody in the shot. */
+export function buildColourLineupPrompt(opts: { kind: ProductKind; colours: string[]; set: string; spec?: string; fixes?: string[] }): string {
+  const n = opts.colours.length;
+  const unit = opts.kind === "shoes" ? "pairs" : "pieces";
+  const layout =
+    opts.kind === "shoes" ? "standing on the floor in a neat, slightly staggered row, each pair angled the same way to show its side profile"
+    : opts.kind === "bag" ? "standing upright side by side on a low pale plinth, fronts to the camera"
+    : opts.kind === "belt" ? "laid in neat loose coils side by side on a pale stone surface, buckles on top"
+    : "hanging side by side on a slim clothes rail, each on its own hanger, spaced apart, fronts to the camera, visible from top to hem";
+  return `You are re-shooting a REAL product for an online boutique. The ${n} attached images are photos of the SAME model in ${n} different colours, one photo per colour, in this order: ${opts.colours.map((c, i) => `image ${i + 1} = ${c}`).join("; ")}. Product accuracy is your HIGHEST PRIORITY.
+
+${FIDELITY_RULES}
+
+═══════════════════════════════════════
+📸 THE NEW SHOT — all ${n} colours together, no people:
+═══════════════════════════════════════
+- Scene: ${opts.set}. Soft, feminine, uncluttered, like a professional studio or boutique.
+- Exactly ${n} ${unit}, one of each colour, ${layout}. No colour twice, none missing, none invented.
+- Every colour is the SAME design; ONLY the colour differs, and each matches its own photo exactly. Never mix or blend colours between pieces.
+- All ${n} are sharp, evenly lit, fully visible, not overlapping, with a little space between them.
+- No people, no hands, no text, no logos other than what is on the product, no price tags.
+- Vertical 9:16 frame. The top eighth and the bottom eighth are trimmed off later: keep every piece inside the middle three quarters of the height.
+${opts.spec ? `\nPRODUCT SPEC (true for every colour, apart from the colour itself):\n${opts.spec}\n` : ""}${opts.fixes?.length ? `\n⚠️ YOUR PREVIOUS ATTEMPT WAS REJECTED by quality control. Fix exactly these points:\n${opts.fixes.map((f) => `- ${f}`).join("\n")}\n` : ""}
+${TECH_QUALITY}`;
+}
+
 /** Prompt that animates the opening frame made by buildStyleFramePrompt. */
-export function buildStyleVideoPrompt(opts: { style: Styled; kind: ProductKind; seconds: number; spec?: string }): string {
+export function buildStyleVideoPrompt(opts: { style: Styled; kind: ProductKind; seconds: number; spec?: string; colourCount?: number }): string {
+  const many = (opts.colourCount || 1) > 1;
   const action = VIDEO_ACTIONS[opts.kind][opts.style] + (opts.style === "unbox" ? " The lid with its logo stays where it is, flat and unchanged." : "");
   const soft = opts.kind !== "shoes" && opts.kind !== "bag" && opts.kind !== "belt";
   return `You are animating the attached image, which is the FIRST FRAME of a short product video for an online boutique. The product in it is a REAL item that will be shipped to paying customers. Product accuracy is your HIGHEST PRIORITY — higher than motion, higher than aesthetics.
@@ -369,7 +421,7 @@ export function buildStyleVideoPrompt(opts: { style: Styled; kind: ProductKind; 
 ═══════════════════════════════════════
 - The product must look identical in every frame to how it looks in the first frame: same shape, length, colour, material, stitching, hardware, prints and trims. It never morphs, flickers, melts, stretches, changes colour, or gains or loses a detail. ${soft ? "The fabric moves and folds like that real fabric does, but its print, embroidery, seams and buttons stay exactly where they are and its length and cut never change." : "It keeps its real stiffness: leather, soles, buckles and bag bodies do not bend like cloth."}
 - Movement: ${action} All movement is calm, small and natural, like a professional fashion film.
-- Do not turn the product far enough to reveal a side that is not visible in the first frame.
+${many ? `- The first frame shows ${opts.colourCount} colours of the same model. All ${opts.colourCount} stay in the frame, in their places, fully visible and unchanged for the whole clip: none disappears, none is added, none changes colour, and colours never swap or bleed between pieces. Only the one being worn or held moves. Near the end the camera drifts slowly across the other colours so each one is seen clearly.\n` : ""}- Do not turn the product far enough to reveal a side that is not visible in the first frame.
 - Hands always have five natural fingers. If a face is in the first frame it stays the same person in every frame, with a calm, natural expression, natural blinking and no talking; her features never change. If no face is in the first frame, none enters.
 - The camera is handheld but very steady, with at most a slight slow push-in. Same room, same light, same floor from start to end. Nothing new enters the scene.
 - Any logo or lettering visible in the first frame stays exactly as it is, sharp and unchanged. No new text, captions, stickers or graphics appear.
@@ -437,14 +489,15 @@ export interface FidelityVerdict { score: number; issues: string[]; realism: num
  * Compares a generated picture (the LAST image) with the real product photos (all images before it).
  * Returns null when the check could not be run.
  */
-export async function judgeFidelity(photos: Buffer[], candidate: Buffer, candidateIs: "still" | "video frames"): Promise<FidelityVerdict | null> {
+export async function judgeFidelity(photos: Buffer[], candidate: Buffer, candidateIs: "still" | "video frames", colours: string[] = []): Promise<FidelityVerdict | null> {
+  const many = colours.length > 1;
   const data = await visionJson(
-    `You are the strict quality controller of an online fashion boutique. The first ${photos.length} image(s) are REAL photos of a product. The LAST image is ${candidateIs === "still" ? "an AI-generated picture" : "a strip of frames taken from an AI-generated video"} that is supposed to show that same product. A customer will receive the real product, so any difference is a false advertisement.
-Compare ONLY the product itself (ignore background, model, hands, lighting, pose and camera angle). Check: overall shape and proportions; exact colour; material and surface texture; toe shape, heel shape and height, sole thickness and tread; shaft height; closures (zips, elastic, buckles, straps, laces, bows) and their positions; stitching and panel lines; trims and hardware; anything added that the real product does not have; anything missing.${candidateIs === "video frames" ? " Also check that the product looks the same in every frame of the strip and never deforms." : ""}
+    `You are the strict quality controller of an online fashion boutique. The first ${photos.length} image(s) are REAL photos of ${many ? `one model in ${colours.length} colours, one photo per colour (${colours.join(", ")})` : "a product"}. The LAST image is ${candidateIs === "still" ? "an AI-generated picture" : "a strip of frames taken from an AI-generated video"} that is supposed to show that same product. A customer will receive the real product, so any difference is a false advertisement.
+${many ? `The generated picture must show exactly ${colours.length} pieces, one of each colour. Count them. Score 5 or less if a colour is missing, repeated, invented, or blended into another, or if any colour is hidden or cut off. Check each colour against its own photo.\n` : ""}Compare ONLY the product itself (ignore background, model, hands, lighting, pose and camera angle). Check: overall shape and proportions; exact colour; material and surface texture; toe shape, heel shape and height, sole thickness and tread; shaft height; closures (zips, elastic, buckles, straps, laces, bows) and their positions; stitching and panel lines; trims and hardware; anything added that the real product does not have; anything missing.${candidateIs === "video frames" ? " Also check that the product looks the same in every frame of the strip and never deforms." : ""}
 Separately, judge REALISM of the whole picture: would a viewer believe it is real camera footage of a real person? Mark it down for waxy or over-smooth skin, wrong hands or fingers, impossible anatomy, a rendered or illustrated look, or objects that melt into each other.
 Return JSON: {"score": <integer 0-10>, "realism": <integer 0-10>, "issues": ["short, concrete instruction to fix one difference or one unreal-looking thing", ...]}.
 Scoring: 10 = indistinguishable product; 8-9 = same product, only tiny differences a customer would not notice; 6-7 = clearly the same style but a visible detail is wrong; 0-5 = a different product. Be strict. List at most 6 issues, most important first; an empty list only if the score is 10.`,
-    [...photos.slice(0, 4), candidate],
+    [...photos.slice(0, many ? 6 : 4), candidate],
   );
   const score = Number(data?.score);
   if (!Number.isFinite(score)) return null;
