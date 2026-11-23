@@ -22,6 +22,7 @@ import {
   buildStyleFramePrompt,
   buildStyleVideoPrompt,
   describeProduct,
+  detectProductKind,
   judgeFidelity,
   videoFrameStrip,
   buildSiteFirstFrame,
@@ -468,6 +469,14 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             validUrl(fresh.mainImage);
           if (!photoUrl) throw new Error("This colour has no photo to make a video from.");
           const isFootwear = Number(fresh.categoryId) === SHOES_CATEGORY_ID;
+          // Dress, abaya, bag, belt...: each kind is worn, held and unboxed in its own way.
+          const [allCategories, allSubcategories] = await Promise.all([storage.getCategories(), storage.getSubcategories()]);
+          const category: any = (allCategories as any[]).find((c) => c.id === fresh.categoryId);
+          const subIds: number[] = [...(Array.isArray(fresh.subcategoryIds) ? fresh.subcategoryIds : []), ...(fresh.subcategoryId ? [fresh.subcategoryId] : [])];
+          const subs: any[] = (allSubcategories as any[]).filter((sub) => subIds.includes(sub.id));
+          // The product's own name and subcategory say most; the main category is the fallback.
+          const specific = detectProductKind([fresh.name, fresh.nameAr, ...subs.flatMap((sub) => [sub.name, sub.nameAr])]);
+          const kind = specific !== "clothes" ? specific : detectProductKind([category?.name, category?.nameAr, category?.slug], isFootwear);
           const size = formatSize("site", quality);
           let firstFrame: Buffer;
           let prompt: string;
@@ -489,7 +498,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             prompt = buildProductVideoPrompt({ isFootwear, motion, seconds, centralCrop: true });
           } else {
             // Step 1: write down what the product really looks like.
-            const spec = await describeProduct(references, isFootwear);
+            const spec = await describeProduct(references, kind);
             const logo = style === "unbox"
               ? await sharp(buildWatermarkSvg(900)).flatten({ background: "#ffffff" }).extend({ top: 60, bottom: 60, left: 60, right: 60, background: "#ffffff" }).png().toBuffer()
               : null;
@@ -500,7 +509,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             let bestRank = -1;
             for (let attempt = 1; attempt <= 3; attempt++) {
               const frame = await generateStudioImage(
-                buildStyleFramePrompt({ style, isFootwear, photoCount: references.length, hasLogo: !!logo, spec, fixes }),
+                buildStyleFramePrompt({ style, kind, photoCount: references.length, hasLogo: !!logo, spec, fixes }),
                 logo ? [...references, logo] : references,
                 "9:16",
               );
@@ -526,7 +535,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             }
             firstFrame = await sharp(best.frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
             // Step 3: the video model animates that frame.
-            prompt = buildStyleVideoPrompt({ style, isFootwear, seconds, spec });
+            prompt = buildStyleVideoPrompt({ style, kind, seconds, spec });
           }
 
           // The clip is checked too: if the product changes while moving, it is made once more.
@@ -558,7 +567,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             product_id: item.productId,
             variant_index: item.variantIndex,
             label,
-            meta: { source, sourceUrl: photoUrl, motion, style, seconds, quality, width: size.width, height: size.height, frameScore, videoScore },
+            meta: { source, sourceUrl: photoUrl, motion, style, kind, seconds, quality, width: size.width, height: size.height, frameScore, videoScore },
           });
           if (lowFidelity) return { media: row, publishSkipped: "low_fidelity" };
           if (autoPublish) {

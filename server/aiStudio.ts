@@ -196,29 +196,142 @@ FINAL REMINDER — the single most important rule: ${subject} must stay perfectl
 export type VideoStyle = "photo" | "tryOn" | "hands" | "unbox";
 
 const REEL_SET =
-  "a bright, minimal fashion studio: smooth light-grey polished concrete floor, plain pale walls, tall industrial windows softly out of focus in the background, soft natural daylight from the side, no clutter. Shot on a phone-style 26mm lens at knee height, shallow depth of field, like a premium shoe boutique's Instagram reel";
+  "a bright, minimal fashion studio: smooth light-grey polished concrete floor, plain pale walls, tall industrial windows softly out of focus in the background, soft natural daylight from the side, no clutter. Shot on a phone-style 26mm lens, shallow depth of field, like a premium fashion boutique's Instagram reel";
+
+/** What kind of piece a product is. Each kind is worn, held and unboxed in its own way. */
+export type ProductKind = "shoes" | "dress" | "abaya" | "top" | "bottom" | "bag" | "belt" | "clothes";
+
+/** Works out the kind from the names of the product, its category and its subcategories (Arabic or English). */
+export function detectProductKind(texts: Array<string | null | undefined>, isShoesCategory = false): ProductKind {
+  const t = texts.filter(Boolean).join(" ").toLowerCase();
+  const has = (re: RegExp) => re.test(t);
+  if (has(/عباي|عباء|abaya|جلباب|jilbab|kaftan|قفطان/)) return "abaya";
+  if (has(/حزام|أحزمة|احزمة|أقشط|اقشط|قشاط|\bbelts?\b/)) return "belt";
+  if (has(/حقيب|حقائب|شنط|شنت|جزدان|محفظ|\bbags?\b|handbag|clutch|\btote|purse|wallet/)) return "bag";
+  if (isShoesCategory || has(/حذاء|أحذية|احذية|شوز|بوت|كعب|صندل|سنيكر|سنيكرز|بابوج|شبشب|shoe|boot|heel|sandal|sneaker|loafer|slipper|mule|pump/)) return "shoes";
+  if (has(/فستان|فساتين|dress|gown/)) return "dress";
+  if (has(/بنطلون|بنطال|بناطيل|تنور|تنانير|جينز|شورت|\bpants\b|trouser|jeans|skirt|\bshorts\b|legging/)) return "bottom";
+  if (has(/بلوز|قميص|قمصان|تيشيرت|كنز|بلوفر|جاكيت|جاكت|سترة|معطف|كارديغان|\btops?\b|shirt|blouse|sweater|jacket|coat|cardigan|hoodie|blazer/)) return "top";
+  return "clothes";
+}
+
+const KIND_NOUN: Record<ProductKind, string> = {
+  shoes: "pair of shoes", dress: "dress", abaya: "abaya", top: "top", bottom: "trousers or skirt", bag: "bag", belt: "belt", clothes: "garment",
+};
+
+// The boutique dresses modestly: clothing shots never show bare legs, shoulders or midriff
+// beyond what the garment itself is cut to show, and a face is never in the frame.
+const MODEST = "Her face is never in the frame. Styling is modest and elegant: plain neutral layers under or with the piece where needed, nothing revealing, no bare midriff.";
+
+type Styled = Exclude<VideoStyle, "photo">;
+
+const FRAME_SCENES: Record<ProductKind, Record<Styled, string>> = {
+  shoes: {
+    tryOn: "A woman is WEARING the pair. Frame from just below the knee down to the floor: bare ankles, sheer tights or the hem of plain trousers, as suits the shoe. Feet standing naturally on the floor, one foot slightly forward and angled so the side profile of the shoe from the photo is clearly visible. No face, no upper body.",
+    hands: "A woman's hands with neat natural nails hold ONE shoe of the pair gently by the heel and the toe, a little above the floor, showing the same side as the photo. The other shoe of the pair stands on the floor just behind it, slightly out of focus. No face, no body beyond the forearms.",
+    unbox: "Top-down view of the floor. An open shoe box in soft blush pink lies on the floor with white tissue paper inside. The pair rests in the tissue paper, fully visible. A woman's hands rest on the edges of the box, about to lift one shoe out.",
+  },
+  dress: {
+    tryOn: `A woman is WEARING the dress, standing relaxed with one hand lightly holding the skirt. Frame from the shoulders down to the hem so the whole dress is visible, its full length and how it falls. ${MODEST} Simple plain shoes that do not draw attention.`,
+    hands: "The dress hangs on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds the side of the skirt out a little to show the fabric and how it drapes. The whole dress is visible. No face, no body beyond the forearm.",
+    unbox: "Top-down view of the floor. A wide, shallow gift box in soft blush pink lies open with white tissue paper inside. The dress lies neatly folded in the tissue, its neckline and the most distinctive part of its fabric clearly visible. A woman's hands rest on the tissue, about to unfold it.",
+  },
+  abaya: {
+    tryOn: `A woman is WEARING the abaya, standing gracefully, one hand lightly lifting the edge of the sleeve or the front panel. Frame from the shoulders down to the floor so the full length, the sleeves and the way the fabric flows are visible. ${MODEST} The abaya covers her fully to the ankles and wrists, exactly as it is cut; only her hands show. Plain closed shoes barely visible under the hem.`,
+    hands: "The abaya hangs full length on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds the sleeve out to show its cut, its trim and the weight of the fabric. The whole abaya is visible. No face, no body beyond the forearm.",
+    unbox: "Top-down view of the floor. A wide, shallow gift box in soft blush pink lies open with white tissue paper inside. The abaya lies neatly folded in the tissue with its neckline, front trim or embroidery on top and clearly visible. A woman's hands rest on the tissue, about to unfold it.",
+  },
+  top: {
+    tryOn: `A woman is WEARING the top, standing relaxed, one hand adjusting the cuff or the hem. Frame from the chin line or shoulders down to the hips so the whole top is visible. ${MODEST} Worn with plain neutral trousers.`,
+    hands: "The top hangs on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds the sleeve or the hem out a little to show the fabric. The whole top is visible. No face, no body beyond the forearm.",
+    unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The top lies neatly folded in the tissue with its neckline and front clearly visible. A woman's hands rest on the tissue, about to lift it.",
+  },
+  bottom: {
+    tryOn: `A woman is WEARING the piece, standing relaxed with one foot slightly forward. Frame from the waist down to the floor so its whole length, waistband and cut are visible. ${MODEST} Worn with a plain neutral top tucked in or ending at the waist, and simple plain shoes.`,
+    hands: "The piece hangs from a slim clip hanger on a plain clothes rail. A woman's hand with neat natural nails holds the side of the leg or the hem out a little to show the fabric and the cut. The whole piece is visible. No face, no body beyond the forearm.",
+    unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The piece lies neatly folded in the tissue with its waistband and front clearly visible. A woman's hands rest on the tissue, about to lift it.",
+  },
+  bag: {
+    tryOn: `A woman CARRIES the bag the way it is made to be carried (in the hand by its handle, on the forearm, or on the shoulder by its strap, whichever its design shows). Frame from the shoulder down to the knee, the bag at her side facing the camera with its front fully visible. ${MODEST} She wears plain neutral clothes in a soft colour that makes the bag stand out.`,
+    hands: "The bag stands upright on a low pale stone block. A woman's hands with neat natural nails rest on it: one steadies the handle, the other touches the clasp or the front flap. The whole bag is visible from the same side as the photo. No face, no body beyond the forearms.",
+    unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The bag lies in the tissue on its back, front side up and fully visible, handle or strap laid neatly. A woman's hands rest on the edges of the box, about to lift it out.",
+  },
+  belt: {
+    tryOn: `A woman is WEARING the belt at her waist over plain high-waisted trousers or a plain dress in a soft neutral colour. Close frame from just under the chest to the hips, the buckle centred and sharp, the whole width of the belt and the buckle fully visible. One hand rests near the buckle. ${MODEST}`,
+    hands: "A woman's hands with neat natural nails hold the belt in a gentle loose coil, the buckle on top facing the camera, above a pale stone surface. The buckle, the strap's surface, its edge stitching and its holes are sharp and fully visible. No face, no body beyond the forearms.",
+    unbox: "Top-down view of the floor. A small gift box in soft blush pink lies open with white tissue paper inside. The belt lies in a neat coil in the tissue with the buckle on top, fully visible. A woman's hands rest on the edges of the box, about to lift it out.",
+  },
+  clothes: {
+    tryOn: `A woman is WEARING the garment, standing relaxed. Frame so the whole garment is visible from its top edge to its hem. ${MODEST} Plain neutral pieces with it, and simple shoes.`,
+    hands: "The garment hangs on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds its side out a little to show the fabric. The whole garment is visible. No face, no body beyond the forearm.",
+    unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The garment lies neatly folded in the tissue with its most distinctive part clearly visible. A woman's hands rest on the tissue, about to lift it.",
+  },
+};
+
+const VIDEO_ACTIONS: Record<ProductKind, Record<Styled, string>> = {
+  shoes: {
+    tryOn: "She shifts her weight, lifts the front foot slightly and turns it a little left and right to show the shoe, then sets it down again and takes one small step in place. Her hand may come down once to smooth or adjust the top of the shoe.",
+    hands: "The hands slowly tilt the shoe a few degrees toward the camera and back, one thumb gently pressing the material to show its softness, then lower it toward the floor next to the other shoe.",
+    unbox: "The hands fold the tissue paper aside, lift one shoe slowly out of the box and hold it just above the box for the camera.",
+  },
+  dress: {
+    tryOn: "She sways gently from side to side so the skirt moves, lets the fabric fall from her hand, and makes a slow quarter turn and back. The fabric moves with its real weight.",
+    hands: "The hand lets the skirt fall, then runs slowly down the fabric and lifts the hem a little so it catches the light and drapes back.",
+    unbox: "The hands open the tissue paper and lift the top of the dress a little out of the box so the fabric unfolds softly.",
+  },
+  abaya: {
+    tryOn: "She takes one slow, small step forward and back so the abaya flows, then raises one arm slightly to let the sleeve open and fall. The fabric moves with its real weight and settles calmly.",
+    hands: "The hand lets the sleeve fall, then runs slowly along the front trim and lifts the fabric a little so it flows back into place.",
+    unbox: "The hands open the tissue paper and lift the top of the abaya a little out of the box so the fabric unfolds softly, the trim staying in view.",
+  },
+  top: {
+    tryOn: "She adjusts the cuff, smooths the front once with her hand and makes a small quarter turn and back, so the fabric moves naturally.",
+    hands: "The hand rubs the fabric lightly between two fingers, then lets it go and gently sways the hanger a few degrees.",
+    unbox: "The hands open the tissue paper and lift the top by its shoulders a little out of the box.",
+  },
+  bottom: {
+    tryOn: "She shifts her weight from one leg to the other, takes one small step in place and makes a slight quarter turn and back, so the fabric moves and falls naturally.",
+    hands: "The hand lets the fabric fall, runs down its side seam and lifts the hem a little so it drapes back.",
+    unbox: "The hands open the tissue paper and lift the piece by its waistband a little out of the box.",
+  },
+  bag: {
+    tryOn: "She lets the bag swing very slightly, turns it a few degrees toward the camera and back with her hand, and adjusts her grip on the handle or strap once.",
+    hands: "One hand lifts the handle and lets it fall softly, the other slides a fingertip over the clasp and the surface of the bag. The bag itself stays upright and does not open.",
+    unbox: "The hands fold the tissue paper aside, lift the bag slowly out of the box by its handle and hold it upright above the box, front to the camera.",
+  },
+  belt: {
+    tryOn: "Her hand touches the buckle, slides along the belt to the side and back, and she turns her waist a few degrees left and right so light travels over the buckle.",
+    hands: "The hands slowly uncoil a little of the belt and tilt the buckle a few degrees toward the camera and back so it catches the light.",
+    unbox: "The hands fold the tissue paper aside, lift the belt by its buckle slowly out of the box and let the strap hang straight.",
+  },
+  clothes: {
+    tryOn: "She shifts her weight gently, smooths the fabric once with one hand and makes a small quarter turn and back, so the fabric moves naturally.",
+    hands: "The hand rubs the fabric lightly between two fingers, then lets it go and gently sways the hanger a few degrees.",
+    unbox: "The hands open the tissue paper and lift the garment a little out of the box.",
+  },
+};
 
 /** Prompt for the opening frame of a styled video. The attached photos are the same product; a logo image may follow them. */
-export function buildStyleFramePrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[] }): string {
-  const scene: Record<Exclude<VideoStyle, "photo">, string> = {
-    tryOn: opts.isFootwear
-      ? "A woman is WEARING the pair. Frame from just below the knee down to the floor: bare legs or sheer tights only as far as the product allows, feet standing naturally on the floor, one foot slightly forward and angled so the side profile of the shoe from the photo is clearly visible. No face, no upper body."
-      : "A woman is WEARING the garment, standing relaxed. Frame from the chin or shoulders down to the knees or the hem, so the whole garment is visible. Her face is never in the frame. Plain, neutral underlayers and shoes that do not draw attention.",
-    hands: opts.isFootwear
-      ? "A woman's hands with neat natural nails hold ONE shoe of the pair gently by the heel and the toe, a little above the floor, showing the same side as the photo. The other shoe of the pair stands on the floor just behind it, slightly out of focus. No face, no body beyond the forearms."
-      : "A woman's hands with neat natural nails hold the garment up on a slim wooden hanger in front of the studio, the garment hanging straight and fully visible. No face, no body beyond the forearms.",
-    unbox: `Top-down view of the floor. An open ${opts.isFootwear ? "shoe box" : "gift box"} in soft blush pink lies on the floor with white tissue paper inside. The product rests in the tissue paper, fully visible. The box lid lies beside it, face up${opts.hasLogo ? ", printed with the logo from the LAST attached image, copied exactly: the butterfly mark with the words LUCERNE BOUTIQUE below it, flat and centred on the lid, spelled exactly like that" : ", completely plain with no print"}. A woman's hands rest on the edges of the box, about to lift the product out.`,
+export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[] }): string {
+  const lid = opts.hasLogo
+    ? " The box lid lies beside it, face up, printed with the logo from the LAST attached image, copied exactly: the butterfly mark with the words LUCERNE BOUTIQUE below it, flat and centred on the lid, spelled exactly like that."
+    : " The box lid lies beside it, face up and completely plain.";
+  const scene: Record<Styled, string> = {
+    tryOn: FRAME_SCENES[opts.kind].tryOn,
+    hands: FRAME_SCENES[opts.kind].hands,
+    unbox: FRAME_SCENES[opts.kind].unbox + lid,
   };
-  return `You are re-shooting a REAL product for an online boutique. The first ${opts.photoCount > 1 ? `${opts.photoCount} attached images are photos of the SAME physical product from different sides` : "attached image is a photo of the product"}. It will be shipped to paying customers exactly as shown. Product accuracy is your HIGHEST PRIORITY — higher than styling, higher than aesthetics.
+  const lens = opts.kind === "shoes" ? "at knee height" : opts.kind === "belt" || opts.kind === "bag" ? "at waist height" : "at chest height, far enough back to show the whole piece";
+  return `You are re-shooting a REAL product for an online boutique. The first ${opts.photoCount > 1 ? `${opts.photoCount} attached images are photos of the SAME physical product from different sides` : "attached image is a photo of the product"}. It is a ${KIND_NOUN[opts.kind]} and will be shipped to paying customers exactly as shown. Product accuracy is your HIGHEST PRIORITY — higher than styling, higher than aesthetics.
 
 ${FIDELITY_RULES}
 
 ═══════════════════════════════════════
 📸 THE NEW SHOT:
 ═══════════════════════════════════════
-- Scene: ${REEL_SET}.
+- Scene: ${REEL_SET}. Camera ${lens}.
 - ${scene[opts.style]}
-- The product is reproduced EXACTLY from the photos: same shape, proportions, colour, material and texture, same stitching, sole, heel, hardware, zips, straps and trims, in the same places. Use every attached product photo to get each side right. Do not simplify, restyle or "improve" anything. Do not add any detail the photos do not show.
+- The product is reproduced EXACTLY from the photos: same shape, proportions, length, colour, material and texture, same stitching, seams, hardware, zips, buttons, buckles, straps, prints, embroidery and trims, in the same places. Use every attached product photo to get each side right. Do not simplify, restyle or "improve" anything. Do not add any detail the photos do not show.
 - The product is the hero: sharp, well lit, fully inside the central part of the frame, with clear space above and below it.
 - REAL PEOPLE, REAL PHOTOGRAPH. This must look like an unedited frame from a phone video of a real woman in a real room, not like an illustration, a render or an AI picture:
   • skin with true texture: visible pores, fine lines on knuckles and knees, faint veins and tendons, tiny hairs, slight natural unevenness of tone, a small mole or freckle is welcome. Never smooth, waxy, airbrushed, glossy or doll-like.
@@ -233,31 +346,24 @@ ${TECH_QUALITY}`;
 }
 
 /** Prompt that animates the opening frame made by buildStyleFramePrompt. */
-export function buildStyleVideoPrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; seconds: number; spec?: string }): string {
-  const action: Record<Exclude<VideoStyle, "photo">, string> = {
-    tryOn: opts.isFootwear
-      ? "She shifts her weight, lifts the front foot slightly and turns it a little left and right to show the shoe, then sets it down again and takes one small step in place. Her hand may come down once to smooth or adjust the top of the shoe."
-      : "She shifts her weight gently, smooths the fabric once with one hand and makes a small quarter turn and back, so the fabric moves naturally.",
-    hands: opts.isFootwear
-      ? "The hands slowly tilt the shoe a few degrees toward the camera and back, one thumb gently pressing the material to show its softness, then lower it toward the floor next to the other shoe."
-      : "The hands gently sway the hanger a few degrees and one hand runs lightly down the fabric to show how it falls.",
-    unbox: "The hands fold the tissue paper aside, lift the product slowly out of the box and hold it just above the box for the camera. The lid with its logo stays where it is, flat and unchanged.",
-  };
+export function buildStyleVideoPrompt(opts: { style: Styled; kind: ProductKind; seconds: number; spec?: string }): string {
+  const action = VIDEO_ACTIONS[opts.kind][opts.style] + (opts.style === "unbox" ? " The lid with its logo stays where it is, flat and unchanged." : "");
+  const soft = opts.kind !== "shoes" && opts.kind !== "bag" && opts.kind !== "belt";
   return `You are animating the attached image, which is the FIRST FRAME of a short product video for an online boutique. The product in it is a REAL item that will be shipped to paying customers. Product accuracy is your HIGHEST PRIORITY — higher than motion, higher than aesthetics.
 
 ═══════════════════════════════════════
 🎬 VIDEO RULES:
 ═══════════════════════════════════════
-- The product must look identical in every frame to how it looks in the first frame: same shape, colour, material, stitching, sole, heel, hardware and trims. It never morphs, flickers, melts, stretches, changes colour, or gains or loses a detail. It keeps its real stiffness: leather and soles do not bend like cloth.
-- Movement: ${action[opts.style]} All movement is slow, small and natural, like real phone footage in a boutique.
+- The product must look identical in every frame to how it looks in the first frame: same shape, length, colour, material, stitching, hardware, prints and trims. It never morphs, flickers, melts, stretches, changes colour, or gains or loses a detail. ${soft ? "The fabric moves and folds like that real fabric does, but its print, embroidery, seams and buttons stay exactly where they are and its length and cut never change." : "It keeps its real stiffness: leather, soles, buckles and bag bodies do not bend like cloth."}
+- Movement: ${action} All movement is slow, small and natural, like real phone footage in a boutique.
 - Do not turn the product far enough to reveal a side that is not visible in the first frame.
 - Hands always have five natural fingers. No face ever enters the frame.
 - The camera is handheld but very steady, with at most a slight slow push-in. Same room, same light, same floor from start to end. Nothing new enters the scene.
 - Any logo or lettering visible in the first frame stays exactly as it is, sharp and unchanged. No new text, captions, stickers or graphics appear.
 - ONE continuous shot of about ${opts.seconds} seconds. No cuts, no transitions, no speed changes.
 - Keep the product inside the central area of the frame at all times; the top and bottom edges are cut away later.
-- REAL FOOTAGE, NOT ANIMATION. It must look like a real phone video of a real woman: skin keeps its pores, lines and texture in every frame and never turns smooth or waxy; hands keep five correct fingers and never merge, bend wrongly or slide through the product; muscles and tendons move under the skin; feet carry real weight and press on the floor.
-- Real-world physics and timing: movement at normal human speed with tiny natural hesitations, never floaty, never slow-motion, never gliding or sliding. Leather creases a little where the foot bends and springs back. Shadows and reflections move with the movement.
+- REAL FOOTAGE, NOT ANIMATION. It must look like a real phone video of a real woman: skin keeps its pores, lines and texture in every frame and never turns smooth or waxy; hands keep five correct fingers and never merge, bend wrongly or slide through the product; muscles and tendons move under the skin; her body carries real weight.
+- Real-world physics and timing: movement at normal human speed with tiny natural hesitations, never floaty, never slow-motion, never gliding or sliding. Materials behave like the real thing: leather creases a little where it bends and springs back, fabric swings and settles. Shadows and reflections move with the movement.
 - Real camera feel: a hand-held phone with very slight natural sway and breathing, natural motion blur on fast parts, slight sensor grain, constant exposure and white balance. Never a 3D render, never a glow or beauty filter, no morphing, no warping backgrounds.
 - No dialogue, no voice, no music.
 ${opts.spec ? `\nPRODUCT SPEC — these facts about the product stay true in every frame:\n${opts.spec}\n` : ""}
@@ -301,10 +407,11 @@ async function visionJson(prompt: string, images: Buffer[]): Promise<any | null>
 }
 
 /** A short, exact written description of the product, taken only from its real photos. */
-export async function describeProduct(photos: Buffer[], isFootwear: boolean): Promise<string> {
+export async function describeProduct(photos: Buffer[], kind: ProductKind): Promise<string> {
+  const isFootwear = kind === "shoes";
   const data = await visionJson(
-    `These ${photos.length} image(s) show ONE real ${isFootwear ? "pair of shoes" : "fashion item"} sold by a boutique. Write its exact visual specification so that an artist who cannot see the photos could not get any detail wrong. Only state what is clearly visible; never guess.
-Return JSON: {"spec": ["...", "..."]} with 8 to 14 short bullet strings covering, where visible: item type; exact colour(s) in plain words and where each colour sits; material and surface (smooth, grained, suede, patent, knit, mesh...) and how shiny; overall silhouette and height (${isFootwear ? "ankle / mid-calf / knee-high shaft, toe shape, heel type, heel height and heel shape, sole thickness, sole colour and tread, platform" : "length, neckline, sleeves, waist, fit"}); closures and exactly where they are (zip side, elastic panels, buckles, laces, straps, bows); stitching, seams and panel lines; trims, hardware colour; anything distinctive; and what it does NOT have that someone might wrongly add.`,
+    `These ${photos.length} image(s) show ONE real ${KIND_NOUN[kind]} sold by a boutique. Write its exact visual specification so that an artist who cannot see the photos could not get any detail wrong. Only state what is clearly visible; never guess.
+Return JSON: {"spec": ["...", "..."]} with 8 to 14 short bullet strings covering, where visible: item type; exact colour(s) in plain words and where each colour sits; material and surface (smooth, grained, suede, patent, knit, mesh...) and how shiny; overall silhouette and height (${isFootwear ? "ankle / mid-calf / knee-high shaft, toe shape, heel type, heel height and heel shape, sole thickness, sole colour and tread, platform" : kind === "bag" ? "size, shape, handles and strap, flap, base" : kind === "belt" ? "width, length, buckle shape and size, tip, holes, keeper loop" : "length, neckline, sleeves, cuffs, waist, fit, lining, slits"}); closures and exactly where they are (zip side, elastic panels, buckles, laces, straps, bows); stitching, seams and panel lines; trims, hardware colour; anything distinctive; and what it does NOT have that someone might wrongly add.`,
     photos.slice(0, 4),
   );
   const list: string[] = Array.isArray(data?.spec) ? data.spec.map((x: unknown) => String(x).trim()).filter(Boolean).slice(0, 14) : [];
