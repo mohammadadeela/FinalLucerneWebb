@@ -47,7 +47,7 @@ export function ProductVideoDialog({
 
   const [tab, setTab] = useState("generate");
   const [selection, setSelection] = useState<Selection>({});
-  const [source, setSource] = useState<"main" | "original">("main");
+  const [source, setSource] = useState<"main" | "original">("original");
   const [motion, setMotion] = useState<"pushIn" | "drift" | "light">("pushIn");
   const [seconds, setSeconds] = useState(6);
   const [quality, setQuality] = useState<"high" | "standard">("high");
@@ -297,7 +297,7 @@ export function ProductVideoDialog({
                     hint={tr("صورة الموقع تعطي نفس شكل صفحة المنتج. الصورة الأصلية هي صورتك الحقيقية للقطعة.", "The site photo matches the product page. The original is your own real photo of the item.")}
                   >
                     <Choice value={source} onChange={setSource} testId="choice-video-source"
-                      options={[{ value: "main", label: tr("صورة الموقع", "Site photo") }, { value: "original", label: tr("الصورة الأصلية", "Original photo") }]} />
+                      options={[{ value: "original", label: tr("الصورة الأصلية", "Original photo") }, { value: "main", label: tr("صورة الموقع", "Site photo") }]} />
                   </Field>
                   <Field label={tr("الحركة", "Motion")} hint={tr("المنتج ثابت ولا يدور، حتى لا يُخترع أي تفصيل غير موجود في الصورة.", "The product stays still and never turns, so no detail is invented.")}>
                     <Choice value={motion} onChange={setMotion} testId="choice-video-motion"
@@ -316,20 +316,31 @@ export function ProductVideoDialog({
                         options={[{ value: "high", label: "1080p" }, { value: "standard", label: "720p" }]} />
                     </Field>
                   </div>
-                  <div className="space-y-2.5 rounded-lg border border-border bg-muted/40 p-3">
-                    <label className="flex cursor-pointer items-center justify-between gap-3 text-xs font-medium">
-                      {tr("نشر تلقائي على المنتج بعد التوليد", "Publish on the product automatically")}
-                      <Switch checked={autoPublish} onCheckedChange={setAutoPublish} data-testid="switch-video-autopublish" />
+                  <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-3">
+                    <p className="text-xs font-semibold">{tr("بعد ما يجهز الفيديو", "When the video is ready")}</p>
+                    <label className="flex cursor-pointer items-start justify-between gap-3">
+                      <span className="min-w-0">
+                        <span className="block text-xs font-medium">{tr("انشره على المنتج مباشرة", "Put it on the product right away")}</span>
+                        <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
+                          {autoPublish
+                            ? tr("شغّال: الفيديو يظهر للزبائن في صفحة المنتج فور انتهائه، بدون مراجعتك.", "On: customers see the video on the product page as soon as it is done, without your review.")
+                            : tr("مطفي: الفيديو يُحفظ مسودة. تشوفه أولاً في تبويب المراجعة ثم تنشره بنفسك.", "Off: the video is saved as a draft. You watch it in the review tab first, then publish it yourself.")}
+                        </span>
+                      </span>
+                      <Switch className="mt-0.5 shrink-0" checked={autoPublish} onCheckedChange={setAutoPublish} data-testid="switch-video-autopublish" />
                     </label>
-                    {autoPublish ? (
-                      <label className="flex cursor-pointer items-center justify-between gap-3 text-xs font-medium">
-                        {tr("استبدال الفيديو الحالي إن وُجد", "Replace the current video if there is one")}
-                        <Switch checked={replace} onCheckedChange={setReplace} data-testid="switch-video-replace" />
+                    {autoPublish && (
+                      <label className="flex cursor-pointer items-start justify-between gap-3 border-t border-border pt-3">
+                        <span className="min-w-0">
+                          <span className="block text-xs font-medium">{tr("بدّل الفيديو القديم", "Replace the old video")}</span>
+                          <span className="mt-0.5 block text-[11px] leading-relaxed text-muted-foreground">
+                            {replace
+                              ? tr("شغّال: إذا المنتج عليه فيديو، الجديد يأخذ مكانه.", "On: if the product already has a video, the new one takes its place.")
+                              : tr("مطفي: إذا المنتج عليه فيديو يبقى كما هو، والجديد يُحفظ مسودة.", "Off: a product that already has a video keeps it, and the new one is saved as a draft.")}
+                          </span>
+                        </span>
+                        <Switch className="mt-0.5 shrink-0" checked={replace} onCheckedChange={setReplace} data-testid="switch-video-replace" />
                       </label>
-                    ) : (
-                      <p className="text-[11px] leading-relaxed text-muted-foreground">
-                        {tr("الفيديوهات تُحفظ كمسودات: تراجعها أولاً ثم تنشر ما يعجبك.", "Videos are kept as drafts: you review them first, then publish the ones you like.")}
-                      </p>
                     )}
                   </div>
                   <Button type="button" className="h-11 w-full gap-2" disabled={!count || starting} onClick={start} data-testid="button-video-generate">
