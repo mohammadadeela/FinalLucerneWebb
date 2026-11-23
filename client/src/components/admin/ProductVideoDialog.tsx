@@ -48,7 +48,7 @@ export function ProductVideoDialog({
   const [tab, setTab] = useState("generate");
   const [selection, setSelection] = useState<Selection>({});
   const [style, setStyle] = useState<"model" | "tryOn" | "hands" | "unbox" | "photo">("model");
-  const [seconds, setSeconds] = useState(6);
+  const [seconds, setSeconds] = useState(10);
   const [combine, setCombine] = useState(true);
   const [starting, setStarting] = useState(false);
 
@@ -62,6 +62,8 @@ export function ProductVideoDialog({
     for (const product of chosen) next[product.id] = productVariants(product).map((v) => v.index);
     setSelection(next);
     setTab(chosen.length ? "generate" : "review");
+    // Old finished lines are not shown again; anything still running stays.
+    clearFinished();
   }, [open, idsKey]);
 
   const refreshAll = () => {
@@ -93,13 +95,8 @@ export function ProductVideoDialog({
     });
   const start = async () => {
     if (!count) return;
-    const ok = window.confirm(
-      tr(
-        `سيتم توليد ${count} فيديو ونشرها على الموقع مباشرة. كل فيديو يُحسب على حساب Gemini الخاص بك. متابعة؟`,
-        `${count} video(s) will be generated and put on the site right away. Each one is billed to your Gemini account. Continue?`,
-      ),
-    );
-    if (!ok) return;
+    // A new batch starts with a clean list: results of earlier batches are not mixed in.
+    clearFinished();
     setStarting(true);
     try {
       const data = await studioPost("/api/admin/ai-studio/product-videos", {
@@ -309,8 +306,13 @@ export function ProductVideoDialog({
                         { value: "photo", label: tr("الصورة نفسها", "The photo itself") },
                       ]} />
                   </Field>
-                  <Field label={tr("المدة", "Length")}>
-                    <Choice value={seconds} onChange={setSeconds} testId="choice-video-seconds" options={[5, 6, 8].map((value) => ({ value, label: tr(`${value} ث`, `${value}s`) }))} />
+                  <Field
+                    label={tr("المدة", "Length")}
+                    hint={seconds > 10
+                      ? tr(`${seconds / 10} مقاطع متصلة كل واحد 10 ثوانٍ: التكلفة والوقت حوالي ${seconds / 10} أضعاف، واحتمال تغيّر التفاصيل أعلى.`, `${seconds / 10} joined 10-second parts: about ${seconds / 10}× the cost and time, and details are more likely to drift.`)
+                      : undefined}
+                  >
+                    <Choice value={seconds} onChange={setSeconds} testId="choice-video-seconds" options={[10, 30, 40].map((value) => ({ value, label: tr(`${value} ث`, `${value}s`) }))} />
                   </Field>
                   {hasSeveralColours && (
                     <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg border border-border bg-muted/40 p-3">

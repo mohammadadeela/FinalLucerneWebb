@@ -26,7 +26,15 @@ export interface StudioJob {
   noCredit?: boolean;
   /** Never started: the batch was stopped after an error. */
   stopped?: boolean;
-  result?: { media?: StudioMedia; publishSkipped?: string };
+  /** Live progress of a running job. */
+  stage?: "prepare" | "spec" | "frame" | "frameCheck" | "video" | "videoCheck" | "finish" | "upload";
+  /** Local clock time at which the job started on the server. */
+  startedAt?: number;
+  /** How long a job like this usually takes on this server, measured from earlier jobs. */
+  estimateMs?: number;
+  queuePosition?: number;
+  concurrency?: number;
+  result?: { media?: StudioMedia; publishSkipped?: string; note?: "photo_fallback" | "shortened" };
 }
 
 export interface StudioItem {
@@ -122,7 +130,14 @@ export function useStudioJobs(storageKey: string, onFinished?: () => void) {
                 ? { ...job, status: "error" as const, message: "The server restarted before this finished. Generate it again." }
                 : job;
             }
-            return { ...job, status: fresh.status, message: fresh.message, noKey: fresh.noKey, noCredit: fresh.noCredit, stopped: fresh.stopped, result: fresh.result };
+            return {
+              ...job, status: fresh.status, message: fresh.message, noKey: fresh.noKey, noCredit: fresh.noCredit, stopped: fresh.stopped, result: fresh.result,
+              stage: fresh.stage,
+              startedAt: typeof fresh.elapsedMs === "number" ? Date.now() - fresh.elapsedMs : job.startedAt,
+              estimateMs: fresh.estimateMs ?? job.estimateMs,
+              queuePosition: fresh.queuePosition,
+              concurrency: fresh.concurrency ?? job.concurrency,
+            };
           }),
         );
         if (someFinished) finishedRef.current?.();

@@ -1,6 +1,6 @@
 // Shared building blocks of the two AI Studio pages: the product and colour picker, the
 // settings controls, the job list and the library cards.
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AlertCircle, Check, Clock, Film, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -335,12 +335,85 @@ export function ProductPicker({
 
 /* ───────────────────────────── Job list ───────────────────────────── */
 
+const STAGE_ORDER = ["prepare", "spec", "frame", "frameCheck", "video", "videoCheck", "finish", "upload"] as const;
+// The share of the whole job that is behind us when each step starts.
+const STAGE_FLOOR: Record<string, number> = { prepare: 2, spec: 6, frame: 14, frameCheck: 30, video: 40, videoCheck: 86, finish: 92, upload: 96 };
+
+function stageLabel(stage: string | undefined, isAr: boolean): string {
+  const labels: Record<string, [string, string]> = {
+    prepare: ["تحضير الصور", "Preparing the photos"],
+    spec: ["قراءة تفاصيل القطعة", "Reading the product's details"],
+    frame: ["تصوير اللقطة الأولى", "Shooting the opening frame"],
+    frameCheck: ["فحص مطابقة القطعة", "Checking it matches the product"],
+    video: ["توليد الفيديو", "Generating the video"],
+    videoCheck: ["فحص الفيديو", "Checking the video"],
+    finish: ["تجهيز الفيديو", "Finishing the video"],
+    upload: ["رفع الفيديو", "Uploading"],
+  };
+  const pair = labels[stage || ""] || ["جاري التوليد", "Generating"];
+  return isAr ? pair[0] : pair[1];
+}
+
+function formatLeft(ms: number, isAr: boolean): string {
+  const sec = Math.max(0, Math.round(ms / 1000));
+  if (sec < 10) return isAr ? "ثوانٍ" : "a few seconds";
+  if (sec < 60) return isAr ? `${Math.round(sec / 5) * 5} ث` : `${Math.round(sec / 5) * 5}s`;
+  const min = Math.floor(sec / 60);
+  const rest = Math.round((sec % 60) / 10) * 10;
+  if (rest === 60) return isAr ? `${min + 1} د` : `${min + 1} min`;
+  return isAr ? (rest ? `${min} د ${rest} ث` : `${min} د`) : rest ? `${min} min ${rest}s` : `${min} min`;
+}
+
+/**
+ * Where a running job stands: the step it is really on (reported by the server) sets the lower
+ * bound, and the time it has run against the measured average of earlier jobs moves it between steps.
+ */
+function jobProgress(job: StudioJob, now: number): { percent: number; leftMs: number | null; late: boolean } {
+  if (job.status === "done" || job.status === "error") return { percent: 100, leftMs: 0, late: false };
+  if (job.status === "queued" || !job.startedAt) return { percent: 0, leftMs: job.estimateMs ?? null, late: false };
+  const estimate = job.estimateMs || 0;
+  const elapsed = Math.max(0, now - job.startedAt);
+  const index = Math.max(0, STAGE_ORDER.indexOf((job.stage || "prepare") as (typeof STAGE_ORDER)[number]));
+  const floor = STAGE_FLOOR[STAGE_ORDER[index]];
+  const ceiling = index + 1 < STAGE_ORDER.length ? STAGE_FLOOR[STAGE_ORDER[index + 1]] - 1 : 99;
+  const byTime = estimate ? (elapsed / estimate) * 100 : floor;
+  const percent = Math.round(Math.max(floor, Math.min(ceiling, byTime)));
+  if (!estimate) return { percent, leftMs: null, late: false };
+  // What the clock says is left, but never less than the steps that are still to come.
+  const byStage = estimate * (1 - ceiling / 100);
+  const late = elapsed > estimate;
+  const leftMs = late ? Math.max(byStage, 15000) : Math.max(estimate - elapsed, byStage);
+  return { percent, leftMs, late };
+}
+
 export function JobList({ jobs, isAr, onClear }: { jobs: StudioJob[]; isAr: boolean; onClear: () => void }) {
   const tr = (ar: string, en: string) => (isAr ? ar : en);
+  const active = jobs.some((j) => j.status === "queued" || j.status === "running");
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [active]);
+  // A bar never moves backwards, even when a step is repeated.
+  const shown = useRef(new Map<string, number>());
   if (!jobs.length) return null;
   const done = jobs.filter((j) => j.status === "done").length;
   const failed = jobs.filter((j) => j.status === "error").length;
   const pending = jobs.length - done - failed;
+  const progress = new Map(jobs.map((job) => {
+    const p = jobProgress(job, now);
+    const percent = job.status === "running" ? Math.max(p.percent, shown.current.get(job.id) || 0) : p.percent;
+    if (job.status === "running") shown.current.set(job.id, percent);
+    return [job.id, { ...p, percent }];
+  }));
+  const overall = Math.round(jobs.reduce((sum, job) => sum + (progress.get(job.id)?.percent || 0), 0) / jobs.length);
+  // Time left for the whole batch: the work still to do, shared between the jobs that run side by side.
+  const lanes = Math.max(1, Math.min(jobs.find((j) => j.concurrency)?.concurrency || 2, pending));
+  const workLeft = jobs.reduce((sum, job) => (job.status === "queued" || job.status === "running" ? sum + (progress.get(job.id)?.leftMs ?? 0) : sum), 0);
+  const longestRunning = Math.max(0, ...jobs.filter((j) => j.status === "running").map((j) => progress.get(j.id)?.leftMs ?? 0));
+  const batchLeft = Math.max(longestRunning, workLeft / lanes);
+  const knowsTime = jobs.some((j) => (j.status === "queued" || j.status === "running") && j.estimateMs);
   return (
     <section className="rounded-xl border border-border bg-card" data-testid="panel-studio-jobs">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
@@ -348,26 +421,38 @@ export function JobList({ jobs, isAr, onClear }: { jobs: StudioJob[]; isAr: bool
           {pending > 0 ? tr(`جاري التوليد: ${done + failed} من ${jobs.length}`, `Generating: ${done + failed} of ${jobs.length}`) : tr("انتهى التوليد", "Generation finished")}
           {failed > 0 && <span className="ms-2 text-xs font-medium text-destructive">{tr(`فشل ${failed}`, `${failed} failed`)}</span>}
         </h2>
-        {pending < jobs.length && (
+        {pending > 0 ? (
+          <span className="text-xs font-medium tabular-nums text-muted-foreground" data-testid="text-studio-batch-progress">
+            {overall}%{knowsTime && ` · ${tr("باقي حوالي", "about")} ${formatLeft(batchLeft, isAr)}${isAr ? "" : " left"}`}
+          </span>
+        ) : (
           <button type="button" className="text-xs font-medium underline underline-offset-2" onClick={onClear} data-testid="button-studio-clear-jobs">
-            {tr("إخفاء المنتهي", "Hide finished")}
+            {tr("إخفاء", "Hide")}
           </button>
         )}
       </header>
       <div className="h-1 w-full bg-muted">
-        <div className="h-full bg-foreground transition-all" style={{ width: `${((done + failed) / jobs.length) * 100}%` }} />
+        <div className="h-full bg-foreground transition-all duration-1000 ease-linear" style={{ width: `${pending > 0 ? overall : 100}%` }} />
       </div>
       <ul className="max-h-64 divide-y divide-border/60 overflow-y-auto">
         {jobs.map((job) => (
-          <li key={job.id} className="flex items-center gap-3 px-4 py-2 text-sm" data-testid={`row-studio-job-${job.id}`}>
+          <li key={job.id} className="px-4 py-2 text-sm" data-testid={`row-studio-job-${job.id}`}>
+            <div className="flex items-center gap-3">
             {job.status === "done" && <Check className="h-4 w-4 shrink-0 text-emerald-600" />}
             {job.status === "error" && <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />}
             {job.status === "running" && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-foreground" />}
             {job.status === "queued" && <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />}
             <span className="min-w-0 flex-1 truncate">{job.label}</span>
             <span className="max-w-[55%] truncate text-xs text-muted-foreground" dir="auto" title={job.message}>
-              {job.status === "queued" && tr("في الانتظار", "Waiting")}
-              {job.status === "running" && tr("جاري التوليد", "Generating")}
+              {job.status === "queued" &&
+                (job.estimateMs
+                  ? tr(`في الانتظار · يأخذ حوالي ${formatLeft(job.estimateMs, true)}`, `Waiting · takes about ${formatLeft(job.estimateMs, false)}`)
+                  : tr("في الانتظار", "Waiting"))}
+              {job.status === "running" && (() => {
+                const p = progress.get(job.id);
+                const left = p?.leftMs != null ? (p.late ? tr("أطول من المعتاد، قارب على الانتهاء", "longer than usual, nearly there") : `${tr("باقي حوالي", "about")} ${formatLeft(p.leftMs, isAr)}${isAr ? "" : " left"}`) : "";
+                return `${stageLabel(job.stage, isAr)} · ${p?.percent ?? 0}%${left ? ` · ${left}` : ""}`;
+              })()}
               {job.status === "done" &&
                 (job.result?.publishSkipped === "low_fidelity"
                   ? tr("جاهز كمسودة — التفاصيل قد لا تطابق القطعة، راجعه قبل النشر", "Saved as a draft — details may not match the product, review before publishing")
@@ -376,6 +461,8 @@ export function JobList({ jobs, isAr, onClear }: { jobs: StudioJob[]; isAr: bool
                   : job.result?.media?.status === "published"
                     ? tr("جاهز ومنشور", "Ready and published")
                     : tr("جاهز", "Ready"))}
+              {job.status === "done" && job.result?.note === "photo_fallback" && tr(" · الـAI رفض هذا المشهد، فصُنع من الصورة نفسها", " · the AI declined this scene, so it was made from the photo itself")}
+              {job.status === "done" && job.result?.note === "shortened" && tr(" · أقصر من المطلوب بسبب خطأ في أحد الأجزاء", " · shorter than asked: one part failed")}
               {job.status === "error" &&
                 (job.noKey
                   ? tr("مفتاح GEMINI_API_KEY غير موجود على السيرفر", "GEMINI_API_KEY is missing on the server")
@@ -385,6 +472,12 @@ export function JobList({ jobs, isAr, onClear }: { jobs: StudioJob[]; isAr: bool
                       ? tr("لم يبدأ: تم إيقاف الباقي بعد تكرار الأخطاء حتى لا يُخصم شيء.", "Not started: the rest was stopped after repeated errors so nothing is charged.")
                       : job.message)}
             </span>
+            </div>
+            {job.status === "running" && (
+              <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-foreground transition-all duration-1000 ease-linear" style={{ width: `${progress.get(job.id)?.percent ?? 0}%` }} />
+              </div>
+            )}
           </li>
         ))}
       </ul>

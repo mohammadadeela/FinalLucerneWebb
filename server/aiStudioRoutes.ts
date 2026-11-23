@@ -20,6 +20,9 @@ import {
   buildInstagramImagePrompt,
   buildProductVideoPrompt,
   buildColourLineupPrompt,
+  buildContinuationPrompt,
+  joinVideos,
+  videoLastFrame,
   buildStyleFramePrompt,
   buildStyleVideoPrompt,
   describeProduct,
@@ -280,12 +283,64 @@ interface Job {
   status: "queued" | "running" | "done" | "error";
   label: string;
   at: number;
-  run: () => Promise<any>;
+  run: (report: (stage: JobStage) => void) => Promise<any>;
+  /** Live progress: which step is running, when the job started and how long such a job usually takes. */
+  stage?: JobStage;
+  startedAt?: number;
+  estimateMs?: number;
+  estimateKey?: string;
   result?: any;
   message?: string;
   noKey?: boolean;
   noCredit?: boolean;
   stopped?: boolean;
+}
+
+type JobStage = "prepare" | "spec" | "frame" | "frameCheck" | "video" | "videoCheck" | "finish" | "upload";
+
+// How long jobs really take, measured on this server. The first estimate of each kind is a
+// sensible default; after that it is the average of the last finished jobs of that kind, and it
+// is also read back from the library after a restart.
+const DEFAULT_MS: Record<string, number> = { photo: 150_000, styled: 330_000, instagram: 240_000 };
+const measured = new Map<string, number[]>();
+let measuredLoaded: Promise<void> | null = null;
+
+function loadMeasured(): Promise<void> {
+  if (!measuredLoaded) {
+    measuredLoaded = (async () => {
+      try {
+        await ensureTable();
+        const rows: any = await db.execute(sql`
+          SELECT meta->>'estimateKey' AS key, (meta->>'durationMs')::float AS ms
+          FROM ai_studio_media
+          WHERE meta ? 'durationMs' AND meta ? 'estimateKey'
+          ORDER BY id DESC LIMIT 60
+        `);
+        for (const row of (rows.rows || []).reverse()) {
+          const ms = Number(row.ms);
+          if (!row.key || !Number.isFinite(ms) || ms < 5000) continue;
+          measured.set(row.key, [...(measured.get(row.key) || []), ms].slice(-8));
+        }
+      } catch {
+        /* the defaults are used */
+      }
+    })();
+  }
+  return measuredLoaded;
+}
+
+function estimateFor(key: string): number {
+  const list = measured.get(key) || [];
+  if (list.length) return Math.round(list.reduce((a, b) => a + b, 0) / list.length);
+  // No measurement yet: a sensible start, plus about two minutes for each further 10-second part.
+  const total = Number((key.match(/:(\d+)s$/) || [])[1]) || 10;
+  const extraParts = total > 10 ? Math.ceil(total / 10) - 1 : 0;
+  return (DEFAULT_MS[key.split(":")[0]] || DEFAULT_MS.styled) + extraParts * 120_000;
+}
+
+function recordDuration(key: string, ms: number) {
+  if (!key || ms < 5000) return;
+  measured.set(key, [...(measured.get(key) || []), ms].slice(-8));
 }
 
 const jobs = new Map<string, Job>();
@@ -323,12 +378,18 @@ function pump() {
     }
     active++;
     job.status = "running";
+    job.startedAt = Date.now();
+    job.stage = "prepare";
+    if (job.estimateKey) job.estimateMs = estimateFor(job.estimateKey);
     job
-      .run()
+      .run((stage) => {
+        job.stage = stage;
+      })
       .then((result) => {
         job.status = "done";
         job.result = result;
         failuresInARow = 0;
+        if (job.estimateKey && job.startedAt) recordDuration(job.estimateKey, Date.now() - job.startedAt);
       })
       .catch((err: any) => {
         console.error("[ai-studio] job failed:", job.label, err?.message || err);
@@ -349,12 +410,12 @@ function pump() {
   }
 }
 
-function addJob(label: string, run: () => Promise<any>): string {
+function addJob(label: string, run: (report: (stage: JobStage) => void) => Promise<any>, estimateKey?: string): string {
   for (const [id, job] of jobs) {
     if ((job.status === "done" || job.status === "error") && Date.now() - job.at > 3 * 60 * 60 * 1000) jobs.delete(id);
   }
   const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
-  jobs.set(id, { id, status: "queued", label, at: Date.now(), run });
+  jobs.set(id, { id, status: "queued", label, at: Date.now(), run, estimateKey, estimateMs: estimateKey ? estimateFor(estimateKey) : undefined });
   waiting.push(id);
   keyMissing = false;
   // A new batch is the owner's decision to try again. If the balance is still empty the first
@@ -455,7 +516,12 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
     const source = req.body?.source === "original" ? "original" : "main";
     const motion = asMotion(req.body?.motion);
     const style = asStyle(req.body?.style);
-    const seconds = clampSeconds(req.body?.seconds, 6);
+    // Up to 10 seconds is one clip. 30 and 40 seconds are made of 10-second parts, each one
+    // continuing from the last frame of the part before it.
+    const asked = Math.round(Number(req.body?.seconds));
+    const totalSeconds = asked === 30 || asked === 40 ? asked : clampSeconds(req.body?.seconds, 10);
+    const parts = totalSeconds > 10 ? Math.ceil(totalSeconds / 10) : 1;
+    const seconds = parts > 1 ? 10 : totalSeconds;
     const quality = asQuality(req.body?.quality);
     const autoPublish = req.body?.autoPublish === true;
     const replace = req.body?.replace === true;
@@ -463,6 +529,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
 
     try {
       await ensureTable();
+      await loadMeasured();
       const started: any[] = [];
       // One video per colour, or (combineColours) one video per product showing all its chosen colours.
       const MAX_COLOURS = 6;
@@ -488,7 +555,9 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
         const colour = colourName(product, item.variantIndex);
         const colourNames = item.all.map((i) => colourName(product, i) || `colour ${i + 1}`);
         const label = multi ? `${product.name} — ${colourNames.join(" + ")}` : colour ? `${product.name} — ${colour}` : String(product.name);
-        const jobId = addJob(label, async () => {
+        const estimateKey = `${style === "photo" && !multi ? "photo" : "styled"}:${style}${multi ? ":multi" : ""}:${totalSeconds}s`;
+        const jobId = addJob(label, async (report) => {
+          const startedAt = Date.now();
           const fresh: any = (await storage.getProduct(item.productId)) || product;
           const photoUrl =
             (source === "original" ? await originalPhoto(fresh, item.variantIndex) : mainPhoto(fresh, item.variantIndex)) ||
@@ -540,12 +609,18 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
           }
           const together = shownColours.length > 1;
           let frameScore: number | null = null;
+          let usedPhotoFallback = false;
+          let cameraOnly = style === "photo";
+          let specText = "";
+          let shortened = false;
+          let madeSeconds = totalSeconds;
 
           if (style === "photo" && !together) {
             firstFrame = await buildSiteFirstFrame(references[0]);
             prompt = buildProductVideoPrompt({ isFootwear, motion, seconds, centralCrop: true });
           } else {
             // Step 1: write down what the product really looks like.
+            report("spec");
             const spec = await describeProduct(together ? references.slice(0, 1) : references, kind);
             const logo = style === "unbox"
               ? await sharp(buildWatermarkSvg(900)).flatten({ background: "#ffffff" }).extend({ top: 60, bottom: 60, left: 60, right: 60, background: "#ffffff" }).png().toBuffer()
@@ -555,16 +630,34 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             let best: { frame: Buffer; score: number } | null = null;
             let fixes: string[] = [];
             let bestRank = -1;
+            let simple = false;
+            let declined = false;
             // A different soft set for each video, the same one for all its attempts.
             const set = REEL_SETS[Math.floor(Math.random() * REEL_SETS.length)];
             for (let attempt = 1; attempt <= 3; attempt++) {
-              const frame = await generateStudioImage(
-                style === "photo"
-                  ? buildColourLineupPrompt({ kind, colours: shownColours, set, spec, fixes })
-                  : buildStyleFramePrompt({ style, kind, photoCount: references.length, hasLogo: !!logo, spec, fixes, set, colours: shownColours }),
-                logo && style !== "photo" ? [...references, logo] : references,
-                "9:16",
-              );
+              report("frame");
+              let frame: Buffer;
+              try {
+                frame = await generateStudioImage(
+                  style === "photo"
+                    ? buildColourLineupPrompt({ kind, colours: shownColours, set, spec, fixes })
+                    : buildStyleFramePrompt({ style, kind, photoCount: references.length, hasLogo: !!logo, spec, fixes, set, colours: shownColours, simple }),
+                  logo && style !== "photo" ? [...references, logo] : references,
+                  "9:16",
+                );
+              } catch (err: any) {
+                if (!err?.declined) throw err;
+                // The image model would not make this picture. First ask for a simpler one
+                // (no face); if that is declined too, stop asking and use what we have.
+                if (!simple && style !== "photo") {
+                  simple = true;
+                  attempt--;
+                  continue;
+                }
+                declined = true;
+                break;
+              }
+              report("frameCheck");
               const verdict = await judgeFidelity(references, frame, "still", shownColours);
               if (!verdict) {
                 // No controller available: use this frame as it is.
@@ -580,29 +673,76 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
               if (verdict.score >= 9 && (verdict.realism ?? 10) >= 8) break;
               fixes = verdict.issues;
             }
-            if (!best) throw new Error("The opening frame could not be generated.");
-            frameScore = best.score >= 0 ? best.score : null;
+            if (!best && declined && !together) {
+              // Last resort for one colour: the real photo itself with a camera move. Always possible, always exact.
+              usedPhotoFallback = true;
+            }
+            if (!best && !usedPhotoFallback) {
+              throw new Error(
+                declined
+                  ? "The AI declined to create this scene for this product. Try the style “the photo itself”, or a different main photo."
+                  : "The opening frame could not be generated.",
+              );
+            }
+            frameScore = best && best.score >= 0 ? best.score : null;
             if (frameScore !== null && frameScore < 7) {
               throw new Error("The AI could not reproduce this product accurately enough, so no video was made. Add clearer photos of it from more sides and try again.");
             }
-            firstFrame = await sharp(best.frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
+            firstFrame = best
+              ? await sharp(best.frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer()
+              : await buildSiteFirstFrame(references[0]);
             // Step 3: the video model animates that frame.
-            prompt =
-              style === "photo"
+            cameraOnly = style === "photo" || usedPhotoFallback;
+            specText = spec;
+            prompt = usedPhotoFallback
+              ? buildProductVideoPrompt({ isFootwear, motion, seconds, centralCrop: true })
+              : style === "photo"
                 ? buildProductVideoPrompt({ isFootwear, motion: "drift", seconds, centralCrop: true, productCount: shownColours.length })
                 : buildStyleVideoPrompt({ style, kind, seconds, spec, colourCount: shownColours.length });
           }
 
           // The clip is checked too: if the product changes while moving, it is made once more.
+          report("video");
           let raw = await generateStudioVideo({ firstFrame, prompt, seconds, quality });
+          if (parts > 1) {
+            // A long video: each further part starts on the last frame of the one before it.
+            const clips = [raw];
+            for (let part = 2; part <= parts; part++) {
+              try {
+                const last = await videoLastFrame(clips[clips.length - 1]);
+                const startFrame = await sharp(last, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
+                clips.push(
+                  await generateStudioVideo({
+                    firstFrame: startFrame,
+                    prompt: buildContinuationPrompt({ kind, cameraOnly, part, parts, seconds, spec: specText, colourCount: shownColours.length }),
+                    seconds,
+                    quality,
+                  }),
+                );
+              } catch (err: any) {
+                // An empty balance stops everything. Any other failure keeps the parts already made
+                // (and paid for) and delivers a shorter video instead of throwing them away.
+                if (err?.noCredit) throw err;
+                console.error("[ai-studio] long video stopped early at part", part, err?.message || err);
+                shortened = true;
+                break;
+              }
+            }
+            madeSeconds = clips.length * seconds;
+            raw = await joinVideos(clips);
+          }
           let videoScore: number | null = null;
           for (let attempt = 1; attempt <= 2; attempt++) {
-            const strip = await videoFrameStrip(raw, seconds);
+            report("videoCheck");
+            const strip = await videoFrameStrip(raw, madeSeconds);
             const verdict = strip ? await judgeFidelity(references, strip, "video frames", shownColours) : null;
             if (!verdict) break;
             if (videoScore === null || verdict.score > videoScore) videoScore = verdict.score;
-            if (verdict.score >= 8 || attempt === 2) break;
+            // A long video is never made twice: that would double a large cost.
+            if (verdict.score >= 8 || attempt === 2 || parts > 1) break;
+            report("video");
             const second = await generateStudioVideo({ firstFrame, prompt, seconds, quality });
+            report("videoCheck");
             const secondStrip = await videoFrameStrip(second, seconds);
             const secondVerdict = secondStrip ? await judgeFidelity(references, secondStrip, "video frames", shownColours) : null;
             if (secondVerdict && secondVerdict.score > verdict.score) {
@@ -613,7 +753,9 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
           }
           // A clip the controller is not happy with is kept as a draft instead of going on the site.
           const lowFidelity = videoScore !== null && videoScore < 8;
-          const finished = await finishVideo(raw, { width: size.width, height: size.height, seconds });
+          report("finish");
+          const finished = await finishVideo(raw, { width: size.width, height: size.height, seconds: madeSeconds });
+          report("upload");
           const url = await deps.uploadVideo(finished, "ai-product-video.mp4", { passthrough: true });
           const row = await insertMedia({
             kind: "product_video",
@@ -622,15 +764,16 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             product_id: item.productId,
             variant_index: item.variantIndex,
             label,
-            meta: { source, sourceUrl: photoUrl, motion, style, kind, variantIndexes: shownIndexes, colours: shownColours, seconds, quality, width: size.width, height: size.height, frameScore, videoScore },
+            meta: { source, sourceUrl: photoUrl, motion, style, kind, variantIndexes: shownIndexes, colours: shownColours, estimateKey, durationMs: Date.now() - startedAt, parts, shortened, usedPhotoFallback, seconds: madeSeconds, quality, width: size.width, height: size.height, frameScore, videoScore },
           });
-          if (lowFidelity) return { media: row, publishSkipped: "low_fidelity" };
+          const note = usedPhotoFallback ? "photo_fallback" : shortened ? "shortened" : undefined;
+          if (lowFidelity) return { media: row, publishSkipped: "low_fidelity", note };
           if (autoPublish) {
             const outcome = await publishVideo(deps, row, replace);
-            return { media: { ...row, status: outcome.published ? "published" : "draft" }, publishSkipped: outcome.reason };
+            return { media: { ...row, status: outcome.published ? "published" : "draft" }, publishSkipped: outcome.reason, note };
           }
-          return { media: row };
-        });
+          return { media: row, note };
+        }, estimateKey);
         started.push({ jobId, productId: item.productId, variantIndex: item.variantIndex, label });
       }
       if (!started.length) return res.status(404).json({ message: "None of the chosen products were found." });
@@ -768,7 +911,16 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
       jobs: ids.map((id) => {
         const job = jobs.get(id);
         if (!job) return { id, status: "error", message: "The job was lost (the server restarted). Start it again." };
-        return { id, status: job.status, label: job.label, message: job.message, noKey: job.noKey, noCredit: job.noCredit, stopped: job.stopped, result: job.status === "done" ? job.result : undefined };
+        const position = job.status === "queued" ? waiting.indexOf(id) : -1;
+        return {
+          id, status: job.status, label: job.label, message: job.message, noKey: job.noKey, noCredit: job.noCredit, stopped: job.stopped,
+          result: job.status === "done" ? job.result : undefined,
+          stage: job.status === "running" ? job.stage : undefined,
+          elapsedMs: job.status === "running" && job.startedAt ? Date.now() - job.startedAt : undefined,
+          estimateMs: job.estimateMs,
+          queuePosition: position >= 0 ? position : undefined,
+          concurrency: CONCURRENCY,
+        };
       }),
     });
   });

@@ -350,7 +350,7 @@ const VIDEO_ACTIONS: Record<ProductKind, Record<Staged, string>> = {
 };
 
 /** Prompt for the opening frame of a styled video. The attached photos are the same product; a logo image may follow them. */
-export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[]; set?: string; colours?: string[] }): string {
+export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[]; set?: string; colours?: string[]; simple?: boolean }): string {
   const lid = opts.hasLogo
     ? " The box lid lies beside it, face up, printed with the logo from the LAST attached image, copied exactly: the butterfly mark with the words LUCERNE BOUTIQUE below it, flat and centred on the lid, spelled exactly like that."
     : " The box lid lies beside it, face up and completely plain.";
@@ -407,9 +407,42 @@ ${FIDELITY_RULES}
   • real contact: soft true shadows under the shoes and hands, the floor slightly reflecting, fabric and leather creasing where they bend.
   • real camera: natural daylight with its small imperfections, true colours, slight sensor grain, natural depth of field. No HDR glow, no over-sharpening, no perfect symmetry, no studio-render lighting.
 - No text anywhere${opts.style === "unbox" && opts.hasLogo ? " except the logo on the box lid" : ""}. No other brand names, no price tags, no watermarks, no captions.
-${colourBlock}- Vertical 9:16 frame. The top eighth and the bottom eighth of the picture are trimmed off later, so keep her head, the whole product and everything important inside the middle three quarters of the height, with only background or floor in the top and bottom strips.
+${opts.simple ? "- FRAMING OVERRIDE (this replaces any framing above): do NOT show a face. Frame the model from the shoulders or neck down only, fully and neatly dressed, in a calm standing pose. Keep the picture simple: one woman, the product, the room.\n" : ""}${colourBlock}- Vertical 9:16 frame. The top eighth and the bottom eighth of the picture are trimmed off later, so keep her head, the whole product and everything important inside the middle three quarters of the height, with only background or floor in the top and bottom strips.
 ${opts.spec ? `\n═══════════════════════════════════════\n📋 PRODUCT SPEC — written from the real photos. Every point must be true in your image:\n═══════════════════════════════════════\n${opts.spec}\n` : ""}${opts.fixes?.length ? `\n⚠️ YOUR PREVIOUS ATTEMPT WAS REJECTED by quality control because the product did not match the photos. Fix exactly these points this time:\n${opts.fixes.map((f) => `- ${f}`).join("\n")}\n` : ""}
 ${TECH_QUALITY}`;
+}
+
+/**
+ * Prompt for the next part of a long video. The attached image is the LAST frame of the part
+ * before it, so the clips join into one continuous shot.
+ */
+export function buildContinuationPrompt(opts: { kind: ProductKind; cameraOnly: boolean; part: number; parts: number; seconds: number; spec?: string; colourCount?: number }): string {
+  const soft = opts.kind !== "shoes" && opts.kind !== "bag" && opts.kind !== "belt";
+  const cameraBeats = [
+    "The camera glides very slowly a little closer to the product, then holds.",
+    "The camera slides very slowly a few centimetres to one side with gentle parallax, then holds.",
+    "The camera eases very slowly back to a slightly wider view, then holds.",
+  ];
+  const modelBeats = [
+    "She relaxes into a new natural pose and the camera moves slowly closer to the product to show its material and details, then holds there.",
+    soft
+      ? "She moves gently so the fabric sways, touches the piece lightly with one hand, and the camera travels slowly along it from top to bottom."
+      : "She turns the product a few degrees toward the light and back, touching it lightly with one hand, while the camera stays close on its details.",
+    "The camera eases slowly back to the full view while she settles into a calm final pose and stays still for the last second.",
+  ];
+  const beat = (opts.cameraOnly ? cameraBeats : modelBeats)[(opts.part - 2) % 3];
+  const many = (opts.colourCount || 1) > 1;
+  return `You are continuing a product video for an online boutique. The attached image is the LAST FRAME of the previous part, so this part must begin on exactly this image and carry on the SAME continuous shot: same place, same light, same person, same product, same camera. This is part ${opts.part} of ${opts.parts}. The product is a REAL item that will be shipped to paying customers; its accuracy is the HIGHEST PRIORITY.
+
+- The product looks identical in every frame to how it looks in this image: same shape, length, colour, material, stitching, hardware, prints and trims. It never morphs, flickers, stretches, changes colour, or gains or loses a detail.
+- What happens in this part: ${opts.cameraOnly ? "nothing in the scene moves; only the camera does. " : ""}${beat}
+- ${opts.cameraOnly ? "No people or hands enter." : "If a face is visible it stays the same person with a calm natural expression and no talking. Hands keep five natural fingers. Real human movement at normal speed, never floaty."}
+${many ? `- All ${opts.colourCount} colours shown stay in the frame, in their places, unchanged.\n` : ""}- Do not reveal a side of the product that has not been seen. Nothing new enters the scene. No text, captions or graphics appear; any logo already visible stays exactly as it is.
+- ONE continuous shot of about ${opts.seconds} seconds with no cuts or speed changes, starting without any jump from the attached frame.
+- Keep the product inside the central area of the frame; the top and bottom edges are cut away later.
+- Real camera footage, natural colour, slight grain. Never a render, glow or filter. No dialogue, no voice, no music.
+${opts.spec ? `\nPRODUCT SPEC — true in every frame:\n${opts.spec}\n` : ""}
+FINAL REMINDER: the product stays exactly as in the attached frame from start to end.`;
 }
 
 /** Opening frame for the product-only style when all colours share one video: a clean line-up, nobody in the shot. */
@@ -535,6 +568,41 @@ Scoring: 10 = indistinguishable product; 8-9 = same product, only tiny differenc
     realism: Number.isFinite(Number(data?.realism)) ? Math.max(0, Math.min(10, Math.round(Number(data.realism)))) : null,
     issues: (Array.isArray(data?.issues) ? data.issues : []).map((x: unknown) => String(x).trim().slice(0, 200)).filter(Boolean).slice(0, 6),
   };
+}
+
+/** The very last picture of a clip, used as the first frame of the part that follows it. */
+export async function videoLastFrame(video: Buffer): Promise<Buffer> {
+  return withTempDir(async (dir) => {
+    const inFile = path.join(dir, "in.mp4");
+    const outFile = path.join(dir, "last.png");
+    await fs.promises.writeFile(inFile, video);
+    try {
+      await ffmpeg(["-sseof", "-0.2", "-i", inFile, "-update", "1", "-frames:v", "1", "-y", outFile]);
+    } catch {
+      // Some clips have no readable frame that close to the end: step back a little further.
+      await ffmpeg(["-sseof", "-1", "-i", inFile, "-update", "1", "-frames:v", "1", "-y", outFile]);
+    }
+    return fs.promises.readFile(outFile);
+  });
+}
+
+/** Joins the parts of a long video into one clip (same size, no sound). */
+export async function joinVideos(parts: Buffer[]): Promise<Buffer> {
+  if (parts.length === 1) return parts[0];
+  return withTempDir(async (dir) => {
+    const args: string[] = [];
+    for (let i = 0; i < parts.length; i++) {
+      const file = path.join(dir, `part${i}.mp4`);
+      await fs.promises.writeFile(file, parts[i]);
+      args.push("-i", file);
+    }
+    const outFile = path.join(dir, "joined.mp4");
+    // Every part is brought to the same 9:16 size and frame rate first, so they join cleanly.
+    const prepared = parts.map((_, i) => `[${i}:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,setsar=1,format=yuv420p[v${i}]`).join(";");
+    const joined = `${parts.map((_, i) => `[v${i}]`).join("")}concat=n=${parts.length}:v=1:a=0[v]`;
+    await ffmpeg([...args, "-filter_complex", `${prepared};${joined}`, "-map", "[v]", "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "16", "-pix_fmt", "yuv420p", "-y", outFile]);
+    return fs.promises.readFile(outFile);
+  });
 }
 
 /** Four frames from across a clip, side by side, for the quality controller to look at. */
@@ -690,11 +758,16 @@ export async function generateStudioImage(prompt: string, references: Buffer[], 
       const textPart = out.find((p) => typeof p.text === "string")?.text;
       const finishReason = json?.candidates?.[0]?.finishReason;
       if (attempt < 2) continue; // an empty answer is often a one-off
-      throw new Error(
+      const blockReason = json?.promptFeedback?.blockReason;
+      const err: any = new Error(
         textPart
           ? `Gemini did not return an image: ${textPart.slice(0, 200)}`
-          : `Gemini did not return an image${finishReason ? ` (${finishReason})` : ""}.`,
+          : `Gemini did not return an image${finishReason || blockReason ? ` (${finishReason || blockReason})` : ""}.`,
       );
+      // The model declined this picture (its own content rules, or it could not compose it).
+      // The caller can ask again in a simpler way instead of failing the whole video.
+      err.declined = true;
+      throw err;
     }
     return Buffer.from(inline.data, "base64");
   }
