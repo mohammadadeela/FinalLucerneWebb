@@ -47,7 +47,7 @@ export function ProductVideoDialog({
 
   const [tab, setTab] = useState("generate");
   const [selection, setSelection] = useState<Selection>({});
-  const [motion, setMotion] = useState<"pushIn" | "drift" | "light">("pushIn");
+  const [style, setStyle] = useState<"tryOn" | "hands" | "unbox" | "photo">("tryOn");
   const [seconds, setSeconds] = useState(6);
   const [starting, setStarting] = useState(false);
 
@@ -90,7 +90,8 @@ export function ProductVideoDialog({
       const data = await studioPost("/api/admin/ai-studio/product-videos", {
         items: selectionItems(selection),
         source: "original",
-        motion,
+        motion: "pushIn",
+        style,
         seconds,
         quality: "high",
         autoPublish: true,
@@ -201,8 +202,8 @@ export function ProductVideoDialog({
           </DialogTitle>
           <DialogDescription>
             {tr(
-              "الفيديو يُصنع من صورة المنتج نفسها. المنتج لا يتغير، فقط الكاميرا أو الإضاءة تتحرك.",
-              "Each video is made from the product's own photo. The product never changes; only the camera or the light moves.",
+              "الفيديو يُصنع من صور المنتج الحقيقية وينزل على المنتج في الموقع.",
+              "Each video is made from the product's real photos and goes onto the product on the site.",
             )}
           </DialogDescription>
         </DialogHeader>
@@ -258,12 +259,21 @@ export function ProductVideoDialog({
                 </section>
 
                 <section className="space-y-4 lg:sticky lg:top-0 lg:self-start">
-                  <Field label={tr("الحركة", "Motion")} hint={tr("المنتج ثابت ولا يدور، حتى لا يُخترع أي تفصيل غير موجود في الصورة.", "The product stays still and never turns, so no detail is invented.")}>
-                    <Choice value={motion} onChange={setMotion} testId="choice-video-motion"
+                  <Field
+                    label={tr("نوع الفيديو", "Video style")}
+                    hint={
+                      style === "tryOn" ? tr("القطعة ملبوسة في ستوديو مضيء، لقطة قريبة بدون وجه.", "The piece is worn in a bright studio, close shot, no face.")
+                      : style === "hands" ? tr("يدان تعرضان القطعة عن قرب.", "Hands show the piece up close.")
+                      : style === "unbox" ? tr("القطعة تخرج من علبة عليها شعار لوسيرن بوتيك.", "The piece comes out of a box with the Lucerne Boutique logo.")
+                      : tr("صورتك نفسها مع حركة كاميرا هادئة. الأدق لتفاصيل القطعة.", "Your own photo with a slow camera move. The most exact for product details.")
+                    }
+                  >
+                    <Choice value={style} onChange={setStyle} testId="choice-video-style"
                       options={[
-                        { value: "pushIn", label: tr("اقتراب هادئ", "Slow push-in") },
-                        { value: "drift", label: tr("حركة جانبية", "Side slide") },
-                        { value: "light", label: tr("إضاءة متحركة", "Moving light") },
+                        { value: "tryOn", label: tr("تجربة لبس", "Try-on") },
+                        { value: "hands", label: tr("عرض باليد", "In hand") },
+                        { value: "unbox", label: tr("فتح العلبة", "Unboxing") },
+                        { value: "photo", label: tr("الصورة نفسها", "The photo itself") },
                       ]} />
                   </Field>
                   <Field label={tr("المدة", "Length")}>

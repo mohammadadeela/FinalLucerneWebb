@@ -13,12 +13,14 @@ import { db } from "./db";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { resolveOriginalAiSource } from "./photoExport";
-import { watermarkImage } from "./watermark";
+import { buildWatermarkSvg, watermarkImage } from "./watermark";
 import type { OptimizeVideoOptions } from "./mediaOptimizer";
 import sharp from "sharp";
 import {
   buildInstagramImagePrompt,
   buildProductVideoPrompt,
+  buildStyleFramePrompt,
+  buildStyleVideoPrompt,
   buildSiteFirstFrame,
   composeStill,
   finishVideo,
@@ -36,6 +38,7 @@ import {
   type StudioScene,
   type StudioText,
   type VideoMotion,
+  type VideoStyle,
 } from "./aiStudio";
 
 export interface AiStudioDeps {
@@ -158,6 +161,25 @@ function colourName(product: any, variantIndex: number): string {
 
 function variantVideos(variant: any): any[] {
   return Array.isArray(variant?.media) ? variant.media.filter((m: any) => m?.type === "video" && validUrl(m.url)) : [];
+}
+
+/** Every photo of one colour (main first), so the image model can see the product from all its sides. */
+function colourPhotos(product: any, variantIndex: number): string[] {
+  const variant = variantsOf(product)[variantIndex];
+  const urls: string[] = [];
+  const add = (u: unknown) => {
+    const ok = validUrl(u);
+    if (ok && !urls.includes(ok)) urls.push(ok);
+  };
+  if (variant) {
+    add(variant.mainImage);
+    for (const m of Array.isArray(variant.media) ? variant.media : []) if (m?.type === "image") add(m.url);
+    for (const u of Array.isArray(variant.images) ? variant.images : []) add(u);
+  } else {
+    add(product.mainImage);
+    for (const u of Array.isArray(product.images) ? product.images : []) add(u);
+  }
+  return urls;
 }
 
 /* ───────────────────────────── Publishing a video on a product ───────────────────────────── */
@@ -337,6 +359,7 @@ const clampSeconds = (value: unknown, fallback: number) => {
   return Number.isFinite(n) ? Math.max(4, Math.min(10, n)) : fallback;
 };
 const asMotion = (value: unknown): VideoMotion => (value === "drift" || value === "light" ? value : "pushIn");
+const asStyle = (value: unknown): VideoStyle => (value === "tryOn" || value === "hands" || value === "unbox" ? value : "photo");
 const asQuality = (value: unknown): StudioQuality => (value === "standard" ? "standard" : "high");
 
 function cleanText(raw: any): StudioText | null {
@@ -391,6 +414,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
 
     const source = req.body?.source === "original" ? "original" : "main";
     const motion = asMotion(req.body?.motion);
+    const style = asStyle(req.body?.style);
     const seconds = clampSeconds(req.body?.seconds, 6);
     const quality = asQuality(req.body?.quality);
     const autoPublish = req.body?.autoPublish === true;
@@ -413,13 +437,37 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
           if (!photoUrl) throw new Error("This colour has no photo to make a video from.");
           const isFootwear = Number(fresh.categoryId) === SHOES_CATEGORY_ID;
           const size = formatSize("site", quality);
-          const firstFrame = await buildSiteFirstFrame(await loadMedia(photoUrl));
-          const raw = await generateStudioVideo({
-            firstFrame,
-            prompt: buildProductVideoPrompt({ isFootwear, motion, seconds, centralCrop: true }),
-            seconds,
-            quality,
-          });
+          let firstFrame: Buffer;
+          let prompt: string;
+          if (style === "photo") {
+            firstFrame = await buildSiteFirstFrame(await loadMedia(photoUrl));
+            prompt = buildProductVideoPrompt({ isFootwear, motion, seconds, centralCrop: true });
+          } else {
+            // Step 1: the image model shoots the opening frame from every photo of this colour.
+            const photoUrls = [photoUrl, ...colourPhotos(fresh, item.variantIndex).filter((u) => u !== photoUrl)].slice(0, 4);
+            const references: Buffer[] = [];
+            for (const u of photoUrls) {
+              try {
+                references.push(await loadMedia(u));
+              } catch {
+                /* a side photo that cannot be loaded is simply left out */
+              }
+            }
+            if (!references.length) throw new Error("This colour's photo could not be loaded.");
+            const withLogo = style === "unbox";
+            const logo = withLogo
+              ? await sharp(buildWatermarkSvg(900)).flatten({ background: "#ffffff" }).extend({ top: 60, bottom: 60, left: 60, right: 60, background: "#ffffff" }).png().toBuffer()
+              : null;
+            const frame = await generateStudioImage(
+              buildStyleFramePrompt({ style, isFootwear, photoCount: references.length, hasLogo: !!logo }),
+              logo ? [...references, logo] : references,
+              "9:16",
+            );
+            firstFrame = await sharp(frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
+            // Step 2: the video model animates that frame.
+            prompt = buildStyleVideoPrompt({ style, isFootwear, seconds });
+          }
+          const raw = await generateStudioVideo({ firstFrame, prompt, seconds, quality });
           const finished = await finishVideo(raw, { width: size.width, height: size.height, seconds });
           const url = await deps.uploadVideo(finished, "ai-product-video.mp4", { passthrough: true });
           const row = await insertMedia({
@@ -429,7 +477,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             product_id: item.productId,
             variant_index: item.variantIndex,
             label,
-            meta: { source, sourceUrl: photoUrl, motion, seconds, quality, width: size.width, height: size.height },
+            meta: { source, sourceUrl: photoUrl, motion, style, seconds, quality, width: size.width, height: size.height },
           });
           if (autoPublish) {
             const outcome = await publishVideo(deps, row, replace);

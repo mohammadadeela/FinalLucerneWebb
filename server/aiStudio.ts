@@ -172,6 +172,75 @@ ${opts.centralCrop ? "- Keep the product inside the central area of the frame at
 FINAL REMINDER — the single most important rule: ${subject} must stay perfectly unchanged from the first frame to the last. Only the camera and the light may move.`;
 }
 
+/* ───────────────────────────── Try-on style videos ───────────────────────────── */
+// The boutique-reel look: a close shot in a bright studio where the piece is worn, shown by hand,
+// or taken out of its Lucerne box. These are made in two steps. First the image model shoots the
+// opening frame from the real product photos (a still is where the product is easiest to keep
+// exact). Then the video model animates that frame with small, natural movement.
+
+export type VideoStyle = "photo" | "tryOn" | "hands" | "unbox";
+
+const REEL_SET =
+  "a bright, minimal fashion studio: smooth light-grey polished concrete floor, plain pale walls, tall industrial windows softly out of focus in the background, soft natural daylight from the side, no clutter. Shot on a phone-style 26mm lens at knee height, shallow depth of field, like a premium shoe boutique's Instagram reel";
+
+/** Prompt for the opening frame of a styled video. The attached photos are the same product; a logo image may follow them. */
+export function buildStyleFramePrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; photoCount: number; hasLogo: boolean }): string {
+  const scene: Record<Exclude<VideoStyle, "photo">, string> = {
+    tryOn: opts.isFootwear
+      ? "A woman is WEARING the pair. Frame from just below the knee down to the floor: bare legs or sheer tights only as far as the product allows, feet standing naturally on the floor, one foot slightly forward and angled so the side profile of the shoe from the photo is clearly visible. No face, no upper body."
+      : "A woman is WEARING the garment, standing relaxed. Frame from the chin or shoulders down to the knees or the hem, so the whole garment is visible. Her face is never in the frame. Plain, neutral underlayers and shoes that do not draw attention.",
+    hands: opts.isFootwear
+      ? "A woman's hands with neat natural nails hold ONE shoe of the pair gently by the heel and the toe, a little above the floor, showing the same side as the photo. The other shoe of the pair stands on the floor just behind it, slightly out of focus. No face, no body beyond the forearms."
+      : "A woman's hands with neat natural nails hold the garment up on a slim wooden hanger in front of the studio, the garment hanging straight and fully visible. No face, no body beyond the forearms.",
+    unbox: `Top-down view of the floor. An open ${opts.isFootwear ? "shoe box" : "gift box"} in soft blush pink lies on the floor with white tissue paper inside. The product rests in the tissue paper, fully visible. The box lid lies beside it, face up${opts.hasLogo ? ", printed with the logo from the LAST attached image, copied exactly: the butterfly mark with the words LUCERNE BOUTIQUE below it, flat and centred on the lid, spelled exactly like that" : ", completely plain with no print"}. A woman's hands rest on the edges of the box, about to lift the product out.`,
+  };
+  return `You are re-shooting a REAL product for an online boutique. The first ${opts.photoCount > 1 ? `${opts.photoCount} attached images are photos of the SAME physical product from different sides` : "attached image is a photo of the product"}. It will be shipped to paying customers exactly as shown. Product accuracy is your HIGHEST PRIORITY — higher than styling, higher than aesthetics.
+
+${FIDELITY_RULES}
+
+═══════════════════════════════════════
+📸 THE NEW SHOT:
+═══════════════════════════════════════
+- Scene: ${REEL_SET}.
+- ${scene[opts.style]}
+- The product is reproduced EXACTLY from the photos: same shape, proportions, colour, material and texture, same stitching, sole, heel, hardware, zips, straps and trims, in the same places. Use every attached product photo to get each side right. Do not simplify, restyle or "improve" anything. Do not add any detail the photos do not show.
+- The product is the hero: sharp, well lit, fully inside the central part of the frame, with clear space above and below it.
+- Skin, hands and legs look real and natural, never retouched or plastic.
+- No text anywhere${opts.style === "unbox" && opts.hasLogo ? " except the logo on the box lid" : ""}. No other brand names, no price tags, no watermarks, no captions.
+- Vertical 9:16 frame.
+${TECH_QUALITY}`;
+}
+
+/** Prompt that animates the opening frame made by buildStyleFramePrompt. */
+export function buildStyleVideoPrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; seconds: number }): string {
+  const action: Record<Exclude<VideoStyle, "photo">, string> = {
+    tryOn: opts.isFootwear
+      ? "She shifts her weight, lifts the front foot slightly and turns it a little left and right to show the shoe, then sets it down again and takes one small step in place. Her hand may come down once to smooth or adjust the top of the shoe."
+      : "She shifts her weight gently, smooths the fabric once with one hand and makes a small quarter turn and back, so the fabric moves naturally.",
+    hands: opts.isFootwear
+      ? "The hands slowly tilt the shoe a few degrees toward the camera and back, one thumb gently pressing the material to show its softness, then lower it toward the floor next to the other shoe."
+      : "The hands gently sway the hanger a few degrees and one hand runs lightly down the fabric to show how it falls.",
+    unbox: "The hands fold the tissue paper aside, lift the product slowly out of the box and hold it just above the box for the camera. The lid with its logo stays where it is, flat and unchanged.",
+  };
+  return `You are animating the attached image, which is the FIRST FRAME of a short product video for an online boutique. The product in it is a REAL item that will be shipped to paying customers. Product accuracy is your HIGHEST PRIORITY — higher than motion, higher than aesthetics.
+
+═══════════════════════════════════════
+🎬 VIDEO RULES:
+═══════════════════════════════════════
+- The product must look identical in every frame to how it looks in the first frame: same shape, colour, material, stitching, sole, heel, hardware and trims. It never morphs, flickers, melts, stretches, changes colour, or gains or loses a detail. It keeps its real stiffness: leather and soles do not bend like cloth.
+- Movement: ${action[opts.style]} All movement is slow, small and natural, like real phone footage in a boutique.
+- Do not turn the product far enough to reveal a side that is not visible in the first frame.
+- Hands always have five natural fingers. No face ever enters the frame.
+- The camera is handheld but very steady, with at most a slight slow push-in. Same room, same light, same floor from start to end. Nothing new enters the scene.
+- Any logo or lettering visible in the first frame stays exactly as it is, sharp and unchanged. No new text, captions, stickers or graphics appear.
+- ONE continuous shot of about ${opts.seconds} seconds. No cuts, no transitions, no speed changes.
+- Keep the product inside the central area of the frame at all times; the top and bottom edges are cut away later.
+- Look: real camera footage with natural colour. Never a 3D render, never a glow or beauty filter.
+- No dialogue, no voice, no music.
+
+FINAL REMINDER: the product stays exactly as in the first frame from start to end.`;
+}
+
 export type StudioScene = "studio" | "boutique";
 export type StudioMode = "single" | "multi" | "colors";
 
