@@ -24,6 +24,7 @@ import { optimizeImage, optimizeVideo } from "./mediaOptimizer";
 import { detectIntent } from "./chatbot/intentDetector";
 import { extractEntities } from "./chatbot/entityExtractor";
 import { buildResponse, orderStatusReply } from "./chatbot/responses";
+import { askLucy } from "./chatbot/assistant";
 import { registerOllamaRoutes } from "./ollama";
 import { registerAiStudioRoutes } from "./aiStudioRoutes";
 import { SITE_URL } from "./seo";
@@ -6077,6 +6078,24 @@ Sitemap: ${SITE_URL}/sitemap.xml
         if (ENTITY_KEYS.has(k) && (typeof v === "string" || typeof v === "number")) {
           safeLastFilters[k] = String(v);
         }
+      }
+
+      // ── Lucy, the AI assistant ───────────────────────────────────────────
+      // The language model answers from the store's own data (products, orders,
+      // policies). When it is not available, the keyword replies below take over.
+      const rawHistory: unknown[] = Array.isArray((req.body as any)?.history) ? (req.body as any).history : [];
+      const history = rawHistory
+        .slice(-10)
+        .filter((t: any) => t && (t.role === "user" || t.role === "assistant") && typeof t.text === "string" && t.text.trim())
+        .map((t: any) => ({ role: t.role as "user" | "assistant", text: String(t.text).slice(0, 600) }));
+      const lucy = await askLucy({
+        message: message.trim(),
+        history,
+        user: req.isAuthenticated() && req.user ? (req.user as any) : null,
+        siteLang: safeLang,
+      });
+      if (lucy) {
+        return res.json({ reply: lucy.reply, buttons: lucy.buttons, products: lucy.products, suggestions: lucy.suggestions, ai: true, context: {} });
       }
 
       const settings = await storage.getSiteSettings();
