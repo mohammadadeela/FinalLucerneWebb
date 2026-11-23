@@ -193,7 +193,7 @@ FINAL REMINDER — the single most important rule: ${subject} must stay perfectl
 // opening frame from the real product photos (a still is where the product is easiest to keep
 // exact). Then the video model animates that frame with small, natural movement.
 
-export type VideoStyle = "photo" | "tryOn" | "hands" | "unbox";
+export type VideoStyle = "photo" | "tryOn" | "hands" | "unbox" | "model";
 
 /** What kind of piece a product is. Each kind is worn, held and unboxed in its own way. */
 export type ProductKind = "shoes" | "dress" | "abaya" | "top" | "bottom" | "bag" | "belt" | "clothes";
@@ -237,8 +237,33 @@ export const REEL_SETS: string[] = [
 ];
 
 type Styled = Exclude<VideoStyle, "photo">;
+type Staged = Exclude<Styled, "model">;
 
-const FRAME_SCENES: Record<ProductKind, Record<Styled, string>> = {
+// "Model" style: a fashion-film presentation. The model shows the piece the way a model
+// would on a shoot: a few steps, a pose, a turn of the body toward the camera.
+const MODEL_SCENES: Record<ProductKind, string> = {
+  shoes: `A model is WEARING the pair, caught mid-stride walking toward the camera. Full-length frame from above her head to the floor, shot from a low angle so the shoes are large, sharp and clearly lit in the lower part of the picture, one shoe showing the same side as the photo. ${MODEL} Her outfit ends above the ankle so nothing covers the shoes.`,
+  dress: `A model is WEARING the dress, standing in a confident, graceful fashion pose, one hand lightly on her waist, weight on one leg. Full-length frame from above her head down to her shoes; the whole dress is visible and falls naturally. ${MODEL}`,
+  abaya: `A model is WEARING the abaya, standing in a graceful, elegant pose, one arm slightly lifted so the sleeve opens. Full-length frame from above her head to the floor; the whole abaya, its trim and its flow are visible. ${MODEL} The abaya is worn exactly as its photos show it, with the head covering only if the photos show one.`,
+  top: `A model is WEARING the top, in a relaxed, confident fashion pose, one hand in her trouser pocket. Frame from above her head down to mid-thigh; the whole top is visible. ${MODEL} Worn with simple well-cut trousers.`,
+  bottom: `A model is WEARING the piece, standing in a confident fashion pose with one leg slightly forward. Full-length frame from above her head to the floor; its whole length, waistband and cut are visible. ${MODEL} Worn with a simple fitted top tucked in, and elegant simple shoes.`,
+  bag: `A model presents the bag, holding it up slightly in front of her hip with one hand so its front faces the camera, sharp and fully visible. Three-quarter frame from above her head to the knee. ${MODEL} Her outfit is simple and in a soft colour that makes the bag stand out.`,
+  belt: `A model is WEARING the belt at her waist over a simple dress or high-waisted trousers in a soft plain colour, standing in a confident pose, one hand resting by the buckle. Frame from above her head to mid-thigh, the buckle sharp and fully visible. ${MODEL}`,
+  clothes: `A model is WEARING the garment, standing in a confident, graceful fashion pose. Full-length frame from above her head to the floor; the whole garment is visible. ${MODEL}`,
+};
+
+const MODEL_ACTIONS: Record<ProductKind, string> = {
+  shoes: "She walks three slow, elegant steps toward the camera and stops, turning one foot outward to present the shoe. The camera lowers gently toward the shoes as she stops.",
+  dress: "She takes two slow steps toward the camera, stops, and turns her body a quarter to one side and back with a soft smile, the skirt moving with her. One hand brushes the fabric lightly.",
+  abaya: "She takes two slow, graceful steps toward the camera so the abaya flows, stops, and opens one arm to show the sleeve, then lets it fall.",
+  top: "She shifts her weight, adjusts the collar or cuff with one hand, and turns her shoulders a quarter to one side and back, looking toward the camera.",
+  bottom: "She takes two slow steps toward the camera, stops with one leg forward, and turns her hips a quarter to one side and back so the cut is seen.",
+  bag: "She takes one slow step, lifts the bag a little toward the camera, turns it a few degrees and back, then lowers it to her side.",
+  belt: "She turns her waist a quarter to one side and back, one hand sliding along the belt to the buckle, light travelling over it.",
+  clothes: "She takes two slow steps toward the camera, stops, and turns a quarter to one side and back, one hand smoothing the fabric.",
+};
+
+const FRAME_SCENES: Record<ProductKind, Record<Staged, string>> = {
   shoes: {
     tryOn: "A woman is WEARING the pair. Frame from just below the knee down to the floor: bare ankles, sheer tights or the hem of plain trousers, as suits the shoe. Feet standing naturally on the floor, one foot slightly forward and angled so the side profile of the shoe from the photo is clearly visible. No face, no upper body.",
     hands: "A woman's hands with neat natural nails hold ONE shoe of the pair gently by the heel and the toe, a little above the floor, showing the same side as the photo. The other shoe of the pair stands on the floor just behind it, slightly out of focus. No face, no body beyond the forearms.",
@@ -281,7 +306,7 @@ const FRAME_SCENES: Record<ProductKind, Record<Styled, string>> = {
   },
 };
 
-const VIDEO_ACTIONS: Record<ProductKind, Record<Styled, string>> = {
+const VIDEO_ACTIONS: Record<ProductKind, Record<Staged, string>> = {
   shoes: {
     tryOn: "She shifts her weight, lifts the front foot slightly and turns it a little left and right to show the shoe, then sets it down again and takes one small step in place. Her hand may come down once to smooth or adjust the top of the shoe.",
     hands: "The hands slowly tilt the shoe a few degrees toward the camera and back, one thumb gently pressing the material to show its softness, then lower it toward the floor next to the other shoe.",
@@ -333,6 +358,7 @@ export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; 
     tryOn: FRAME_SCENES[opts.kind].tryOn,
     hands: FRAME_SCENES[opts.kind].hands,
     unbox: FRAME_SCENES[opts.kind].unbox + lid,
+    model: MODEL_SCENES[opts.kind],
   };
   const colours = (opts.colours || []).filter(Boolean);
   const many = colours.length > 1;
@@ -345,6 +371,9 @@ export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; 
         ? `She carries or wears the FIRST colour. The other ${colours.length - 1} colour(s) are displayed right beside her on a low pale plinth, side by side, each one fully visible, in focus and not overlapping another.`
         : `She wears the FIRST colour. The other ${colours.length - 1} colour(s) hang right beside her on a slim clothes rail, each on its own hanger, spaced apart, facing the camera, fully visible from top to hem and in focus.`,
     hands: `The hands hold or touch the FIRST colour. The other ${colours.length - 1} colour(s) are arranged right beside it in a neat row, each ${one} fully visible, in focus and not overlapping another.`,
+    model: opts.kind === "shoes" || opts.kind === "bag" || opts.kind === "belt"
+      ? `She wears or carries the FIRST colour. The other ${colours.length - 1} colour(s) are displayed right beside her on a low pale plinth, side by side, each one fully visible, in focus and not overlapping another.`
+      : `She wears the FIRST colour. The other ${colours.length - 1} colour(s) hang right beside her on a slim clothes rail, each on its own hanger, spaced apart, facing the camera, fully visible from top to hem and in focus.`,
     unbox: `The box holds the FIRST colour. The other ${colours.length - 1} colour(s) lie on the floor right beside the box on their own sheets of white tissue paper, in a neat row, each ${one} fully visible and not overlapping another.`,
   };
   const colourBlock = many
@@ -412,7 +441,7 @@ ${TECH_QUALITY}`;
 /** Prompt that animates the opening frame made by buildStyleFramePrompt. */
 export function buildStyleVideoPrompt(opts: { style: Styled; kind: ProductKind; seconds: number; spec?: string; colourCount?: number }): string {
   const many = (opts.colourCount || 1) > 1;
-  const action = VIDEO_ACTIONS[opts.kind][opts.style] + (opts.style === "unbox" ? " The lid with its logo stays where it is, flat and unchanged." : "");
+  const action = opts.style === "model" ? MODEL_ACTIONS[opts.kind] : VIDEO_ACTIONS[opts.kind][opts.style] + (opts.style === "unbox" ? " The lid with its logo stays where it is, flat and unchanged." : "");
   const soft = opts.kind !== "shoes" && opts.kind !== "bag" && opts.kind !== "belt";
   return `You are animating the attached image, which is the FIRST FRAME of a short product video for an online boutique. The product in it is a REAL item that will be shipped to paying customers. Product accuracy is your HIGHEST PRIORITY — higher than motion, higher than aesthetics.
 

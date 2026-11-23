@@ -399,7 +399,7 @@ const clampSeconds = (value: unknown, fallback: number) => {
   return Number.isFinite(n) ? Math.max(4, Math.min(10, n)) : fallback;
 };
 const asMotion = (value: unknown): VideoMotion => (value === "drift" || value === "light" ? value : "pushIn");
-const asStyle = (value: unknown): VideoStyle => (value === "tryOn" || value === "hands" || value === "unbox" ? value : "photo");
+const asStyle = (value: unknown): VideoStyle => (value === "tryOn" || value === "hands" || value === "unbox" || value === "model" ? value : "photo");
 const asQuality = (value: unknown): StudioQuality => (value === "standard" ? "standard" : "high");
 
 function cleanText(raw: any): StudioText | null {

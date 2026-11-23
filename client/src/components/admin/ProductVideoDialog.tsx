@@ -47,7 +47,7 @@ export function ProductVideoDialog({
 
   const [tab, setTab] = useState("generate");
   const [selection, setSelection] = useState<Selection>({});
-  const [style, setStyle] = useState<"tryOn" | "hands" | "unbox" | "photo">("tryOn");
+  const [style, setStyle] = useState<"model" | "tryOn" | "hands" | "unbox" | "photo">("model");
   const [seconds, setSeconds] = useState(6);
   const [combine, setCombine] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -293,7 +293,8 @@ export function ProductVideoDialog({
                   <Field
                     label={tr("نوع الفيديو", "Video style")}
                     hint={
-                      style === "tryOn" ? tr("موديل تلبس القطعة في ستوديو أو بوتيك ناعم.", "A model wears the piece in a soft studio or boutique.")
+                      style === "model" ? tr("موديل تعرض القطعة كأنه تصوير أزياء: خطوات، وقفة، ولفتة للكاميرا.", "A model presents the piece like a fashion shoot: a few steps, a pose, a turn to the camera.")
+                      : style === "tryOn" ? tr("لقطة أقرب وأهدى: القطعة ملبوسة مع حركة بسيطة تبيّن تفاصيلها.", "A closer, calmer shot: the piece worn, with small movement that shows its details.")
                       : style === "hands" ? tr("يدان تعرضان القطعة عن قرب.", "Hands show the piece up close.")
                       : style === "unbox" ? tr("القطعة تخرج من علبة عليها شعار لوسيرن بوتيك.", "The piece comes out of a box with the Lucerne Boutique logo.")
                       : tr("صورتك نفسها مع حركة كاميرا هادئة. الأدق لتفاصيل القطعة.", "Your own photo with a slow camera move. The most exact for product details.")
@@ -301,6 +302,7 @@ export function ProductVideoDialog({
                   >
                     <Choice value={style} onChange={setStyle} testId="choice-video-style"
                       options={[
+                        { value: "model", label: tr("عرض موديل", "Model showcase") },
                         { value: "tryOn", label: tr("تجربة لبس", "Try-on") },
                         { value: "hands", label: tr("عرض باليد", "In hand") },
                         { value: "unbox", label: tr("فتح العلبة", "Unboxing") },
