@@ -21,6 +21,9 @@ import {
   buildProductVideoPrompt,
   buildStyleFramePrompt,
   buildStyleVideoPrompt,
+  describeProduct,
+  judgeFidelity,
+  videoFrameStrip,
   buildSiteFirstFrame,
   composeStill,
   finishVideo,
@@ -439,35 +442,78 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
           const size = formatSize("site", quality);
           let firstFrame: Buffer;
           let prompt: string;
+          // Every photo of this colour: what the quality controller compares against.
+          const photoUrls = [photoUrl, ...colourPhotos(fresh, item.variantIndex).filter((u) => u !== photoUrl)].slice(0, 4);
+          const references: Buffer[] = [];
+          for (const u of photoUrls) {
+            try {
+              references.push(await loadMedia(u));
+            } catch {
+              /* a side photo that cannot be loaded is simply left out */
+            }
+          }
+          if (!references.length) throw new Error("This colour's photo could not be loaded.");
+          let frameScore: number | null = null;
+
           if (style === "photo") {
-            firstFrame = await buildSiteFirstFrame(await loadMedia(photoUrl));
+            firstFrame = await buildSiteFirstFrame(references[0]);
             prompt = buildProductVideoPrompt({ isFootwear, motion, seconds, centralCrop: true });
           } else {
-            // Step 1: the image model shoots the opening frame from every photo of this colour.
-            const photoUrls = [photoUrl, ...colourPhotos(fresh, item.variantIndex).filter((u) => u !== photoUrl)].slice(0, 4);
-            const references: Buffer[] = [];
-            for (const u of photoUrls) {
-              try {
-                references.push(await loadMedia(u));
-              } catch {
-                /* a side photo that cannot be loaded is simply left out */
-              }
-            }
-            if (!references.length) throw new Error("This colour's photo could not be loaded.");
-            const withLogo = style === "unbox";
-            const logo = withLogo
+            // Step 1: write down what the product really looks like.
+            const spec = await describeProduct(references, isFootwear);
+            const logo = style === "unbox"
               ? await sharp(buildWatermarkSvg(900)).flatten({ background: "#ffffff" }).extend({ top: 60, bottom: 60, left: 60, right: 60, background: "#ffffff" }).png().toBuffer()
               : null;
-            const frame = await generateStudioImage(
-              buildStyleFramePrompt({ style, isFootwear, photoCount: references.length, hasLogo: !!logo }),
-              logo ? [...references, logo] : references,
-              "9:16",
-            );
-            firstFrame = await sharp(frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
-            // Step 2: the video model animates that frame.
-            prompt = buildStyleVideoPrompt({ style, isFootwear, seconds });
+            // Step 2: shoot the opening frame, check it against the photos, and shoot again
+            // with the controller's corrections until it matches (three tries at most).
+            let best: { frame: Buffer; score: number } | null = null;
+            let fixes: string[] = [];
+            for (let attempt = 1; attempt <= 3; attempt++) {
+              const frame = await generateStudioImage(
+                buildStyleFramePrompt({ style, isFootwear, photoCount: references.length, hasLogo: !!logo, spec, fixes }),
+                logo ? [...references, logo] : references,
+                "9:16",
+              );
+              const verdict = await judgeFidelity(references, frame, "still");
+              if (!verdict) {
+                // No controller available: use this frame as it is.
+                if (!best) best = { frame, score: -1 };
+                break;
+              }
+              if (!best || verdict.score > best.score) best = { frame, score: verdict.score };
+              if (verdict.score >= 9) break;
+              fixes = verdict.issues;
+            }
+            if (!best) throw new Error("The opening frame could not be generated.");
+            frameScore = best.score >= 0 ? best.score : null;
+            if (frameScore !== null && frameScore < 6) {
+              throw new Error("The AI could not reproduce this product accurately enough, so no video was made. Add clearer photos of it from more sides and try again.");
+            }
+            firstFrame = await sharp(best.frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
+            // Step 3: the video model animates that frame.
+            prompt = buildStyleVideoPrompt({ style, isFootwear, seconds, spec });
           }
-          const raw = await generateStudioVideo({ firstFrame, prompt, seconds, quality });
+
+          // The clip is checked too: if the product changes while moving, it is made once more.
+          let raw = await generateStudioVideo({ firstFrame, prompt, seconds, quality });
+          let videoScore: number | null = null;
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            const strip = await videoFrameStrip(raw, seconds);
+            const verdict = strip ? await judgeFidelity(references, strip, "video frames") : null;
+            if (!verdict) break;
+            if (videoScore === null || verdict.score > videoScore) videoScore = verdict.score;
+            if (verdict.score >= 8 || attempt === 2) break;
+            const second = await generateStudioVideo({ firstFrame, prompt, seconds, quality });
+            const secondStrip = await videoFrameStrip(second, seconds);
+            const secondVerdict = secondStrip ? await judgeFidelity(references, secondStrip, "video frames") : null;
+            if (secondVerdict && secondVerdict.score > verdict.score) {
+              raw = second;
+              videoScore = secondVerdict.score;
+            }
+            break;
+          }
+          // A clip the controller is not happy with is kept as a draft instead of going on the site.
+          const lowFidelity = videoScore !== null && videoScore < 7;
           const finished = await finishVideo(raw, { width: size.width, height: size.height, seconds });
           const url = await deps.uploadVideo(finished, "ai-product-video.mp4", { passthrough: true });
           const row = await insertMedia({
@@ -477,8 +523,9 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             product_id: item.productId,
             variant_index: item.variantIndex,
             label,
-            meta: { source, sourceUrl: photoUrl, motion, style, seconds, quality, width: size.width, height: size.height },
+            meta: { source, sourceUrl: photoUrl, motion, style, seconds, quality, width: size.width, height: size.height, frameScore, videoScore },
           });
+          if (lowFidelity) return { media: row, publishSkipped: "low_fidelity" };
           if (autoPublish) {
             const outcome = await publishVideo(deps, row, replace);
             return { media: { ...row, status: outcome.published ? "published" : "draft" }, publishSkipped: outcome.reason };

@@ -184,7 +184,7 @@ const REEL_SET =
   "a bright, minimal fashion studio: smooth light-grey polished concrete floor, plain pale walls, tall industrial windows softly out of focus in the background, soft natural daylight from the side, no clutter. Shot on a phone-style 26mm lens at knee height, shallow depth of field, like a premium shoe boutique's Instagram reel";
 
 /** Prompt for the opening frame of a styled video. The attached photos are the same product; a logo image may follow them. */
-export function buildStyleFramePrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; photoCount: number; hasLogo: boolean }): string {
+export function buildStyleFramePrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[] }): string {
   const scene: Record<Exclude<VideoStyle, "photo">, string> = {
     tryOn: opts.isFootwear
       ? "A woman is WEARING the pair. Frame from just below the knee down to the floor: bare legs or sheer tights only as far as the product allows, feet standing naturally on the floor, one foot slightly forward and angled so the side profile of the shoe from the photo is clearly visible. No face, no upper body."
@@ -208,11 +208,12 @@ ${FIDELITY_RULES}
 - Skin, hands and legs look real and natural, never retouched or plastic.
 - No text anywhere${opts.style === "unbox" && opts.hasLogo ? " except the logo on the box lid" : ""}. No other brand names, no price tags, no watermarks, no captions.
 - Vertical 9:16 frame.
+${opts.spec ? `\n═══════════════════════════════════════\n📋 PRODUCT SPEC — written from the real photos. Every point must be true in your image:\n═══════════════════════════════════════\n${opts.spec}\n` : ""}${opts.fixes?.length ? `\n⚠️ YOUR PREVIOUS ATTEMPT WAS REJECTED by quality control because the product did not match the photos. Fix exactly these points this time:\n${opts.fixes.map((f) => `- ${f}`).join("\n")}\n` : ""}
 ${TECH_QUALITY}`;
 }
 
 /** Prompt that animates the opening frame made by buildStyleFramePrompt. */
-export function buildStyleVideoPrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; seconds: number }): string {
+export function buildStyleVideoPrompt(opts: { style: Exclude<VideoStyle, "photo">; isFootwear: boolean; seconds: number; spec?: string }): string {
   const action: Record<Exclude<VideoStyle, "photo">, string> = {
     tryOn: opts.isFootwear
       ? "She shifts her weight, lifts the front foot slightly and turns it a little left and right to show the shoe, then sets it down again and takes one small step in place. Her hand may come down once to smooth or adjust the top of the shoe."
@@ -237,8 +238,89 @@ export function buildStyleVideoPrompt(opts: { style: Exclude<VideoStyle, "photo"
 - Keep the product inside the central area of the frame at all times; the top and bottom edges are cut away later.
 - Look: real camera footage with natural colour. Never a 3D render, never a glow or beauty filter.
 - No dialogue, no voice, no music.
-
+${opts.spec ? `\nPRODUCT SPEC — these facts about the product stay true in every frame:\n${opts.spec}\n` : ""}
 FINAL REMINDER: the product stays exactly as in the first frame from start to end.`;
+}
+
+/* ───────────────────────────── Quality control ───────────────────────────── */
+// A second model looks at what was generated and compares it with the real photos, the way a
+// careful shop owner would: first it writes down what the product really looks like, then it
+// scores every generated frame against the photos. A frame that does not match is shot again.
+
+const GEMINI_VISION_MODEL = process.env.GEMINI_VISION_MODEL || process.env.GEMINI_MODEL || "gemini-flash-latest";
+
+async function visionJson(prompt: string, images: Buffer[]): Promise<any | null> {
+  try {
+    const parts: any[] = [{ text: prompt }];
+    for (const image of images) {
+      const jpeg = await sharp(image, { failOn: "none" }).rotate().resize({ width: 1280, height: 1280, fit: "inside", withoutEnlargement: true }).flatten({ background: "#ffffff" }).jpeg({ quality: 88 }).toBuffer();
+      parts.push({ inline_data: { mime_type: "image/jpeg", data: jpeg.toString("base64") } });
+    }
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_VISION_MODEL}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
+      body: JSON.stringify({ contents: [{ parts }], generationConfig: { temperature: 0.1, responseMimeType: "application/json" } }),
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) throw new Error(`${res.status} ${(await res.text()).slice(0, 160)}`);
+    const data: any = await res.json();
+    const text = (data?.candidates?.[0]?.content?.parts || []).filter((p: any) => typeof p?.text === "string" && !p.thought).map((p: any) => p.text).join("");
+    return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+  } catch (err: any) {
+    // Quality control is a safety net; if it is unavailable the video is still made.
+    log("quality check unavailable:", err?.message || err);
+    return null;
+  }
+}
+
+/** A short, exact written description of the product, taken only from its real photos. */
+export async function describeProduct(photos: Buffer[], isFootwear: boolean): Promise<string> {
+  const data = await visionJson(
+    `These ${photos.length} image(s) show ONE real ${isFootwear ? "pair of shoes" : "fashion item"} sold by a boutique. Write its exact visual specification so that an artist who cannot see the photos could not get any detail wrong. Only state what is clearly visible; never guess.
+Return JSON: {"spec": ["...", "..."]} with 8 to 14 short bullet strings covering, where visible: item type; exact colour(s) in plain words and where each colour sits; material and surface (smooth, grained, suede, patent, knit, mesh...) and how shiny; overall silhouette and height (${isFootwear ? "ankle / mid-calf / knee-high shaft, toe shape, heel type, heel height and heel shape, sole thickness, sole colour and tread, platform" : "length, neckline, sleeves, waist, fit"}); closures and exactly where they are (zip side, elastic panels, buckles, laces, straps, bows); stitching, seams and panel lines; trims, hardware colour; anything distinctive; and what it does NOT have that someone might wrongly add.`,
+    photos.slice(0, 4),
+  );
+  const list: string[] = Array.isArray(data?.spec) ? data.spec.map((x: unknown) => String(x).trim()).filter(Boolean).slice(0, 14) : [];
+  return list.map((line) => `- ${line.slice(0, 220)}`).join("\n");
+}
+
+export interface FidelityVerdict { score: number; issues: string[] }
+
+/**
+ * Compares a generated picture (the LAST image) with the real product photos (all images before it).
+ * Returns null when the check could not be run.
+ */
+export async function judgeFidelity(photos: Buffer[], candidate: Buffer, candidateIs: "still" | "video frames"): Promise<FidelityVerdict | null> {
+  const data = await visionJson(
+    `You are the strict quality controller of an online fashion boutique. The first ${photos.length} image(s) are REAL photos of a product. The LAST image is ${candidateIs === "still" ? "an AI-generated picture" : "a strip of frames taken from an AI-generated video"} that is supposed to show that same product. A customer will receive the real product, so any difference is a false advertisement.
+Compare ONLY the product itself (ignore background, model, hands, lighting, pose and camera angle). Check: overall shape and proportions; exact colour; material and surface texture; toe shape, heel shape and height, sole thickness and tread; shaft height; closures (zips, elastic, buckles, straps, laces, bows) and their positions; stitching and panel lines; trims and hardware; anything added that the real product does not have; anything missing.${candidateIs === "video frames" ? " Also check that the product looks the same in every frame of the strip and never deforms." : ""}
+Return JSON: {"score": <integer 0-10>, "issues": ["short, concrete instruction to fix one difference", ...]}.
+Scoring: 10 = indistinguishable product; 8-9 = same product, only tiny differences a customer would not notice; 6-7 = clearly the same style but a visible detail is wrong; 0-5 = a different product. Be strict. List at most 6 issues, most important first; an empty list only if the score is 10.`,
+    [...photos.slice(0, 4), candidate],
+  );
+  const score = Number(data?.score);
+  if (!Number.isFinite(score)) return null;
+  return {
+    score: Math.max(0, Math.min(10, Math.round(score))),
+    issues: (Array.isArray(data?.issues) ? data.issues : []).map((x: unknown) => String(x).trim().slice(0, 200)).filter(Boolean).slice(0, 6),
+  };
+}
+
+/** Four frames from across a clip, side by side, for the quality controller to look at. */
+export async function videoFrameStrip(video: Buffer, seconds: number): Promise<Buffer | null> {
+  try {
+    return await withTempDir(async (dir) => {
+      const inFile = path.join(dir, "in.mp4");
+      const outFile = path.join(dir, "strip.jpg");
+      await fs.promises.writeFile(inFile, video);
+      const step = Math.max(0.5, (Math.max(2, seconds) - 0.4) / 4);
+      await ffmpeg(["-i", inFile, "-vf", `fps=1/${step.toFixed(2)},scale=540:-2,tile=4x1`, "-frames:v", "1", "-q:v", "3", "-y", outFile]);
+      return fs.promises.readFile(outFile);
+    });
+  } catch (err: any) {
+    log("could not read frames for the quality check:", err?.message || err);
+    return null;
+  }
 }
 
 export type StudioScene = "studio" | "boutique";

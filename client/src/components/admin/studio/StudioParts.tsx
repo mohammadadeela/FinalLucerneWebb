@@ -369,7 +369,9 @@ export function JobList({ jobs, isAr, onClear }: { jobs: StudioJob[]; isAr: bool
               {job.status === "queued" && tr("في الانتظار", "Waiting")}
               {job.status === "running" && tr("جاري التوليد", "Generating")}
               {job.status === "done" &&
-                (job.result?.publishSkipped
+                (job.result?.publishSkipped === "low_fidelity"
+                  ? tr("جاهز كمسودة — التفاصيل قد لا تطابق القطعة، راجعه قبل النشر", "Saved as a draft — details may not match the product, review before publishing")
+                  : job.result?.publishSkipped
                   ? tr("جاهز — لم يُنشر لأن اللون له فيديو", "Ready — not published: the colour has a video")
                   : job.result?.media?.status === "published"
                     ? tr("جاهز ومنشور", "Ready and published")
