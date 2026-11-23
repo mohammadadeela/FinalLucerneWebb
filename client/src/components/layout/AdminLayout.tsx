@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, LogOut, ArrowLeft, ArrowRight,
   ImageIcon, Receipt, TicketPercent, FolderTree, BarChart2, ExternalLink, Database,
-  Menu, X, ArrowLeftRight, Globe, Clapperboard, Instagram,
+  Menu, X, ArrowLeftRight, Globe,
 } from "lucide-react";
 import { useAuth, useLogout } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -69,8 +69,6 @@ export function AdminLayout({
     { label: language === "ar" ? "الاستبدالات" : "Exchanges", href: "/admin/exchanges", icon: ArrowLeftRight },
     { label: t.admin.users, href: "/admin/users", icon: Users },
     { label: language === "ar" ? "محتوى الصفحات" : "Site Content", href: "/admin/site-content", icon: ImageIcon },
-    { label: language === "ar" ? "فيديوهات المنتجات" : "Product Videos", href: "/admin/video-studio", icon: Clapperboard },
-    { label: language === "ar" ? "استوديو إنستغرام" : "Instagram Studio", href: "/admin/instagram-studio", icon: Instagram },
     { label: language === "ar" ? "نقطة البيع" : "POS", href: "/admin/pos", icon: Receipt },
     { label: language === "ar" ? "أكواد الخصم" : "Discount Codes", href: "/admin/discount-codes", icon: TicketPercent },
     { label: language === "ar" ? "الفئات" : "Categories", href: "/admin/categories", icon: FolderTree },

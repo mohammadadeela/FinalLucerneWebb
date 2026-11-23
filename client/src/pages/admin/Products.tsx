@@ -1,4 +1,7 @@
 import { prepareProductPhotoDownload, type PhotoExportMode } from "@/lib/productPhotoDownload";
+import { downloadProductMedia, productVideoRefs } from "@/lib/productMediaDownload";
+import { ProductVideoDialog } from "@/components/admin/ProductVideoDialog";
+import { ProductDownloadMenu } from "@/components/admin/ProductDownloadMenu";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { getVideoPosterUrl, optimizeCloudinaryUrl } from "@/lib/utils";
 import { getOriginalProductPhoto } from "@/lib/productAiSource";
@@ -1414,6 +1417,11 @@ export default function Products() {
   const [downloadingPhotoIds, setDownloadingPhotoIds] = useState<Set<number>>(new Set());
   const [bulkPhotoDownloading, setBulkPhotoDownloading] = useState(false);
   const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  // Products an AI video is being made for (null = dialog closed).
+  const [videoDialogIds, setVideoDialogIds] = useState<number[] | null>(null);
+  const [videoMenuOpen, setVideoMenuOpen] = useState(false);
+  const [bulkVideoDownloading, setBulkVideoDownloading] = useState("");
   const [photoDownloadProgress, setPhotoDownloadProgress] = useState("");
   const [photoCounts, setPhotoCounts] = useState<{
     selection: string; main: number; all: number; ai: number;
@@ -3173,6 +3181,52 @@ export default function Products() {
    * selected products. The server exports clean, unwatermarked JPEG files
    * directly at the root of a single ZIP (no product/color subfolders).
    */
+  /**
+   * Downloads the videos of the chosen products, alone or together with their main photos.
+   * One product shows its own spinner; several show progress on the bar button.
+   */
+  const handleDownloadProductMedia = async (ids: number[], withPhotos: boolean, watermark = false) => {
+    if (!ids.length || !products) return;
+    const single = ids.length === 1 && selectedIds.size === 0 ? ids[0] : null;
+    setVideoMenuOpen(false);
+    const ar = language === "ar";
+    if (single !== null) setDownloadingPhotoIds((prev) => new Set(prev).add(single));
+    else setBulkVideoDownloading(ar ? "جاري التجهيز..." : "Preparing...");
+    try {
+      const result = await downloadProductMedia({
+        products: products as any[],
+        ids,
+        withPhotos,
+        watermark,
+        onProgress: ({ done, total, stage }) => {
+          if (single !== null) return;
+          const what = stage === "photos" ? (ar ? "الصور" : "photos") : (ar ? "الفيديوهات" : "videos");
+          setBulkVideoDownloading(ar ? `جاري تجهيز ${what} ${done}/${total}` : `Preparing ${what} ${done}/${total}`);
+        },
+      });
+      toast({
+        title: withPhotos
+          ? (ar ? `تم تحميل ${result.photos} صورة و${result.videos} فيديو` : `Downloaded ${result.photos} photo(s) and ${result.videos} video(s)`)
+          : (ar ? `تم تحميل ${result.videos} فيديو` : `Downloaded ${result.videos} video(s)`),
+      });
+    } catch (err: any) {
+      toast({
+        title: err?.message === "NO_VIDEOS"
+          ? (ar ? "المنتجات المحددة ليس لها فيديوهات" : "The selected products have no videos")
+          : (ar ? "فشل التحميل" : "Download failed"),
+        description: err?.message === "NO_VIDEOS" ? undefined : err?.message,
+        variant: "destructive",
+      });
+    } finally {
+      if (single !== null) setDownloadingPhotoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(single);
+        return next;
+      });
+      else setBulkVideoDownloading("");
+    }
+  };
+
   const handleDownloadMainPhotos = async (ids: number[], mode: PhotoExportMode = "main") => {
     if (!ids.length) return;
     const single = ids.length === 1 ? ids[0] : null;
@@ -4158,7 +4212,8 @@ export default function Products() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+      {/* ── Page header: title on one side, the three main actions on the other ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <h1
             className="text-2xl sm:text-3xl font-display font-semibold text-foreground"
@@ -4170,8 +4225,78 @@ export default function Products() {
             {t.admin.manageProducts}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="flex items-stretch rounded-lg border border-border bg-background overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full sm:w-auto shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <Popover open={toolsOpen} onOpenChange={setToolsOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="h-10 gap-2 shadow-sm" data-testid="button-products-tools">
+                {language === "ar" ? "أدوات" : "Tools"}
+                {shoeSizeAuditResults.length > 0 && (
+                  <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-semibold text-white">
+                    {shoeSizeAuditResults.length}
+                  </span>
+                )}
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-1.5 space-y-0.5" dir={language === "ar" ? "rtl" : "ltr"}>
+              <Button variant="ghost" className="w-full justify-start gap-2.5" data-testid="button-view-bulk-upload"
+                onClick={() => { setToolsOpen(false); setViewMode(viewMode === "bulk-upload" ? "table" : "bulk-upload"); }}>
+                <CloudUpload className="w-4 h-4" />
+                {viewMode === "bulk-upload" ? (language === "ar" ? "إغلاق الرفع الجماعي" : "Close bulk upload") : (language === "ar" ? "رفع جماعي للصور" : "Bulk photo upload")}
+              </Button>
+              <Button variant="ghost" className="w-full justify-start gap-2.5" data-testid="button-bulk-import"
+                onClick={() => {
+                  setToolsOpen(false);
+                  setIsImportOpen(true);
+                  setImportStep(1);
+                  setImportImageUrls([]);
+                  setExcelFile(null);
+                  setImportResult(null);
+                }}>
+                <FileSpreadsheet className="w-4 h-4" />
+                {language === "ar" ? "استيراد من Excel" : "Import from Excel"}
+              </Button>
+              <a href="/api/admin/products/export" download onClick={() => setToolsOpen(false)} data-testid="link-export-products"
+                className="flex h-9 w-full items-center gap-2.5 rounded-md px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+                <Download className="w-4 h-4" />
+                {language === "ar" ? "تصدير Excel" : "Export Excel"}
+              </a>
+              <a href="/api/admin/products/export-sql" download onClick={() => setToolsOpen(false)} data-testid="link-export-sql"
+                className="flex h-9 w-full items-center gap-2.5 rounded-md px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+                <FileText className="w-4 h-4" />
+                {language === "ar" ? "تصدير SQL (نسخة احتياطية)" : "Export SQL (backup)"}
+              </a>
+              <div className="my-1 h-px bg-border" />
+              <Button variant="ghost" className={`w-full justify-start gap-2.5 ${shoeSizeAuditResults.length > 0 ? "text-amber-700 dark:text-amber-400" : ""}`} data-testid="button-size-audit"
+                onClick={() => { setToolsOpen(false); setIsSizeAuditOpen(true); }}>
+                <AlertCircle className="w-4 h-4" />
+                <span className="flex-1 text-start">{language === "ar" ? "فحص مقاسات الأحذية" : "Audit shoe sizes"}</span>
+                {shoeSizeAuditResults.length > 0 && (
+                  <span className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-semibold text-white">
+                    {shoeSizeAuditResults.length}
+                  </span>
+                )}
+              </Button>
+            </PopoverContent>
+          </Popover>
+          <Button onClick={() => setShowBarcodePreview(true)} variant="outline" className="h-10 gap-2 shadow-sm" data-testid="button-print-barcodes">
+            <Printer className="w-4 h-4" />
+            {language === "ar" ? "طباعة الباركود" : "Print Barcodes"}
+          </Button>
+            <Button
+              onClick={openCreate}
+              className="h-10 bg-foreground text-background hover:bg-foreground/90 shadow-sm hover:shadow-md transition-all gap-1 group"
+              data-testid="button-add-product"
+            >
+              <Plus className="w-4 h-4 me-2 group-hover:rotate-90 transition-transform duration-200" />{" "}
+              {t.admin.addProduct}
+            </Button>
+        </div>
+      </div>
+
+      {/* ── Find and filter: search, category, subcategory, low stock, table or grid ── */}
+      <div className="flex flex-wrap items-center gap-2 mb-5">
+          <div className="flex h-10 items-stretch rounded-lg border border-border bg-background overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full sm:w-80 shadow-sm">
             <span className="flex items-center ps-3 text-muted-foreground flex-shrink-0">
               <Search className="w-4 h-4" />
             </span>
@@ -4188,7 +4313,7 @@ export default function Products() {
                   ? `${t.admin.searchProducts}... أو امسح الباركود`
                   : `${t.admin.searchProducts}... or scan barcode`
               }
-              className="bg-transparent px-2.5 py-2 text-sm outline-none w-full sm:w-60 placeholder:text-muted-foreground/60"
+              className="bg-transparent px-2.5 py-2 text-sm outline-none min-w-0 flex-1 placeholder:text-muted-foreground/60"
               data-testid="input-admin-search-products"
             />
             {search && (
@@ -4226,8 +4351,6 @@ export default function Products() {
               </span>
             </button>
           </div>
-          {/* ── Category / Subcategory filter group ── */}
-          <div className="flex flex-wrap items-stretch gap-2">
             <Select
               value={
                 showUncategorized
@@ -4376,8 +4499,6 @@ export default function Products() {
                 </span>
               </button>
             )}
-          </div>
-          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => {
                 setShowLowStock((v) => {
@@ -4413,7 +4534,7 @@ export default function Products() {
                 </span>
               )}
             </button>
-            <div className="inline-flex items-center rounded-md border border-input bg-background p-0.5 shadow-sm">
+            <div className="inline-flex h-10 items-center rounded-md border border-input bg-background p-0.5 shadow-sm">
               <button
                 onClick={() => setViewMode("table")}
                 className={`flex items-center justify-center w-8 h-8 rounded transition-all ${viewMode === "table" ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
@@ -4431,81 +4552,6 @@ export default function Products() {
                 <LayoutGrid className="w-4 h-4" />
               </button>
             </div>
-            <button
-              onClick={() => setViewMode(viewMode === "bulk-upload" ? "table" : "bulk-upload")}
-              className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-md border text-sm font-medium transition-all shadow-sm ${viewMode === "bulk-upload" ? "bg-gradient-to-r from-violet-600 to-primary text-white border-transparent shadow-md" : "border-input bg-background text-muted-foreground hover:text-foreground hover:border-primary/50"}`}
-              data-testid="button-view-bulk-upload"
-              title={language === "ar" ? "رفع جماعي" : "Bulk upload"}
-            >
-              <CloudUpload className="w-4 h-4" />
-              <span className="hidden sm:inline">{language === "ar" ? "رفع جماعي" : "Bulk Upload"}</span>
-            </button>
-            <Button
-              onClick={() => setShowBarcodePreview(true)}
-              variant="outline"
-              className="gap-2 shadow-sm"
-              data-testid="button-print-barcodes"
-            >
-              <Printer className="w-4 h-4" />
-              {language === "ar" ? "طباعة الباركود" : "Print Barcodes"}
-            </Button>
-            <a
-              href="/api/admin/products/export"
-              download
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-              data-testid="link-export-products"
-            >
-              <Download className="w-4 h-4" />
-              {language === "ar" ? "تصدير Excel" : "Export Excel"}
-            </a>
-            <a
-              href="/api/admin/products/export-sql"
-              download
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-              data-testid="link-export-sql"
-            >
-              <FileText className="w-4 h-4" />
-              {language === "ar" ? "تصدير SQL" : "Export SQL"}
-            </a>
-            <Button
-              onClick={() => setIsSizeAuditOpen(true)}
-              variant="outline"
-              className={`gap-2 shadow-sm ${shoeSizeAuditResults.length > 0 ? "border-amber-400 text-amber-700 dark:text-amber-400" : ""}`}
-              data-testid="button-size-audit"
-            >
-              <AlertCircle className="w-4 h-4" />
-              {language === "ar" ? "فحص مقاسات الأحذية" : "Audit Shoe Sizes"}
-              {shoeSizeAuditResults.length > 0 && (
-                <span className="ms-0.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-amber-500 text-white text-xs font-semibold">
-                  {shoeSizeAuditResults.length}
-                </span>
-              )}
-            </Button>
-            <Button
-              onClick={() => {
-                setIsImportOpen(true);
-                setImportStep(1);
-                setImportImageUrls([]);
-                setExcelFile(null);
-                setImportResult(null);
-              }}
-              variant="outline"
-              className="gap-2 shadow-sm"
-              data-testid="button-bulk-import"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              {language === "ar" ? "استيراد Excel" : "Import Excel"}
-            </Button>
-            <Button
-              onClick={openCreate}
-              className="bg-foreground text-background hover:bg-foreground/90 shadow-sm hover:shadow-md transition-all gap-1 group"
-              data-testid="button-add-product"
-            >
-              <Plus className="w-4 h-4 me-2 group-hover:rotate-90 transition-transform duration-200" />{" "}
-              {t.admin.addProduct}
-            </Button>
-          </div>
-        </div>
       </div>
 
       {/* ── New Arrivals Expiry Panel ── */}
@@ -5687,15 +5733,60 @@ export default function Products() {
               </Button>
             </PopoverContent>
           </Popover>
+          <Popover open={videoMenuOpen} onOpenChange={setVideoMenuOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" type="button" disabled={!!bulkVideoDownloading}
+                className="rounded bg-slate-700 hover:bg-slate-800 text-white gap-1.5"
+                data-testid="button-bulk-download-videos">
+                {bulkVideoDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {bulkVideoDownloading || (language === "ar" ? "تحميل الفيديوهات" : "Download Videos")}
+                {!bulkVideoDownloading && <ChevronDown className="w-3.5 h-3.5" />}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-64 p-1.5 space-y-1">
+              {(() => {
+                const videoCount = productVideoRefs((products as any[]) || [], Array.from(selectedIds)).length;
+                const row = "w-full justify-start text-start h-auto py-2.5 whitespace-normal";
+                return (
+                  <>
+                    <Button variant="ghost" className={row} type="button" disabled={!videoCount}
+                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), false, false)}
+                      data-testid="download-selected-videos">
+                      <Clapperboard className="w-4 h-4 shrink-0 me-2" />
+                      <span className="min-w-0 flex-1">{language === "ar" ? "فيديوهات المنتجات" : "Product videos"}</span>
+                      <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-videos">{videoCount}</span>
+                    </Button>
+                    <Button variant="ghost" className={row} type="button" disabled={!videoCount}
+                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), false, true)}
+                      data-testid="download-selected-videos-watermark">
+                      <Clapperboard className="w-4 h-4 shrink-0 me-2" />
+                      <span className="min-w-0 flex-1">{language === "ar" ? "الفيديوهات مع العلامة المائية" : "Videos with watermark"}</span>
+                    </Button>
+                    <Button variant="ghost" className={row} type="button" disabled={!videoCount}
+                      onClick={() => void handleDownloadProductMedia(Array.from(selectedIds), true, false)}
+                      data-testid="download-selected-photos-videos">
+                      <Images className="w-4 h-4 shrink-0 me-2" />
+                      <span className="min-w-0 flex-1">{language === "ar" ? "الصور الرئيسية + الفيديوهات" : "Main photos + videos"}</span>
+                    </Button>
+                    {!videoCount && (
+                      <p className="px-2 pb-1 text-[11px] text-muted-foreground">
+                        {language === "ar" ? "المنتجات المحددة ليس لها فيديوهات بعد." : "The selected products have no videos yet."}
+                      </p>
+                    )}
+                  </>
+                );
+              })()}
+            </PopoverContent>
+          </Popover>
           <Button
             size="sm"
             type="button"
-            onClick={() => navigate(`/admin/video-studio?ids=${Array.from(selectedIds).join(",")}`)}
-            className="rounded bg-slate-700 hover:bg-slate-800 text-white gap-1.5"
+            onClick={() => setVideoDialogIds(Array.from(selectedIds))}
+            className="rounded bg-violet-600 hover:bg-violet-700 text-white gap-1.5"
             data-testid="button-bulk-ai-videos"
           >
             <Clapperboard className="w-4 h-4" />
-            {language === "ar" ? "فيديو AI" : "AI Videos"}
+            {language === "ar" ? "توليد فيديو AI" : "Generate AI Videos"}
           </Button>
           <Button
             variant="destructive"
@@ -5720,6 +5811,14 @@ export default function Products() {
       )}
 
 
+
+      <ProductVideoDialog
+        open={videoDialogIds !== null}
+        onOpenChange={(open) => { if (!open) setVideoDialogIds(null); }}
+        products={(products as any[]) || []}
+        productIds={videoDialogIds || []}
+        isAr={language === "ar"}
+      />
 
       {/* ── Bulk AI Photo Generation Dialog ── */}
       <Dialog
@@ -7343,25 +7442,17 @@ export default function Products() {
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDownloadMainPhotos([p.id])}
-                          disabled={downloadingPhotoIds.has(p.id)}
-                          className="text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                          title={
-                            language === "ar"
-                              ? "تحميل الصور الرئيسية بدون علامة مائية"
-                              : "Download main photos without watermark"
-                          }
-                          data-testid={`button-download-main-photos-${p.id}`}
-                        >
-                          {downloadingPhotoIds.has(p.id) ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Download className="w-4 h-4" />
-                          )}
-                        </Button>
+                        <ProductDownloadMenu
+                          productId={p.id}
+                          videoCount={productVideoRefs([p], [p.id]).length}
+                          busy={downloadingPhotoIds.has(p.id)}
+                          isAr={language === "ar"}
+                          compact={false}
+                          onChoose={(choice) => {
+                            if (choice === "photos") void handleDownloadMainPhotos([p.id]);
+                            else void handleDownloadProductMedia([p.id], choice === "both");
+                          }}
+                        />
                         <Button
                           variant="ghost"
                           size="icon"
@@ -7639,25 +7730,17 @@ export default function Products() {
                       >
                         <Edit2 className="w-4 h-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownloadMainPhotos([p.id])}
-                        disabled={downloadingPhotoIds.has(p.id)}
-                        className="text-slate-600 h-8 w-8"
-                        title={
-                          language === "ar"
-                            ? "تحميل الصور الرئيسية بدون علامة مائية"
-                            : "Download main photos without watermark"
-                        }
-                        data-testid={`button-download-main-photos-mobile-${p.id}`}
-                      >
-                        {downloadingPhotoIds.has(p.id) ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Download className="w-4 h-4" />
-                        )}
-                      </Button>
+                      <ProductDownloadMenu
+                        productId={p.id}
+                        videoCount={productVideoRefs([p], [p.id]).length}
+                        busy={downloadingPhotoIds.has(p.id)}
+                        isAr={language === "ar"}
+                        compact
+                        onChoose={(choice) => {
+                          if (choice === "photos") void handleDownloadMainPhotos([p.id]);
+                          else void handleDownloadProductMedia([p.id], choice === "both");
+                        }}
+                      />
                       <Button
                         variant="ghost"
                         size="icon"
