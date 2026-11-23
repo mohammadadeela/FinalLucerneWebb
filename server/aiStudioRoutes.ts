@@ -486,7 +486,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             }
             if (!best) throw new Error("The opening frame could not be generated.");
             frameScore = best.score >= 0 ? best.score : null;
-            if (frameScore !== null && frameScore < 6) {
+            if (frameScore !== null && frameScore < 7) {
               throw new Error("The AI could not reproduce this product accurately enough, so no video was made. Add clearer photos of it from more sides and try again.");
             }
             firstFrame = await sharp(best.frame, { failOn: "none" }).resize(1080, 1920, { fit: "cover" }).jpeg({ quality: 95, chromaSubsampling: "4:4:4" }).toBuffer();
@@ -513,7 +513,7 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             break;
           }
           // A clip the controller is not happy with is kept as a draft instead of going on the site.
-          const lowFidelity = videoScore !== null && videoScore < 7;
+          const lowFidelity = videoScore !== null && videoScore < 8;
           const finished = await finishVideo(raw, { width: size.width, height: size.height, seconds });
           const url = await deps.uploadVideo(finished, "ai-product-video.mp4", { passthrough: true });
           const row = await insertMedia({
