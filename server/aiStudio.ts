@@ -195,9 +195,6 @@ FINAL REMINDER — the single most important rule: ${subject} must stay perfectl
 
 export type VideoStyle = "photo" | "tryOn" | "hands" | "unbox";
 
-const REEL_SET =
-  "a bright, minimal fashion studio: smooth light-grey polished concrete floor, plain pale walls, tall industrial windows softly out of focus in the background, soft natural daylight from the side, no clutter. Shot on a phone-style 26mm lens, shallow depth of field, like a premium fashion boutique's Instagram reel";
-
 /** What kind of piece a product is. Each kind is worn, held and unboxed in its own way. */
 export type ProductKind = "shoes" | "dress" | "abaya" | "top" | "bottom" | "bag" | "belt" | "clothes";
 
@@ -219,9 +216,25 @@ const KIND_NOUN: Record<ProductKind, string> = {
   shoes: "pair of shoes", dress: "dress", abaya: "abaya", top: "top", bottom: "trousers or skirt", bag: "bag", belt: "belt", clothes: "garment",
 };
 
-// The boutique dresses modestly: clothing shots never show bare legs, shoulders or midriff
-// beyond what the garment itself is cut to show, and a face is never in the frame.
-const MODEST = "Her face is never in the frame. Styling is modest and elegant: plain neutral layers under or with the piece where needed, nothing revealing, no bare midriff.";
+// The model: a believable professional, face in frame, wearing the piece exactly as it is designed.
+const MODEL = "She is a professional fashion model with a natural, beautiful, believable face: real skin, soft natural makeup, hair simply styled, a calm confident expression. She is an invented person and does not resemble any celebrity or known individual. She wears the piece exactly as it is designed to be worn, styled like an international fashion campaign, with simple pieces that suit it and never compete with it.";
+
+/**
+ * Sets for the styled videos. Each video gets one at random, so a page of products never looks
+ * like the same room over and over. All are soft, bright, feminine and uncluttered.
+ */
+export const REEL_SETS: string[] = [
+  "a bright minimal fashion studio: smooth light-grey polished concrete floor, plain pale walls, tall windows softly out of focus, soft daylight from the side",
+  "a soft blush-pink studio: seamless powder-pink backdrop curving into the floor, gentle even daylight, one sheer white curtain moving slightly at the edge",
+  "an elegant boutique interior: warm cream walls with delicate panel mouldings, pale oak herringbone floor, a brass clothes rail and an arched mirror softly out of focus, warm window light",
+  "a creamy beige studio with soft plaster walls and a rounded arch niche, pale travertine floor, a single vase of dried pampas grass far in the background, soft golden-hour light",
+  "a light sage-green studio: muted pastel green wall, pale stone floor, a small round side table with fresh white flowers out of focus, soft diffused daylight",
+  "a romantic Parisian-style room: tall white French windows with sheer curtains, white panelled walls, light oak floor, soft morning light and gentle shadows of the window frames",
+  "a soft lilac-and-ivory studio: pale lavender backdrop, ivory floor, large soft shadows of leaves on the wall from window light, airy and calm",
+  "a luxury fitting room: ivory boucle bench, soft champagne curtains, pale marble floor, a tall mirror with a thin gold frame out of focus, warm flattering light",
+  "a sunlit terrace in soft pastel tones: pale pink plaster wall, light terracotta tiles, a few green leaves at the edge of the frame, gentle open-shade daylight",
+  "a clean white marble boutique corner: white marble floor with faint grey veining, pale rose velvet armchair out of focus, fresh peonies in a glass vase, bright soft daylight",
+];
 
 type Styled = Exclude<VideoStyle, "photo">;
 
@@ -232,37 +245,37 @@ const FRAME_SCENES: Record<ProductKind, Record<Styled, string>> = {
     unbox: "Top-down view of the floor. An open shoe box in soft blush pink lies on the floor with white tissue paper inside. The pair rests in the tissue paper, fully visible. A woman's hands rest on the edges of the box, about to lift one shoe out.",
   },
   dress: {
-    tryOn: `A woman is WEARING the dress, standing relaxed with one hand lightly holding the skirt. Frame from the shoulders down to the hem so the whole dress is visible, its full length and how it falls. ${MODEST} Simple plain shoes that do not draw attention.`,
+    tryOn: `A woman is WEARING the dress, standing relaxed with one hand lightly holding the skirt. Full-length frame from above her head down to the hem and her shoes, so the whole dress is visible, its full length and how it falls. ${MODEL} Elegant simple shoes.`,
     hands: "The dress hangs on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds the side of the skirt out a little to show the fabric and how it drapes. The whole dress is visible. No face, no body beyond the forearm.",
     unbox: "Top-down view of the floor. A wide, shallow gift box in soft blush pink lies open with white tissue paper inside. The dress lies neatly folded in the tissue, its neckline and the most distinctive part of its fabric clearly visible. A woman's hands rest on the tissue, about to unfold it.",
   },
   abaya: {
-    tryOn: `A woman is WEARING the abaya, standing gracefully, one hand lightly lifting the edge of the sleeve or the front panel. Frame from the shoulders down to the floor so the full length, the sleeves and the way the fabric flows are visible. ${MODEST} The abaya covers her fully to the ankles and wrists, exactly as it is cut; only her hands show. Plain closed shoes barely visible under the hem.`,
+    tryOn: `A woman is WEARING the abaya, standing gracefully, one hand lightly lifting the edge of the sleeve or the front panel. Full-length frame from above her head down to the floor so the full length, the sleeves and the way the fabric flows are visible. ${MODEL} The abaya is worn exactly as it is cut and as its photos show it, with the head covering only if the photos show one.`,
     hands: "The abaya hangs full length on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds the sleeve out to show its cut, its trim and the weight of the fabric. The whole abaya is visible. No face, no body beyond the forearm.",
     unbox: "Top-down view of the floor. A wide, shallow gift box in soft blush pink lies open with white tissue paper inside. The abaya lies neatly folded in the tissue with its neckline, front trim or embroidery on top and clearly visible. A woman's hands rest on the tissue, about to unfold it.",
   },
   top: {
-    tryOn: `A woman is WEARING the top, standing relaxed, one hand adjusting the cuff or the hem. Frame from the chin line or shoulders down to the hips so the whole top is visible. ${MODEST} Worn with plain neutral trousers.`,
+    tryOn: `A woman is WEARING the top, standing relaxed, one hand adjusting the cuff or the hem. Frame from above her head down to the hips so the whole top is visible. ${MODEL} Worn with simple well-cut trousers.`,
     hands: "The top hangs on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds the sleeve or the hem out a little to show the fabric. The whole top is visible. No face, no body beyond the forearm.",
     unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The top lies neatly folded in the tissue with its neckline and front clearly visible. A woman's hands rest on the tissue, about to lift it.",
   },
   bottom: {
-    tryOn: `A woman is WEARING the piece, standing relaxed with one foot slightly forward. Frame from the waist down to the floor so its whole length, waistband and cut are visible. ${MODEST} Worn with a plain neutral top tucked in or ending at the waist, and simple plain shoes.`,
+    tryOn: `A woman is WEARING the piece, standing relaxed with one foot slightly forward. Full-length frame from above her head down to the floor, the piece in the centre, so its whole length, waistband and cut are visible. ${MODEL} Worn with a simple fitted top tucked in at the waist, and elegant simple shoes.`,
     hands: "The piece hangs from a slim clip hanger on a plain clothes rail. A woman's hand with neat natural nails holds the side of the leg or the hem out a little to show the fabric and the cut. The whole piece is visible. No face, no body beyond the forearm.",
     unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The piece lies neatly folded in the tissue with its waistband and front clearly visible. A woman's hands rest on the tissue, about to lift it.",
   },
   bag: {
-    tryOn: `A woman CARRIES the bag the way it is made to be carried (in the hand by its handle, on the forearm, or on the shoulder by its strap, whichever its design shows). Frame from the shoulder down to the knee, the bag at her side facing the camera with its front fully visible. ${MODEST} She wears plain neutral clothes in a soft colour that makes the bag stand out.`,
+    tryOn: `A woman CARRIES the bag the way it is made to be carried (in the hand by its handle, on the forearm, or on the shoulder by its strap, whichever its design shows). Three-quarter frame from above her head down to the knee, the bag at her side facing the camera with its front fully visible and sharp. ${MODEL} Her outfit is simple and in a soft colour that makes the bag stand out.`,
     hands: "The bag stands upright on a low pale stone block. A woman's hands with neat natural nails rest on it: one steadies the handle, the other touches the clasp or the front flap. The whole bag is visible from the same side as the photo. No face, no body beyond the forearms.",
     unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The bag lies in the tissue on its back, front side up and fully visible, handle or strap laid neatly. A woman's hands rest on the edges of the box, about to lift it out.",
   },
   belt: {
-    tryOn: `A woman is WEARING the belt at her waist over plain high-waisted trousers or a plain dress in a soft neutral colour. Close frame from just under the chest to the hips, the buckle centred and sharp, the whole width of the belt and the buckle fully visible. One hand rests near the buckle. ${MODEST}`,
+    tryOn: `A woman is WEARING the belt at her waist over plain high-waisted trousers or a plain dress in a soft neutral colour. Frame from her shoulders to her hips, the buckle centred and sharp, the whole width of the belt and the buckle fully visible. One hand rests near the buckle. ${MODEL}`,
     hands: "A woman's hands with neat natural nails hold the belt in a gentle loose coil, the buckle on top facing the camera, above a pale stone surface. The buckle, the strap's surface, its edge stitching and its holes are sharp and fully visible. No face, no body beyond the forearms.",
     unbox: "Top-down view of the floor. A small gift box in soft blush pink lies open with white tissue paper inside. The belt lies in a neat coil in the tissue with the buckle on top, fully visible. A woman's hands rest on the edges of the box, about to lift it out.",
   },
   clothes: {
-    tryOn: `A woman is WEARING the garment, standing relaxed. Frame so the whole garment is visible from its top edge to its hem. ${MODEST} Plain neutral pieces with it, and simple shoes.`,
+    tryOn: `A woman is WEARING the garment, standing relaxed. Full-length frame from above her head, so the whole garment is visible from its top edge to its hem. ${MODEL} Simple pieces with it, and elegant shoes.`,
     hands: "The garment hangs on a slim wooden hanger on a plain clothes rail. A woman's hand with neat natural nails holds its side out a little to show the fabric. The whole garment is visible. No face, no body beyond the forearm.",
     unbox: "Top-down view of the floor. A gift box in soft blush pink lies open with white tissue paper inside. The garment lies neatly folded in the tissue with its most distinctive part clearly visible. A woman's hands rest on the tissue, about to lift it.",
   },
@@ -312,7 +325,7 @@ const VIDEO_ACTIONS: Record<ProductKind, Record<Styled, string>> = {
 };
 
 /** Prompt for the opening frame of a styled video. The attached photos are the same product; a logo image may follow them. */
-export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[] }): string {
+export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; photoCount: number; hasLogo: boolean; spec?: string; fixes?: string[]; set?: string }): string {
   const lid = opts.hasLogo
     ? " The box lid lies beside it, face up, printed with the logo from the LAST attached image, copied exactly: the butterfly mark with the words LUCERNE BOUTIQUE below it, flat and centred on the lid, spelled exactly like that."
     : " The box lid lies beside it, face up and completely plain.";
@@ -321,7 +334,7 @@ export function buildStyleFramePrompt(opts: { style: Styled; kind: ProductKind; 
     hands: FRAME_SCENES[opts.kind].hands,
     unbox: FRAME_SCENES[opts.kind].unbox + lid,
   };
-  const lens = opts.kind === "shoes" ? "at knee height" : opts.kind === "belt" || opts.kind === "bag" ? "at waist height" : "at chest height, far enough back to show the whole piece";
+  const lens = opts.kind === "shoes" ? "camera at knee height" : opts.kind === "belt" || opts.kind === "bag" ? "camera at waist height" : "camera at chest height, far enough back to show the whole piece";
   return `You are re-shooting a REAL product for an online boutique. The first ${opts.photoCount > 1 ? `${opts.photoCount} attached images are photos of the SAME physical product from different sides` : "attached image is a photo of the product"}. It is a ${KIND_NOUN[opts.kind]} and will be shipped to paying customers exactly as shown. Product accuracy is your HIGHEST PRIORITY — higher than styling, higher than aesthetics.
 
 ${FIDELITY_RULES}
@@ -329,18 +342,18 @@ ${FIDELITY_RULES}
 ═══════════════════════════════════════
 📸 THE NEW SHOT:
 ═══════════════════════════════════════
-- Scene: ${REEL_SET}. Camera ${lens}.
+- Scene: ${opts.set || REEL_SETS[0]}. Uncluttered, soft, feminine and luxurious, like the campaign of an international fashion house shot in a professional studio or boutique. Colours stay gentle so the product is the strongest thing in the picture. Shot on a professional full-frame camera with a 50mm lens, shallow depth of field, ${lens}.
 - ${scene[opts.style]}
 - The product is reproduced EXACTLY from the photos: same shape, proportions, length, colour, material and texture, same stitching, seams, hardware, zips, buttons, buckles, straps, prints, embroidery and trims, in the same places. Use every attached product photo to get each side right. Do not simplify, restyle or "improve" anything. Do not add any detail the photos do not show.
 - The product is the hero: sharp, well lit, fully inside the central part of the frame, with clear space above and below it.
-- REAL PEOPLE, REAL PHOTOGRAPH. This must look like an unedited frame from a phone video of a real woman in a real room, not like an illustration, a render or an AI picture:
+- REAL PEOPLE, REAL PHOTOGRAPH. This must look like an unedited frame from a professional fashion film of a real woman in a real place, not like an illustration, a render or an AI picture:
   • skin with true texture: visible pores, fine lines on knuckles and knees, faint veins and tendons, tiny hairs, slight natural unevenness of tone, a small mole or freckle is welcome. Never smooth, waxy, airbrushed, glossy or doll-like.
   • anatomically correct hands and feet: five fingers, real knuckles and nail beds, natural short nails, normal proportions, a relaxed natural grip with real pressure on what they touch.
   • real ankles, calves and knees with normal anatomy and weight on the floor; tights, if any, show their real weave and slight creases.
   • real contact: soft true shadows under the shoes and hands, the floor slightly reflecting, fabric and leather creasing where they bend.
   • real camera: natural daylight with its small imperfections, true colours, slight sensor grain, natural depth of field. No HDR glow, no over-sharpening, no perfect symmetry, no studio-render lighting.
 - No text anywhere${opts.style === "unbox" && opts.hasLogo ? " except the logo on the box lid" : ""}. No other brand names, no price tags, no watermarks, no captions.
-- Vertical 9:16 frame.
+- Vertical 9:16 frame. The top eighth and the bottom eighth of the picture are trimmed off later, so keep her head, the whole product and everything important inside the middle three quarters of the height, with only background or floor in the top and bottom strips.
 ${opts.spec ? `\n═══════════════════════════════════════\n📋 PRODUCT SPEC — written from the real photos. Every point must be true in your image:\n═══════════════════════════════════════\n${opts.spec}\n` : ""}${opts.fixes?.length ? `\n⚠️ YOUR PREVIOUS ATTEMPT WAS REJECTED by quality control because the product did not match the photos. Fix exactly these points this time:\n${opts.fixes.map((f) => `- ${f}`).join("\n")}\n` : ""}
 ${TECH_QUALITY}`;
 }
@@ -355,16 +368,16 @@ export function buildStyleVideoPrompt(opts: { style: Styled; kind: ProductKind; 
 🎬 VIDEO RULES:
 ═══════════════════════════════════════
 - The product must look identical in every frame to how it looks in the first frame: same shape, length, colour, material, stitching, hardware, prints and trims. It never morphs, flickers, melts, stretches, changes colour, or gains or loses a detail. ${soft ? "The fabric moves and folds like that real fabric does, but its print, embroidery, seams and buttons stay exactly where they are and its length and cut never change." : "It keeps its real stiffness: leather, soles, buckles and bag bodies do not bend like cloth."}
-- Movement: ${action} All movement is slow, small and natural, like real phone footage in a boutique.
+- Movement: ${action} All movement is calm, small and natural, like a professional fashion film.
 - Do not turn the product far enough to reveal a side that is not visible in the first frame.
-- Hands always have five natural fingers. No face ever enters the frame.
+- Hands always have five natural fingers. If a face is in the first frame it stays the same person in every frame, with a calm, natural expression, natural blinking and no talking; her features never change. If no face is in the first frame, none enters.
 - The camera is handheld but very steady, with at most a slight slow push-in. Same room, same light, same floor from start to end. Nothing new enters the scene.
 - Any logo or lettering visible in the first frame stays exactly as it is, sharp and unchanged. No new text, captions, stickers or graphics appear.
 - ONE continuous shot of about ${opts.seconds} seconds. No cuts, no transitions, no speed changes.
 - Keep the product inside the central area of the frame at all times; the top and bottom edges are cut away later.
-- REAL FOOTAGE, NOT ANIMATION. It must look like a real phone video of a real woman: skin keeps its pores, lines and texture in every frame and never turns smooth or waxy; hands keep five correct fingers and never merge, bend wrongly or slide through the product; muscles and tendons move under the skin; her body carries real weight.
+- REAL FOOTAGE, NOT ANIMATION. It must look like a real fashion film of a real woman: skin keeps its pores, lines and texture in every frame and never turns smooth or waxy; hands keep five correct fingers and never merge, bend wrongly or slide through the product; muscles and tendons move under the skin; her body carries real weight.
 - Real-world physics and timing: movement at normal human speed with tiny natural hesitations, never floaty, never slow-motion, never gliding or sliding. Materials behave like the real thing: leather creases a little where it bends and springs back, fabric swings and settles. Shadows and reflections move with the movement.
-- Real camera feel: a hand-held phone with very slight natural sway and breathing, natural motion blur on fast parts, slight sensor grain, constant exposure and white balance. Never a 3D render, never a glow or beauty filter, no morphing, no warping backgrounds.
+- Real camera feel: a professional camera on a gimbal with very slight natural movement, natural motion blur on fast parts, slight sensor grain, constant exposure and white balance. Never a 3D render, never a glow or beauty filter, no morphing, no warping backgrounds.
 - No dialogue, no voice, no music.
 ${opts.spec ? `\nPRODUCT SPEC — these facts about the product stay true in every frame:\n${opts.spec}\n` : ""}
 FINAL REMINDER: the product stays exactly as in the first frame from start to end.`;

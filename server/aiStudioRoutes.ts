@@ -24,6 +24,7 @@ import {
   describeProduct,
   detectProductKind,
   judgeFidelity,
+  REEL_SETS,
   videoFrameStrip,
   buildSiteFirstFrame,
   composeStill,
@@ -507,9 +508,11 @@ export function registerAiStudioRoutes(app: Express, deps: AiStudioDeps) {
             let best: { frame: Buffer; score: number } | null = null;
             let fixes: string[] = [];
             let bestRank = -1;
+            // A different soft set for each video, the same one for all its attempts.
+            const set = REEL_SETS[Math.floor(Math.random() * REEL_SETS.length)];
             for (let attempt = 1; attempt <= 3; attempt++) {
               const frame = await generateStudioImage(
-                buildStyleFramePrompt({ style, kind, photoCount: references.length, hasLogo: !!logo, spec, fixes }),
+                buildStyleFramePrompt({ style, kind, photoCount: references.length, hasLogo: !!logo, spec, fixes, set }),
                 logo ? [...references, logo] : references,
                 "9:16",
               );
