@@ -68,7 +68,7 @@ export async function downloadProductMedia(opts: {
   let photoZip: Blob | null = null;
   let photos = 0;
   if (withPhotos) {
-    const prepared = await prepareProductPhotoDownload(ids, opts.photoMode || "main", (done, total) => onProgress?.({ done, total, stage: "photos" }));
+    const prepared = await prepareProductPhotoDownload(ids, opts.photoMode || "main", (done, total) => onProgress?.({ done, total, stage: "photos" }), fetch, watermark);
     photoZip = prepared.blob;
     photos = prepared.included;
   }

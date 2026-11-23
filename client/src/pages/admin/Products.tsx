@@ -1,6 +1,7 @@
 import { prepareProductPhotoDownload, type PhotoExportMode } from "@/lib/productPhotoDownload";
 import { downloadProductMedia, productVideoRefs } from "@/lib/productMediaDownload";
 import { ProductVideoDialog } from "@/components/admin/ProductVideoDialog";
+import { Switch } from "@/components/ui/switch";
 import { ProductDownloadMenu } from "@/components/admin/ProductDownloadMenu";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { getVideoPosterUrl, optimizeCloudinaryUrl } from "@/lib/utils";
@@ -1421,6 +1422,7 @@ export default function Products() {
   // Products an AI video is being made for (null = dialog closed).
   const [videoDialogIds, setVideoDialogIds] = useState<number[] | null>(null);
   const [videoMenuOpen, setVideoMenuOpen] = useState(false);
+  const [photoWatermark, setPhotoWatermark] = useState(false);
   const [bulkVideoDownloading, setBulkVideoDownloading] = useState("");
   const [photoDownloadProgress, setPhotoDownloadProgress] = useState("");
   const [photoCounts, setPhotoCounts] = useState<{
@@ -3227,7 +3229,7 @@ export default function Products() {
     }
   };
 
-  const handleDownloadMainPhotos = async (ids: number[], mode: PhotoExportMode = "main") => {
+  const handleDownloadMainPhotos = async (ids: number[], mode: PhotoExportMode = "main", watermark = false) => {
     if (!ids.length) return;
     const single = ids.length === 1 ? ids[0] : null;
     setDownloadMenuOpen(false);
@@ -3237,11 +3239,11 @@ export default function Products() {
       setPhotoDownloadProgress(language === "ar" ? "جاري تجهيز الصور..." : "Preparing photos...");
       const { blob, included } = await prepareProductPhotoDownload(ids, mode, (done, total) => {
         setPhotoDownloadProgress(language === "ar" ? `جاري تجهيز الصور ${done}/${total}...` : `Preparing photos ${done}/${total}...`);
-      });
+      }, fetch, watermark);
       const fileUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = fileUrl;
-      anchor.download = `lucerne-${single === null ? ids.length + "-products" : "product-" + single}-${mode}-photos.zip`;
+      anchor.download = `lucerne-${single === null ? ids.length + "-products" : "product-" + single}-${mode}-photos${watermark ? "-wm" : ""}.zip`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -5711,26 +5713,30 @@ export default function Products() {
             </PopoverTrigger>
             <PopoverContent align="start" className="w-64 p-1.5 space-y-1">
               <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
-                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "main")}
+                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "main", photoWatermark)}
                 data-testid="download-selected-main-photos">
                 <ImageIcon className="w-4 h-4 shrink-0 me-2" />
                 <span className="min-w-0 flex-1">{language === "ar" ? "الصور الرئيسية للمنتجات" : "Main product photos"}</span>
                 <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-main-photos">{selectedPhotoCount("main")}</span>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
-                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "all")}
+                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "all", photoWatermark)}
                 data-testid="download-selected-all-photos">
                 <Images className="w-4 h-4 shrink-0 me-2" />
                 <span className="min-w-0 flex-1">{language === "ar" ? "جميع صور المنتجات" : "All product photos"}</span>
                 <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-all-photos">{selectedPhotoCount("all")}</span>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-start h-auto py-2.5 whitespace-normal" type="button"
-                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "ai")}
+                onClick={() => void handleDownloadMainPhotos(Array.from(selectedIds), "ai", photoWatermark)}
                 data-testid="download-selected-ai-photos">
                 <Wand2 className="w-4 h-4 shrink-0 me-2" />
                 <span className="min-w-0 flex-1">{language === "ar" ? "صور المنتجات المولّدة بالذكاء الاصطناعي" : "AI-generated product photos"}</span>
                 <span className="shrink-0 ms-2 text-xs font-semibold tabular-nums text-muted-foreground" data-testid="count-selected-ai-photos">{selectedPhotoCount("ai")}</span>
               </Button>
+              <label className="flex items-center justify-between gap-3 border-t px-2.5 pt-2.5 pb-1.5 text-sm cursor-pointer">
+                <span>{language === "ar" ? "مع العلامة المائية" : "With watermark"}</span>
+                <Switch checked={photoWatermark} onCheckedChange={setPhotoWatermark} data-testid="switch-photo-watermark" />
+              </label>
             </PopoverContent>
           </Popover>
           <Popover open={videoMenuOpen} onOpenChange={setVideoMenuOpen}>
@@ -7448,9 +7454,9 @@ export default function Products() {
                           busy={downloadingPhotoIds.has(p.id)}
                           isAr={language === "ar"}
                           compact={false}
-                          onChoose={(choice) => {
-                            if (choice === "photos") void handleDownloadMainPhotos([p.id]);
-                            else void handleDownloadProductMedia([p.id], choice === "both");
+                          onChoose={(choice, watermark) => {
+                            if (choice === "photos") void handleDownloadMainPhotos([p.id], "main", watermark);
+                            else void handleDownloadProductMedia([p.id], choice === "both", watermark);
                           }}
                         />
                         <Button
@@ -7736,9 +7742,9 @@ export default function Products() {
                         busy={downloadingPhotoIds.has(p.id)}
                         isAr={language === "ar"}
                         compact
-                        onChoose={(choice) => {
-                          if (choice === "photos") void handleDownloadMainPhotos([p.id]);
-                          else void handleDownloadProductMedia([p.id], choice === "both");
+                        onChoose={(choice, watermark) => {
+                          if (choice === "photos") void handleDownloadMainPhotos([p.id], "main", watermark);
+                          else void handleDownloadProductMedia([p.id], choice === "both", watermark);
                         }}
                       />
                       <Button

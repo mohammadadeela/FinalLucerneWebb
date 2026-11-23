@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Download, Film, Image as ImageIcon, Images, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export type ProductDownloadChoice = "photos" | "videos" | "both";
@@ -22,13 +23,14 @@ export function ProductDownloadMenu({
   busy: boolean;
   isAr: boolean;
   compact?: boolean;
-  onChoose: (choice: ProductDownloadChoice) => void;
+  onChoose: (choice: ProductDownloadChoice, watermark: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [watermark, setWatermark] = useState(false);
   const tr = (ar: string, en: string) => (isAr ? ar : en);
   const choose = (choice: ProductDownloadChoice) => {
     setOpen(false);
-    onChoose(choice);
+    onChoose(choice, watermark);
   };
   const row = "w-full justify-start text-start h-auto py-2.5 whitespace-normal";
   const noVideo = videoCount === 0;
@@ -62,6 +64,10 @@ export function ProductDownloadMenu({
           <Images className="w-4 h-4 shrink-0 me-2" />
           <span className="min-w-0 flex-1">{tr("الصور والفيديوهات", "Photos and videos")}</span>
         </Button>
+        <label className="flex items-center justify-between gap-3 border-t px-2.5 pt-2.5 pb-1.5 text-sm cursor-pointer">
+          <span>{tr("مع العلامة المائية", "With watermark")}</span>
+          <Switch checked={watermark} onCheckedChange={setWatermark} data-testid={`download-product-watermark-${productId}`} />
+        </label>
         {noVideo && <p className="px-2 pb-1 text-[11px] text-muted-foreground">{tr("هذا المنتج ليس له فيديو بعد.", "This product has no video yet.")}</p>}
       </PopoverContent>
     </Popover>

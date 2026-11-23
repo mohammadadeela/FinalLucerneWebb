@@ -45,7 +45,7 @@ export function buildWatermarkSvg(widthPx: number): Buffer {
 294 -139 100 -73 76 -85 -169 -85 -189 1 -281 15 -424 66 -113 39 -145 59
 -149 91 -5 38 38 61 173 92 38 9 200 -6 275 -25z"/>
   </g>
-  <text x="196.5" y="342" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="900" letter-spacing="8" fill="#1a1a1a">LUCERNE BOUTIQUE</text>
+  <text x="196.5" y="342" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="900" letter-spacing="5" fill="#1a1a1a">LUCERNE BOUTIQUE</text>
 </svg>`;
   return Buffer.from(svg);
 }
@@ -59,7 +59,9 @@ export async function watermarkImage(input: Buffer): Promise<Buffer> {
   const meta = await img.metadata();
   const w = meta.width || 1000;
   // Same visual proportion as the site's "md" watermark on the main image.
-  const wmWidth = Math.max(120, Math.round(w * 0.42));
+  // Never larger than the photo itself (tiny images would otherwise fail to export).
+  const h = meta.height || w;
+  const wmWidth = Math.max(8, Math.min(Math.max(120, Math.round(w * 0.42)), w, Math.floor((h * 393) / 360)));
   const wmSvg = buildWatermarkSvg(wmWidth);
   return img
     .composite([{ input: wmSvg, gravity: "center" }])

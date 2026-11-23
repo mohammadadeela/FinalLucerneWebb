@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { sql, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { products as productsTable } from "@shared/schema";
-import { buildZip } from "./watermark";
+import { buildZip, watermarkImage } from "./watermark";
 import sharp from "sharp";
 import { buildAiPhotoHistoryQuery } from "./photoExportQuery";
 import { aiPhotoSeeds, selectAiPhotoHistory, type AiPhotoRecord, photosForProduct, type PhotoMode, type PhotoEntry } from "./productPhotoSelection";
@@ -118,6 +118,8 @@ export function registerProductPhotoExportRoutes(app: Express) {
     if (!ids.length || ids.length > 1000) {
       return res.status(400).json({ message: "Select between 1 and 1000 products" });
     }
+    // Optional: burn the Lucerne watermark into every exported photo.
+    const watermark = req.body?.watermark === true;
     const offset = Number(req.body?.offset ?? 0);
     if (!Number.isSafeInteger(offset) || offset < 0) {
       return res.status(400).json({ message: "Invalid photo offset" });
@@ -173,8 +175,10 @@ export function registerProductPhotoExportRoutes(app: Express) {
               const response = await fetch(photo.url, { signal: AbortSignal.timeout(10000) });
               if (!response.ok) throw new Error("Image fetch failed: " + response.status);
               const buffer = Buffer.from(await response.arrayBuffer());
-              jpeg = await sharp(buffer, { failOn: "none" }).rotate()
-                .jpeg({ quality: 93, mozjpeg: true }).toBuffer();
+              jpeg = watermark
+                ? await watermarkImage(buffer)
+                : await sharp(buffer, { failOn: "none" }).rotate()
+                    .jpeg({ quality: 93, mozjpeg: true }).toBuffer();
             } catch (error) {
               if (attempt === 1) throw error;
             }

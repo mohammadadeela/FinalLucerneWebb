@@ -7,6 +7,7 @@ export async function prepareProductPhotoDownload(
   mode: PhotoExportMode,
   onProgress: (done: number, total: number) => void,
   request: typeof fetch = fetch,
+  watermark = false,
 ): Promise<{ blob: Blob; included: number }> {
   const JSZip = (await import("jszip")).default;
   const archive = new JSZip();
@@ -21,7 +22,7 @@ export async function prepareProductPhotoDownload(
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ ids, mode, offset }),
+          body: JSON.stringify(watermark ? { ids, mode, offset, watermark: true } : { ids, mode, offset }),
         });
         if (response.status < 500 || attempt === 1) break;
       } catch (error) {
