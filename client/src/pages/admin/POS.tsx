@@ -234,6 +234,7 @@ interface HeldCart {
   time: Date;
 }
 interface CompletedOrder {
+  isDelivery?: boolean;
 id: number;
 /** Temporary invoice number (OFF-…) while the sale is only saved on this device. */
 offlineNumber?: string;
@@ -2899,6 +2900,10 @@ export default function POS() {
     paymentMethod === "split"
       ? Math.max(0, splitTotal - cartTotal)
       : Math.max(0, cashAmt - cartTotal);
+  // The same values under other names, for completeSale, which replaces them for delivery orders.
+  const paymentMethodChoice = paymentMethod;
+  const cashAmtEntered = cashAmt;
+  const changeEntered = changeAmount;
 
   /* ── Broadcast cart to customer screen (deferred so UI stays snappy) ── */
   useEffect(() => {
@@ -3878,6 +3883,12 @@ ${noteHtml}
         s + getPosOrderScopedRevenue(o, scope, shoeCategoryIds, productCategoryById),
       0,
     );
+    // Delivery orders are saved as cash, but that money arrives later from the courier.
+    const deliveryOrders = todayOrders.filter((o: any) => (o.saleChannel ?? o.sale_channel) === "delivery");
+    const deliveryRev = deliveryOrders.reduce(
+      (s: number, o: any) => s + getPosOrderScopedRevenue(o, scope, shoeCategoryIds, productCategoryById),
+      0,
+    );
     // Pure cash/card orders only — kept separate from the split share so
     // the invoice counts shown next to each amount stay accurate.
     const pureCashRev = cashOrders.reduce(
@@ -3958,6 +3969,8 @@ p.sub{text-align:center;font-size:14px;font-weight:600;color:#444;margin-bottom:
 <div class="row"><span>عدد الفواتير</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">${todayOrders.length}</span></div>
 <div class="row"><span>قطع مباعة</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">${totalItems}</span></div>
 <div class="row"><span>نقدي فقط</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${pureCashRev.toFixed(2)} (${cashOrders.length})</span></div>
+${deliveryOrders.length ? `<div class="subrow"><span>↳ منها توصيل (لم تُستلم بعد)</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${deliveryRev.toFixed(2)} (${deliveryOrders.length})</span></div>
+<div class="subrow"><span>↳ نقدي في الدرج</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${Math.max(0, pureCashRev - deliveryRev).toFixed(2)}</span></div>` : ""}
 <div class="row"><span>بطاقة فقط</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${pureCardRev.toFixed(2)} (${cardOrders.length})</span></div>
 ${splitOrders.length ? `<div class="row"><span>مختلط</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">${splitOrders.length} فاتورة</span></div>
 <div class="subrow"><span>↳ نقدي</span><span style="direction:ltr;unicode-bidi:isolate;display:inline-block;">₪${splitCashRev.toFixed(2)}</span></div>
@@ -4042,6 +4055,12 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
 
   /* ── Complete sale ───────────────────────────────────────────────── */
   const completeSale = async () => {
+    // A delivery order is paid to the courier later, so nothing is asked at the till: it is
+    // saved as cash for the exact total (no "received" amount, no change) and no receipt prints.
+    const delivery = isDelivery;
+    const paymentMethod = delivery ? ("cash" as const) : paymentMethodChoice;
+    const cashAmt = delivery ? cartTotal : cashAmtEntered;
+    const changeAmount = delivery ? 0 : changeEntered;
     if (cart.length === 0 || !paymentMethod) return;
     if (paymentMethod === "cash" && cashAmt < cartTotal) {
       toast({
@@ -4106,11 +4125,13 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
         discountAmount,
         total: cartTotal,
         date: new Date(),
-        cashReceived: cashAmt,
-        cardReceived: cardAmt,
+        // 0 for a delivery order: nobody handed cash over, so no "received / change" lines.
+        cashReceived: delivery ? 0 : cashAmt,
+        cardReceived: delivery ? 0 : cardAmt,
         change: changeAmount,
         paymentMethod,
         note,
+        isDelivery: delivery,
         sellerName:
           getPosOrderSellerName(order) ||
           (currentUser?.fullName || "").trim() ||
@@ -4163,7 +4184,8 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                 : `✓ Sale done — Invoice #${order.id}`,
             },
       );
-      if (autoPrint) triggerPrint(finished);
+      // Delivery orders are packed, not handed over the counter: no receipt is printed.
+      if (autoPrint && !delivery) triggerPrint(finished);
       barcodeRef.current?.focus();
     };
 
@@ -5133,7 +5155,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
           <div>
             <span className="font-semibold text-green-800 dark:text-green-200 text-sm">
               {ar
-                ? <><span>✓ تم البيع — فاتورة </span><span className="ltr-num">{completedOrder.offlineNumber ?? `#${completedOrder.id}`}</span></>
+                ? <><span>{completedOrder.isDelivery ? "✓ تم تسجيل طلب التوصيل — فاتورة " : "✓ تم البيع — فاتورة "}</span><span className="ltr-num">{completedOrder.offlineNumber ?? `#${completedOrder.id}`}</span></>
                 : <><span>✓ Sale done — Invoice </span><span className="ltr-num">{completedOrder.offlineNumber ?? `#${completedOrder.id}`}</span></>}
             </span>
             <span className="text-green-700 dark:text-green-300 text-sm ms-3 ltr-num">
@@ -6136,7 +6158,12 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                     {note && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
                   </button>
                   <button
-                    onClick={() => setIsDelivery((v) => !v)}
+                    onClick={() => {
+                      setIsDelivery((v) => !v);
+                      setPaymentMethod(null);
+                      setCashReceived("");
+                      setCardReceived("");
+                    }}
                     aria-pressed={isDelivery}
                     title={ar ? "بيع عن طريق الصفحة مع توصيل" : "Sold through the page, sent by delivery"}
                     className={`flex-1 flex items-center justify-center gap-2 text-sm font-semibold h-11 rounded-xl border-2 transition-colors active:scale-95 ${isDelivery ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:border-foreground/40"}`}
@@ -6355,7 +6382,22 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                 )}
 
                 {/* Payment buttons */}
-                {paymentMethod === null ? (
+                {isDelivery ? (
+                  <div className="space-y-2 pt-1">
+                    <button
+                      onClick={completeSale}
+                      disabled={completing}
+                      className="w-full h-16 bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg flex items-center justify-center gap-2 rounded-xl transition-all active:scale-[0.99]"
+                      data-testid="button-confirm-delivery"
+                    >
+                      {completing ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Truck className="w-6 h-6" />}
+                      {ar ? "تسجيل طلب التوصيل" : "Save delivery order"}
+                    </button>
+                    <p className="text-center text-xs text-muted-foreground">
+                      {ar ? "بدون إدخال مبلغ وبدون طباعة فاتورة. المخزون يُخصم مباشرة." : "No amount to enter and no receipt printed. Stock is taken off right away."}
+                    </p>
+                  </div>
+                ) : paymentMethod === null ? (
                   <div className="space-y-2 pt-1">
                     <div className="grid grid-cols-2 gap-2">
                       <button
