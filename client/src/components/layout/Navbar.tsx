@@ -231,6 +231,11 @@ function HighlightMatch({ text, query }: { text?: string; query: string }) {
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // While the phone menu is open, the floating chat and Instagram buttons step aside.
+  useEffect(() => {
+    document.body.classList.toggle("menu-open", mobileMenuOpen);
+    return () => document.body.classList.remove("menu-open");
+  }, [mobileMenuOpen]);
   // Which category has its subcategories open in the phone menu.
   const [openMobileCat, setOpenMobileCat] = useState<number | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);

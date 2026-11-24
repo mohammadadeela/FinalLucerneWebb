@@ -442,3 +442,11 @@ html.admin-theme {
 @media (prefers-reduced-motion: reduce) {
   .offer-confetti, .offer-won { animation: none; }
 }
+
+/* The phone menu covers the page: the floating chat and Instagram buttons are hidden with it. */
+body.menu-open [data-testid="button-chat-open"],
+body.menu-open [data-testid="instagram-widget"] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
