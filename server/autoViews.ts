@@ -12,8 +12,9 @@ import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { storage } from "./storage";
 import { uploadToCloudinary, deleteFromCloudinary } from "./cloudinary";
+import { kindOf, type Kind } from "../client/src/lib/outfitMatch";
 
-export const AUTO_VIEWS_VERSION = 2; // 2: views keep the original photo's shape and size
+export const AUTO_VIEWS_VERSION = 3; // 2: views keep the photo's shape and size; 3: views follow the kind of product
 type Box = { left: number; top: number; width: number; height: number };
 export type AutoViews = { v: number; bySource: Record<string, string[]> };
 
@@ -25,7 +26,7 @@ const MIN_CROP_WIDTH = 420; // a view is never cut smaller than this (in source 
  * whatever differs from the background (when the edges of the photo share one colour) or,
  * for photos taken in a room or on a model, wherever the picture has the most detail.
  */
-export async function findViews(input: Buffer): Promise<{ width: number; height: number; boxes: Box[] }> {
+export async function findViews(input: Buffer, kind: Kind = "other"): Promise<{ width: number; height: number; boxes: Box[] }> {
   const meta = await sharp(input).rotate().metadata();
   const W = meta.width || 0;
   const H = meta.height || 0;
@@ -88,6 +89,36 @@ export async function findViews(input: Buffer): Promise<{ width: number; height:
   while (x1 > x0 + 1 && !colHas(x1 - 1)) x1--;
   while (y0 < h - 1 && !rowHas(y0)) y0++;
   while (y1 > y0 + 1 && !rowHas(y1 - 1)) y1--;
+  // Where the PRODUCT is, not just "something": a photo of boots usually also shows legs, a
+  // wall and a floor; a blouse is worn with trousers. The kind of product says which part of
+  // the picture is the product, so a view is never a close-up of a knee or a painting.
+  //   shoes  → the bottom of the picture        trousers / skirts → the lower part
+  //   tops   → the upper part                   dresses / abayas  → the whole figure
+  // Bags, belts and accessories can be anywhere, so they only get views on a plain background.
+  const personInFrame = (y1 - y0) > (x1 - x0) * 1.2; // taller than wide: worn, not laid out
+  let band: [number, number] | null = null;
+  if (!plainBackground) {
+    if (kind === "shoes") band = [h * 0.52, h];
+    else if (kind === "bottom") band = [h * 0.38, h];
+    else if (kind === "top") band = [h * 0.1, h * 0.68];
+    else if (kind === "dress" || kind === "abaya") band = [h * 0.06, h * 0.96];
+    else return { width: W, height: H, boxes: [] };
+  } else if (personInFrame) {
+    const tall = y1 - y0;
+    if (kind === "shoes") band = [y0 + tall * 0.55, y1];
+    else if (kind === "bottom") band = [y0 + tall * 0.38, y1];
+    else if (kind === "top") band = [y0, y0 + tall * 0.66];
+  }
+  if (band) {
+    y0 = Math.max(0, Math.round(band[0]));
+    y1 = Math.min(h, Math.round(band[1]));
+    // Left and right edges of what is inside the band.
+    const bandCol = (x: number) => fgSum(x, y0, x + 1, y1) > (y1 - y0) * (plainBackground ? 0.03 : 0.08);
+    let bx0 = 0, bx1 = w;
+    while (bx0 < w - 1 && !bandCol(bx0)) bx0++;
+    while (bx1 > bx0 + 1 && !bandCol(bx1 - 1)) bx1--;
+    if (bx1 - bx0 >= w * 0.08) { x0 = bx0; x1 = bx1; }
+  }
   const bw = x1 - x0, bh = y1 - y0;
   if (bw < w * 0.08 || bh < h * 0.06) return { width: W, height: H, boxes: [] };
 
@@ -116,6 +147,39 @@ export async function findViews(input: Buffer): Promise<{ width: number; height:
   const good = (b: typeof out[number]) =>
     plainBackground ? coverage(b) >= 0.3 : detailIn(b.x, b.y, b.x + b.ww, b.y + b.wh) / (b.ww * b.wh) >= detailMean * 1.05;
 
+  const finish = () => {
+    const sx = W / w, sy = H / h;
+    const boxes = out.map((b) => {
+      const left = Math.max(0, Math.round(b.x * sx));
+      const top = Math.max(0, Math.round(b.y * sy));
+      return { left, top, width: Math.min(W - left, Math.round(b.ww * sx)), height: Math.min(H - top, Math.round(b.wh * sy)) };
+    });
+    return { width: W, height: H, boxes: boxes.filter((b) => b.width >= MIN_CROP_WIDTH * 0.95 && b.height > 0) };
+  };
+
+  // A photo taken in a room or on a model: ONE closer view of the part where the product is,
+  // and nothing more — picking "interesting details" there would pick the room.
+  if (!plainBackground) {
+    const zoomW = Math.max(minW, Math.min(w * 0.64, ((bh * w) / h) * 1.15));
+    const probe = fit(0, 0, zoomW);
+    if (probe.ww * probe.wh > w * h * 0.72) return finish(); // would barely be a zoom
+    let best: (typeof out)[number] | null = null;
+    let bestScore = -1;
+    const stepX = Math.max(2, Math.round(probe.ww / 8));
+    // Shoes sit on the floor: the view is pushed to the bottom of the picture.
+    const yTop = kind === "shoes" ? h - probe.wh : Math.max(0, Math.min(h - probe.wh, Math.round(y0 + bh / 2 - probe.wh / 2)));
+    for (let x = 0; x + probe.ww <= w; x += stepX) {
+      const b = { x, y: yTop, ww: probe.ww, wh: probe.wh };
+      // Detail inside the product's band only, and a little preference for the middle.
+      const inBand = detailIn(b.x, Math.max(b.y, y0), b.x + b.ww, Math.min(b.y + b.wh, y1));
+      const centred = 1 - Math.abs(x + probe.ww / 2 - w / 2) / w;
+      const score = inBand * (0.7 + 0.6 * centred);
+      if (score > bestScore) { bestScore = score; best = b; }
+    }
+    if (best && detailIn(best.x, best.y, best.x + best.ww, best.y + best.wh) / (best.ww * best.wh) >= detailMean * 0.9) out.push(best);
+    return finish();
+  }
+
   // 1. The whole product, closer — only when the original leaves real empty space around it.
   const needW = Math.max(bw * 1.16, ((bh * w) / h) * 1.16);
   const whole = fit(x0 + bw / 2, y0 + bh / 2, needW);
@@ -143,13 +207,7 @@ export async function findViews(input: Buffer): Promise<{ width: number; height:
     out.push(c);
   }
 
-  const sx = W / w, sy = H / h;
-  const boxes = out.map((b) => {
-    const left = Math.max(0, Math.round(b.x * sx));
-    const top = Math.max(0, Math.round(b.y * sy));
-    return { left, top, width: Math.min(W - left, Math.round(b.ww * sx)), height: Math.min(H - top, Math.round(b.wh * sy)) };
-  });
-  return { width: W, height: H, boxes: boxes.filter((b) => b.width >= MIN_CROP_WIDTH * 0.95 && b.height > 0) };
+  return finish();
 }
 
 async function download(url: string): Promise<Buffer | null> {
@@ -166,7 +224,7 @@ async function download(url: string): Promise<Buffer | null> {
 const failures = new Map<string, number>();
 
 /** Cuts and saves the views of one photo. Returns their addresses ([] when the photo gives none). */
-export async function makeViews(sourceUrl: string): Promise<string[] | null> {
+export async function makeViews(sourceUrl: string, kind: Kind = "other"): Promise<string[] | null> {
   if (!/^https?:\/\//i.test(sourceUrl)) return []; // not a hosted photo: nothing to cut
   // A photo that keeps failing (deleted, unreachable) is left alone until the next restart.
   if ((failures.get(sourceUrl) || 0) >= 3) return null;
@@ -175,7 +233,7 @@ export async function makeViews(sourceUrl: string): Promise<string[] | null> {
     failures.set(sourceUrl, (failures.get(sourceUrl) || 0) + 1);
     return null; // could not be read now: try again another time
   }
-  const { boxes, width, height } = await findViews(input);
+  const { boxes, width, height } = await findViews(input, kind);
   // Saved at the original photo's own width and height (up to 1600px wide).
   const outW = Math.min(width, 1600);
   const outH = Math.round((outW * height) / width);
@@ -211,6 +269,7 @@ export async function sweepAutoViews(maxProducts = 40): Promise<{ done: number; 
   try {
     if ((await storage.getSiteSetting("auto_product_views")) === "off") return { done: 0, left: 0 };
     const products = (await storage.getProducts()) as any[];
+    const categories = await storage.getCategories();
     for (const product of products) {
       const outdated = !!product.autoViews && product.autoViews.v !== AUTO_VIEWS_VERSION;
       const current: AutoViews = product.autoViews?.v === AUTO_VIEWS_VERSION ? product.autoViews : { v: AUTO_VIEWS_VERSION, bySource: {} };
@@ -234,7 +293,7 @@ export async function sweepAutoViews(maxProducts = 40): Promise<{ done: number; 
       let failed = false;
       for (const s of missing) {
         try {
-          const urls = await makeViews(s);
+          const urls = await makeViews(s, kindOf(product, categories as any[]));
           if (urls === null) { failed = true; continue; }
           next.bySource[s] = urls;
         } catch (err: any) {
