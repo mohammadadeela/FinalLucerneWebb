@@ -468,3 +468,14 @@ html:not(.admin-theme) a:has(video) {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* iPhone (Safari and Chrome) offers "Save to Photos" for whatever picture is under the
+   finger. Shop pictures therefore let touches fall through to the element behind them (the
+   card, the link, the gallery frame): a long press never lands on a picture, so there is no
+   picture to offer. Taps, swipes and zoom are handled by those parent elements and keep
+   working. Videos with visible controls stay touchable so they can be played and paused. */
+html:not(.admin-theme) img,
+html:not(.admin-theme) picture,
+html:not(.admin-theme) video:not([controls]) {
+  pointer-events: none;
+}
