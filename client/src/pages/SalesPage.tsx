@@ -359,7 +359,7 @@ export default function SalesPage() {
                 className={`flex-shrink-0 rounded-full px-4 py-2 text-sm border transition-all font-medium ${selectedCategory === cat.id ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:border-foreground/50 hover:text-foreground"}`}
                 data-testid={`button-category-${cat.id}`}
               >
-                {ar ? cat.nameAr || cat.name : cat.name}
+                {(cat.nameAr || cat.name)}
               </button>
             ))}
           </div>

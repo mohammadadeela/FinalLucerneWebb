@@ -230,7 +230,7 @@ export default function Shop() {
                 ) : (
                   <span className="w-2" />
                 )}
-                {language === "ar" ? (cat.nameAr || cat.name) : cat.name}
+                {(cat.nameAr || cat.name)}
               </button>
             ))}
           </div>
@@ -259,7 +259,7 @@ export default function Shop() {
                         className={`text-sm hover:text-foreground transition-colors ${selectedCategory === cat.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
                         data-testid={`button-category-${cat.id}`}
                       >
-                        {language === "ar" ? (cat.nameAr || cat.name) : cat.name}
+                        {(cat.nameAr || cat.name)}
                       </button>
                     </li>
                   ))}

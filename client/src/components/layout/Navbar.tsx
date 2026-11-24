@@ -632,7 +632,7 @@ export function Navbar() {
   const MAX_NAV_CATS = 5;
   const primaryNavCats = navCategories.slice(0, MAX_NAV_CATS);
   const overflowNavCats = navCategories.slice(MAX_NAV_CATS);
-  const catLabel = (c: any) => (isAr ? c.nameAr || c.name : c.name);
+  const catLabel = (c: any) => ((c.nameAr || c.name));
   const currentPath = location.split("?")[0];
 
   const [expandedCat, setExpandedCat] = useState<number | null>(null);
@@ -861,7 +861,7 @@ export function Navbar() {
                                     />
                                   )}
                                 </span>
-                                <span className="truncate">{isAr ? s.nameAr || s.name : s.name}</span>
+                                <span className="truncate">{(s.nameAr || s.name)}</span>
                               </Link>
                             ))}
                           </div>

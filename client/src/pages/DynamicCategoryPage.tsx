@@ -37,7 +37,7 @@ export default function DynamicCategoryPage() {
     );
   }
 
-  const title = language === "ar" ? (category.nameAr || category.name) : category.name;
+  const title =(category.nameAr || category.name);
 
   const isShoeCategory =
     /shoe|shoes/i.test(category.name) ||

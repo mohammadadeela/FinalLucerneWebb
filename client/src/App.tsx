@@ -1,3 +1,4 @@
+import { useLanguage } from "@/i18n";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Switch, Route, useLocation } from "wouter";
 import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense, Component, type ReactNode } from "react";
@@ -204,6 +205,8 @@ function ThemeController() {
   const [location] = useLocation();
   useLayoutEffect(() => {
     document.documentElement.classList.toggle("admin-theme", location.startsWith("/admin"));
+    // The admin area and the shop each keep their own language.
+    useLanguage.getState().setArea(location.startsWith("/admin") ? "admin" : "store");
   }, [location]);
   return null;
 }
