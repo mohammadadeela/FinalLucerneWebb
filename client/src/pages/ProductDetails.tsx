@@ -1,3 +1,4 @@
+import { useCartDrawer } from "@/store/use-cart-drawer";
 import { useParams, useLocation } from "wouter";
 import {
 optimizeCloudinaryUrl,
@@ -2158,7 +2159,7 @@ toast({
 title: t.product.addedToCart,
 description: t.product.tapToViewCart,
 icon: "cart",
-onClick: () => navigate(`/cart?highlight=${encodeURIComponent(`${product.id}::${selectedSize || ""}::${colorName || ""}`)}`),
+onClick: () => useCartDrawer.getState().setOpen(true),
 } as any);
 };
 
@@ -2449,7 +2450,7 @@ isThumbnail
 {hasMultipleColors && (
 <div className="md:hidden px-4 pt-3 pb-1 border-t border-border">
 <div className="flex items-center gap-2 mb-2">
-<span className="text-xs font-semibold uppercase tracking-widest">
+<span className="text-xs font-semibold">
 {t.product.color}:
 </span>
 <span className="text-xs text-muted-foreground">
@@ -2509,7 +2510,7 @@ ref={infoPanelRef}
 className="flex flex-col pt-3 sm:pt-8 lg:pt-0 lg:sticky lg:top-28 h-fit"
 >
 {product.brand && (
-<div className="text-[11px] sm:text-sm text-muted-foreground uppercase tracking-widest mb-1 sm:mb-2">
+<div className="text-[11px] sm:text-sm text-muted-foreground mb-1 sm:mb-2">
 {product.brand}
 </div>
 )}
@@ -2543,7 +2544,7 @@ data-testid="product-sold-out-notice"
 <>
 <span
 className="price-text ltr-num"
-style={{ color: "#9B1C1C" }}
+style={{ color: "hsl(var(--berry))" }}
 data-testid="text-discount-price"
 >
 ₪{discountPrice}
@@ -2554,7 +2555,7 @@ data-testid="text-original-price"
 >
 ₪{price}
 </span>
-<span className="self-center rounded-full bg-[#9B1C1C]/10 px-2.5 py-1 text-[12px] font-medium leading-none text-[#9B1C1C]">
+<span className="self-center rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium leading-none text-primary">
 {isAr ? "خصم" : "Save"}{" "}
 <span className="ltr-num">
 {Math.round(
@@ -2577,7 +2578,7 @@ data-testid="text-original-price"
 {/* Colors — desktop */}
 {hasMultipleColors && (
 <div className="hidden md:block mb-8">
-<span className="block text-sm font-semibold uppercase tracking-widest mb-3">
+<span className="block text-sm font-semibold mb-3">
 {t.product.color}:{" "}
 <span className="text-muted-foreground font-normal ms-2">
 {translateColorName(
@@ -2636,7 +2637,7 @@ draggable={false}
 {hasSizes && (
 <div className="mb-6">
 <div className="flex justify-between items-center mb-2">
-<span className="text-sm font-semibold uppercase tracking-widest">
+<span className="text-sm font-semibold">
 {t.product.size}
 </span>
 <div className="flex items-center gap-2">
@@ -2751,7 +2752,7 @@ data-testid="button-qty-plus"
 
 <Button
 onClick={handleAddToCart}
-className="flex-1 h-14 rounded-full uppercase tracking-widest text-xs sm:text-sm font-semibold gap-2 shadow-sm"
+className="flex-1 h-14 rounded-full text-[15px] font-semibold gap-2 shadow-sm"
 disabled={!canAdd}
 data-testid="button-add-to-cart"
 >
@@ -2791,7 +2792,7 @@ return;
 }
 toggle(product.id, colorName ?? null);
 }}
-className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-full border text-xs sm:text-sm font-medium uppercase tracking-widest transition-all duration-200 ${
+className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-full border text-xs sm:text-sm font-medium transition-all duration-200 ${
 isWishlisted(product.id)
 ? "border-rose-400 text-rose-500 bg-rose-50 dark:bg-rose-950/30"
 : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"

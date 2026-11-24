@@ -1,3 +1,4 @@
+import { useCartDrawer } from "@/store/use-cart-drawer";
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -59,7 +60,7 @@ export function useAbandonedCartReminder() {
         description: isAr
           ? "لديكِ منتجات في سلتك — لا تنسي إتمام طلبك."
           : "You have items in your cart — ready to complete your order?",
-        onClick: () => navigate("/cart"),
+        onClick: () => useCartDrawer.getState().setOpen(true),
       });
       sendEmailReminder();
     }

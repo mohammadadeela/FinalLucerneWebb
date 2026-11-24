@@ -68,7 +68,7 @@ export function CartOffers({
   const Icon = { delivery: Truck, gift: Gift, bundle: Layers } as const;
 
   return (
-    <div className="rounded-2xl bg-blush/60 p-3.5 sm:p-4" data-testid="panel-cart-offers">
+    <div className="rounded-3xl bg-secondary p-3.5 sm:p-4" data-testid="panel-cart-offers">
       {unlockedCount > 1 && (
         <p className="mb-2.5 text-[12px] font-semibold text-foreground/70">{tr("عرض واحد لكل طلب — اختاري عرضك:", "One offer per order — choose yours:")}</p>
       )}
@@ -79,20 +79,20 @@ export function CartOffers({
           const selectable = offer.unlocked && unlockedCount > 1;
           const row = (
             <>
-              <p className={`flex items-center gap-2 text-[13px] font-medium leading-snug ${offer.unlocked ? "text-foreground" : "text-muted-foreground"}`}>
+              <p className={`flex items-center gap-2 text-[13px] font-medium leading-snug ${offer.unlocked ? "text-foreground" : "text-foreground/75"}`}>
                 <OfferIcon className="h-4 w-4 shrink-0" />
                 <span className="min-w-0 flex-1 text-start">{label(offer.id, offer.unlocked, offer.remaining, offer.saving)}</span>
                 {applied && (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-semibold text-background">
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                     <Check className="h-3 w-3" />
                     {tr("مُفعّل", "Applied")}
                   </span>
                 )}
-                {selectable && !applied && <span className="shrink-0 text-[11px] font-semibold underline underline-offset-2">{tr("اختاري", "Choose")}</span>}
+                {selectable && !applied && <span className="shrink-0 text-[11px] font-semibold text-primary underline underline-offset-2">{tr("اختاري", "Choose")}</span>}
               </p>
-              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-background">
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${offer.unlocked ? "bg-foreground" : "bg-foreground/35"}`}
+                  className={`h-full rounded-full transition-all duration-500 ${offer.unlocked ? "bg-primary" : "bg-gradient-to-r from-[#FFA8C8] to-[#FF5FA2] rtl:bg-gradient-to-l"}`}
                   style={{ width: `${Math.max(4, Math.min(100, offer.progress * 100))}%` }}
                 />
               </div>

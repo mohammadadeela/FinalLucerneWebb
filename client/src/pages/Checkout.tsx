@@ -1217,7 +1217,7 @@ export default function Checkout() {
 
             {deliveryMethod === "delivery" && (<>
             <div ref={shippingRegionRef} className="flex items-baseline justify-between mb-4">
-              <h2 className="flex items-center gap-3 font-display text-2xl"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">1</span>{t.checkout.shippingRegion}</h2>
+              <h2 className="flex items-center gap-3 font-display text-2xl"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-primary"><MapPin className="h-5 w-5" strokeWidth={1.8} /></span>{t.checkout.shippingRegion}</h2>
               {!shippingRegion && (
                 <span className="text-xs text-primary font-semibold animate-pulse">
                   {language === "ar" ? "← اختاري منطقتك" : "← Choose your region"}
@@ -1232,21 +1232,21 @@ export default function Checkout() {
                     key={zone.id}
                     type="button"
                     onClick={() => setShippingRegion(zone.id)}
-                    className={`relative flex flex-col items-start gap-1 rounded-3xl border-2 bg-card p-4 text-start text-sm transition-all duration-200 ${
+                    className={`relative flex flex-col items-start gap-1 rounded-3xl border-2 p-4 text-start text-sm transition-all duration-200 ${
                       selected
-                        ? "border-primary shadow-lg scale-[1.03]"
-                        : "border-transparent shadow-sm hover:border-foreground/25 hover:scale-[1.02] hover:-translate-y-0.5"
+                        ? "border-foreground bg-foreground text-background shadow-lg scale-[1.03]"
+                        : "border-transparent bg-card shadow-sm hover:border-foreground/25 hover:scale-[1.02] hover:-translate-y-0.5"
                     } ${!shippingRegion ? "animate-shake-hint" : ""}`}
                     data-testid={`button-region-${zone.id}`}
                   >
                     {selected && (
-                      <span className="absolute top-3 end-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <span className="absolute top-3 end-3 flex h-5 w-5 items-center justify-center rounded-full bg-background text-foreground">
                         <CheckCircle2 className="h-4 w-4" />
                       </span>
                     )}
-                    <MapPin className="h-5 w-5 shrink-0 text-primary" />
-                    <span className="text-[15.5px] font-semibold leading-tight text-foreground">{language === "ar" ? zone.nameAr : zone.nameEn}</span>
-                    <span className="text-[15px] font-bold text-primary">₪{zone.price}</span>
+                    <MapPin className={`h-5 w-5 shrink-0 ${selected ? "text-background/80" : "text-primary"}`} />
+                    <span className={`text-[15.5px] font-semibold leading-tight ${selected ? "text-background" : "text-foreground"}`}>{language === "ar" ? zone.nameAr : zone.nameEn}</span>
+                    <span className={`text-[15px] font-bold ${selected ? "text-background" : "text-primary"}`}>₪{zone.price}</span>
                   </button>
                 );
               })}
@@ -1254,7 +1254,7 @@ export default function Checkout() {
 
             </>)}
 
-            <h2 className="mb-5 flex items-center gap-3 font-display text-2xl"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">{deliveryMethod === "pickup" ? 1 : 2}</span>{t.checkout.deliveryDetails}</h2>
+            <h2 className="mb-5 flex items-center gap-3 font-display text-2xl"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-primary"><Truck className="h-5 w-5" strokeWidth={1.8} /></span>{t.checkout.deliveryDetails}</h2>
 
             {/* Auto-filled banner — shown only to returning customers whose data was pre-loaded */}
             {autoFilled && (
@@ -1817,7 +1817,7 @@ export default function Checkout() {
               )}
 
               <div className="border-t border-border pt-4 mb-6">
-                <h3 className="mb-3 flex items-center gap-3 font-display text-xl"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">{deliveryMethod === "pickup" ? 2 : 3}</span>{t.checkout.paymentMethod}</h3>
+                <h3 className="mb-3 flex items-center gap-3 font-display text-xl"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-primary"><Wallet className="h-5 w-5" strokeWidth={1.8} /></span>{t.checkout.paymentMethod}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"

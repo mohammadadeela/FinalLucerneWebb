@@ -207,7 +207,7 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
         </span>
         <h2 className="font-display text-2xl" data-testid="text-cart-empty">{t.cart.empty}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{t.cart.emptyDesc}</p>
-        <button type="button" onClick={() => go("/shop")} className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-foreground px-8 text-sm font-semibold text-background transition-transform hover:scale-[1.02] active:scale-95" data-testid="button-continue-shopping">
+        <button type="button" onClick={() => go("/shop")} className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-[1.02] active:scale-95" data-testid="button-continue-shopping">
           {t.cart.continueShopping}
         </button>
       </div>
@@ -337,7 +337,7 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
         type="button"
         onClick={() => go("/checkout")}
         disabled={hasSoldOut || availableItems.length === 0}
-        className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[15.5px] font-semibold text-background transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40"
+        className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-[15.5px] font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40"
         data-testid="button-proceed-checkout"
       >
         {t.cart.proceedToCheckout} <Arrow className="h-4 w-4" />

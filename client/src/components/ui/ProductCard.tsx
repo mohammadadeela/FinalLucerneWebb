@@ -255,7 +255,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           {isSoldOut && (
             <div className="absolute inset-0 z-40 flex items-center justify-center bg-muted/25 backdrop-brightness-90 px-4 pointer-events-none">
               <span
-                className="rounded-full border border-white/20 bg-black px-3 py-1.5 text-center text-xs font-medium leading-none tracking-wide text-white"
+                className="rounded-full bg-foreground px-4 py-2 text-center text-[13px] font-semibold leading-none text-background"
                 data-testid={`badge-sold-out-${product.id}`}
               >
                 Sold out
@@ -267,7 +267,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           {!isSoldOut && product.isNewArrival && (
             <div className="absolute top-3 start-3 z-20">
               <span
-                className="bg-foreground text-background text-[10px] font-bold uppercase tracking-[0.15em] px-2.5 py-1 leading-none"
+                className="inline-flex h-6 items-center rounded-full bg-foreground px-2.5 text-[11px] font-semibold leading-none text-background"
                 data-testid={`badge-new-${product.id}`}
               >
                 {t.product.new}
@@ -279,13 +279,24 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           {!isSoldOut && discountPrice && (
             <div className="absolute top-3 end-3 z-20">
               <span
-                className="w-10 h-10 rounded-full text-white text-[10px] font-bold uppercase tracking-wide flex items-center justify-center leading-none shadow"
-                style={{ backgroundColor: "#FF0000" }}
+                className="inline-flex h-6 items-center rounded-full bg-primary px-2.5 text-[11px] font-semibold leading-none text-primary-foreground shadow"
                 data-testid={`badge-sale-${product.id}`}
               >
                 {t.product.sale}
               </span>
             </div>
+          )}
+
+          {/* Quick action — appears on hover on desktop, always there on phones. It opens the
+              product, where the size and colour are chosen. */}
+          {!isSoldOut && !compact && (
+            <span
+              className="absolute bottom-3 start-3 z-20 flex h-10 items-center gap-1.5 rounded-full bg-foreground px-3 text-[13px] font-semibold text-background shadow-lg transition-all duration-300 group-hover:bg-primary lg:translate-y-3 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
+              data-testid={`button-card-add-${product.id}`}
+            >
+              <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              <span className="hidden pe-1 lg:inline">{t.product.addToCart}</span>
+            </span>
           )}
 
           {/* Images */}
@@ -371,19 +382,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
           {/* Hover dark overlay */}
           {!isSoldOut && <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-400 z-10" />}
 
-          {/* View product bar — slides up on hover for available products only */}
-          {!isSoldOut && <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setLocation(`/product/${product.id}`);
-            }}
-            className="absolute bottom-0 inset-x-0 z-30 flex items-center justify-center gap-2 bg-foreground/90 text-background text-xs font-semibold uppercase tracking-widest py-2.5 translate-y-[calc(100%+2px)] group-hover:translate-y-0 transition-transform duration-300 ease-out"
-            data-testid={`button-view-product-${product.id}`}
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            {t.product.view}
-          </button>}
+          
 
           {/* Wishlist heart button */}
           {!isSoldOut && <button
@@ -394,7 +393,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                 : t.wishlist.addToWishlist
             }
             data-testid={`button-wishlist-${product.id}`}
-            className={`absolute bottom-3 group-hover:bottom-12 end-3 z-30 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 focus:opacity-100 ${wishlisted ? "opacity-100 bg-white" : "opacity-0 group-hover:opacity-100 bg-white/80"}`}
+            className={`absolute bottom-3 end-3 z-30 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 focus:opacity-100 ${wishlisted ? "opacity-100 bg-white" : "opacity-0 group-hover:opacity-100 bg-white/80"}`}
           >
             <Heart
               className={`w-4 h-4 transition-all duration-200 ${wishlisted ? "fill-rose-500 stroke-rose-500" : "stroke-foreground fill-transparent"}`}
@@ -404,7 +403,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
           {/* Carousel dots */}
           {allImages.length > 1 && effectiveColorIdx === null && (
-            <div className="absolute bottom-3 group-hover:bottom-12 inset-x-0 flex justify-center gap-1.5 z-20 transition-all duration-300">
+            <div className="absolute bottom-3 inset-x-0 flex justify-center gap-1.5 z-20 transition-all duration-300">
               {allImages.map((_, idx) => (
                 <span
                   key={idx}

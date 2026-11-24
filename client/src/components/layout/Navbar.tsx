@@ -1019,9 +1019,9 @@ export function Navbar() {
                   aria-label={t.nav.cart}
                   onClick={(e: React.MouseEvent) => {
                     // Open the cart as a side panel; the link still works with "open in new tab".
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || location === "/checkout" || location === "/cart") return;
+                    // The cart always opens as a side panel; it never takes the customer to another page.
                     e.preventDefault();
-                    useCartDrawer.getState().setOpen(true);
+                    if (location !== "/cart") useCartDrawer.getState().setOpen(true);
                   }}
                 >
                   <ShoppingBag className="w-[22px] h-[22px]" strokeWidth={1.6} />
