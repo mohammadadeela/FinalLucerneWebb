@@ -324,7 +324,8 @@ export default function SalesPage() {
               setSortBy(e.target.value as SortValue);
               setFilters((f) => ({ ...f, sort: null }));
             }}
-            className="h-11 rounded-2xl border border-border bg-background px-4 text-sm focus:outline-none focus:border-primary cursor-pointer sm:w-52"
+            className="h-11 cursor-pointer appearance-none rounded-2xl border border-border bg-background bg-no-repeat pe-10 ps-4 text-sm focus:border-primary focus:outline-none sm:w-52 bg-[length:16px] bg-[position:right_0.85rem_center] rtl:bg-[position:left_0.85rem_center]"
+            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")" }}
             data-testid="select-sort"
           >
             {SORT_OPTIONS.map((o) => (
