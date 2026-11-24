@@ -43,8 +43,10 @@ export function CartOffers({
   onChoose: (id: CartOfferId) => void;
 }) {
   if (!quote.offers.length) return null;
-  const tr = (ar: string, en: string) => (isAr ? ar : en);
-  const gift = isAr ? settings.giftTextAr : settings.giftTextEn;
+  // The offers are always written in Arabic, whichever language the rest of the site is in.
+  void isAr;
+  const tr = (ar: string, _en: string) => ar;
+  const gift = settings.giftTextAr;
   const unlockedCount = quote.offers.filter((o) => o.unlocked).length;
   const interior = isInteriorZone(region);
 
@@ -68,7 +70,7 @@ export function CartOffers({
   const Icon = { delivery: Truck, gift: Gift, bundle: Layers } as const;
 
   return (
-    <div className="rounded-3xl bg-secondary p-3.5 sm:p-4" data-testid="panel-cart-offers">
+    <div className="rounded-3xl bg-secondary p-3.5 sm:p-4" dir="rtl" lang="ar" data-testid="panel-cart-offers">
       {unlockedCount > 1 && (
         <p className="mb-2.5 text-[12px] font-semibold text-foreground/70">{tr("عرض واحد لكل طلب — اختاري عرضك:", "One offer per order — choose yours:")}</p>
       )}
@@ -79,9 +81,9 @@ export function CartOffers({
           const selectable = offer.unlocked && unlockedCount > 1;
           const row = (
             <>
-              <p className={`flex items-center gap-2 text-[13px] font-medium leading-snug ${offer.unlocked ? "text-foreground" : "text-foreground/75"}`}>
-                <OfferIcon className="h-4 w-4 shrink-0" />
-                <span className="min-w-0 flex-1 text-start">{label(offer.id, offer.unlocked, offer.remaining, offer.saving)}</span>
+              <p className={`flex w-full items-start gap-2 whitespace-normal text-[13px] font-medium leading-snug ${offer.unlocked ? "text-foreground" : "text-foreground/75"}`}>
+                <OfferIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1 whitespace-normal break-words text-start">{label(offer.id, offer.unlocked, offer.remaining, offer.saving)}</span>
                 {applied && (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                     <Check className="h-3 w-3" />
@@ -104,7 +106,7 @@ export function CartOffers({
               type="button"
               onClick={() => onChoose(offer.id)}
               aria-pressed={applied}
-              className={`rounded-xl p-2 text-start transition-colors ${applied ? "bg-background shadow-sm" : "hover:bg-background/60"}`}
+              className={`block h-auto w-full rounded-xl p-2 text-start transition-colors ${applied ? "bg-background shadow-sm" : "hover:bg-background/60"}`}
               data-testid={`button-cart-offer-${offer.id}`}
             >
               {row}

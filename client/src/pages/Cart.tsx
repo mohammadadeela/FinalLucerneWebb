@@ -217,37 +217,22 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
   const itemCount = items.reduce((n, item) => n + item.quantity, 0);
   const points = Math.floor(cartTotalAfterOffer / 2);
 
-  const lines = (
-    <ul className="divide-y divide-border/70">
-      {items.map((item, idx) => {
-        const price = item.product.discountPrice ? parseFloat(item.product.discountPrice) : parseFloat(item.product.price);
-        const fullPrice = parseFloat(item.product.price);
-        const soldOut = isItemSoldOut(item);
-        const maxStock = getItemMaxStock(item);
-        const atMax = item.quantity >= maxStock;
-        const key = makeKey(item.product.id, item.size, item.color);
-        const variant = ((item.product.colorVariants as ColorVariant[] | undefined) || []).find((v) => v.name === item.color);
-        return (
-          <li
-            key={`${key}-${idx}`}
-            ref={(el) => { itemRefs.current[key] = el as any; }}
-            className={`flex gap-3.5 py-4 ${soldOut ? "opacity-60" : ""}`}
-            data-testid={`cart-item-${idx}`}
-          >
-            <button type="button" onClick={() => go(`/product/${item.product.id}`)} className="shrink-0" aria-label={item.product.name}>
-              <CartItemImage item={item} soldOut={soldOut} sizeClass="w-[76px]" labelSize="text-[10px]" language={language} />
+  const removeButton = (item: (typeof items)[number], idx: number) => (
+    <button type="button" onClick={() => removeFromCart(item.product.id, item.size, item.color)} className="flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground transition-colors hover:bg-blush hover:text-foreground" aria-label={isAr ? "حذف" : "Remove"} data-testid={`button-remove-${idx}`}>
+              <Trash2 className="h-[15px] w-[15px]" />
             </button>
-            <div className="flex min-w-0 flex-1 flex-col">
-              <button type="button" onClick={() => go(`/product/${item.product.id}`)} className="truncate text-start text-[14.5px] font-medium">
-                {item.product.name}
-              </button>
-              {(item.color || item.size) && (
-                <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                  {variant?.colorCode && <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: variant.colorCode }} />}
-                  {[item.color ? translateColorName(item.color, language) : "", item.size].filter(Boolean).join(" · ")}
-                </p>
-              )}
-              <div className="mt-auto flex items-center justify-between pt-2">
+  );
+
+  const sizeRow = (item: (typeof items)[number], idx: number) => {
+    const grouped = items.filter((o) => o.product.id === item.product.id && (o.color || "") === (item.color || "")).length > 1;
+    const price = item.product.discountPrice ? parseFloat(item.product.discountPrice) : parseFloat(item.product.price);
+    const fullPrice = parseFloat(item.product.price);
+    const soldOut = isItemSoldOut(item);
+    const maxStock = getItemMaxStock(item);
+    const atMax = item.quantity >= maxStock;
+    return (
+      <div key={idx} className={`flex items-center justify-between gap-2 ${grouped ? "" : "mt-auto pt-2"} ${grouped && soldOut ? "opacity-60" : ""}`} data-testid={`cart-size-row-${idx}`}>
+        {grouped && <span className="inline-flex h-7 min-w-[40px] shrink-0 items-center justify-center rounded-full bg-secondary px-2 text-[12.5px] font-semibold">{item.size || "—"}</span>}
                 {soldOut ? (
                   <span className="text-xs font-semibold text-red-600">{isAr ? "نفذ من المخزون" : "Sold out"}</span>
                 ) : (
@@ -265,11 +250,60 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
                   ₪{(price * item.quantity).toFixed(2)}
                   {price < fullPrice && <s className="ms-1.5 text-[12px] font-normal text-muted-foreground">₪{(fullPrice * item.quantity).toFixed(2)}</s>}
                 </p>
-              </div>
-            </div>
-            <button type="button" onClick={() => removeFromCart(item.product.id, item.size, item.color)} className="flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground transition-colors hover:bg-blush hover:text-foreground" aria-label={isAr ? "حذف" : "Remove"} data-testid={`button-remove-${idx}`}>
-              <Trash2 className="h-[15px] w-[15px]" />
+                {grouped && removeButton(item, idx)}
+      </div>
+    );
+  };
+
+  // The same piece in several sizes is shown once, with a short row per size.
+  const groups: { item: (typeof items)[number]; idx: number }[][] = [];
+  items.forEach((item, idx) => {
+    const found = groups.find((g) => g[0].item.product.id === item.product.id && (g[0].item.color || "") === (item.color || ""));
+    if (found) found.push({ item, idx });
+    else groups.push([{ item, idx }]);
+  });
+
+  const lines = (
+    <ul className="divide-y divide-border/70">
+      {groups.map((group) => {
+        const { item, idx } = group[0];
+        const multi = group.length > 1;
+        const price = item.product.discountPrice ? parseFloat(item.product.discountPrice) : parseFloat(item.product.price);
+        const fullPrice = parseFloat(item.product.price);
+        const soldOut = isItemSoldOut(item);
+        const maxStock = getItemMaxStock(item);
+        const atMax = item.quantity >= maxStock;
+        const key = makeKey(item.product.id, item.size, item.color);
+        const variant = ((item.product.colorVariants as ColorVariant[] | undefined) || []).find((v) => v.name === item.color);
+        return (
+          <li
+            key={`${key}-${idx}`}
+            ref={(el) => { itemRefs.current[key] = el as any; }}
+            className={`flex gap-3.5 py-4 ${!multi && soldOut ? "opacity-60" : ""}`}
+            data-testid={`cart-item-${idx}`}
+          >
+            <button type="button" onClick={() => go(`/product/${item.product.id}`)} className="shrink-0" aria-label={item.product.name}>
+              <CartItemImage item={item} soldOut={!multi && soldOut} sizeClass="w-[76px]" labelSize="text-[10px]" language={language} />
             </button>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <button type="button" onClick={() => go(`/product/${item.product.id}`)} className="truncate text-start text-[14.5px] font-medium">
+                {item.product.name}
+              </button>
+              {(item.color || item.size) && (
+                <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                  {variant?.colorCode && <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: variant.colorCode }} />}
+                  {[item.color ? translateColorName(item.color, language) : "", multi ? (isAr ? group.length + " مقاسات" : group.length + " sizes") : item.size].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              {multi ? (
+                <div className="mt-2 space-y-1.5">
+                  {group.map((m) => sizeRow(m.item, m.idx))}
+                </div>
+              ) : (
+                sizeRow(item, idx)
+              )}
+            </div>
+            {!multi && removeButton(item, idx)}
           </li>
         );
       })}
@@ -350,13 +384,13 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
   if (mode === "drawer") {
     return (
       <>
-        <div className="flex-1 overflow-y-auto px-5 pb-4">
-          <div className="pt-4">{offers}</div>
+        <div className="flex-1 overflow-y-auto px-4 pb-4 sm:px-5">
+          <div className="pt-3 sm:pt-4">{offers}</div>
           {soldOutNote}
           {lines}
           {suggested}
         </div>
-        <footer className="shrink-0 border-t border-border bg-background px-5 pb-5 pt-4">{totals}</footer>
+        <footer className="shrink-0 border-t border-border bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pt-4">{totals}</footer>
       </>
     );
   }

@@ -148,6 +148,13 @@ export default function Checkout() {
   const soldOutBannerRef = useRef<HTMLDivElement>(null);
   // The order list scrolls when it is long; this tells the customer there is more below.
   const orderListRef = useRef<HTMLDivElement>(null);
+  // The same piece in several sizes is one line in the order list.
+  const orderGroups: (typeof items)[] = [];
+  items.forEach((item) => {
+    const found = orderGroups.find((g) => g[0].product.id === item.product.id && (g[0].color || "") === (item.color || ""));
+    if (found) found.push(item);
+    else orderGroups.push([item]);
+  });
   const [orderListMore, setOrderListMore] = useState(false);
   const updateOrderListMore = () => {
     const el = orderListRef.current;
@@ -1485,10 +1492,12 @@ export default function Checkout() {
 
               <div className="relative mb-6">
                 <div ref={orderListRef} onScroll={updateOrderListMore} className="space-y-4 max-h-64 overflow-y-auto pt-3 pe-2">
-                {items.map((item, idx) => {
+                {orderGroups.map((members, idx) => {
+                  const item = members[0];
                   const price = parseFloat(item.product.discountPrice?.toString() || item.product.price.toString());
+                  const groupQty = members.reduce((n, m) => n + m.quantity, 0);
                   return (
-                    <div key={idx} className="flex items-center justify-between text-sm">
+                    <div key={idx} className="flex items-center justify-between gap-3 text-sm">
                       <div className="flex items-center gap-3">
                         <div className="w-14 h-[4.5rem] bg-muted relative shrink-0 rounded-xl">
                           <CheckoutItemImage
@@ -1513,18 +1522,20 @@ export default function Checkout() {
                             className="absolute -top-2 -end-2 bg-primary text-primary-foreground text-[11px] font-bold min-w-[20px] h-5 px-1 flex justify-center items-center rounded-full ring-2 ring-secondary shadow-sm pointer-events-none z-10"
                             data-testid={`badge-checkout-qty-${idx}`}
                           >
-                            {item.quantity}
+                            {groupQty}
                           </span>
                         </div>
                         <div>
                           <p className="font-medium">{item.product.name}</p>
                           <p className="text-muted-foreground text-xs">
-                            {item.size} {item.color ? translateColorName(item.color, language === "ar" ? "ar" : "en") : ""}
-                            <span className="ms-1.5 text-foreground/60">× {item.quantity}</span>
+                            {item.color ? translateColorName(item.color, language === "ar" ? "ar" : "en") + " " : ""}
+                            {members.length > 1
+                              ? members.map((m) => (m.size || "") + " ×" + m.quantity).join(" · ")
+                              : <>{item.size}<span className="ms-1.5 text-foreground/60">× {item.quantity}</span></>}
                           </p>
                         </div>
                       </div>
-                      <span className="font-medium ltr-num">₪{(price * item.quantity).toFixed(2)}</span>
+                      <span className="shrink-0 font-medium ltr-num">₪{(price * groupQty).toFixed(2)}</span>
                     </div>
                   );
                 })}
@@ -1535,7 +1546,7 @@ export default function Checkout() {
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card to-transparent" />
                     <button
                       type="button"
-                      onClick={() => orderListRef.current?.scrollBy({ top: 150, behavior: "smooth" })}
+                      onClick={() => { const el = orderListRef.current; el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" }); }}
                       aria-label={language === "ar" ? "عرض باقي المنتجات" : "Show more items"}
                       className="absolute bottom-1 left-1/2 flex h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-foreground px-3.5 text-xs font-semibold text-background shadow-md transition-transform hover:scale-105 active:scale-95"
                       data-testid="button-order-list-more"
