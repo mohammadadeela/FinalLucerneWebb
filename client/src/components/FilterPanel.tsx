@@ -233,6 +233,7 @@ export function FilterPanel({
   const slideOut = isRtl ? "-translate-x-full" : "translate-x-full";
 
   const tr = (ar: string, en: string) => (language === "ar" ? ar : en);
+  const [coloursOpen, setColoursOpen] = useState(false);
   const title = "mb-3 font-display text-lg font-semibold text-foreground";
   const chip = (on: boolean) =>
     `inline-flex h-9 items-center rounded-full border px-4 text-[13px] font-medium transition-colors ${
@@ -286,33 +287,46 @@ export function FilterPanel({
       {displaySizes.length > 0 && (
         <div>
           <p className={title}>{t.filter.body}</p>
-          <div className="flex flex-wrap gap-2">
-            {displaySizes.map((size) => (
-              <button key={size} type="button" aria-pressed={filters.sizes.includes(size)} onClick={() => toggleSize(size)} className={chip(filters.sizes.includes(size)) + " min-w-[46px] justify-center px-3"} data-testid={`button-size-${size}`}>
-                {size}
-              </button>
-            ))}
-          </div>
+          {[displaySizes.filter((x) => !/^\d/.test(x)), displaySizes.filter((x) => /^\d/.test(x))].map((group, gi, all) =>
+            group.length === 0 ? null : (
+              <div key={gi} className={gi === 1 && all[0].length > 0 ? "mt-3" : ""}>
+                {gi === 1 && all[0].length > 0 && <p className="mb-1.5 text-[11.5px] font-medium text-muted-foreground">{tr("مقاسات بالأرقام", "Number sizes")}</p>}
+                <div className="flex flex-wrap gap-2">
+                  {group.map((size) => (
+                    <button key={size} type="button" aria-pressed={filters.sizes.includes(size)} onClick={() => toggleSize(size)} className={chip(filters.sizes.includes(size)) + " min-w-[46px] justify-center px-3"} data-testid={`button-size-${size}`}>
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
         </div>
       )}
 
       {swatches.length > 0 && (
         <div>
           <p className={title}>{t.filter.colour}</p>
-          <div className="flex flex-wrap gap-x-2 gap-y-3">
-            {swatches.map((c) => {
+          <div className="grid grid-cols-5 gap-x-1 gap-y-3">
+            {(coloursOpen ? swatches : swatches.slice(0, 10)).map((c) => {
               const on = filters.colors.includes(c.key);
               return (
-                <button key={c.key} type="button" aria-pressed={on} onClick={() => toggleColor(c.key)} className="flex w-[52px] flex-col items-center gap-1.5" data-testid={`button-color-${c.key}`}>
+                <button key={c.key} type="button" aria-pressed={on} onClick={() => toggleColor(c.key)} className="flex min-w-0 flex-col items-center gap-1.5" data-testid={`button-color-${c.key}`}>
                   <span
-                    className={`h-11 w-11 rounded-full border transition-shadow ${c.light ? "border-foreground/15" : "border-black/10"} ${on ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
+                    className={`h-9 w-9 shrink-0 rounded-full border transition-shadow ${c.light ? "border-foreground/20" : "border-black/10"} ${on ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
                     style={c.style}
                   />
-                  <span className={`w-full truncate text-center text-[12px] capitalize text-foreground ${on ? "font-bold" : "font-medium"}`}>{c.label}</span>
+                  <span className={`w-full break-words text-center text-[11px] capitalize leading-tight text-foreground ${on ? "font-bold" : "font-medium"}`}>{c.label}</span>
                 </button>
               );
             })}
           </div>
+          {swatches.length > 10 && (
+            <button type="button" onClick={() => setColoursOpen((v) => !v)} aria-expanded={coloursOpen} className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-foreground hover:underline" data-testid="button-more-colours">
+              {coloursOpen ? tr("عرض أقل", "Show less") : tr(`عرض المزيد (${swatches.length - 10})`, `Show more (${swatches.length - 10})`)}
+              <ChevronDown className={`h-4 w-4 transition-transform ${coloursOpen ? "rotate-180" : ""}`} />
+            </button>
+          )}
         </div>
       )}
 

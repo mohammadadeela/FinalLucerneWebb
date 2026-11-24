@@ -125,8 +125,13 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
     const set = new Set<string>();
     categoryProducts.forEach((p) => {
       const cv = (p as any).colorVariants as ColorVariant[] | undefined;
-      if (cv && cv.length > 0) cv.forEach((v) => (v.sizes || []).forEach((s: string) => set.add(s)));
-      else (p.sizes || []).forEach((s: string) => set.add(s));
+      // Only sizes that are in stock: a size nobody can buy is not worth a filter button.
+      const add = (sizes: string[] | undefined, inventory: Record<string, number> | undefined) =>
+        (sizes?.length ? sizes : Object.keys(inventory || {})).forEach((s: string) => {
+          if (!inventory || inventory[s] === undefined || Number(inventory[s]) > 0) set.add(s);
+        });
+      if (cv && cv.length > 0) cv.forEach((v: any) => add(v.sizes, v.sizeInventory));
+      else add(p.sizes as string[], (p as any).sizeInventory);
     });
     return Array.from(set);
   }, [categoryProducts]);
@@ -306,8 +311,8 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
           </div>
         </div>
         <div className="flex flex-col lg:flex-row lg:gap-8">
-          <aside className="hidden w-[230px] shrink-0 lg:block">
-            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-40 pe-1 [scrollbar-width:thin]">
+          <aside className="hidden w-[280px] shrink-0 lg:block">
+            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-40 pe-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <FilterPanel variant="sidebar" {...filterProps} />
             </div>
           </aside>
