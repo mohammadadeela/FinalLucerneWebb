@@ -452,11 +452,18 @@ body.menu-open [data-testid="instagram-widget"] {
 }
 
 /* Shop photos and videos: no long-press "save" sheet on phones, no dragging, no selecting.
-   The admin area is left alone so staff can save and download. */
+   On iPhone the sheet belongs to whatever is pressed — the photo, the link around it, or the
+   layer above it — so it is switched off for the whole shop page, not only for <img>.
+   Text can still be selected and copied. The admin area is left alone. */
+html:not(.admin-theme) body,
+html:not(.admin-theme) body * {
+  -webkit-touch-callout: none;
+}
 html:not(.admin-theme) img,
 html:not(.admin-theme) video,
-html:not(.admin-theme) picture {
-  -webkit-touch-callout: none;
+html:not(.admin-theme) picture,
+html:not(.admin-theme) a:has(img),
+html:not(.admin-theme) a:has(video) {
   -webkit-user-drag: none;
   user-select: none;
   -webkit-user-select: none;
