@@ -1,3 +1,4 @@
+import { useCartDrawer } from "@/store/use-cart-drawer";
 import { Link, useLocation } from "wouter";
 import {
   ShoppingBag,
@@ -1016,6 +1017,12 @@ export function Navbar() {
                   className={iconBtn}
                   data-testid="link-cart"
                   aria-label={t.nav.cart}
+                  onClick={(e: React.MouseEvent) => {
+                    // Open the cart as a side panel; the link still works with "open in new tab".
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || location === "/checkout" || location === "/cart") return;
+                    e.preventDefault();
+                    useCartDrawer.getState().setOpen(true);
+                  }}
                 >
                   <ShoppingBag className="w-[22px] h-[22px]" strokeWidth={1.6} />
                   <motion.span

@@ -1050,7 +1050,7 @@ export default function Checkout() {
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-5xl mx-auto">
         <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} images={items.slice(0, 3).map((it: any) => getItemImage(it)).filter(Boolean)} />
-        <h1 className="font-display text-3xl sm:text-4xl mb-8 sm:mb-12" data-testid="text-checkout-title">{t.checkout.title}</h1>
+        <h1 className="font-display text-[2.6rem] leading-none sm:text-[3.4rem] mb-8 sm:mb-10" data-testid="text-checkout-title">{t.checkout.title}</h1>
 
         {soldOutItems.length > 0 && items.length > 0 && (
           <div
@@ -1125,7 +1125,7 @@ export default function Checkout() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-16">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-[1fr_440px] lg:gap-12">
           <div>
             {/* Guest notice: they can order, but points and discount codes belong to accounts */}
             {!user && guestCheckoutEnabled && (
@@ -1167,7 +1167,7 @@ export default function Checkout() {
             {/* Delivery or store pickup */}
             {pickupAvailable && (
               <div className="mb-8" data-testid="section-delivery-method">
-                <h2 className="text-xl font-semibold uppercase tracking-widest mb-4">{language === "ar" ? "طريقة الاستلام" : "How do you want it?"}</h2>
+                <h2 className="mb-4 font-display text-2xl">{language === "ar" ? "طريقة الاستلام" : "How do you want it?"}</h2>
                 <div className="grid grid-cols-2 gap-3">
                   {([
                     { id: "delivery", icon: Truck, title: language === "ar" ? "توصيل" : "Delivery", sub: language === "ar" ? "إلى باب منزلك" : "To your door" },
@@ -1217,7 +1217,7 @@ export default function Checkout() {
 
             {deliveryMethod === "delivery" && (<>
             <div ref={shippingRegionRef} className="flex items-baseline justify-between mb-4">
-              <h2 className="text-xl font-semibold uppercase tracking-widest">{t.checkout.shippingRegion}</h2>
+              <h2 className="flex items-center gap-3 font-display text-2xl"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">1</span>{t.checkout.shippingRegion}</h2>
               {!shippingRegion && (
                 <span className="text-xs text-primary font-semibold animate-pulse">
                   {language === "ar" ? "← اختاري منطقتك" : "← Choose your region"}
@@ -1232,21 +1232,21 @@ export default function Checkout() {
                     key={zone.id}
                     type="button"
                     onClick={() => setShippingRegion(zone.id)}
-                    className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 text-sm transition-all duration-200 ${
+                    className={`relative flex flex-col items-start gap-1 rounded-3xl border-2 bg-card p-4 text-start text-sm transition-all duration-200 ${
                       selected
-                        ? "border-foreground bg-foreground text-background shadow-md scale-[1.03]"
-                        : "border-border text-muted-foreground hover:border-foreground/40 hover:bg-muted/50 hover:scale-[1.01]"
+                        ? "border-foreground shadow-lg"
+                        : "border-transparent shadow-sm hover:border-foreground/25"
                     } ${!shippingRegion ? "animate-shake-hint" : ""}`}
                     data-testid={`button-region-${zone.id}`}
                   >
                     {selected && (
-                      <span className="absolute top-2 end-2 w-4 h-4 rounded-full bg-background flex items-center justify-center">
-                        <CheckCircle2 className="w-4 h-4 text-foreground" />
+                      <span className="absolute top-3 end-3 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background">
+                        <CheckCircle2 className="h-4 w-4" />
                       </span>
                     )}
-                    <MapPin className={`w-5 h-5 shrink-0 ${selected ? "text-background" : "text-primary"}`} />
-                    <span className="font-semibold text-center leading-tight">{language === "ar" ? zone.nameAr : zone.nameEn}</span>
-                    <span className={`text-xs font-bold ${selected ? "text-background/80" : "text-primary"}`}>₪{zone.price}</span>
+                    <MapPin className="h-5 w-5 shrink-0 text-primary" />
+                    <span className="text-[15.5px] font-semibold leading-tight text-foreground">{language === "ar" ? zone.nameAr : zone.nameEn}</span>
+                    <span className="text-[15px] font-bold text-primary">₪{zone.price}</span>
                   </button>
                 );
               })}
@@ -1254,7 +1254,7 @@ export default function Checkout() {
 
             </>)}
 
-            <h2 className="text-xl font-semibold mb-6 uppercase tracking-widest">{t.checkout.deliveryDetails}</h2>
+            <h2 className="mb-5 flex items-center gap-3 font-display text-2xl"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">{deliveryMethod === "pickup" ? 1 : 2}</span>{t.checkout.deliveryDetails}</h2>
 
             {/* Auto-filled banner — shown only to returning customers whose data was pre-loaded */}
             {autoFilled && (
@@ -1284,7 +1284,7 @@ export default function Checkout() {
             <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="flex items-center gap-1">{t.checkout.fullName}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-name" />
+                <Input id="fullName" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="rounded-2xl border-border focus-visible:ring-primary" data-testid="input-checkout-name" />
               </div>
               <div className="space-y-2">
                 {whatsappNotificationsEnabled && !!user && (
@@ -1300,7 +1300,7 @@ export default function Checkout() {
                 <Label htmlFor="phone" className="flex items-center gap-1">{t.checkout.phone}<span className="text-red-500 text-base leading-none">*</span></Label>
                 <div
                   key={`phone-${phoneShakeKey}`}
-                  className={`flex gap-0 rounded-md border focus-within:ring-2 focus-within:ring-ring ${
+                  className={`flex gap-0 rounded-2xl border focus-within:ring-2 focus-within:ring-ring ${
                     phoneValidationError
                       ? "border-red-500 focus-within:ring-red-500 animate-[shake-hint_0.45s_ease-in-out_1]"
                       : "border-border"
@@ -1369,7 +1369,7 @@ export default function Checkout() {
                 </Label>
                 <div
                   key={`phone2-${phone2ShakeKey}`}
-                  className={`flex gap-0 rounded-md border focus-within:ring-2 focus-within:ring-ring ${
+                  className={`flex gap-0 rounded-2xl border focus-within:ring-2 focus-within:ring-ring ${
                     phone2ValidationError
                       ? "border-red-500 focus-within:ring-red-500 animate-[shake-hint_0.45s_ease-in-out_1]"
                       : "border-border"
@@ -1439,7 +1439,7 @@ export default function Checkout() {
                   value={guestEmail}
                   onChange={(e) => setGuestEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="rounded-md border-border focus-visible:ring-primary"
+                  className="rounded-2xl border-border focus-visible:ring-primary"
                   data-testid="input-guest-email"
                 />
                 <p id="guest-email-help" className="text-xs text-red-600" role="status">
@@ -1455,16 +1455,16 @@ export default function Checkout() {
               {deliveryMethod === "delivery" && (<>
               <div className="space-y-2">
                 <Label htmlFor="city" className="flex items-center gap-1">{t.checkout.city}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="city" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-city" />
+                <Input id="city" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="rounded-2xl border-border focus-visible:ring-primary" data-testid="input-checkout-city" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address" className="flex items-center gap-1">{t.checkout.address}<span className="text-red-500 text-base leading-none">*</span></Label>
-                <Input id="address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-md border-border focus-visible:ring-primary" data-testid="input-checkout-address" />
+                <Input id="address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="rounded-2xl border-border focus-visible:ring-primary" data-testid="input-checkout-address" />
               </div>
               </>)}
               <div className="space-y-2">
                 <Label htmlFor="notes">{t.checkout.notes}</Label>
-                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="rounded-md border-border focus-visible:ring-primary resize-none" rows={4} data-testid="textarea-checkout-notes" />
+                <Textarea id="notes" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="rounded-2xl border-border focus-visible:ring-primary resize-none" rows={4} data-testid="textarea-checkout-notes" />
               </div>
 
               {/* Auto-save notice — always on, no toggle needed */}
@@ -1480,8 +1480,8 @@ export default function Checkout() {
           </div>
 
           <div>
-            <div className="bg-secondary p-6 sm:p-8 sticky top-28">
-              <h2 className="text-xl font-semibold mb-6 uppercase tracking-widest border-b border-border pb-4">{t.checkout.yourOrder}</h2>
+            <div className="sticky top-28 rounded-[1.75rem] bg-card p-5 shadow-[0_10px_40px_-18px_rgba(0,0,0,0.25)] sm:p-6">
+              <h2 className="mb-3 font-display text-2xl">{t.checkout.yourOrder}</h2>
 
               <div className="relative mb-6">
                 <div ref={orderListRef} onScroll={updateOrderListMore} className="space-y-4 max-h-64 overflow-y-auto pt-3 pe-2">
@@ -1532,7 +1532,7 @@ export default function Checkout() {
                 {/* More pieces below: a soft fade and an arrow that scrolls the list down. */}
                 {orderListMore && (
                   <>
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-secondary to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-card to-transparent" />
                     <button
                       type="button"
                       onClick={() => orderListRef.current?.scrollBy({ top: 150, behavior: "smooth" })}
@@ -1620,7 +1620,7 @@ export default function Checkout() {
                         value={discountInput}
                         onChange={e => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError(""); }}
                         placeholder={language === "ar" ? "أدخلي كود الخصم..." : "Enter discount code..."}
-                        className="rounded-md h-10 text-xs uppercase ps-9 pe-10 tracking-widest placeholder:normal-case placeholder:tracking-normal"
+                        className="rounded-2xl h-10 text-xs uppercase ps-9 pe-10 tracking-widest placeholder:normal-case placeholder:tracking-normal"
                         onKeyDown={e => e.key === "Enter" && (e.preventDefault(), applyDiscount())}
                         data-testid="input-discount-code"
                       />
@@ -1817,13 +1817,13 @@ export default function Checkout() {
               )}
 
               <div className="border-t border-border pt-4 mb-6">
-                <h3 className="text-sm font-semibold uppercase tracking-widest mb-3">{t.checkout.paymentMethod}</h3>
+                <h3 className="mb-3 flex items-center gap-3 font-display text-xl"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-[15px] font-bold text-background">{deliveryMethod === "pickup" ? 2 : 3}</span>{t.checkout.paymentMethod}</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     disabled={deliveryMethod === "pickup"}
                     onClick={() => deliveryMethod !== "pickup" && setPaymentMethod("cod")}
-                    className={`flex items-center justify-center gap-2 p-3.5 border-2 rounded-md text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`flex items-center justify-center gap-2 p-3.5 border-2 rounded-2xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                       paymentMethod === "cod"
                         ? "border-primary bg-primary text-primary-foreground shadow-sm"
                         : "border-border bg-card text-foreground hover:border-primary/60 hover:bg-accent/40"
@@ -1837,7 +1837,7 @@ export default function Checkout() {
                     type="button"
                     disabled={!cardPaymentEnabled}
                     onClick={() => cardPaymentEnabled && setPaymentMethod("card")}
-                    className={`relative flex flex-col items-center justify-center gap-1 p-3.5 border-2 rounded-md text-sm font-semibold transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-1 p-3.5 border-2 rounded-2xl text-sm font-semibold transition-all ${
                       !cardPaymentEnabled
                         ? "border-border/40 bg-muted/30 text-muted-foreground/40 cursor-not-allowed"
                         : paymentMethod === "card"
@@ -1902,7 +1902,7 @@ export default function Checkout() {
 
               {/* Delivery promise */}
               {deliveryMethod === "delivery" ? (
-              <div className="mb-4 flex items-center gap-3 p-3 border border-green-500/25 bg-green-500/5 rounded-md" data-testid="banner-delivery-checkout">
+              <div className="mb-4 flex items-center gap-3 p-3 border border-green-500/25 bg-green-500/5 rounded-2xl" data-testid="banner-delivery-checkout">
                 <div className="relative flex-shrink-0">
                   <div className="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center">
                     <Truck className="w-4 h-4 text-green-600" strokeWidth={1.5} />
@@ -1925,7 +1925,7 @@ export default function Checkout() {
                 </div>
               </div>
               ) : (
-              <div className="mb-4 flex items-center gap-3 p-3 border border-primary/25 bg-primary/5 rounded-md" data-testid="banner-pickup-checkout">
+              <div className="mb-4 flex items-center gap-3 p-3 border border-primary/25 bg-primary/5 rounded-2xl" data-testid="banner-pickup-checkout">
                 <Store className="w-4 h-4 text-primary shrink-0" />
                 <p className="text-xs font-semibold">
                   {language === "ar" ? "نخبرك على واتساب عندما يصبح طلبك جاهزاً للاستلام" : "We'll message you on WhatsApp when your order is ready for pickup"}
@@ -1954,7 +1954,7 @@ export default function Checkout() {
                 type="submit"
                 form="checkout-form"
                 disabled={isPending || guestLocked}
-                className={`w-full rounded-md py-6 uppercase tracking-widest text-sm font-semibold transition-shadow duration-500 ${unlockPulse ? "ring-4 ring-emerald-400/50" : ""}`}
+                className={`h-14 w-full rounded-full text-[16px] font-semibold transition-shadow duration-500 ${unlockPulse ? "ring-4 ring-emerald-400/50" : ""}`}
                 data-testid="button-place-order"
               >
                 {guestLocked && !isPending && <Lock className="w-4 h-4 me-2" />}

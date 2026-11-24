@@ -1,3 +1,4 @@
+import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Switch, Route, useLocation } from "wouter";
 import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense, Component, type ReactNode } from "react";
 import { queryClient } from "./lib/queryClient";
@@ -450,6 +451,7 @@ function App() {
 
           <ChatBot igVisible={!igDismissed} />
           <InstagramButton dismissed={igDismissed} onDismiss={handleIgDismiss} />
+          <CartDrawer />
           <Toaster />
         </TooltipProvider>
       </QueryClientProvider>

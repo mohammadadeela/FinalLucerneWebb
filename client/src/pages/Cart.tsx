@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart, type CartItem } from "@/store/use-cart";
-import { Button } from "@/components/ui/button";
-import { Minus, Plus, Trash2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, ArrowLeft, ShoppingBag } from "lucide-react";
 import { LucerneCoin } from "@/components/ui/lucerne-coin";
 import { useLanguage } from "@/i18n";
 import { useToast } from "@/hooks/use-toast";
@@ -83,14 +82,23 @@ function CartItemImage({ item, soldOut, sizeClass, labelSize, language }: {
   );
 }
 
-export default function Cart() {
-  const { items, updateQuantity, removeFromCart, cartTotal } = useCart();
+/**
+ * The cart itself: offers, the pieces, suggestions and the total. The same component fills
+ * the slide-in drawer (opened from the bag icon) and the /cart page.
+ */
+export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; onNavigate?: () => void }) {
+  const { items, updateQuantity, removeFromCart } = useCart();
   const { data: siteSettings } = useSiteSettings();
   const loyaltyPointsEnabled = siteSettings?.loyalty_points_enabled !== "false";
   const [, setLocation] = useLocation();
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
+  const isAr = language === "ar";
+  const go = (path: string) => {
+    onNavigate?.();
+    setLocation(path);
+  };
   const [soldOutKeys, setSoldOutKeys] = useState<Set<string>>(new Set());
   const adjustedRef = useRef(false);
 
@@ -193,250 +201,195 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col pt-navbar">
-        <Navbar />
-        <main className="flex-1 flex flex-col items-center justify-center p-4">
-          <h1 className="font-display text-4xl mb-6" data-testid="text-cart-empty">{t.cart.empty}</h1>
-          <p className="text-muted-foreground mb-8">{t.cart.emptyDesc}</p>
-          <Link href="/shop">
-            <Button className="rounded-md uppercase tracking-widest px-8 py-6" data-testid="button-continue-shopping">{t.cart.continueShopping}</Button>
-          </Link>
-        </main>
-        <Footer />
+      <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+        <span className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-blush">
+          <ShoppingBag className="h-7 w-7" strokeWidth={1.5} />
+        </span>
+        <h2 className="font-display text-2xl" data-testid="text-cart-empty">{t.cart.empty}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t.cart.emptyDesc}</p>
+        <button type="button" onClick={() => go("/shop")} className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-foreground px-8 text-sm font-semibold text-background transition-transform hover:scale-[1.02] active:scale-95" data-testid="button-continue-shopping">
+          {t.cart.continueShopping}
+        </button>
       </div>
     );
   }
 
+  const itemCount = items.reduce((n, item) => n + item.quantity, 0);
+  const points = Math.floor(cartTotalAfterOffer / 2);
+
+  const lines = (
+    <ul className="divide-y divide-border/70">
+      {items.map((item, idx) => {
+        const price = item.product.discountPrice ? parseFloat(item.product.discountPrice) : parseFloat(item.product.price);
+        const fullPrice = parseFloat(item.product.price);
+        const soldOut = isItemSoldOut(item);
+        const maxStock = getItemMaxStock(item);
+        const atMax = item.quantity >= maxStock;
+        const key = makeKey(item.product.id, item.size, item.color);
+        const variant = ((item.product.colorVariants as ColorVariant[] | undefined) || []).find((v) => v.name === item.color);
+        return (
+          <li
+            key={`${key}-${idx}`}
+            ref={(el) => { itemRefs.current[key] = el as any; }}
+            className={`flex gap-3.5 py-4 ${soldOut ? "opacity-60" : ""}`}
+            data-testid={`cart-item-${idx}`}
+          >
+            <button type="button" onClick={() => go(`/product/${item.product.id}`)} className="shrink-0" aria-label={item.product.name}>
+              <CartItemImage item={item} soldOut={soldOut} sizeClass="w-[76px]" labelSize="text-[10px]" language={language} />
+            </button>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <button type="button" onClick={() => go(`/product/${item.product.id}`)} className="truncate text-start text-[14.5px] font-medium">
+                {item.product.name}
+              </button>
+              {(item.color || item.size) && (
+                <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                  {variant?.colorCode && <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: variant.colorCode }} />}
+                  {[item.color ? translateColorName(item.color, language) : "", item.size].filter(Boolean).join(" · ")}
+                </p>
+              )}
+              <div className="mt-auto flex items-center justify-between pt-2">
+                {soldOut ? (
+                  <span className="text-xs font-semibold text-red-600">{isAr ? "نفذ من المخزون" : "Sold out"}</span>
+                ) : (
+                  <div className="inline-flex h-8 items-center rounded-full border border-border bg-background px-0.5">
+                    <button type="button" onClick={() => updateQuantity(item.product.id, Math.max(1, item.quantity - 1), item.size, item.color)} disabled={item.quantity <= 1} className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-blush disabled:opacity-30" aria-label={isAr ? "أقل" : "Less"} data-testid={`button-qty-minus-${idx}`}>
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-6 text-center text-[13px] font-semibold">{item.quantity}</span>
+                    <button type="button" onClick={() => updateQuantity(item.product.id, Math.min(item.quantity + 1, maxStock), item.size, item.color)} disabled={atMax} className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-blush disabled:opacity-30" aria-label={isAr ? "أكثر" : "More"} data-testid={`button-qty-plus-${idx}`}>
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                <p className="text-[15px] font-semibold">
+                  ₪{(price * item.quantity).toFixed(2)}
+                  {price < fullPrice && <s className="ms-1.5 text-[12px] font-normal text-muted-foreground">₪{(fullPrice * item.quantity).toFixed(2)}</s>}
+                </p>
+              </div>
+            </div>
+            <button type="button" onClick={() => removeFromCart(item.product.id, item.size, item.color)} className="flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground transition-colors hover:bg-blush hover:text-foreground" aria-label={isAr ? "حذف" : "Remove"} data-testid={`button-remove-${idx}`}>
+              <Trash2 className="h-[15px] w-[15px]" />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const soldOutNote = hasSoldOut && (
+    <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700 dark:bg-red-950/30 dark:text-red-300" data-testid="cart-sold-out-banner">
+      {isAr ? "بعض القطع نفذت. احذفيها لتكملي الطلب." : "Some pieces sold out. Remove them to continue."}
+    </p>
+  );
+
+  const suggested = suggestions.length > 0 && (
+    <div className="mt-2" data-testid="section-cart-suggestions">
+      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{isAr ? "يليق مع سلتك" : "Goes well with your cart"}</p>
+      <div className={mode === "page" ? "grid gap-2 sm:grid-cols-2" : "grid gap-2"}>
+        {suggestions.slice(0, mode === "page" ? 4 : 3).map((p: any) => {
+          const sale = p.discountPrice && Number(p.discountPrice) > 0 && Number(p.discountPrice) < Number(p.price);
+          return (
+            <button key={p.id} type="button" onClick={() => go(`/product/${p.id}`)} className="flex items-center gap-3 rounded-2xl bg-background p-2 text-start shadow-sm transition-transform hover:-translate-y-0.5" data-testid={`card-cart-suggestion-${p.id}`}>
+              <img src={optimizeCloudinaryUrl(p.mainImage, 200) || p.mainImage} alt="" loading="lazy" className="h-14 w-12 shrink-0 rounded-xl object-cover" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] font-medium">{p.name}</span>
+                <span className="text-[13px] text-muted-foreground">
+                  ₪{Number(sale ? p.discountPrice : p.price)}
+                  {sale && <s className="ms-1.5 text-[11px]">₪{Number(p.price)}</s>}
+                </span>
+              </span>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-background">
+                <Plus className="h-[17px] w-[17px]" />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const totals = (
+    <>
+      {offerQuote.bundleDiscount > 0 && (
+        <p className="mb-1 flex justify-between text-[14px] font-medium" data-testid="row-cart-bundle-discount">
+          <span>{isAr ? `خصم الكمية (${offerSettings.bundlePercent}%)` : `Bundle discount (${offerSettings.bundlePercent}%)`}</span>
+          <span>−₪{offerQuote.bundleDiscount.toFixed(2)}</span>
+        </p>
+      )}
+      {offerQuote.gift && (
+        <p className="mb-1 flex justify-between text-[14px] font-medium" data-testid="row-cart-gift">
+          <span>{isAr ? offerSettings.giftTextAr : offerSettings.giftTextEn}</span>
+          <span>{isAr ? "مجاناً" : "Free"}</span>
+        </p>
+      )}
+      <p className="flex items-baseline justify-between">
+        <span className="text-[15px] font-medium">{t.cart.subtotal}</span>
+        <span className="text-xl font-semibold" data-testid="text-cart-total">₪{cartTotalAfterOffer.toFixed(2)}</span>
+      </p>
+      <p className="mt-0.5 text-[12.5px] text-muted-foreground">{isAr ? "التوصيل يُحسب عند إتمام الطلب." : "Delivery is calculated at checkout."}</p>
+      {loyaltyPointsEnabled && points > 0 && (
+        <p className="mt-3 flex items-center gap-2.5 rounded-2xl bg-blush/70 px-3 py-2.5 text-[13px] font-semibold" data-testid="text-cart-points-preview">
+          <LucerneCoin className="h-7 w-7 shrink-0" />
+          {isAr ? `ستحصلين على ${points} نقطة عند استلام طلبك` : `You'll earn ${points} points when your order is delivered`}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => go("/checkout")}
+        disabled={hasSoldOut || availableItems.length === 0}
+        className="mt-3 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-foreground text-[15.5px] font-semibold text-background transition-transform hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40"
+        data-testid="button-proceed-checkout"
+      >
+        {t.cart.proceedToCheckout} <Arrow className="h-4 w-4" />
+      </button>
+    </>
+  );
+
+  const offers = <CartOffers quote={offerQuote} settings={offerSettings} isAr={isAr} onChoose={setOfferChoice} />;
+
+  if (mode === "drawer") {
+    return (
+      <>
+        <div className="flex-1 overflow-y-auto px-5 pb-4">
+          <div className="pt-4">{offers}</div>
+          {soldOutNote}
+          {lines}
+          {suggested}
+        </div>
+        <footer className="shrink-0 border-t border-border bg-background px-5 pb-5 pt-4">{totals}</footer>
+      </>
+    );
+  }
+
+  return (
+    <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[1fr_400px] lg:gap-12">
+      <div>
+        <h1 className="font-display text-[2.4rem] leading-none sm:text-[3rem]" data-testid="text-cart-title">
+          {t.cart.title} <span className="font-sans text-base font-medium text-muted-foreground">({itemCount})</span>
+        </h1>
+        {soldOutNote}
+        <div className="mt-4">{lines}</div>
+        {suggested}
+      </div>
+      <aside className="lg:sticky lg:top-28 lg:self-start">
+        <div className="rounded-[1.75rem] bg-card p-5 shadow-[0_10px_40px_-18px_rgba(0,0,0,0.25)] sm:p-6">
+          <h2 className="mb-4 font-display text-2xl" data-testid="text-order-summary">{t.cart.orderSummary}</h2>
+          <div className="mb-5">{offers}</div>
+          {totals}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+export default function Cart() {
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="font-display text-3xl sm:text-4xl mb-8 sm:mb-12" data-testid="text-cart-title">{t.cart.title}</h1>
-
-        {hasSoldOut && (
-          <div className="border border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20 p-3 mb-6 flex items-center gap-2" data-testid="cart-sold-out-banner">
-            <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <p className="text-sm text-red-700 dark:text-red-300">
-              {language === "ar" ? "بعض المنتجات في سلتك نفدت من المخزون. يُرجى إزالتها للمتابعة." : "Some items in your cart are sold out. Please remove them to proceed."}
-            </p>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2 space-y-8">
-            <div className="hidden md:grid grid-cols-6 gap-4 border-b border-border pb-4 text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-              <div className="col-span-3">{t.cart.productCol}</div>
-              <div className="col-span-1 text-center">{t.cart.quantityCol}</div>
-              <div className="col-span-1 text-end">{t.cart.totalCol}</div>
-              <div className="col-span-1"></div>
-            </div>
-            
-            <div className="space-y-6">
-              {items.map((item, idx) => {
-                const price = parseFloat(item.product.discountPrice?.toString() || item.product.price.toString());
-                const maxStock = getItemMaxStock(item);
-                const atMax = item.quantity >= maxStock;
-                const soldOut = isItemSoldOut(item);
-                return (
-                  <div
-                    key={idx}
-                    ref={(el) => { itemRefs.current[makeKey(item.product.id, item.size, item.color)] = el; }}
-                    className={`relative border-b border-border pb-6 md:pb-0 md:border-0 ${soldOut ? "opacity-60" : ""}`}
-                    data-testid={`cart-item-${idx}`}
-                  >
-                    {soldOut && (
-                      <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-                        <div className="absolute inset-0 bg-background/40" />
-                      </div>
-                    )}
-                    <div className="hidden md:grid md:grid-cols-6 gap-4 items-center">
-                      <div className="col-span-3 flex items-center gap-6">
-                        <Link href={`/product/${item.product.id}`} className="flex-shrink-0">
-                          <CartItemImage item={item} soldOut={soldOut} sizeClass="w-24" labelSize="text-[10px] tracking-wider" language={language} />
-                        </Link>
-                        <div>
-                          <h3 className={`font-medium text-lg mb-1 ${soldOut ? "line-through text-muted-foreground" : ""}`}>
-                            <Link href={`/product/${item.product.id}`} className="hover:underline">{item.product.name}</Link>
-                          </h3>
-                          <div className={`text-sm space-y-1 ${soldOut ? "text-muted-foreground/60 line-through" : "text-muted-foreground"}`}>
-                            <p>₪{price.toFixed(2)}</p>
-                            {item.size && <p>{t.cart.sizeLabel}: {item.size}</p>}
-                            {item.color && <p>{t.cart.colorLabel}: {translateColorName(item.color, language === "ar" ? "ar" : "en")}</p>}
-                          </div>
-                          {soldOut && (
-                            <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-1" data-testid={`text-sold-out-${idx}`}>
-                              {language === "ar" ? "هذا المنتج نفد من المخزون" : "This product is sold out"}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-span-1 flex justify-center">
-                        {soldOut ? (
-                          <span className="text-xs text-muted-foreground line-through">{item.quantity}</span>
-                        ) : (
-                          <div className="flex items-center border border-border h-10">
-                            <button onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.size, item.color)} className="px-3 hover:bg-secondary" data-testid={`button-qty-minus-${idx}`}><Minus className="w-3 h-3" /></button>
-                            <span className="w-8 text-center text-sm" data-testid={`text-qty-${idx}`}>{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.product.id, Math.min(item.quantity + 1, maxStock), item.size, item.color)}
-                              disabled={atMax}
-                              className="px-3 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed"
-                              data-testid={`button-qty-plus-${idx}`}
-                            ><Plus className="w-3 h-3" /></button>
-                          </div>
-                        )}
-                      </div>
-                      <div className={`col-span-1 text-end font-medium ${soldOut ? "line-through text-muted-foreground/60" : ""}`}>₪{(price * item.quantity).toFixed(2)}</div>
-                      <div className="col-span-1 flex justify-center relative z-20">
-                        <button onClick={() => removeFromCart(item.product.id, item.size, item.color)} className={`transition-colors p-2 ${soldOut ? "text-red-500 hover:text-red-700" : "text-muted-foreground hover:text-destructive"}`} data-testid={`button-remove-item-${idx}`}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex md:hidden gap-3">
-                      <Link href={`/product/${item.product.id}`} className="flex-shrink-0">
-                        <CartItemImage item={item} soldOut={soldOut} sizeClass="w-20" labelSize="text-[8px]" language={language} />
-                      </Link>
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`font-medium text-sm mb-1 truncate ${soldOut ? "line-through text-muted-foreground" : ""}`}>
-                          <Link href={`/product/${item.product.id}`} className="hover:underline">{item.product.name}</Link>
-                        </h3>
-                        <div className={`text-xs space-y-0.5 mb-2 ${soldOut ? "text-muted-foreground/60 line-through" : "text-muted-foreground"}`}>
-                          <p>₪{price.toFixed(2)}</p>
-                          {item.size && <p>{t.cart.sizeLabel}: {item.size}</p>}
-                          {item.color && <p>{t.cart.colorLabel}: {translateColorName(item.color, language === "ar" ? "ar" : "en")}</p>}
-                        </div>
-                        {soldOut ? (
-                          <p className="text-xs text-red-600 dark:text-red-400 font-semibold">{language === "ar" ? "هذا المنتج نفد من المخزون" : "This product is sold out"}</p>
-                        ) : (
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-col items-start gap-0.5">
-                              <div className="flex items-center border border-border h-8">
-                                <button onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.size, item.color)} className="px-2 hover:bg-secondary" data-testid={`button-qty-minus-mobile-${idx}`}><Minus className="w-3 h-3" /></button>
-                                <span className="w-6 text-center text-xs" data-testid={`text-qty-mobile-${idx}`}>{item.quantity}</span>
-                                <button
-                                  onClick={() => updateQuantity(item.product.id, Math.min(item.quantity + 1, maxStock), item.size, item.color)}
-                                  disabled={atMax}
-                                  className="px-2 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed"
-                                  data-testid={`button-qty-plus-mobile-${idx}`}
-                                ><Plus className="w-3 h-3" /></button>
-                              </div>
-                            </div>
-                            <span className="font-medium text-sm">₪{(price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        )}
-                      </div>
-                      <button onClick={() => removeFromCart(item.product.id, item.size, item.color)} className={`transition-colors p-1 self-start relative z-20 ${soldOut ? "text-red-500 hover:text-red-700" : "text-muted-foreground hover:text-destructive"}`} data-testid={`button-remove-item-mobile-${idx}`}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {suggestions.length > 0 && (
-              <section className="mt-10" data-testid="section-cart-suggestions">
-                <h2 className="mb-4 text-lg font-semibold">{language === "ar" ? "يليق مع سلتك" : "Goes well with your cart"}</h2>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {suggestions.map((p: any) => {
-                    const sale = p.discountPrice && Number(p.discountPrice) > 0 && Number(p.discountPrice) < Number(p.price);
-                    return (
-                      <Link key={p.id} href={`/product/${p.id}`}>
-                        <div className="group cursor-pointer" data-testid={`card-cart-suggestion-${p.id}`}>
-                          <div className="aspect-[3/4] overflow-hidden rounded-2xl bg-secondary">
-                            <img src={optimizeCloudinaryUrl(p.mainImage, 400) || p.mainImage} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                          </div>
-                          <p className="mt-2 truncate text-sm font-medium">{p.name}</p>
-                          <p className="text-sm">
-                            <span className="font-semibold">₪{Number(sale ? p.discountPrice : p.price)}</span>
-                            {sale && <s className="ms-1.5 text-xs text-muted-foreground">₪{Number(p.price)}</s>}
-                          </p>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-          </div>
-          
-          <div className="col-span-1">
-            <div className="bg-secondary p-6 sm:p-8 sticky top-28">
-              <h2 className="font-display text-2xl mb-6 border-b border-border pb-4" data-testid="text-order-summary">{t.cart.orderSummary}</h2>
-              
-              <div className="mb-6">
-                <CartOffers quote={offerQuote} settings={offerSettings} isAr={language === "ar"} onChoose={setOfferChoice} />
-              </div>
-
-              <div className="space-y-4 mb-6 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t.cart.subtotal}</span>
-                  <span>₪{availableTotal.toFixed(2)}</span>
-                </div>
-                {offerQuote.bundleDiscount > 0 && (
-                  <div className="flex justify-between font-medium" data-testid="row-cart-bundle-discount">
-                    <span>{language === "ar" ? `خصم الكمية (${offerSettings.bundlePercent}%)` : `Bundle discount (${offerSettings.bundlePercent}%)`}</span>
-                    <span>-₪{offerQuote.bundleDiscount.toFixed(2)}</span>
-                  </div>
-                )}
-                {offerQuote.gift && (
-                  <div className="flex justify-between font-medium" data-testid="row-cart-gift">
-                    <span>{language === "ar" ? offerSettings.giftTextAr : offerSettings.giftTextEn}</span>
-                    <span>{language === "ar" ? "مجاناً" : "Free"}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t.product.shipping}</span>
-                  <span>{t.cart.shippingCalc}</span>
-                </div>
-              </div>
-              
-              <div className="border-t border-border pt-4 mb-4 flex justify-between items-center text-lg font-medium">
-                <span>{t.cart.total}</span>
-                <span data-testid="text-cart-total">₪{cartTotalAfterOffer.toFixed(2)}</span>
-              </div>
-
-              {loyaltyPointsEnabled && availableTotal > 0 && Math.floor(availableTotal / 2) > 0 && (
-                <div
-                  className="mb-6 relative overflow-hidden rounded-xl p-3.5 bg-gradient-to-r from-amber-500 via-rose-500 to-pink-600 text-white shadow-md"
-                  data-testid="text-cart-points-preview"
-                >
-                  <div className="absolute -top-6 -end-6 w-20 h-20 rounded-full bg-white/15 blur-xl pointer-events-none" />
-                  <div className="relative flex items-center gap-3">
-                    <LucerneCoin className="w-10 h-10 shrink-0 drop-shadow-md" />
-                    <div className="flex-1 leading-snug">
-                      <p className="text-sm font-bold">
-                        {language === "ar"
-                          ? `ستحصلين على ${Math.floor(availableTotal / 2)} نقطة إضافية عند تسليم طلبك!`
-                          : `You'll earn ${Math.floor(availableTotal / 2)} extra points when your order is delivered!`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {hasSoldOut && (
-                <p className="text-xs text-red-600 dark:text-red-400 mb-3 text-center">
-                  {language === "ar" ? "أزيلي المنتجات النافدة للمتابعة" : "Remove sold out items to proceed"}
-                </p>
-              )}
-              
-              <Button 
-                onClick={() => setLocation("/checkout")}
-                className="w-full rounded-md py-6 uppercase tracking-widest text-sm font-semibold"
-                disabled={hasSoldOut || availableItems.length === 0}
-                data-testid="button-proceed-checkout"
-              >
-                {t.cart.proceedToCheckout} <Arrow className="w-4 h-4 ms-2" />
-              </Button>
-            </div>
-          </div>
-        </div>
+      <main className="flex flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <CartContents mode="page" />
       </main>
       <Footer />
-
     </div>
   );
 }
