@@ -252,16 +252,27 @@ export default function Profile() {
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex flex-col md:flex-row justify-between items-baseline mb-8 sm:mb-12 border-b border-border pb-6">
-          <h1 className="font-display text-3xl sm:text-4xl font-semibold" data-testid="text-profile-title">{t.profile.myAccount}</h1>
-          <Button variant="ghost" onClick={handleLogout} className="text-muted-foreground hover:text-destructive" data-testid="button-profile-logout">
-            <LogOut className="w-4 h-4 me-2" /> {t.profile.logout}
-          </Button>
+        <div className="mx-auto mb-8 flex max-w-6xl flex-wrap items-end justify-between gap-4 sm:mb-10">
+          <h1 className="font-display text-[2.6rem] font-semibold leading-none sm:text-[3.6rem]" data-testid="text-profile-title">
+            {ar ? "أهلاً، " : "Hi, "}{(user.fullName || "").trim().split(/\s+/)[0] || t.profile.myAccount}
+          </h1>
+          <div className="flex gap-2">
+            {user.role === "admin" && (
+              <Link href="/admin">
+                <span className="inline-flex h-10 cursor-pointer items-center rounded-full bg-foreground px-5 text-sm font-semibold text-background transition-transform hover:scale-[1.03]" data-testid="link-profile-admin">
+                  {ar ? "لوحة الإدارة" : "Admin panel"}
+                </span>
+              </Link>
+            )}
+            <button type="button" onClick={handleLogout} className="inline-flex h-10 items-center gap-2 rounded-full border border-foreground/25 px-5 text-sm font-semibold transition-colors hover:border-foreground hover:bg-blush" data-testid="button-profile-logout">
+              <LogOut className="h-[15px] w-[15px]" /> {t.profile.logout}
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-          <div className="md:col-span-1 space-y-8">
-            <div className="relative overflow-hidden rounded-[1.75rem] border border-border bg-gradient-to-br from-secondary via-secondary to-background p-5 sm:p-6 shadow-sm">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+          <div className="space-y-8 lg:order-2">
+            <div className="relative overflow-hidden rounded-[1.75rem] bg-blush/60 p-5 sm:p-6">
               {/* decorative gradient blob */}
               <div className="absolute -top-12 -end-12 w-40 h-40 bg-foreground/5 rounded-full blur-2xl pointer-events-none" />
 
@@ -544,7 +555,7 @@ export default function Profile() {
             })()}
           </div>
 
-          <div id="orders-section" className="md:col-span-2 space-y-10">
+          <div id="orders-section" className="space-y-10 lg:order-1">
 {activeTab === "orders" && <div className="space-y-6">
               {/* Filter bar — only shown when there are orders */}
               {orders && orders.length > 0 && (
@@ -620,7 +631,7 @@ export default function Profile() {
                 <div className="border border-border p-8 text-center bg-card">
                   <p className="text-muted-foreground mb-4">{t.profile.noOrders}</p>
                   <Link href="/shop">
-                    <Button variant="outline" className="rounded-md uppercase tracking-widest text-sm" data-testid="button-start-shopping">{t.profile.startShopping}</Button>
+                    <Button variant="outline" className="h-12 rounded-full px-8 text-sm font-semibold" data-testid="button-start-shopping">{t.profile.startShopping}</Button>
                   </Link>
                 </div>
               ) : filteredOrders.length === 0 ? (
@@ -640,7 +651,7 @@ export default function Profile() {
               ) : (
                 <div className="space-y-4">
                   {filteredOrders.map(order => (
-                    <div key={order.id} className="rounded-[1.5rem] border border-border/70 bg-gradient-to-br from-card via-card to-secondary/30 p-4 sm:p-5 shadow-sm hover:border-primary/50 hover:shadow-md transition-all" data-testid={`card-order-${order.id}`}>
+                    <div key={order.id} className="rounded-3xl bg-card p-4 sm:p-5 shadow-[0_8px_30px_-16px_rgba(0,0,0,0.22)] transition-transform hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md transition-all" data-testid={`card-order-${order.id}`}>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-3">
                           <div className="inline-flex items-center rounded-full border border-border/60 bg-background px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
@@ -680,7 +691,7 @@ export default function Profile() {
             {/* ─── My Exchanges ────────────────────────────────────── */}
             {activeTab === "exchanges" && (
               <div id="exchanges-section">
-                <h2 className="text-xl font-semibold uppercase tracking-widest mb-5 flex items-center" data-testid="text-my-exchanges-title">
+                <h2 className="mb-4 flex items-center font-display text-2xl font-semibold" data-testid="text-my-exchanges-title">
                   <ArrowLeftRight className="w-5 h-5 me-3" />
                   {ar ? "طلبات الاستبدال" : "My Exchanges"}
                 </h2>
@@ -856,7 +867,7 @@ export default function Profile() {
             {/* ─── Recently Viewed ─────────────────────────────────── */}
             {activeTab === "recently_viewed" && (
               <div>
-                <h2 className="text-xl font-semibold uppercase tracking-widest mb-6 flex items-center" data-testid="text-recently-viewed-title">
+                <h2 className="mb-4 flex items-center font-display text-2xl font-semibold" data-testid="text-recently-viewed-title">
                   <Eye className="w-5 h-5 me-3" />
                   {language === "ar" ? "شاهدتِ مؤخراً" : "Recently Viewed"}
                 </h2>
