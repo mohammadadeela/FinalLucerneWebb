@@ -6984,7 +6984,9 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
       try {
         const { generateVideoFromPrompt } = await import("./aiPhotoGen");
         const buffer = await generateVideoFromPrompt(prompt.trim().slice(0, 400), source || undefined);
-        const url = await uploadVideoToCloudinary(buffer, "ai-banner-video.mp4");
+        // Banner clips fill large areas of the page, so they are kept at full size and high
+        // quality (the default squeezes videos to 720px, which looks soft when stretched).
+        const url = await uploadVideoToCloudinary(buffer, "ai-banner-video.mp4", { maxWidth: 1920, crf: 19 });
         aiVideoJobs.set(jobId, { status: "done", url, at: Date.now() });
       } catch (err: any) {
         console.error("[ai-generate-video]", err?.message || err);

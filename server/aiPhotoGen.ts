@@ -499,15 +499,15 @@ export async function generateAiProductPhoto(
 // blush-pink panels and plum text. (It used to pick one of five colours at random, which is
 // why neighbouring tiles came out pink, mauve and beige.)
 export const THEME_SET =
-  "a seamless matte blush-pink backdrop, exactly the soft pink #F9DCEA of the web store, curving smoothly into a floor of the same colour (no visible corner, seam or horizon line)";
+  "a seamless matte backdrop in a clean, light, cool pastel pink — a true baby pink / rose-quartz pink, the soft pink #F9DCEA of the web store — curving smoothly into a floor of the same colour (no visible corner, seam or horizon line). The pink is bright, fresh and evenly lit across the whole frame. It is NOT peach, NOT salmon, NOT coral, NOT watermelon, NOT orange-tinted, NOT beige, NOT brown, and NOT a dark, dusty or mauve rose. White balance is neutral daylight, with no warm or golden tint and no dark vignette";
 /** Kept for the video prompt and any older caller: every entry is now the same signature set. */
 export const THEME_BACKGROUNDS = [THEME_SET];
 const pickOne = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 
 const THEME_RULES = (background: string) => `Art direction — the Lucerne Boutique look, identical for every photo on the site:
 - Real, photorealistic studio fashion photography, as in a Zara / Mango / Massimo Dutti lookbook. Never an illustration, drawing, icon, 3D render or CGI.
-- Set: ${background}. The whole frame is this one soft pink, lit evenly, with only a very gentle natural falloff towards the edges. No props, no furniture, no room, no window, no plants, no scenery, no second colour in the background.
-- Light: large soft daylight from the upper left, like a north-facing studio window; a soft, short, slightly warm shadow falling to the lower right of the subject. No hard shadows, no glow, no spotlight, no lens flare.
+- Set: ${background}. The whole frame is this one light pink, lit evenly from edge to edge, staying bright in the corners. No props, no furniture, no room, no window, no plants, no scenery, no second colour in the background.
+- Light: large soft daylight from the upper left, like a north-facing studio window; a soft, short, light shadow falling to the lower right of the subject (a slightly deeper pink, never brown or grey). No hard shadows, no glow, no spotlight, no lens flare.
 - Colour of the subject: chosen to sit beautifully on the pink — ivory, cream, champagne, warm beige, camel, dusty rose, deep burgundy, plum (#2D0F24) or black, with small brushed-gold details. Never neon, never bright blue or green, never the same pink as the background.
 - When several pieces are shown, give each a different colour from that list and keep them the same size, evenly spaced and perfectly aligned.
 - Hangers are slim brushed gold. Surfaces are the same pink as the backdrop.
@@ -670,7 +670,7 @@ Show ONE fictional elegant woman modelling ONE single product of this kind — n
       }
 The product is the star: clearly visible, in sharp focus, whole and never cut by the frame, kept in the centre of the picture with empty backdrop on both sides (the website crops the sides on phones).
 The model: a real-looking woman with natural skin texture, calm natural expression, classy styling in ivory, cream, beige, camel, dusty rose, burgundy, plum or black with small gold details; hair and make-up simple and polished.
-Set: ${THEME_SET}, with no props, furniture or scenery, soft daylight from the upper left and a soft short shadow. Real studio footage, never animation or CGI. No text, logos or watermarks. ${motion}`,
+Set: ${THEME_SET}, with no props, furniture or scenery, bright, soft, neutral daylight from the upper left and only a light short shadow; the backdrop stays the same light pink for the whole clip. Sharp, clean, high-detail footage with the model in crisp focus. Real studio footage, never animation or CGI. No text, logos or watermarks. ${motion}`,
     });
   }
 
