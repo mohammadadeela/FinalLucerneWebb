@@ -236,7 +236,7 @@ export default function Shop() {
                 ) : (
                   <span className="w-2" />
                 )}
-                {(cat.nameAr || cat.name)}
+                {language === "ar" ? (cat.nameAr || cat.name) : cat.name}
               </button>
             ))}
           </div>

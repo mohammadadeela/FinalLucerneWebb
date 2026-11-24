@@ -258,7 +258,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
                         {sub.image ? (
                           <img
                             src={sub.image}
-                            alt={(sub.nameAr || sub.name)}
+                            alt={ar ? (sub.nameAr || sub.name) : sub.name}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                           />
                         ) : (
@@ -268,7 +268,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
                         )}
                       </div>
                       <span className={`text-[11px] sm:text-xs font-medium text-center leading-tight max-w-[76px] sm:max-w-[94px] transition-colors duration-200 ${activeSubId === sub.id ? 'text-primary font-semibold' : 'text-foreground group-hover:text-primary'}`}>
-                        {(sub.nameAr || sub.name)}
+                        {ar ? (sub.nameAr || sub.name) : sub.name}
                       </span>
                     </button>
                   ))}

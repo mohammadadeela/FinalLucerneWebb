@@ -22,6 +22,8 @@ const productSelectSchema = z.object({
   id: z.number(),
   name: z.string(),
   description: z.string(),
+  nameEn: z.string().nullable(),
+  descriptionEn: z.string().nullable(),
   price: z.string(),
   costPrice: z.string().nullable(),
   discountPrice: z.string().nullable(),

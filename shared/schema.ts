@@ -69,6 +69,9 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
+  // English name and description, shown when a customer browses the shop in English.
+  nameEn: text("name_en"),
+  descriptionEn: text("description_en"),
   price: numeric("price").notNull(),
   costPrice: numeric("cost_price"),
   discountPrice: numeric("discount_price"),

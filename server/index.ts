@@ -449,6 +449,11 @@ async function ensureProductSchemaAndLegacyData() {
         ADD COLUMN IF NOT EXISTS guest_email text
     `));
     await withRetry(() => db.execute(sql`
+      ALTER TABLE products
+        ADD COLUMN IF NOT EXISTS name_en text,
+        ADD COLUMN IF NOT EXISTS description_en text
+    `));
+    await withRetry(() => db.execute(sql`
       ALTER TABLE pos_orders
         ADD COLUMN IF NOT EXISTS client_ref text,
         ADD COLUMN IF NOT EXISTS offline_sale boolean DEFAULT false,

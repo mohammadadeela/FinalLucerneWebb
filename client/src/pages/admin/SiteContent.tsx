@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Save, Upload, Image, ChevronDown, ChevronUp, Move, Megaphone, Eye, EyeOff, Languages, Type, Truck, Plus, Trash2, CreditCard, Video, X, Search, Gift, ImageIcon, Repeat, BarChart2, Smartphone, UserRound, Store, LayoutDashboard, House, Shirt, Footprints, BadgePercent, CircleHelp, MessageSquareText, ListFilter, Crop, Bot } from "lucide-react";
  import { SEASONS, getActiveTheme } from "@/lib/seasonal";
 import SeasonalThemeCard from "@/components/admin/SeasonalThemeCard";
+import LanguageCheckCard from "@/components/admin/LanguageCheckCard";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { Button } from "@/components/ui/button";
@@ -3196,6 +3197,7 @@ export default function SiteContent() {
         ) : tab === "overview" ? (
           <div className="space-y-4" data-testid="page-overview">
             <SiteContentSummary values={merged} />
+            <LanguageCheckCard />
             <QuickTogglesCard values={merged} onChange={handleChange} query="" status={toggleStatus} onStatus={setToggleStatus} />
             {renderCard("seasonal")}
             {renderCard("newsbar")}

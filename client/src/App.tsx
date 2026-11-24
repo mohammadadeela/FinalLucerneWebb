@@ -3,6 +3,17 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { Switch, Route, useLocation } from "wouter";
 import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense, Component, type ReactNode } from "react";
 import { queryClient } from "./lib/queryClient";
+import { useLanguage as languageStore } from "./i18n";
+
+// Product names come from the server in the shop's language, so data fetched in one
+// language (or for the shop) is never reused for the other (or for the admin area).
+languageStore.subscribe((state, prev) => {
+  if (state.area !== prev.area) {
+    queryClient.resetQueries({ predicate: (q) => JSON.stringify(q.queryKey).toLowerCase().includes("product") });
+  } else if (state.language !== prev.language && state.area === "store") {
+    queryClient.invalidateQueries();
+  }
+});
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";

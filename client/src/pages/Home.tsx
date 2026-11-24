@@ -406,7 +406,7 @@ export default function Home() {
 
   const g = (key: string) => getSetting(siteSettings, key) || "";
   const pick = (ar: string, en: string) => (isAr ? ar : en);
-  const catName = (c: any) => ((c?.nameAr || c?.name)) || "";
+  const catName = (c: any) => (isAr ? c?.nameAr || c?.name : c?.name) || "";
 
   const featured = featuredProducts || [];
   // The "most wanted" row was merged into the best sellers (both came from the same sales).
@@ -558,7 +558,7 @@ export default function Home() {
       return {
         key: `pill-${n}`,
         href: sub ? subcategoryHref(cat, sub.id) : categoryHref(cat),
-        label: sub ? (sub.nameAr || sub.name) : catName(cat),
+        label: sub ? pick(sub.nameAr || sub.name, sub.name || sub.nameAr) : catName(cat),
         category: cat,
         img: g(`home_pill_${n}_image`) || sub?.image || cat.image || "",
         testId: sub ? `link-subcategory-pill-${sub.id}` : `link-category-home-${cat.id}`,
@@ -584,7 +584,7 @@ export default function Home() {
           : null;
       const target = sub ? subcategoryHref(cat, sub.id) : cat ? categoryHref(cat) : "";
       const targetName = sub
-        ? (sub.nameAr || sub.name)
+        ? pick(sub.nameAr || sub.name, sub.name || sub.nameAr)
         : cat
           ? catName(cat)
           : "";
@@ -657,7 +657,7 @@ export default function Home() {
                 ? `/${c.slug}`
                 : `/category/${c.slug}`,
               labelAr: c.nameAr || c.name,
-              labelEn: c.nameAr || c.name,
+              labelEn: c.name,
               img: c.image || "",
               testId: `link-category-home-${c.id}`,
               isSubcategory: false,
@@ -676,7 +676,7 @@ export default function Home() {
               return {
                 href: `${base}?sub=${sub.id}`,
                 labelAr: sub.nameAr || sub.name,
-                labelEn: sub.nameAr || sub.name,
+                labelEn: sub.name,
                 img: sub.image || "",
                 testId: `link-subcategory-home-${sub.id}`,
                 isSubcategory: true,
@@ -1157,7 +1157,7 @@ export default function Home() {
                 getSetting(siteSettings, `editorial_tile_${i + 1}_video`) || "",
               labelAr:
                 sub?.nameAr || sub?.name || cat?.nameAr || cat?.name || "",
-              labelEn: sub?.nameAr || sub?.name || cat?.nameAr || cat?.name || "",
+              labelEn: sub?.name || cat?.name || "",
               href: cat
                 ? tileLink(cat, sub ? String(sub.id) : undefined)
                 : "/shop",

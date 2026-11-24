@@ -34,8 +34,8 @@ const currentArea = (): Area => (typeof window !== "undefined" && window.locatio
 export const useLanguage = create<LanguageStore>()(
   persist(
     (set, get) => ({
-      // The shop opens in English (with category and product names kept in Arabic);
-      // a customer can switch it to full Arabic. The admin area opens in Arabic.
+      // The shop opens in English, with English names where they exist; a customer can
+      // switch it to Arabic. The admin area opens in Arabic.
       language: "en" as Language,
       t: translations["en"],
       storeLanguage: "en" as Language,

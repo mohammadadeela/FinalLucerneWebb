@@ -27,6 +27,7 @@ import { buildResponse, orderStatusReply } from "./chatbot/responses";
 import { askLucy } from "./chatbot/assistant";
 import { registerOllamaRoutes } from "./ollama";
 import { registerAiStudioRoutes } from "./aiStudioRoutes";
+import { registerTranslationRoutes, storeLanguageMiddleware } from "./translations";
 import { SITE_URL } from "./seo";
 import { getDataset, buildAnalyticsResponse, buildInventoryResponse, buildCategoryReportResponse, parseMonthParam } from "./reports";
 import { getEnvEmployees } from "./staff-env";
@@ -611,6 +612,9 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   const { hashPassword } = setupAuth(app);
+
+  // Customers browsing in English get the English product names (see translations.ts).
+  app.use(storeLanguageMiddleware);
 
   // Audit trail: every staff action on a mutating /api route is recorded
   // (see server/audit.ts). Registered before the routes so it sees them all.
@@ -6996,6 +7000,9 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
 
   // ── Ollama backend proxy (tags / chat / health / url) ──────────────────────
   registerOllamaRoutes(app);
+
+  // ── English / Arabic names: find what is missing, write it with AI ────────
+  registerTranslationRoutes(app);
 
   // ── AI Studio: product videos, Instagram content, downloads ───────────────
   registerAiStudioRoutes(app, {
