@@ -293,6 +293,9 @@ export const posOrders = pgTable("pos_orders", {
   paymentMethod: text("payment_method").notNull().default("cash"),
   items: jsonb("items").$type<{ productId: number; name: string; barcode: string | null; quantity: number; price: string; size?: string; color?: string }[]>().notNull(),
   note: text("note"),
+  // Where the sale happened: "store" (customer in the shop) or "delivery" (sold through the
+  // Instagram page or WhatsApp and sent to the customer, but rung up on the POS).
+  saleChannel: text("sale_channel").notNull().default("store"),
   cashAmount: numeric("cash_amount"),
   cardAmount: numeric("card_amount"),
   exchangeHistory: jsonb("exchange_history").$type<Array<{

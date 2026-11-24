@@ -30,6 +30,7 @@ import {
   Printer,
   X,
   Receipt,
+  Truck,
   Banknote,
   CreditCard,
   Star,
@@ -229,6 +230,7 @@ interface HeldCart {
   discountType: "percent" | "fixed";
   discountValue: string;
   note: string;
+  isDelivery?: boolean;
   time: Date;
 }
 interface CompletedOrder {
@@ -1609,6 +1611,15 @@ function PosInvoicesColumn({
                     <span className="text-xs font-bold ltr-num">
                       #{order.id}
                     </span>
+                    {(order.saleChannel ?? order.sale_channel) === "delivery" && (
+                      <span
+                        className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300"
+                        data-testid={`badge-delivery-${testIdPrefix}-${order.id}`}
+                      >
+                        <Truck className="w-2.5 h-2.5" />
+                        {ar ? "توصيل" : "Delivery"}
+                      </span>
+                    )}
                     {isExchangeOrder(order.note) && (
                       <span
                         className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
@@ -1899,6 +1910,8 @@ export default function POS() {
 
   /* Collapsible cart extras */
   const [showNote, setShowNote] = useState(false);
+  // On for a sale made through the Instagram page / WhatsApp and sent out for delivery.
+  const [isDelivery, setIsDelivery] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
 
   /* Refs */
@@ -3442,12 +3455,14 @@ export default function POS() {
         discountType,
         discountValue,
         note,
+        isDelivery,
         time: new Date(),
       },
     ]);
     setCart([]);
     setDiscountValue("");
     setNote("");
+    setIsDelivery(false);
     setPaymentMethod(null);
     setCashReceived("");
     setCardReceived("");
@@ -3465,6 +3480,7 @@ export default function POS() {
     setDiscountType(held.discountType);
     setDiscountValue(held.discountValue);
     setNote(held.note);
+    setIsDelivery(!!held.isDelivery);
     setPaymentMethod(null);
     setCashReceived("");
     setCardReceived("");
@@ -4054,6 +4070,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
       discountAmount: discountAmount.toFixed(2),
       paymentMethod,
       note: note || null,
+      saleChannel: isDelivery ? "delivery" : "store",
       cashAmount:
         paymentMethod === "cash"
           ? cashAmt
@@ -4126,6 +4143,7 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
       setCart([]);
       setDiscountValue("");
       setNote("");
+      setIsDelivery(false);
       setPaymentMethod(null);
       setCashReceived("");
       setCardReceived("");
@@ -6116,6 +6134,16 @@ ${totalDiscount > 0 ? `<div class="row"><span>إجمالي الخصومات</spa
                     <span className="text-base leading-none">📝</span>
                     {ar ? "ملاحظة" : "Note"}
                     {note && <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />}
+                  </button>
+                  <button
+                    onClick={() => setIsDelivery((v) => !v)}
+                    aria-pressed={isDelivery}
+                    title={ar ? "بيع عن طريق الصفحة مع توصيل" : "Sold through the page, sent by delivery"}
+                    className={`flex-1 flex items-center justify-center gap-2 text-sm font-semibold h-11 rounded-xl border-2 transition-colors active:scale-95 ${isDelivery ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground hover:border-foreground/40"}`}
+                    data-testid="button-sale-delivery"
+                  >
+                    <Truck className="w-4 h-4" />
+                    {ar ? "توصيل" : "Delivery"}
                   </button>
                   {/* Manual discount is admin-only. Employees still get the
                       exchange credit applied automatically (shown in totals). */}

@@ -452,6 +452,7 @@ async function ensureProductSchemaAndLegacyData() {
       ALTER TABLE pos_orders
         ADD COLUMN IF NOT EXISTS client_ref text,
         ADD COLUMN IF NOT EXISTS offline_sale boolean DEFAULT false,
+        ADD COLUMN IF NOT EXISTS sale_channel text NOT NULL DEFAULT 'store',
         ADD COLUMN IF NOT EXISTS offline_number text
     `));
     // One invoice per device-generated sale id: a retried offline upload can never duplicate.

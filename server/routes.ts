@@ -5279,6 +5279,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
           paymentMethod: paymentMethod || "cash",
           items: validatedItems,
           note: note || null,
+          saleChannel: (req.body as any).saleChannel === "delivery" ? "delivery" : "store",
           cashAmount: cashAmount != null && cashAmount !== "" ? String(cashAmount) : null,
           cardAmount: cardAmount != null && cardAmount !== "" ? String(cardAmount) : null,
           // Stamp the seller from the session, never from the request body,
