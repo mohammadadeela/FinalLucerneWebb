@@ -853,26 +853,7 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1 pb-6">
-        {/* Main banner: the shop's own main photos and videos, shown as one wide rounded
-            slide at a time with the title on the photo — no arrows, no split panel. */}
-        <div className="pt-navbar">
-          <Section>
-            <PromoSlider
-              eager
-              isAr={isAr}
-              slides={slides.map((slide) => ({
-                key: slide.key,
-                image: slide.image,
-                imagePosition: slide.imagePosition,
-                video: slide.video,
-                videoPosition: slide.videoPosition,
-                title: slide.title,
-                subtitle: slide.subtitle,
-                href: slide.primary.href,
-              }))}
-            />
-          </Section>
-        </div>
+        <HeroSlider slides={slides} isAr={isAr} />
 
         {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
         {catTiles.length > 0 && (
@@ -973,6 +954,13 @@ export default function Home() {
               mobileGrid
               more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
             />
+          </Section>
+        )}
+
+        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
+        {promoSlides.length > 0 && (
+          <Section>
+            <PromoSlider slides={promoSlides} isAr={isAr} />
           </Section>
         )}
 
