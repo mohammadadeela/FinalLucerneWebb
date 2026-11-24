@@ -229,7 +229,14 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
 
   /* Desktop panel sits just above the button, kept inside the window. */
   const panelStyle = (): React.CSSProperties => {
-    if (isPhone) return viewport ? { top: viewport.top, height: viewport.height, left: 0, right: 0 } : { inset: 0 };
+    if (isPhone) {
+      // A sheet that rises from the bottom and leaves the page visible above it. Once the
+      // keyboard is open there is little room left, so it takes all of it.
+      const vh = viewport?.height ?? window.innerHeight;
+      const vt = viewport?.top ?? 0;
+      const height = vh < 520 ? vh : Math.round(vh * 0.8);
+      return { top: vt + vh - height, height, left: 0, right: 0 };
+    }
     const zoom = pageZoom();
     const width = 384;
     const winW = window.innerWidth / zoom;
@@ -263,6 +270,7 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
         </button>
       )}
 
+      {open && isPhone && <div className="fixed inset-0 z-[69] bg-black/40" onClick={() => setOpen(false)} data-testid="chat-backdrop" />}
       {open && (
         <div
           role="dialog"
@@ -270,9 +278,9 @@ export default function ChatBot({ igVisible = true }: { igVisible?: boolean }) {
           dir={lang === "ar" ? "rtl" : "ltr"}
           data-testid="chat-panel"
           style={panelStyle()}
-          className="lucy-panel fixed z-[70] flex flex-col overflow-hidden bg-background text-foreground sm:rounded-2xl sm:border sm:border-border sm:shadow-2xl sm:shadow-black/20"
+          className="lucy-panel fixed z-[70] flex flex-col overflow-hidden rounded-t-[1.5rem] bg-background text-foreground shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.35)] sm:rounded-2xl sm:border sm:border-border sm:shadow-2xl sm:shadow-black/20"
         >
-          <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3" style={{ paddingTop: isPhone ? "max(12px, env(safe-area-inset-top))" : undefined }}>
+          <header className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3" >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">{lang === "ar" ? "ل" : "L"}</div>
             <div className="min-w-0 flex-1 leading-tight">
               <p className="text-[15px] font-semibold">{copy.name}</p>

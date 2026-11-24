@@ -1,3 +1,4 @@
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/ui/ProductCard";
@@ -162,6 +163,9 @@ function ProductRail({
   const { language } = useLanguage();
   const Arrow = language === "ar" ? ArrowLeft : ArrowRight;
   const sale = more?.tone === "sale";
+  // Phones get a shorter row: six pieces, then the "see all" tile.
+  const phone = useIsMobile();
+  const railProducts = phone ? products.slice(0, 6) : products;
   return (
     <>
       {mobileGrid && (
@@ -192,7 +196,7 @@ function ProductRail({
             {lead}
           </div>
         )}
-        {products.map((product, index) => (
+        {railProducts.map((product, index) => (
           <div key={product.id} role="listitem" className={RAIL_ITEM}>
             <ProductCard product={product} priority={index < 2} compact={compact} />
           </div>
@@ -374,6 +378,7 @@ const TILE_TINTS = ["hsl(var(--blush))"];
 /* ──────────────────────────────────── page ──────────────────────────────────────── */
 
 export default function Home() {
+  const phoneView = useIsMobile();
   const { data: bestSellersData, isLoading: isBestSellersLoading } =
     useBestSellers(20);
   // Needed so an admin-pinned best seller (Content page) still shows up even
@@ -1207,7 +1212,7 @@ export default function Home() {
                 className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
                 data-testid="rail-trending"
               >
-                {trending.slice(0, 7).map((product: any, i: number) => {
+                {trending.slice(0, phoneView ? 6 : 7).map((product: any, i: number) => {
                   const price = parseFloat(String(product.discountPrice ?? product.price));
                   return (
                     <Link

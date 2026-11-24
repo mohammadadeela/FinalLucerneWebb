@@ -1,3 +1,4 @@
+import { completeTheLook, peopleAlsoBuy as alsoBuyMix } from "@/lib/outfitMatch";
 import { useCartDrawer } from "@/store/use-cart-drawer";
 import { useParams, useLocation } from "wouter";
 import {
@@ -1268,7 +1269,7 @@ className={`block mt-2 h-px w-10 ${accentColor.replace("text-", "bg-")}`}
 
 {/* Mobile: keep the clean two-column layout. */}
 <div className="grid grid-cols-2 gap-3 sm:hidden px-4">
-{products.map((p) => (
+{products.slice(0, 4).map((p) => (
 <div key={p.id} data-testid={`related-product-${p.id}`}>
 <ProductCard product={p} />
 </div>
@@ -1945,85 +1946,18 @@ enabled: !!id,
 staleTime: 5 * 60 * 1000,
 });
 
-const peopleAlsoBuy = useMemo(() => {
-if (!product || !allProducts) return [];
-if (recommendedIds && recommendedIds.length >= 2) {
-const idSet = new Set(recommendedIds);
-const ordered = recommendedIds
-.map((rid) =>
-allProducts.find(
-(p) => p.id === rid && p.categoryId === product.categoryId,
-),
-)
-.filter(Boolean) as typeof allProducts;
-const pool = allProducts.filter(
-(p) =>
-p.id !== product.id &&
-!idSet.has(p.id) &&
-p.categoryId === product.categoryId &&
-(p.stockQuantity ?? 0) > 0,
-);
-return [...ordered, ...seededShuffle(pool, product.id)].slice(0, 12);
-}
-const pool = allProducts.filter(
-(p) => p.id !== product.id && p.categoryId === product.categoryId,
-);
-return seededShuffle(pool, product.id).slice(0, 12);
-}, [product, allProducts, recommendedIds]);
-
+// Both rows are scored in lib/outfitMatch: real "bought together" data first, then kind,
+// colour and price — and always mixed across categories.
 const matchingOutfits = useMemo(() => {
 if (!product || !allProducts) return [];
-const pool = allProducts.filter(
-(p) => p.id !== product.id && p.categoryId !== product.categoryId && (p.stockQuantity ?? 0) > 0,
-);
-if (pool.length === 0) return [];
-const crossCatIds = new Set(
-(recommendedIds ?? []).filter((rid) => {
-const found = allProducts.find((p) => p.id === rid);
-return found && found.categoryId !== product.categoryId;
-}),
-);
-const productHues = (((product as any).colorVariants as any[]) ?? [])
-.map((v: any) => hexToHue(v.colorCode))
-.filter((h: number) => h >= 0);
-const productPrice = parseFloat(product.price as string) || 0;
-const scored = pool.map((p) => {
-let score = 0;
-if (crossCatIds.has(p.id)) score += 1000;
-const candidateHues = (((p as any).colorVariants as any[]) ?? [])
-.map((v: any) => hexToHue(v.colorCode))
-.filter((h: number) => h >= 0);
-if (productHues.length === 0 || candidateHues.length === 0) {
-score += 35;
-} else {
-let bestHarmony = 0;
-for (const ph of productHues) {
-for (const ch of candidateHues) {
-const dist = hueDist(ph, ch);
-let h = 0;
-if (dist <= 30) h = 55;
-else if (dist >= 150 && dist <= 210) h = 70;
-else if (dist >= 60 && dist <= 120) h = 25;
-else h = 10;
-bestHarmony = Math.max(bestHarmony, h);
-}
-}
-score += bestHarmony;
-}
-const candidatePrice = parseFloat(p.price as string) || 0;
-if (productPrice > 0 && candidatePrice > 0) {
-const diff = Math.abs(productPrice - candidatePrice) / productPrice;
-if (diff <= 0.4) score += 20;
-else if (diff <= 0.8) score += 10;
-}
-score += ((product.id * 1000 + p.id) % 100) * 0.01;
-return { p, score };
-});
-return scored
-.sort((a, b) => b.score - a.score)
-.map((s) => s.p)
-.slice(0, 12);
-}, [product, allProducts, recommendedIds]);
+return completeTheLook(product, allProducts, categories as any[], recommendedIds ?? []);
+}, [product, allProducts, categories, recommendedIds]);
+
+const peopleAlsoBuy = useMemo(() => {
+if (!product || !allProducts) return [];
+// The first pieces of "complete your look" are not repeated in this row.
+return alsoBuyMix(product, allProducts, categories as any[], recommendedIds ?? [], matchingOutfits.slice(0, 6));
+}, [product, allProducts, categories, recommendedIds, matchingOutfits]);
 
 const recentlyViewed = useMemo(() => {
 if (!allProducts || !product) return [];
