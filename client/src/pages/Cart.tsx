@@ -6,7 +6,7 @@ import { sizeOptions } from "@/lib/cartSizes";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart, type CartItem } from "@/store/use-cart";
-import { Minus, Plus, Trash2, ArrowRight, ArrowLeft, ShoppingBag } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, ArrowLeft, ShoppingBag, ChevronDown } from "lucide-react";
 import { LucerneCoin } from "@/components/ui/lucerne-coin";
 import { useLanguage } from "@/i18n";
 import { useToast } from "@/hooks/use-toast";
@@ -91,6 +91,22 @@ function CartItemImage({ item, soldOut, sizeClass, labelSize, language }: {
  */
 export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; onNavigate?: () => void }) {
   const { items, updateQuantity, removeFromCart, addToCart } = useCart();
+  // The cart panel's list: when part of it is below the fold, a small "more" pill says so.
+  const listRef = useRef<HTMLDivElement>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+  const checkMore = () => {
+    const el = listRef.current;
+    setMoreBelow(!!el && el.scrollHeight - el.scrollTop - el.clientHeight > 24);
+  };
+  useEffect(() => {
+    checkMore();
+    const el = listRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(checkMore);
+    ro.observe(el);
+    Array.from(el.children).forEach((child) => ro.observe(child));
+    return () => ro.disconnect();
+  });
   const { data: siteSettings } = useSiteSettings();
   const loyaltyPointsEnabled = siteSettings?.loyalty_points_enabled !== "false";
   const [, setLocation] = useLocation();
@@ -380,11 +396,27 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
   if (mode === "drawer") {
     return (
       <>
-        <div className="flex-1 overflow-y-auto px-4 pb-4 sm:px-5">
-          <div className="pt-3 sm:pt-4">{offers}</div>
-          {soldOutNote}
-          {lines}
-          {suggested}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div ref={listRef} onScroll={checkMore} className="flex-1 overflow-y-auto px-4 pb-4 sm:px-5">
+            <div className="pt-3 sm:pt-4">{offers}</div>
+            {soldOutNote}
+            {lines}
+            {suggested}
+          </div>
+          {moreBelow && (
+            <>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background to-transparent" />
+              <button
+                type="button"
+                onClick={() => listRef.current?.scrollBy({ top: listRef.current.clientHeight * 0.7, behavior: "smooth" })}
+                className="absolute bottom-2 left-1/2 flex h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-foreground px-4 text-[12.5px] font-semibold text-background shadow-lg"
+                data-testid="button-cart-more"
+              >
+                {isAr ? "المزيد" : "Show more"}
+                <ChevronDown className="h-4 w-4 animate-bounce" />
+              </button>
+            </>
+          )}
         </div>
         <footer className="shrink-0 border-t border-border bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pt-4">{totals}</footer>
       </>
