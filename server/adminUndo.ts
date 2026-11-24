@@ -3,9 +3,10 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "./db";
 import { products, categories, subcategories } from "@shared/schema";
 
-type Entity = "product" | "category" | "subcategory";
+type Entity = "product" | "category" | "subcategory" | "setting";
 type Operation = "create" | "update" | "delete";
-type UndoSpec = { entity: Entity; operation: Operation; ids: number[] };
+/** `keys` is used for site settings (the content page and every other setting), which have no id. */
+type UndoSpec = { entity: Entity; operation: Operation; ids: number[]; keys?: string[] };
 type Row = Record<string, any>;
 
 let tablePromise: Promise<void> | null = null;
@@ -62,7 +63,47 @@ function selectSpec(req: Request): UndoSpec | null {
   if (subcategoryId && method === "PATCH") {
     return { entity: "subcategory", operation: "update", ids: [Number(subcategoryId[1])] };
   }
+  // The content page and every other admin setting (banners, photos, videos, texts,
+  // delivery prices, switches…) are saved as site settings, one key or many at a time.
+  if (method === "POST" && path === "/api/site-settings") {
+    const key = String(req.body?.key || "");
+    return key ? { entity: "setting", operation: "update", ids: [], keys: [key] } : null;
+  }
+  if (method === "POST" && path === "/api/site-settings/bulk") {
+    const keys = req.body && typeof req.body === "object" ? Object.keys(req.body).slice(0, 2000) : [];
+    return keys.length ? { entity: "setting", operation: "update", ids: [], keys } : null;
+  }
   return null;
+}
+
+/** Current value of each setting key (null when the key does not exist yet), sorted by key. */
+async function getSettings(conn: any, keys: string[]): Promise<Row[]> {
+  if (!keys.length) return [];
+  const found = await conn.execute(sql`SELECT key, value FROM site_settings WHERE key = ANY(${sql.raw("ARRAY[" + keys.map((k) => "'" + k.replace(/'/g, "''") + "'").join(",") + "]::text[]")})`);
+  const map = new Map<string, string>(((found as any).rows || []).map((r: any) => [r.key, r.value]));
+  return [...new Set(keys)].sort().map((key) => ({ key, value: map.has(key) ? map.get(key) : null }));
+}
+
+/** What changed in one history entry, for showing "before → after" in the log. */
+function describeChanges(entity: string, operation: string, before: Row[], after: Row[]): { field: string; before: string | null; after: string | null }[] {
+  const text = (v: any): string | null => {
+    if (v === null || v === undefined || v === "") return null;
+    const s = typeof v === "string" ? v : JSON.stringify(v);
+    return s.length > 600 ? s.slice(0, 600) + "…" : s;
+  };
+  if (entity === "setting") {
+    const prev = new Map(before.map((r) => [r.key, r.value]));
+    return after.map((r) => ({ field: String(r.key), before: text(prev.get(r.key)), after: text(r.value) })).slice(0, 40);
+  }
+  if (operation !== "update" || before.length !== 1 || after.length !== 1) return [];
+  const out: { field: string; before: string | null; after: string | null }[] = [];
+  for (const field of Object.keys({ ...before[0], ...after[0] })) {
+    if (["id", "createdAt", "updatedAt", "autoViews"].includes(field)) continue;
+    const a = before[0][field], b = after[0][field];
+    if (stableJSON(a ?? null) === stableJSON(b ?? null)) continue;
+    out.push({ field, before: text(a), after: text(b) });
+  }
+  return out.slice(0, 20);
 }
 
 async function getRows(conn: any, entity: Entity, ids: number[]): Promise<Row[]> {
@@ -156,7 +197,7 @@ export async function adminUndoMiddleware(req: Request, res: Response, next: Nex
   if (!spec) return next();
   try {
     await ensureAdminUndoTable();
-    const before = await getRows(db, spec.entity, spec.ids);
+    const before = spec.entity === "setting" ? await getSettings(db, spec.keys || []) : await getRows(db, spec.entity, spec.ids);
     const originalJson = res.json.bind(res);
     let handled = false;
     res.json = ((payload: any) => {
@@ -164,6 +205,23 @@ export async function adminUndoMiddleware(req: Request, res: Response, next: Nex
       handled = true;
       void (async () => {
         try {
+          if (spec.entity === "setting") {
+            const afterAll = await getSettings(db, spec.keys || []);
+            const prev = new Map(before.map((r) => [r.key, r.value]));
+            // Only the settings that really changed are kept, so the log stays readable.
+            const changed = afterAll.filter((r) => (prev.get(r.key) ?? null) !== (r.value ?? null));
+            if (changed.length) {
+              const beforeChanged = changed.map((r) => ({ key: r.key, value: prev.get(r.key) ?? null }));
+              const name = changed.length === 1 ? String(changed[0].key) : changed.length + " settings";
+              await db.execute(sql`
+                INSERT INTO admin_undo_history
+                  (actor_id, entity_type, operation, entity_name, before_state, after_state)
+                VALUES (${Number((req.user as any).id)}, 'setting', 'update',
+                        ${name.slice(0, 150)}, ${JSON.stringify(beforeChanged)}::jsonb, ${JSON.stringify(changed)}::jsonb)
+              `);
+            }
+            return;
+          }
           const resultId = Number(payload?.data?.id ?? payload?.id);
           const ids = spec.operation === "create" ? (Number.isInteger(resultId) && resultId > 0 ? [resultId] : []) : spec.ids;
           const after = await getRows(db, spec.entity, ids);
@@ -204,11 +262,22 @@ export function registerAdminUndoRoutes(app: Express): void {
       const history = await db.execute(sql`
         SELECT id, created_at AS "createdAt", undone_at AS "undoneAt",
                entity_type AS "entityType", operation, entity_name AS "entityName",
-               actor_id AS "actorId", undone_by AS "undoneBy"
-        FROM admin_undo_history ORDER BY id DESC LIMIT 60
+               actor_id AS "actorId", undone_by AS "undoneBy",
+               before_state AS "beforeState", after_state AS "afterState"
+        FROM admin_undo_history ORDER BY id DESC LIMIT 120
       `);
       res.setHeader("Cache-Control", "no-store");
-      return res.json((history as any).rows ?? []);
+      // Each entry carries what changed (old value → new value); the full snapshots stay on the server.
+      return res.json(((history as any).rows ?? []).map((row: any) => {
+        const { beforeState, afterState, ...rest } = row;
+        let changes: ReturnType<typeof describeChanges> = [];
+        try {
+          changes = describeChanges(row.entityType, row.operation, Array.isArray(beforeState) ? beforeState : [], Array.isArray(afterState) ? afterState : []);
+        } catch {
+          /* an unreadable old entry simply shows no details */
+        }
+        return { ...rest, changes };
+      }));
     } catch (error) {
       return res.status(500).json({ message: "Could not load undo history" });
     }
@@ -233,6 +302,31 @@ export function registerAdminUndoRoutes(app: Express): void {
         if (entry.undone_at) throw new Error("This action was already undone");
         const entity = entry.entity_type as Entity;
         const operation = entry.operation as Operation;
+        if (entity === "setting") {
+          const beforeSettings = entry.before_state as Row[];
+          const afterSettings = entry.after_state as Row[];
+          const current = await getSettings(tx, afterSettings.map((r) => String(r.key)));
+          const now = new Map(current.map((r) => [r.key, r.value]));
+          // Blocked when any of these settings was changed again later, so a newer edit is never lost.
+          if (afterSettings.some((r) => (now.get(r.key) ?? null) !== (r.value ?? null))) {
+            throw new Error("Newer changes exist. Undo is blocked to protect the current settings.");
+          }
+          for (const row of beforeSettings) {
+            if (row.value === null || row.value === undefined) {
+              await tx.execute(sql`DELETE FROM site_settings WHERE key = ${String(row.key)}`);
+            } else {
+              await tx.execute(sql`
+                INSERT INTO site_settings (key, value) VALUES (${String(row.key)}, ${String(row.value)})
+                ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+              `);
+            }
+          }
+          await tx.execute(sql`
+            UPDATE admin_undo_history SET undone_at = now(), undone_by = ${Number((req.user as any).id)}
+            WHERE id = ${historyId}
+          `);
+          return;
+        }
         if (!["product", "category", "subcategory"].includes(entity)
           || !["create", "update", "delete"].includes(operation)) {
           throw new Error("This action is not reversible");

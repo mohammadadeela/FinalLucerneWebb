@@ -95,7 +95,7 @@ export function PageHero({
                 className="h-full w-full object-cover"
                 style={{ objectPosition: videoPosition }}
               />
-            ) : (
+            ) : image ? (
               <img
                 src={image}
                 alt={title}
@@ -105,6 +105,12 @@ export function PageHero({
                 className="h-full w-full object-cover"
                 style={{ objectPosition: imagePosition }}
               />
+            ) : (
+              // No photo and no video set for this page: the banner is never left empty or
+              // broken — it shows the shop's own mark on its soft pink instead.
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blush via-background to-sand sm:justify-start sm:ps-[14%]" data-testid="hero-default-art">
+                <LucerneMark className="h-[62%] w-auto text-berry/25" />
+              </div>
             )}
           </motion.div>
         </div>

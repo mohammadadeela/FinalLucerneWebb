@@ -218,23 +218,18 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {heroImage || heroVideo ? (
-        <PageHero
-          image={heroImage}
-          imagePosition={heroImagePosition}
-          video={heroVideo}
-          videoPosition={heroVideoPosition}
-          title={title}
-          subtitle={subtitle}
-          titleTestId="text-category-title"
-          subtitleTestId="text-category-subtitle"
-        />
-      ) : (
-        <section className="pt-navbar px-4 sm:px-6 lg:px-8 py-10 sm:py-14 border-b border-border">
-          <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-semibold" data-testid="text-category-title">{title}</h1>
-          {subtitle && <p className="text-muted-foreground mt-2" data-testid="text-category-subtitle">{subtitle}</p>}
-        </section>
-      )}
+      {/* Always the banner: with no photo or video it shows the shop's default art. */}
+      <PageHero
+        image={heroImage}
+        imagePosition={heroImagePosition}
+        video={heroVideo}
+        videoPosition={heroVideoPosition}
+        title={title}
+        subtitle={subtitle}
+        titleTestId="text-category-title"
+        subtitleTestId="text-category-subtitle"
+      />
+
 
       {(() => {
         const subs = (allSubcategories || []).filter(s => categoryIds.some(cid => s.categoryId === cid) && s.isActive);

@@ -367,6 +367,7 @@ function ImageUploadField({
           <div className="text-center space-y-1">
             <Image className="w-8 h-8 mx-auto opacity-40" />
             <p className="text-xs">لا توجد صورة</p>
+            <p className="mt-1 max-w-xs text-center text-[11px] leading-relaxed">بدون صورة أو فيديو يظهر بانر لوسيرن الافتراضي (الشعار على الزهري)، فلا يبقى المكان فارغاً أبداً.</p>
           </div>
         </div>
       )}
