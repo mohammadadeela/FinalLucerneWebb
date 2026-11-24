@@ -708,7 +708,7 @@ function SectionCard({
   values: Record<string, string>;
   onChange: (key: string, value: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const prefix = section.id;
 
   return (
