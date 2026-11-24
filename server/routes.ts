@@ -6895,25 +6895,10 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
       const ai = await import("./aiPhotoGen");
       const subject = prompt.trim().slice(0, 600);
 
-      // The shop's own products are the models: the best-fitting ones for this subject are
-      // handed to the AI as reference photos. With none to use, it works from the words alone.
-      const refsFor = async (slotName: string) => {
-        try {
-          const refLib = await import("./aiReferences");
-          const picked = await refLib.pickReferenceProducts(subject, refLib.referenceCount(slotName));
-          const loaded = await refLib.loadReferenceImages(picked);
-          return { text: refLib.referencePrompt(loaded.refs), images: loaded.images, count: loaded.refs.length, names: loaded.refs.map((r) => r.name) };
-        } catch (refErr: any) {
-          console.warn("[ai-generate-image] no reference products:", refErr?.message || refErr);
-          return { text: "", images: [], count: 0, names: [] as string[] };
-        }
-      };
-
       // Category banner row: products on pure white. The empty background is trimmed here; the
       // storefront blends the white into the banner colour and fits the row on any screen.
       if (style === "row") {
-        const rowRefs = await refsFor("row");
-        const { buffer: raw } = await ai.generateImageFromPrompt(subject, "landscape", ai.buildProductRowPrompt(subject, rowRefs.text, rowRefs.count), rowRefs.images);
+        const { buffer: raw } = await ai.generateImageFromPrompt(subject, "landscape", ai.buildProductRowPrompt(subject));
         const sharp = (await import("sharp")).default;
         const corner = await sharp(raw).extract({ left: 0, top: 0, width: 8, height: 8 }).resize(1, 1).removeAlpha().raw().toBuffer();
         const bg = "#" + [corner[0], corner[1], corner[2]].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
@@ -6959,15 +6944,13 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
       // its slot. Older callers that only send an aspect get the closest slot.
       const slots = ["homeHero", "pageHero", "promo", "editorialCenter", "editorialTile", "pill", "menu", "circle"];
       const chosen = (slots.includes(slot || "") ? slot : aspect === "square" ? "circle" : aspect === "portrait" ? "editorialCenter" : "pageHero") as any;
-      const refs = await refsFor(chosen);
       const { buffer } = await ai.generateImageFromPrompt(
         subject,
         chosen === "circle" || chosen === "menu" ? "square" : "landscape",
-        ai.buildThemedPrompt(chosen, subject, refs.text, refs.count),
-        refs.images,
+        ai.buildThemedPrompt(chosen, subject),
       );
       const url = await uploadToCloudinary(buffer, "ai-generated-image.png");
-      res.json({ url, products: refs.names });
+      res.json({ url });
     } catch (err: any) {
       console.error("[ai-generate-image]", err?.message || err);
       res.status(err?.noKey ? 503 : 500).json({
@@ -6994,25 +6977,12 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
     for (const [id, job] of aiVideoJobs) if (Date.now() - job.at > 60 * 60 * 1000) aiVideoJobs.delete(id);
     const jobId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
     aiVideoJobs.set(jobId, { status: "running", at: Date.now() });
+    // Banner clips are always generated fresh from the description, never from an existing photo.
     void imageUrl;
+    const source = "";
     (async () => {
       try {
-        const { generateVideoFromPrompt, generateImageFromPrompt, buildThemedPrompt } = await import("./aiPhotoGen");
-        // The clip shows the shop's own products: a still of them is made on the site's set
-        // first, and the clip is that still brought to life. Without products that fit the
-        // subject, the clip is made from the description alone, as before.
-        let source = "";
-        try {
-          const refLib = await import("./aiReferences");
-          const subject = prompt.trim().slice(0, 400);
-          const loaded = await refLib.loadReferenceImages(await refLib.pickReferenceProducts(subject, refLib.referenceCount("pageHero")));
-          if (loaded.refs.length) {
-            const still = await generateImageFromPrompt(subject, "landscape", buildThemedPrompt("pageHero", subject, refLib.referencePrompt(loaded.refs), loaded.refs.length), loaded.images);
-            source = await uploadToCloudinary(still.buffer, "ai-banner-video-still.png");
-          }
-        } catch (stillErr: any) {
-          console.warn("[ai-generate-video] product still skipped:", stillErr?.message || stillErr);
-        }
+        const { generateVideoFromPrompt } = await import("./aiPhotoGen");
         const buffer = await generateVideoFromPrompt(prompt.trim().slice(0, 400), source || undefined);
         const url = await uploadVideoToCloudinary(buffer, "ai-banner-video.mp4");
         aiVideoJobs.set(jobId, { status: "done", url, at: Date.now() });
