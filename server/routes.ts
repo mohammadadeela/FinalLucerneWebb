@@ -820,7 +820,10 @@ Sitemap: ${SITE_URL}/sitemap.xml
     try {
       // Upload directly from the saved disk path — Cloudinary reads the file,
       // no second copy in RAM.
-      const videoUrl = await uploadVideoToCloudinary(file.path, file.originalname);
+      // Banner videos fill wide areas of the page, so they keep full size and high quality;
+      // product videos stay small and light (720px), which is all a product gallery needs.
+      const forBanner = String(req.query.banner || "") === "1";
+      const videoUrl = await uploadVideoToCloudinary(file.path, file.originalname, forBanner ? { maxWidth: 1920, crf: 20 } : {});
       // Derive a poster from the Cloudinary video URL (first frame, JPEG)
       const poster = derivePosterFromVideoUrl(videoUrl) || videoUrl
         .replace("/upload/", "/upload/so_0,f_jpg,q_auto/")

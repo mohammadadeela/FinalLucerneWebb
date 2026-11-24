@@ -516,7 +516,7 @@ function VideoUploadField({
     try {
       const formData = new FormData();
       formData.append("video", file);
-      const res = await fetch("/api/upload-video", { method: "POST", body: formData });
+      const res = await fetch("/api/upload-video?banner=1", { method: "POST", body: formData });
       const data = await res.json();
       if (data.url) {
         onChange(data.url);
