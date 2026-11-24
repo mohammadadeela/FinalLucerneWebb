@@ -23,6 +23,7 @@ const productSelectSchema = z.object({
   name: z.string(),
   description: z.string(),
   nameEn: z.string().nullable(),
+  autoViews: z.object({ v: z.number(), bySource: z.record(z.string(), z.array(z.string())) }).nullable(),
   descriptionEn: z.string().nullable(),
   price: z.string(),
   costPrice: z.string().nullable(),

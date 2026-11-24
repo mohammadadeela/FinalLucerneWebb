@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { startAutoViews } from "./autoViews";
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import compression from "compression";
@@ -451,6 +452,7 @@ async function ensureProductSchemaAndLegacyData() {
     await withRetry(() => db.execute(sql`
       ALTER TABLE products
         ADD COLUMN IF NOT EXISTS name_en text,
+        ADD COLUMN IF NOT EXISTS auto_views jsonb,
         ADD COLUMN IF NOT EXISTS description_en text
     `));
     await withRetry(() => db.execute(sql`
@@ -537,6 +539,8 @@ async function ensureProductSchemaAndLegacyData() {
   })();
 
   await registerRoutes(httpServer, app);
+  // Extra product views are cut from the shop's own photos in the background.
+  startAutoViews();
 
   // Keep API failures machine-readable. Without this, unknown /api routes can
   // fall through to the frontend catch-all and return index.html.

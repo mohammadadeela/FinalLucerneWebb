@@ -234,7 +234,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
     >
       {/* Image container */}
       <Link href={`/product/${product.id}`} className="block">
-        <div ref={nearViewportRef} className={`relative overflow-hidden bg-white rounded-2xl ${compact ? "aspect-[1/1] mb-2.5" : "aspect-[3/4] mb-3 ring-1 ring-black/[0.06]"}`}>
+        <div ref={nearViewportRef} className={`relative overflow-hidden bg-white ${compact ? "aspect-[1/1] mb-2.5 rounded-2xl" : "aspect-[3/4] mb-3 rounded-[1.6rem] shadow-[0_10px_30px_-18px_rgba(45,15,36,0.3)]"}`}>
           {/* Blur-up placeholder — shows a tiny blurred preview while the real image loads.
               For R2 images: a pre-generated tiny blur.webp fades out when the photo arrives.
               Legacy Cloudinary remains supported for rollback; other images use the shimmer. */}
@@ -263,28 +263,25 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             </div>
           )}
 
-          {/* NEW badge — top start */}
-          {!isSoldOut && product.isNewArrival && (
-            <div className="absolute top-3 start-3 z-20">
-              <span
-                className="bg-foreground text-background text-[10px] font-bold uppercase tracking-[0.15em] px-2.5 py-1 leading-none"
-                data-testid={`badge-new-${product.id}`}
-              >
-                {t.product.new}
-              </span>
-            </div>
-          )}
-
-          {/* SALE badge — circle, top end */}
-          {!isSoldOut && discountPrice && (
-            <div className="absolute top-3 end-3 z-20">
-              <span
-                className="w-10 h-10 rounded-full text-white text-[10px] font-bold uppercase tracking-wide flex items-center justify-center leading-none shadow"
-                style={{ backgroundColor: "#FF0000" }}
-                data-testid={`badge-sale-${product.id}`}
-              >
-                {t.product.sale}
-              </span>
+          {/* Sale and New tags — stacked pills at the top start */}
+          {!isSoldOut && (discountPrice || product.isNewArrival) && (
+            <div className={`absolute z-20 flex flex-col items-start ${compact ? "top-2 start-2 gap-1" : "top-3 start-3 gap-1.5"}`}>
+              {discountPrice && (
+                <span
+                  className={`inline-flex items-center rounded-full bg-[#E8257D] font-semibold leading-none text-white ${compact ? "h-5 px-2 text-[10px]" : "h-7 px-3 text-[12px]"}`}
+                  data-testid={`badge-sale-${product.id}`}
+                >
+                  {t.product.sale}
+                </span>
+              )}
+              {product.isNewArrival && (
+                <span
+                  className={`inline-flex items-center rounded-full bg-[#2D0F24] font-semibold leading-none text-white ${compact ? "h-5 px-2 text-[10px]" : "h-7 px-3 text-[12px]"}`}
+                  data-testid={`badge-new-${product.id}`}
+                >
+                  {t.product.new}
+                </span>
+              )}
             </div>
           )}
 
@@ -394,11 +391,11 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
                 : t.wishlist.addToWishlist
             }
             data-testid={`button-wishlist-${product.id}`}
-            className={`absolute bottom-3 group-hover:bottom-12 end-3 z-30 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-sm shadow-sm hover:bg-white transition-all duration-300 focus:opacity-100 ${wishlisted ? "opacity-100 bg-white" : "opacity-0 group-hover:opacity-100 bg-white/80"}`}
+            className={`absolute end-2.5 top-2.5 z-30 flex items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200 hover:scale-110 active:scale-95 ${compact ? "h-8 w-8" : "h-10 w-10"}`}
           >
             <Heart
-              className={`w-4 h-4 transition-all duration-200 ${wishlisted ? "fill-rose-500 stroke-rose-500" : "stroke-foreground fill-transparent"}`}
-              strokeWidth={1.5}
+              className={`${compact ? "h-4 w-4" : "h-[18px] w-[18px]"} transition-all duration-200 ${wishlisted ? "fill-[#E8257D] stroke-[#E8257D]" : "stroke-foreground fill-transparent"}`}
+              strokeWidth={1.8}
             />
           </button>}
 

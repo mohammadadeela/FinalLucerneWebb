@@ -1603,7 +1603,7 @@ variants.length > 1 ||
 (variants.length === 1 && variants[0].name !== "Default");
 const activeVariant = variants[selectedColorIdx] || variants[0];
 
-const allMedia = useMemo(() => {
+const baseMedia = useMemo(() => {
 if (!activeVariant) return [];
 type GalleryMedia = { type: "image" | "video"; url: string; poster?: string; isPrimary?: boolean };
 const variantAny = activeVariant as any;
@@ -1652,6 +1652,32 @@ const imgs: GalleryMedia[] = [activeVariant.mainImage, ...(activeVariant.images 
 if (selectedColorIdx !== 0) return imgs;
 return addProductLevelVideo(imgs);
 }, [activeVariant, product, selectedColorIdx]);
+
+// Close-up views cut automatically from this colour's main photo (server/autoViews.ts),
+// added after the real photos so the gallery always has several angles to look at.
+const allMedia = useMemo(() => {
+const views = ((product as any)?.autoViews?.bySource || {}) as Record<string, string[]>;
+const main = baseMedia.find((m) => m.type === "image");
+const extra = (main && views[main.url]) || [];
+const have = new Set(baseMedia.map((m) => m.url));
+return [...baseMedia, ...extra.filter((u) => !have.has(u)).map((url) => ({ type: "image" as const, url }))];
+}, [baseMedia, product]);
+
+// Phones: once the main button has scrolled away, a slim bar keeps "add to cart" in reach.
+const buyButtonRef = useRef<HTMLButtonElement>(null);
+const [buyBar, setBuyBar] = useState(false);
+useEffect(() => {
+const el = buyButtonRef.current;
+if (!el || typeof IntersectionObserver === "undefined") return;
+const io = new IntersectionObserver(([entry]) => setBuyBar(!entry.isIntersecting), { threshold: 0 });
+io.observe(el);
+return () => io.disconnect();
+}, [product?.id]);
+useEffect(() => {
+// The chat and Instagram bubbles move up so they never sit on the bar.
+document.body.classList.toggle("has-buy-bar", buyBar);
+return () => document.body.classList.remove("has-buy-bar");
+}, [buyBar]);
 
 const goToPrev = useCallback(() => {
 setSelectedImageIdx((i) => (i - 1 + allMedia.length) % allMedia.length);
@@ -2614,14 +2640,14 @@ setQuantity(1);
 }
 }}
 disabled={isOOS}
-className={`relative min-w-14 h-14 px-4 flex flex-col items-center justify-center border transition-all ${
+className={`relative min-w-14 h-12 px-4 flex flex-col items-center justify-center rounded-full border transition-all ${
 isOOS
 ? "border-border text-muted-foreground/40 line-through cursor-not-allowed"
 : selectedSize === size
-? "border-primary bg-primary text-primary-foreground"
+? "border-foreground bg-foreground text-background"
 : isMySaved
 ? "border-foreground bg-background text-foreground ring-2 ring-foreground/30"
-: "border-border hover:border-primary text-foreground"
+: "border-foreground/20 hover:border-foreground text-foreground"
 }`}
 data-testid={`button-size-${size}`}
 data-size={size}
@@ -2685,8 +2711,9 @@ data-testid="button-qty-plus"
 )}
 
 <Button
+ref={buyButtonRef}
 onClick={handleAddToCart}
-className="flex-1 h-14 rounded-full uppercase tracking-widest text-xs sm:text-sm font-semibold gap-2 shadow-sm"
+className="flex-1 h-14 rounded-full border-0 bg-[#E8257D] text-[15px] font-semibold text-white gap-2 shadow-lg shadow-[#E8257D]/25 transition-transform hover:bg-[#D11D6F] hover:scale-[1.01] active:scale-[0.98] disabled:bg-foreground/20 disabled:shadow-none"
 disabled={!canAdd}
 data-testid="button-add-to-cart"
 >
@@ -2726,10 +2753,10 @@ return;
 }
 toggle(product.id, colorName ?? null);
 }}
-className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-full border text-xs sm:text-sm font-medium uppercase tracking-widest transition-all duration-200 ${
+className={`flex-1 flex items-center justify-center gap-2 h-14 rounded-full border text-[14px] font-semibold transition-all duration-200 ${
 isWishlisted(product.id)
 ? "border-rose-400 text-rose-500 bg-rose-50 dark:bg-rose-950/30"
-: "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+: "border-foreground/25 text-foreground hover:border-foreground hover:bg-secondary"
 }`}
 data-testid="button-wishlist-product"
 >
@@ -2832,6 +2859,40 @@ accentColor="text-amber-500"
 )}
 </div>
 </main>
+{/* Phone buy bar */}
+{product && buyBar && (
+<div
+className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-border bg-background/95 px-4 pt-2.5 pb-[max(0.7rem,env(safe-area-inset-bottom))] shadow-[0_-10px_30px_-18px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:hidden"
+data-testid="bar-sticky-buy"
+>
+<div className="min-w-0 flex-1">
+<p className="truncate text-[13px] font-medium leading-tight">{product.name}</p>
+<p className="mt-0.5 flex items-baseline gap-1.5 text-[15px] font-semibold ltr-num">
+₪{discountPrice || price}
+{discountPrice && <s className="text-[12px] font-normal text-muted-foreground">₪{price}</s>}
+{selectedSize && <span className="ms-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold">{selectedSize}</span>}
+</p>
+</div>
+<button
+type="button"
+disabled={isSoldOut || (!canAdd && !(hasSizes && !selectedSize))}
+onClick={() => {
+if (hasSizes && !selectedSize) {
+// No size yet: take her to the sizes instead of failing silently.
+document.querySelector("[data-size]")?.scrollIntoView({ behavior: "smooth", block: "center" });
+return;
+}
+handleAddToCart();
+}}
+className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[#E8257D] px-6 text-[14.5px] font-semibold text-white shadow-lg shadow-[#E8257D]/25 transition-transform active:scale-[0.97] disabled:bg-foreground/20 disabled:shadow-none"
+data-testid="button-sticky-add-to-cart"
+>
+<ShoppingBag className="h-4 w-4 shrink-0" />
+{isSoldOut ? t.product.soldOut : hasSizes && !selectedSize ? t.product.selectSize : t.product.addToCart}
+</button>
+</div>
+)}
+
 <Footer />
 
 <SizeGuideDialog

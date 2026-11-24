@@ -71,6 +71,8 @@ export const products = pgTable("products", {
   description: text("description").notNull(),
   // English name and description, shown when a customer browses the shop in English.
   nameEn: text("name_en"),
+  // Extra views cut automatically from the product's own photos (see server/autoViews.ts).
+  autoViews: jsonb("auto_views").$type<{ v: number; bySource: Record<string, string[]> }>(),
   descriptionEn: text("description_en"),
   price: numeric("price").notNull(),
   costPrice: numeric("cost_price"),

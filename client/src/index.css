@@ -408,3 +408,12 @@ html.admin-theme {
 .sima-skin textarea {
   border-radius: 1rem;
 }
+
+/* Product page on phones: the floating chat and Instagram buttons rise above the buy bar. */
+@media (max-width: 1023px) {
+  body.has-buy-bar [data-testid="button-chat-open"],
+  body.has-buy-bar [data-testid="instagram-widget"] {
+    translate: 0 -72px;
+    transition: translate 0.25s ease;
+  }
+}
