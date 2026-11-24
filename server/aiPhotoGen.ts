@@ -650,18 +650,25 @@ export async function generateVideoFromPrompt(subject: string, imageUrl?: string
   } else {
     input.push({
       type: "text",
-      text: `A short, smooth clip for a women's fashion web store banner. Subject: ${subject}. Show it as: ${pickOne(
+      // Clips show the piece on a model — one model, one product — because movement on a
+      // person shows a garment far better than a row of pieces hanging on a wall.
+      text: `A short, smooth fashion clip for a women's web store banner. Subject: ${subject}.
+Show ONE fictional elegant woman modelling ONE single product of this kind — never two models, never a row or group of products, nothing else for sale in the frame. ${
         canHang(subject)
-          ? [
-              "a piece on a slim gold hanger swaying very gently",
-              "an elegant woman wearing the piece, moving slowly and gracefully, modest classy styling",
-              "a small styled group of two or three pieces, with a slow glide across them",
-            ]
-          : [
-              "one hero piece turning slowly on an invisible stand",
-              "a small styled group of two or three pieces resting on the surface, with a slow glide across them",
-            ],
-      )}. ${displayRule(subject)} Real studio footage on ${THEME_SET}, with no props or scenery, soft daylight from the upper left and a soft short shadow, the subject centred with empty background around it, soft diffused light, elegant and feminine, colours from cream, beige, camel, soft pink, burgundy and black. ${motion}`,
+          ? pickOne([
+              "She wears the piece and stands facing the camera, full length from head to toe, turning slowly a quarter turn so the cut and the fabric show, then looks back to the camera with a soft smile.",
+              "She wears the piece and walks two slow steps towards the camera, full length, the fabric moving naturally, then pauses with one hand resting lightly at her waist.",
+              "She wears the piece, seen three-quarter length, gently smoothing the fabric with one hand and shifting her weight, calm and confident.",
+            ])
+          : /bag|clutch|purse|wallet|حقيب|شنط|كلتش|محفظ/i.test(subject)
+            ? "She holds the bag at her side, seen from shoulder to knee, and turns it slowly towards the camera so its shape, handle and clasp show clearly."
+            : /shoe|heel|boot|sneaker|sandal|flat|loafer|حذاء|أحذية|شوز|كعب|بوت|صندل|سنيكر/i.test(subject)
+              ? "Only her legs from the knee down are seen, wearing the pair. She takes two slow, graceful steps and stops with one foot turned to the side, so the shoe is seen clearly in profile from toe to heel."
+              : "She wears or holds the piece, seen from the waist up, and moves slowly so it catches the light and shows clearly."
+      }
+The product is the star: clearly visible, in sharp focus, whole and never cut by the frame, kept in the centre of the picture with empty backdrop on both sides (the website crops the sides on phones).
+The model: a real-looking woman with natural skin texture, calm natural expression, classy styling in ivory, cream, beige, camel, dusty rose, burgundy, plum or black with small gold details; hair and make-up simple and polished.
+Set: ${THEME_SET}, with no props, furniture or scenery, soft daylight from the upper left and a soft short shadow. Real studio footage, never animation or CGI. No text, logos or watermarks. ${motion}`,
     });
   }
 
