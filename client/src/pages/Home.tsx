@@ -602,21 +602,6 @@ export default function Home() {
       };
     })
     .filter((slide) => slide.image);
-  // The main banner uses the admin's slider photos (Content → Home): one slide per photo,
-  // each with its title and a button to its page. Without any, the older banner is used.
-  const heroSlides: HeroSlide[] =
-    adminSlides.length > 0
-      ? adminSlides.map((slide) => ({
-          key: `hero-${slide.key}`,
-          image: slide.image,
-          imagePosition: "center",
-          tag: pick(g("home_hero_tag_ar"), g("home_hero_tag_en")),
-          title: slide.title || pick(g("home_hero_title_ar"), g("home_hero_title_en")),
-          subtitle: slide.subtitle || pick(g("home_hero_subtitle_ar"), g("home_hero_subtitle_en")),
-          primary: { label: pick("تسوقي الآن", "Shop Now"), href: slide.href },
-          secondary: { label: pick("كل المنتجات", "View everything"), href: "/shop" },
-        }))
-      : slides;
   const promoSlides: PromoSlide[] =
     adminSlides.length > 0
       ? adminSlides
@@ -868,7 +853,26 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1 pb-6">
-        <HeroSlider slides={heroSlides} isAr={isAr} />
+        {/* Main banner: the shop's own main photos and videos, shown as one wide rounded
+            slide at a time with the title on the photo — no arrows, no split panel. */}
+        <div className="pt-navbar">
+          <Section>
+            <PromoSlider
+              eager
+              isAr={isAr}
+              slides={slides.map((slide) => ({
+                key: slide.key,
+                image: slide.image,
+                imagePosition: slide.imagePosition,
+                video: slide.video,
+                videoPosition: slide.videoPosition,
+                title: slide.title,
+                subtitle: slide.subtitle,
+                href: slide.primary.href,
+              }))}
+            />
+          </Section>
+        </div>
 
         {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
         {catTiles.length > 0 && (

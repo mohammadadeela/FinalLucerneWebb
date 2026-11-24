@@ -196,19 +196,6 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
 
   const clearAll = () => setFilters({ sort: null, sizes: [], colors: [], brands: [], priceRange: [minPrice, maxPrice], inStockOnly: false, newArrivals: false, onSale: false });
 
-  // The category's main banner uses the photo the admin set for it in the home slider
-  // (Content → Home), when there is one; otherwise the category's own banner photo or video.
-  const { data: bannerSettings } = useSiteSettings();
-  const promoBanner = [1, 2, 3, 4]
-    .map((n) => ({
-      image: (bannerSettings as any)?.[`promo_slide_${n}_image`] as string | undefined,
-      categoryId: Number((bannerSettings as any)?.[`promo_slide_${n}_category_id`]),
-      sub: (bannerSettings as any)?.[`promo_slide_${n}_subcategory_id`],
-    }))
-    .find((slide) => slide.image && !slide.sub && categoryIds.includes(slide.categoryId))?.image;
-  const bannerImage = promoBanner || heroImage;
-  const bannerVideo = promoBanner ? undefined : heroVideo;
-
   const brandCounts: Record<string, number> = {};
   (products || []).forEach((p: any) => { if (p.brand) brandCounts[p.brand] = (brandCounts[p.brand] || 0) + 1; });
   const filterProps = {
@@ -231,11 +218,11 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {bannerImage || bannerVideo ? (
+      {heroImage || heroVideo ? (
         <PageHero
-          image={bannerImage}
-          imagePosition={promoBanner ? "center" : heroImagePosition}
-          video={bannerVideo}
+          image={heroImage}
+          imagePosition={heroImagePosition}
+          video={heroVideo}
           videoPosition={heroVideoPosition}
           title={title}
           subtitle={subtitle}

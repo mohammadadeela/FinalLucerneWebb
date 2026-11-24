@@ -14,7 +14,7 @@
   /* Storefront palette — warm cream surfaces with the original black for buttons, text and the footer.
      Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
-  --background: 28 60% 97.6%; /* pastel cream */
+  --background: 332 65% 98.5%; /* pink-tinted white */
   --foreground: 318 50% 12%; /* ink: deep plum instead of black */
 
   --card: 0 0% 100%; /* same white as every other card and tile */
@@ -26,31 +26,28 @@
   --primary: 318 50% 12%; /* dark buttons use the same plum */
   --primary-foreground: 0 0% 98%;
 
-  --secondary: 340 75% 95%; /* pastel pink */
+  --secondary: 0 0% 92%;
   --secondary-foreground: 318 45% 15%;
 
-  --muted: 30 50% 95%; /* pastel cream */
-  --muted-foreground: 320 12% 42%;
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 45%;
 
-  --accent: 24 80% 93%; /* pastel peach */
+  --accent: 0 0% 94%;
   --accent-foreground: 318 50% 12%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 25 38% 89%;
-  --input: 25 38% 87%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
   --ring: 318 50% 12%;
 
   /* Named storefront tints used by the landing page */
-  --berry: 342 42% 50%; /* dusty rose */
-  --berry-deep: 342 44% 40%;
-  --blush: 340 82% 93.5%; /* pastel pink */
-  --sage: 110 32% 88%; /* pastel green */
-  --lavender: 265 60% 93%; /* pastel lilac */
-  --sky: 200 65% 92%; /* pastel blue */
-  --pastel-pink: 338 82% 85%; /* the soft pink used for main action buttons */
-  --sand: 30 58% 92.5%; /* pastel sand */
+  --berry: 342 49% 42%;
+  --berry-deep: 342 52% 33%;
+  --blush: 332 72% 92%;
+  --sage: 96 20% 84%;
+  --sand: 30 42% 91%;
 
   --radius: 0rem;
 }
@@ -384,25 +381,25 @@ html.admin-theme {
 /* The cart panel, the cart page and the checkout keep their own soft pink look,
    while the rest of the shop uses the main palette above. */
 .sima-skin {
-  --background: 28 60% 97.6%;
+  --background: 333 100% 98.2%;
   --foreground: 318 50% 12%;
   --card: 0 0% 100%;
   --card-foreground: 318 50% 12%;
   --popover-foreground: 318 50% 12%;
-  --primary: 338 82% 85%;
-  --primary-foreground: 318 50% 12%;
-  --secondary: 340 75% 95%;
+  --primary: 333 81% 53%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 336 100% 96%;
   --secondary-foreground: 318 50% 12%;
-  --muted: 30 50% 95%;
+  --muted: 336 100% 96%;
   --muted-foreground: 320 18% 42%;
-  --accent: 340 82% 93.5%;
+  --accent: 337 100% 91%;
   --accent-foreground: 318 50% 12%;
-  --border: 25 38% 89%;
-  --input: 25 38% 87%;
-  --ring: 338 60% 65%;
-  --berry: 342 42% 50%;
-  --berry-deep: 342 44% 40%;
-  --blush: 340 82% 93.5%;
+  --border: 325 40% 90%;
+  --input: 325 40% 88%;
+  --ring: 333 81% 53%;
+  --berry: 332 82% 39%;
+  --berry-deep: 332 82% 30%;
+  --blush: 337 100% 91%;
   --radius: 1rem;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -439,8 +436,8 @@ html.admin-theme {
 .offer-won { animation: offer-won 0.7s ease-out; }
 @keyframes offer-won {
   0% { transform: scale(1); }
-  35% { transform: scale(1.035); box-shadow: 0 0 0 6px rgba(243, 160, 190, 0.45); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(243, 160, 190, 0); }
+  35% { transform: scale(1.035); box-shadow: 0 0 0 6px rgba(232, 37, 125, 0.18); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(232, 37, 125, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .offer-confetti, .offer-won { animation: none; }

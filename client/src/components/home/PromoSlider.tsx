@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { optimizeCloudinaryUrl } from "@/lib/utils";
+import { AutoplayVideo } from "@/components/ui/AutoplayVideo";
 
 export interface PromoSlide {
   key: string;
   image: string;
   title: string;
   href: string;
+  /** A video plays instead of the photo when there is one (the photo is its poster). */
+  video?: string;
+  imagePosition?: string;
+  videoPosition?: string;
+  subtitle?: string;
 }
 
 /**
@@ -14,7 +20,7 @@ export interface PromoSlide {
  * cross-fading every few seconds, with arrows, dots and swipe.
  * The admin sets the photos, titles and links in Content → Home.
  */
-export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: boolean }) {
+export function PromoSlider({ slides, isAr, eager }: { slides: PromoSlide[]; isAr: boolean; /** Top-of-page banner: load the first photo at once. */ eager?: boolean }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchX, setTouchX] = useState<number | null>(null);
@@ -54,17 +60,30 @@ export function PromoSlider({ slides, isAr }: { slides: PromoSlide[]; isAr: bool
             aria-hidden={n !== i}
             className={`group absolute inset-0 block transition-opacity duration-700 ${n === i ? "z-10 opacity-100" : "z-0 opacity-0 pointer-events-none"}`}
           >
-            <img
-              src={optimizeCloudinaryUrl(slide.image, 1600) || slide.image}
-              alt={slide.title}
-              loading="lazy"
-              decoding="async"
-              className={`h-full w-full object-cover transition-transform duration-[6000ms] ease-out ${n === i ? "scale-100" : "scale-105"}`}
-            />
+            {slide.video ? (
+              <AutoplayVideo
+                src={slide.video}
+                preload={n === i ? "auto" : "metadata"}
+                poster={slide.image || undefined}
+                className="h-full w-full object-cover"
+                style={{ objectPosition: slide.videoPosition || "50% 50%" }}
+              />
+            ) : (
+              <img
+                src={optimizeCloudinaryUrl(slide.image, 1600) || slide.image}
+                alt={slide.title}
+                loading={eager && n === 0 ? "eager" : "lazy"}
+                fetchPriority={eager && n === 0 ? "high" : undefined}
+                decoding="async"
+                className={`h-full w-full object-cover transition-transform duration-[6000ms] ease-out ${n === i ? "scale-100" : "scale-105"}`}
+                style={{ objectPosition: slide.imagePosition || "center" }}
+              />
+            )}
             <span className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
-            {slide.title && (
-              <span className="font-heading absolute bottom-8 start-3.5 max-w-[80%] truncate text-xl font-medium leading-tight text-white sm:bottom-12 sm:start-9 sm:text-4xl">
-                {slide.title}
+            {(slide.title || slide.subtitle) && (
+              <span className="absolute bottom-8 start-3.5 max-w-[85%] text-white sm:bottom-12 sm:start-9">
+                {slide.title && <span className="font-heading block truncate text-xl font-medium leading-tight sm:text-4xl">{slide.title}</span>}
+                {slide.subtitle && <span className="mt-1 hidden max-w-xl text-[15px] leading-snug text-white/85 sm:line-clamp-2 sm:block">{slide.subtitle}</span>}
               </span>
             )}
           </Link>

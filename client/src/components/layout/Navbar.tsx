@@ -708,7 +708,7 @@ export function Navbar() {
       {showNewsBar && newsItems.length > 0 && (
         <div
           ref={newsBarRef}
-          className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-[#F7B7CD] text-[#2D0F24]"}`}
+          className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-[#E8257D] text-white"}`}
           style={
             seasonInfo
               ? { background: seasonInfo.barBg, color: seasonInfo.barText }

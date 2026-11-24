@@ -2728,7 +2728,7 @@ data-testid="button-qty-plus"
 <Button
 ref={buyButtonRef}
 onClick={handleAddToCart}
-className="flex-1 h-14 rounded-full border-0 bg-[#F7B7CD] text-[15px] font-semibold text-[#2D0F24] gap-2 shadow-lg shadow-[#F7B7CD]/50 transition-transform hover:bg-[#F3A3BF] hover:scale-[1.01] active:scale-[0.98] disabled:bg-foreground/20 disabled:shadow-none"
+className="flex-1 h-14 rounded-full border-0 bg-[#E8257D] text-[15px] font-semibold text-white gap-2 shadow-lg shadow-[#E8257D]/25 transition-transform hover:bg-[#D11D6F] hover:scale-[1.01] active:scale-[0.98] disabled:bg-foreground/20 disabled:shadow-none"
 disabled={!canAdd}
 data-testid="button-add-to-cart"
 >
@@ -2899,7 +2899,7 @@ return;
 }
 handleAddToCart();
 }}
-className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[#F7B7CD] px-6 text-[14.5px] font-semibold text-[#2D0F24] shadow-lg shadow-[#F7B7CD]/50 transition-transform active:scale-[0.97] disabled:bg-foreground/20 disabled:shadow-none"
+className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-full bg-[#E8257D] px-6 text-[14.5px] font-semibold text-white shadow-lg shadow-[#E8257D]/25 transition-transform active:scale-[0.97] disabled:bg-foreground/20 disabled:shadow-none"
 data-testid="button-sticky-add-to-cart"
 >
 <ShoppingBag className="h-4 w-4 shrink-0" />

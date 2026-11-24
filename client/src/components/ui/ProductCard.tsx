@@ -273,7 +273,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             <div className={`absolute z-20 flex flex-col items-start ${compact ? "top-2 start-2 gap-1" : "top-3 start-3 gap-1.5"}`}>
               {discountPrice && (
                 <span
-                  className={`inline-flex items-center rounded-full bg-[#F7B7CD] font-semibold leading-none text-[#2D0F24] ${compact ? "h-5 px-2 text-[10px]" : "h-7 px-3 text-[12px]"}`}
+                  className={`inline-flex items-center rounded-full bg-[#E8257D] font-semibold leading-none text-white ${compact ? "h-5 px-2 text-[10px]" : "h-7 px-3 text-[12px]"}`}
                   data-testid={`badge-sale-${product.id}`}
                 >
                   {t.product.sale}
@@ -399,7 +399,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             className={`absolute end-2.5 top-2.5 z-30 flex items-center justify-center rounded-full bg-white shadow-sm transition-transform duration-200 hover:scale-110 active:scale-95 ${compact ? "h-8 w-8" : "h-10 w-10"}`}
           >
             <Heart
-              className={`${compact ? "h-4 w-4" : "h-[18px] w-[18px]"} transition-all duration-200 ${wishlisted ? "fill-[#E88AAB] stroke-[#E88AAB]" : "stroke-foreground fill-transparent"}`}
+              className={`${compact ? "h-4 w-4" : "h-[18px] w-[18px]"} transition-all duration-200 ${wishlisted ? "fill-[#E8257D] stroke-[#E8257D]" : "stroke-foreground fill-transparent"}`}
               strokeWidth={1.8}
             />
           </button>}
