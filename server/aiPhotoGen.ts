@@ -494,22 +494,26 @@ export async function generateAiProductPhoto(
    plain soft colour. Each photo slot on the site adds its own composition rule, written from
    the slot's measured shape, so the subject survives the desktop and the phone crop. */
 
-export const THEME_BACKGROUNDS = [
-  "soft pink (#F9DCEA)",
-  "warm sand beige (#F3E9DD)",
-  "pale sage green (#E7EDE2)",
-  "dusty rose (#EBC8CF)",
-  "soft cream (#F6EDDD)",
-];
+// One signature set for every photo, so the tiles, banners and circles on a page look like
+// they were shot in the same studio on the same day — and sit naturally on the site's own
+// blush-pink panels and plum text. (It used to pick one of five colours at random, which is
+// why neighbouring tiles came out pink, mauve and beige.)
+export const THEME_SET =
+  "a seamless matte blush-pink backdrop, exactly the soft pink #F9DCEA of the web store, curving smoothly into a floor of the same colour (no visible corner, seam or horizon line)";
+/** Kept for the video prompt and any older caller: every entry is now the same signature set. */
+export const THEME_BACKGROUNDS = [THEME_SET];
 const pickOne = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 
-const THEME_RULES = (background: string) => `Look (the same for every photo on the site):
-- Real, photorealistic studio product photography. Never an illustration, drawing, icon, 3D render or CGI.
-- Background: plain, soft, solid ${background} with only a very gentle gradient. No props, no furniture, no room, no scenery.
-- Soft diffused studio light from the front-left and a small soft natural shadow under the subject. No harsh shadows, no glow.
-- Product colours from this palette: cream, beige, camel, soft pink, burgundy, black, white, with small gold details. Elegant and feminine.
-- Sharp focus, true materials and fabric detail.
-- If a person appears: a fictional elegant woman, calm natural pose, modest classy clothing, same plain background.
+const THEME_RULES = (background: string) => `Art direction — the Lucerne Boutique look, identical for every photo on the site:
+- Real, photorealistic studio fashion photography, as in a Zara / Mango / Massimo Dutti lookbook. Never an illustration, drawing, icon, 3D render or CGI.
+- Set: ${background}. The whole frame is this one soft pink, lit evenly, with only a very gentle natural falloff towards the edges. No props, no furniture, no room, no window, no plants, no scenery, no second colour in the background.
+- Light: large soft daylight from the upper left, like a north-facing studio window; a soft, short, slightly warm shadow falling to the lower right of the subject. No hard shadows, no glow, no spotlight, no lens flare.
+- Colour of the subject: chosen to sit beautifully on the pink — ivory, cream, champagne, warm beige, camel, dusty rose, deep burgundy, plum (#2D0F24) or black, with small brushed-gold details. Never neon, never bright blue or green, never the same pink as the background.
+- When several pieces are shown, give each a different colour from that list and keep them the same size, evenly spaced and perfectly aligned.
+- Hangers are slim brushed gold. Surfaces are the same pink as the backdrop.
+- Mood: calm, feminine, refined and airy, with generous empty pink space around the subject.
+- Sharp focus on the subject, true fabric and material detail (weave, stitching, sheen), natural proportions, true-to-life colour — never oversaturated, never airbrushed.
+- If a person appears: a fictional elegant woman, calm natural pose and expression, real skin texture, classy styling in the colours above, standing on the same pink set.
 - No text, letters, numbers, logos, watermarks, labels or price tags anywhere.`;
 
 export type PhotoSlot =
@@ -657,7 +661,7 @@ export async function generateVideoFromPrompt(subject: string, imageUrl?: string
               "one hero piece turning slowly on an invisible stand",
               "a small styled group of two or three pieces resting on the surface, with a slow glide across them",
             ],
-      )}. ${displayRule(subject)} Real studio footage on a plain, soft, solid ${pickOne(THEME_BACKGROUNDS)} background with no props or scenery, the subject centred with empty background around it, soft diffused light, elegant and feminine, colours from cream, beige, camel, soft pink, burgundy and black. ${motion}`,
+      )}. ${displayRule(subject)} Real studio footage on ${THEME_SET}, with no props or scenery, soft daylight from the upper left and a soft short shadow, the subject centred with empty background around it, soft diffused light, elegant and feminine, colours from cream, beige, camel, soft pink, burgundy and black. ${motion}`,
     });
   }
 
