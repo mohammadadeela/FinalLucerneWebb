@@ -14,42 +14,43 @@
   /* Storefront palette — warm cream surfaces with the original black for buttons, text and the footer.
      Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
-  --background: 332 65% 98.5%; /* pink-tinted white */
-  --foreground: 0 0% 10%;
+  --background: 333 100% 98.2%; /* milk */
+  --foreground: 318 50% 12%; /* ink: deep plum, used for text and dark buttons */
 
-  --card: 0 0% 100%; /* same white as every other card and tile */
-  --card-foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 318 50% 12%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
+  --popover-foreground: 318 50% 12%;
 
-  --primary: 0 0% 12%;
-  --primary-foreground: 0 0% 98%;
+  /* Pink is the main action colour (buttons, links, highlights). */
+  --primary: 333 81% 53%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 15%;
+  --secondary: 336 100% 96%; /* soft blush panels */
+  --secondary-foreground: 318 50% 12%;
 
-  --muted: 0 0% 94%;
-  --muted-foreground: 0 0% 45%;
+  --muted: 336 100% 96%;
+  --muted-foreground: 320 18% 42%;
 
-  --accent: 0 0% 94%;
-  --accent-foreground: 0 0% 10%;
+  --accent: 337 100% 91%;
+  --accent-foreground: 318 50% 12%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
-  --ring: 0 0% 12%;
+  --border: 325 40% 90%;
+  --input: 325 40% 88%;
+  --ring: 333 81% 53%;
 
   /* Named storefront tints used by the landing page */
-  --berry: 342 49% 42%;
-  --berry-deep: 342 52% 33%;
-  --blush: 332 72% 92%;
+  --berry: 332 82% 39%; /* deep pink */
+  --berry-deep: 332 82% 30%;
+  --blush: 337 100% 91%;
   --sage: 96 20% 84%;
   --sand: 30 42% 91%;
 
-  --radius: 0rem;
+  --radius: 1rem;
 }
 
 @media (min-width: 1024px) {
@@ -60,6 +61,11 @@
 
 /* Admin, POS and reports keep the original clean monochrome palette. */
 html.admin-theme {
+  --radius: 0rem;
+  --muted-foreground: 0 0% 45%;
+  --blush: 332 72% 92%;
+  --berry: 342 49% 42%;
+  --berry-deep: 342 52% 33%;
   --background: 0 0% 100%;
   --foreground: 0 0% 10%;
   --card: 0 0% 98%;

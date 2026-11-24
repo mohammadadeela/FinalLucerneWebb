@@ -1234,13 +1234,13 @@ export default function Checkout() {
                     onClick={() => setShippingRegion(zone.id)}
                     className={`relative flex flex-col items-start gap-1 rounded-3xl border-2 bg-card p-4 text-start text-sm transition-all duration-200 ${
                       selected
-                        ? "border-foreground shadow-lg"
-                        : "border-transparent shadow-sm hover:border-foreground/25"
+                        ? "border-primary shadow-lg scale-[1.03]"
+                        : "border-transparent shadow-sm hover:border-foreground/25 hover:scale-[1.02] hover:-translate-y-0.5"
                     } ${!shippingRegion ? "animate-shake-hint" : ""}`}
                     data-testid={`button-region-${zone.id}`}
                   >
                     {selected && (
-                      <span className="absolute top-3 end-3 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background">
+                      <span className="absolute top-3 end-3 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <CheckCircle2 className="h-4 w-4" />
                       </span>
                     )}

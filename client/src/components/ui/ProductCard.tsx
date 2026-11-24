@@ -234,7 +234,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
     >
       {/* Image container */}
       <Link href={`/product/${product.id}`} className="block">
-        <div ref={nearViewportRef} className={`relative overflow-hidden bg-white rounded-2xl ${compact ? "aspect-[1/1] mb-2.5" : "aspect-[3/4] mb-3 ring-1 ring-black/[0.06]"}`}>
+        <div ref={nearViewportRef} className={`relative overflow-hidden bg-white ${compact ? "rounded-2xl aspect-[1/1] mb-2.5" : "rounded-[1.6rem] aspect-[3/4] mb-3 shadow-[0_6px_24px_-14px_rgba(45,15,36,0.35)]"}`}>
           {/* Blur-up placeholder — shows a tiny blurred preview while the real image loads.
               For R2 images: a pre-generated tiny blur.webp fades out when the photo arrives.
               Legacy Cloudinary remains supported for rollback; other images use the shimmer. */}
