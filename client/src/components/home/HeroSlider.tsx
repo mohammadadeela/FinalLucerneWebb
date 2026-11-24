@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { AutoplayVideo } from "@/components/ui/AutoplayVideo";
 import { HeroScene, useSeasonSkin } from "@/components/seasonal/SeasonalDecor";
 import { LucerneMark } from "@/components/ui/BrandButterfly";
@@ -135,7 +135,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
             >
               {/* Photo / video — fills the slide on phones, takes the start side with a diagonal cut on larger screens */}
               <div
-                className="absolute inset-0 sm:inset-y-0 sm:end-auto sm:start-0 sm:w-[61%] overflow-hidden hero-cut [--hero-cut:5rem] lg:[--hero-cut:8.5rem]"
+                className="absolute inset-0 overflow-hidden"
               >
                 <div
                   className="absolute inset-0 will-change-transform transition-transform ease-out"
@@ -178,6 +178,16 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                 </div>
               </div>
 
+              {/* Larger screens: a soft fade behind the text only, so the photo stays whole */}
+              <div
+                className="absolute inset-0 hidden sm:block"
+                style={{
+                  background: skin
+                    ? `linear-gradient(to ${isAr ? "right" : "left"}, ${skin.night}f2 0%, ${skin.night}d9 24%, ${skin.night}66 40%, transparent 56%)`
+                    : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--blush) / 0.95) 0%, hsl(var(--blush) / 0.86) 24%, hsl(var(--blush) / 0.4) 40%, transparent 56%)`,
+                }}
+              />
+
               {/* Phone only: fade the photo into the panel colour on the text side */}
               <div
                 className="absolute inset-0 sm:hidden"
@@ -187,20 +197,6 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                     : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--blush) / 0.97) 0%, hsl(var(--blush) / 0.92) 36%, hsl(var(--blush) / 0.55) 54%, transparent 74%)`,
                 }}
               />
-
-              {/* Panel decoration */}
-              {!skin && (
-                <>
-                  <LucerneMark
-                    className="soft-float pointer-events-none absolute -end-4 -top-6 hidden h-44 w-auto text-berry/[0.09] sm:block lg:h-64"
-                    style={{ ["--float-rot" as any]: isAr ? "10deg" : "-10deg" }}
-                  />
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -bottom-24 end-[12%] hidden h-56 w-56 rounded-full bg-white/50 blur-3xl sm:block"
-                  />
-                </>
-              )}
 
               {/* Copy */}
               <div className="absolute inset-y-0 end-0 flex w-[56%] items-center pe-4 ps-1 sm:w-[43%] sm:justify-center sm:pe-8 sm:ps-2 lg:pe-14">
@@ -272,25 +268,6 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
 
         {count > 1 && (
           <>
-            <button
-              type="button"
-              onClick={() => go(safeIndex - 1)}
-              className="absolute start-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:start-6"
-              aria-label={isAr ? "السابق" : "Previous slide"}
-              data-testid="button-hero-prev"
-            >
-              <ChevronLeft className="h-5 w-5 rtl:-scale-x-100" />
-            </button>
-            <button
-              type="button"
-              onClick={() => go(safeIndex + 1)}
-              className="absolute end-3 top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/70 bg-white text-foreground shadow-[0_8px_24px_-10px_rgba(74,24,43,0.45)] transition-all hover:bg-blush hover:text-berry-deep sm:flex lg:end-6"
-              aria-label={isAr ? "التالي" : "Next slide"}
-              data-testid="button-hero-next"
-            >
-              <ChevronRight className="h-5 w-5 rtl:-scale-x-100" />
-            </button>
-
             {/* Dots — the active one is a little progress bar */}
             <div className="absolute bottom-3.5 start-4 z-30 flex items-center gap-2 sm:bottom-6 sm:start-auto sm:end-0 sm:w-[43%] sm:justify-center">
               {slides.map((s, i) => {

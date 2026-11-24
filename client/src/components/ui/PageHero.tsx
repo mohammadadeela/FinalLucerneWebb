@@ -79,7 +79,7 @@ export function PageHero({
     >
       <div className="relative h-[13.5rem] sm:h-[clamp(15rem,23vw,23rem)]">
         {/* Media — full-bleed on phones, start side with a diagonal cut from sm up */}
-        <div className="hero-cut absolute inset-0 overflow-hidden [--hero-cut:4rem] sm:inset-y-0 sm:end-auto sm:start-0 sm:w-[58%] lg:[--hero-cut:7rem]">
+        <div className="absolute inset-0 overflow-hidden">
           <motion.div
             className="absolute will-change-transform"
             style={{ inset: "-5%", x: imgX, y: imgY }}
@@ -108,6 +108,16 @@ export function PageHero({
             )}
           </motion.div>
         </div>
+
+        {/* Larger screens: a soft fade behind the text only, so the photo stays whole */}
+        <div
+          className="absolute inset-0 hidden sm:block"
+          style={{
+            background: skin
+              ? `linear-gradient(to ${isAr ? "right" : "left"}, ${skin.night}f2 0%, ${skin.night}d9 24%, ${skin.night}66 40%, transparent 56%)`
+              : `linear-gradient(to ${isAr ? "right" : "left"}, hsl(var(--blush) / 0.95) 0%, hsl(var(--blush) / 0.86) 24%, hsl(var(--blush) / 0.4) 40%, transparent 56%)`,
+          }}
+        />
 
         {/* Phones: fade the photo into the page colour on the text side */}
         <div
