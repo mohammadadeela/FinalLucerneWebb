@@ -265,6 +265,8 @@ export async function generateImageFromPrompt(
   aspect: "square" | "portrait" | "landscape" = "landscape",
   /** When given, this exact prompt is sent instead of the editorial one built below. */
   fullPrompt?: string,
+  /** Photos of real products the picture must show (see aiReferences.ts). */
+  referenceImages: { data: string; mimeType: string }[] = [],
 ): Promise<GeneratedPhoto> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -299,7 +301,14 @@ Generate only the image.`;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`;
 
   const body = {
-    contents: [{ parts: [{ text: fullPrompt || prompt }] }],
+    contents: [
+      {
+        parts: [
+          ...referenceImages.map((image) => ({ inlineData: { mimeType: image.mimeType, data: image.data } })),
+          { text: fullPrompt || prompt },
+        ],
+      },
+    ],
     generationConfig: {
       responseModalities: ["TEXT", "IMAGE"],
     },
@@ -581,7 +590,7 @@ export function displayRule(subject: string): string {
 }
 
 /** Full prompt for one storefront photo slot. */
-export function buildThemedPrompt(slot: PhotoSlot, subject: string): string {
+export function buildThemedPrompt(slot: PhotoSlot, subject: string, references = "", pieces = 0): string {
   const rules = SLOT_RULES[slot] || SLOT_RULES.pageHero;
   const hangs = canHang(subject);
   // Ideas that hang the product, or dress a model in it, only suit garments.
@@ -589,9 +598,15 @@ export function buildThemedPrompt(slot: PhotoSlot, subject: string): string {
   return `Create one photograph for a women's fashion web store, Lucerne Boutique.
 
 Subject: ${subject}
-Show it as: ${pickOne(ideas.length ? ideas : ["one single product", "a pair of the product"])}.
+Show it as: ${
+    references
+      ? pieces > 1
+        ? `the ${pieces} real products from the attached photos, arranged together as one neat, evenly spaced group`
+        : pickOne(ideas.filter((idea) => !/three|five|seven|group|row|pair/i.test(idea)).concat(["the real product from the attached photo, alone"]))
+      : pickOne(ideas.length ? ideas : ["one single product", "a pair of the product"])
+  }.
 Presentation: ${displayRule(subject)}
-
+${references ? `\n${references}\n` : ""}
 ${THEME_RULES(pickOne(THEME_BACKGROUNDS))}
 
 Composition (important — the website crops this photo):
@@ -604,11 +619,11 @@ Generate only the image.`;
  * Prompt for a category banner: one straight row of real product photos on pure white.
  * The white is trimmed away on the server and blends into the banner colour on the site.
  */
-export function buildProductRowPrompt(products: string): string {
+export function buildProductRowPrompt(products: string, references = "", pieces = 0): string {
   return `Create one photorealistic studio product photograph for a women's fashion web store banner.
 
 Products: ${products}
-
+${references ? `\n${references}\nThe row is made of exactly these ${pieces} real products, in the order of the photos.\n` : ""}
 Rules:
 - Wide horizontal image.
 - Background: pure flat white, #FFFFFF, edge to edge. No gradient, no texture, no floor line, no vignette, no grey areas, no backdrop shadows.
@@ -616,7 +631,7 @@ Rules:
 - All products the same height, standing on the same invisible baseline, evenly spaced, not touching each other.
 - ${displayRule(products)} Shoes all point the same way.
 - Real product photography: sharp, clean, true materials, soft even studio light. Never an illustration, icon, drawing or 3D render.
-- Each product a different colour from this palette: nude, beige, camel, soft pink, burgundy, black, olive, navy, with small gold details. Avoid pure white products, because the background is white.
+- ${references ? "Each product keeps its own true colour from its photo." : "Each product a different colour from this palette: nude, beige, camel, soft pink, burgundy, black, olive, navy, with small gold details. Avoid pure white products, because the background is white."}
 - No shadows on the background, or only a very faint one directly under each product.
 - Nothing else in the image: no text, no logos, no watermarks, no labels, no people.
 
