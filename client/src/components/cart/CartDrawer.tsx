@@ -34,8 +34,8 @@ export function CartDrawer() {
     };
   }, [open, setOpen]);
 
-  // It opens from the side the bag icon is on: the left in Arabic, the right in English.
-  const from = isAr ? "-100%" : "100%";
+  // It always opens from the right, in both languages.
+  const from = "100%";
 
   return (
     <AnimatePresence>
@@ -52,28 +52,29 @@ export function CartDrawer() {
             role="dialog"
             aria-modal="true"
             aria-label={t.cart.title}
-            className={`sima-skin absolute top-0 flex h-full w-[86vw] max-w-[420px] flex-col overflow-hidden bg-background shadow-2xl ${isAr ? "left-0 rounded-e-[1.75rem]" : "right-0 rounded-s-[1.75rem]"}`}
+            className={`sima-skin absolute top-0 flex h-full w-[86vw] max-w-[420px] flex-col overflow-hidden bg-background shadow-2xl right-0 rounded-l-[1.75rem]`}
             initial={{ x: from }}
             animate={{ x: 0 }}
             exit={{ x: from }}
             transition={{ type: "tween", duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
             data-testid="drawer-cart"
           >
-            <header className="flex h-[60px] shrink-0 items-center justify-between gap-3 border-b border-border px-4 sm:px-5">
-              <div className="flex shrink-0 items-end gap-2" dir="ltr">
-                <span className="display-latin keep-tracking text-[1.3rem] font-medium leading-none" style={{ ["--tracking" as any]: "0.12em" }}>LUCERNE</span>
-                <BrandButterfly className="-mb-0.5 h-6 w-auto" />
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex h-7 items-center gap-1 whitespace-nowrap rounded-full bg-secondary px-2.5 text-[12.5px] font-semibold text-foreground/80" data-testid="text-drawer-count">
-                  <span className="hidden min-[400px]:inline">{t.cart.title}</span>
-                  <span className="min-[400px]:hidden">{isAr ? "السلة" : "Cart"}</span>
-                  {count > 0 && <span className="ltr-num">· {count}</span>}
+            {/* The top of the cart keeps the shop's own look: the Lucerne wordmark on white. */}
+            <header className="flex h-[64px] shrink-0 items-center justify-between gap-3 border-b border-black/10 bg-white px-4 text-[#1a1a1a] sm:px-5">
+              <div className="flex flex-col items-center leading-none" dir="ltr" aria-label="Lucerne Boutique">
+                <span className="flex items-end gap-1.5">
+                  <span className="display-latin keep-tracking text-[1.4rem] font-medium leading-none" style={{ ["--tracking" as any]: "0.12em" }}>LUCERNE</span>
+                  <BrandButterfly className="-mb-0.5 h-7 w-auto" />
                 </span>
-                <button type="button" onClick={() => setOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-blush" aria-label={isAr ? "إغلاق" : "Close"} data-testid="button-cart-drawer-close">
-                  <X className="h-5 w-5" />
-                </button>
+                <span className="mt-1 flex items-center gap-2">
+                  <span className="h-px w-4 bg-[#a5375b]/60" />
+                  <span className="keep-tracking text-[8.5px] font-medium uppercase text-black/70" style={{ ["--tracking" as any]: "0.42em", fontFamily: "var(--font-sans)" }}>Boutique</span>
+                  <span className="h-px w-4 bg-[#a5375b]/60" />
+                </span>
               </div>
+              <button type="button" onClick={() => setOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-black/5" aria-label={isAr ? "إغلاق" : "Close"} data-testid="button-cart-drawer-close">
+                <X className="h-5 w-5" />
+              </button>
             </header>
             <CartContents mode="drawer" onNavigate={() => setOpen(false)} />
           </motion.aside>

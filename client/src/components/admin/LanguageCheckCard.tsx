@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Languages, Sparkles, Loader2, ChevronDown, ChevronUp, Check, RefreshCw } from "lucide-react";
+import { Languages, Sparkles, Loader2, ChevronDown, ChevronUp, Check, RefreshCw, CheckCircle2, AlertTriangle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 /* فحص اللغات: يعرض كل اسم ونص في الموقع بالعربي والإنجليزي جنباً إلى جنب، يحدد الناقص،
@@ -17,6 +17,14 @@ type Row = {
   missing: "en" | "ar" | null;
 };
 
+type Result = {
+  written: { key: string; lang: "en" | "ar"; from: string; to: string }[];
+  failed: number;
+  total: number;
+  stop: string | null;
+  detail: string;
+};
+
 const GROUPS: { id: string; label: string; match: (r: Row) => boolean }[] = [
   { id: "category", label: "الفئات", match: (r) => r.kind === "category" },
   { id: "subcategory", label: "الفئات الفرعية", match: (r) => r.kind === "subcategory" },
@@ -30,6 +38,8 @@ const STOP_TEXT: Record<string, string> = {
   no_credit: "رصيد Gemini خلص. اشحن الرصيد ثم أعد المحاولة — توقفنا عن إرسال طلبات.",
   busy: "Gemini مشغول الآن. جرّب بعد دقيقة.",
   failed: "تعذّر إكمال الترجمة. ما تم حفظه بقي محفوظاً — أعد المحاولة للباقي.",
+  network: "انقطع الاتصال بالسيرفر. ما تم حفظه بقي محفوظاً — اضغط مرة ثانية ليكمل الباقي.",
+  cancelled: "أوقفتَ الكتابة. ما تم حفظه بقي محفوظاً.",
 };
 
 export default function LanguageCheckCard() {
@@ -41,6 +51,9 @@ export default function LanguageCheckCard() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [shown, setShown] = useState(60);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
+  const cancelRef = useRef(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery<{ rows: Row[]; aiReady: boolean }>({
     queryKey: ["/api/admin/translations"],
@@ -58,32 +71,60 @@ export default function LanguageCheckCard() {
   const inGroup = rows.filter(current.match);
   const visible = inGroup.filter((r) => !onlyMissing || r.missing || picked.has(r.key));
 
+  // Writes the chosen rows in small groups, one request each, so progress is real and a
+  // slow connection or a billing problem stops cleanly without losing what was already saved.
   const generate = async (keys: string[] | null, label: string, overwrite = false) => {
     if (busy) return;
-    setBusy(label);
-    try {
-      const res = await fetch("/api/admin/translations/generate", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keys, overwrite }),
-      });
-      const body = await res.json();
-      if (!res.ok || !body.success) throw new Error("failed");
-      const { done, asked, stopped } = body.data as { done: unknown[]; asked: number; stopped: string | null };
-      toast({
-        title: stopped ? `تمت كتابة ${done.length} من ${asked}` : done.length ? `تمت كتابة ${done.length} نص` : "لا يوجد شيء ناقص هنا",
-        description: stopped ? STOP_TEXT[stopped] || STOP_TEXT.failed : done.length ? "راجعها هنا وعدّل أي واحد لا يعجبك." : undefined,
-        variant: stopped ? "destructive" : undefined,
-      });
-      setPicked(new Set());
-      await refetch();
-      qc.invalidateQueries({ predicate: (q) => /product|categor|site-settings|settings/i.test(JSON.stringify(q.queryKey)) && !String(q.queryKey[0]).includes("translations") });
-    } catch {
-      toast({ title: "تعذّر الاتصال بالسيرفر", description: "لم يتغير شيء. أعد المحاولة.", variant: "destructive" });
-    } finally {
-      setBusy(null);
+    const target = (keys ? rows.filter((r) => keys.includes(r.key)) : rows.filter((r) => r.missing)).filter((r) => overwrite || r.missing);
+    if (!target.length) {
+      toast({ title: "لا يوجد شيء ناقص هنا" });
+      return;
     }
+    const groups: Row[][] = [];
+    const names = target.filter((r) => r.field === "name");
+    const longer = target.filter((r) => r.field !== "name");
+    for (let i = 0; i < names.length; i += 20) groups.push(names.slice(i, i + 20));
+    for (let i = 0; i < longer.length; i += 6) groups.push(longer.slice(i, i + 6));
+
+    setBusy(label);
+    setResult(null);
+    setProgress({ done: 0, total: target.length });
+    const written: Result["written"] = [];
+    let failed = 0;
+    let stop: string | null = null;
+    let detail = "";
+    cancelRef.current = false;
+    for (const group of groups) {
+      if (cancelRef.current) { stop = "cancelled"; break; }
+      try {
+        const res = await fetch("/api/admin/translations/generate", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ keys: group.map((r) => r.key), overwrite }),
+        });
+        const body = await res.json().catch(() => null);
+        if (!res.ok || !body?.success) throw new Error(body?.message || "server " + res.status);
+        const data = body.data as { done: { key: string; lang: "en" | "ar"; value: string }[]; failed?: string[]; stopped: string | null; message?: string };
+        for (const d of data.done) {
+          const row = group.find((r) => r.key === d.key);
+          if (row) written.push({ key: d.key, lang: d.lang, from: d.lang === "en" ? row.ar : row.en, to: d.value });
+        }
+        failed += data.failed?.length || 0;
+        if (data.stopped) { stop = data.stopped; detail = data.message || ""; }
+      } catch (err: any) {
+        stop = "network";
+        detail = String(err?.message || "");
+      }
+      setProgress({ done: written.length + failed, total: target.length });
+      if (stop) break;
+    }
+    setPicked(new Set());
+    await refetch();
+    qc.invalidateQueries({ predicate: (q) => /product|categor|settings/i.test(JSON.stringify(q.queryKey)) && !String(q.queryKey[0]).includes("translations") });
+    setResult({ written, failed, total: target.length, stop, detail });
+    setProgress(null);
+    setBusy(null);
   };
 
   const saveOne = async (row: Row, lang: "en" | "ar", value: string) => {
@@ -153,8 +194,51 @@ export default function LanguageCheckCard() {
               افحص من جديد
             </button>
             {data && !data.aiReady && <span className="text-xs font-medium text-destructive">{STOP_TEXT.no_key}</span>}
-            {busy && <span className="text-xs text-muted-foreground">يكتب الآن… قد يأخذ دقيقة أو أكثر للمنتجات الكثيرة، لا تغلق الصفحة.</span>}
           </div>
+
+          {progress && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4" role="status" data-testid="panel-language-progress">
+              <div className="mb-2 flex items-center justify-between gap-3 text-sm font-semibold">
+                <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin text-primary" />يكتب الآن… {progress.done} من {progress.total}</span>
+                <button type="button" onClick={() => { cancelRef.current = true; }} className="rounded-full border border-border px-3 py-1 text-xs font-semibold hover:bg-background" data-testid="button-stop-generate">إيقاف</button>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-background" dir="ltr">
+                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${Math.max(3, Math.round((progress.done / progress.total) * 100))}%` }} />
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">كل مجموعة تُحفظ فور كتابتها. لا تغلق الصفحة حتى ينتهي.</p>
+            </div>
+          )}
+
+          {result && !progress && (
+            <div className={`rounded-xl border p-4 ${result.stop ? "border-amber-300 bg-amber-50" : "border-emerald-300 bg-emerald-50"}`} data-testid="panel-language-result">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  {result.stop ? <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />}
+                  <div>
+                    <p className={`text-sm font-bold ${result.stop ? "text-amber-900" : "text-emerald-900"}`}>
+                      {result.written.length === result.total
+                        ? `تمت كتابة وحفظ ${result.written.length} نص بنجاح`
+                        : `تمت كتابة وحفظ ${result.written.length} من ${result.total}`}
+                    </p>
+                    {result.stop && <p className="mt-1 text-xs text-amber-900">{STOP_TEXT[result.stop] || STOP_TEXT.failed}{result.detail ? ` (${result.detail})` : ""}</p>}
+                    {!result.stop && result.failed > 0 && <p className="mt-1 text-xs text-amber-800">{result.failed} نص لم يُكتب بشكل صحيح وبقي في قائمة الناقص — اضغط مرة ثانية أو اكتبه بيدك.</p>}
+                  </div>
+                </div>
+                <button type="button" onClick={() => setResult(null)} aria-label="إغلاق" className="rounded-full p-1 hover:bg-black/5" data-testid="button-close-language-result"><X className="h-4 w-4" /></button>
+              </div>
+              {result.written.length > 0 && (
+                <div className="mt-3 max-h-56 space-y-1 overflow-y-auto rounded-lg bg-white/70 p-2">
+                  {result.written.slice(0, 80).map((w) => (
+                    <div key={w.key + w.lang} className="grid grid-cols-2 gap-3 border-b border-black/5 px-1 py-1.5 text-[13px] last:border-0">
+                      <span className="truncate text-muted-foreground" dir="auto">{w.from}</span>
+                      <span className="truncate font-semibold" dir="auto">{w.to}</span>
+                    </div>
+                  ))}
+                  {result.written.length > 80 && <p className="px-1 py-1 text-[11px] text-muted-foreground">و {result.written.length - 80} غيرها — كلها تظهر في القوائم بالأسفل.</p>}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-wrap gap-2" role="tablist">
             {GROUPS.map((g) => (

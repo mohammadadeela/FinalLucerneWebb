@@ -149,6 +149,11 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoColorIdx =
     effectiveColorIdx === null ? (imageColorMap[currentIdx] ?? -1) : null;
+  // The link opens the product on the colour whose photo is showing right now — the swatch
+  // the customer picked, or the photo the card has slid to — not always the first colour.
+  const shownColorIdx = effectiveColorIdx !== null ? effectiveColorIdx : autoColorIdx !== null && autoColorIdx >= 0 ? autoColorIdx : null;
+  const shownColorName = cv && shownColorIdx !== null && shownColorIdx > 0 ? cv[shownColorIdx]?.name : undefined;
+  const productHref = `/product/${product.id}${shownColorName ? `?color=${encodeURIComponent(shownColorName)}` : ""}`;
 
   const stopCycle = useCallback(() => {
     if (intervalRef.current) {
@@ -233,7 +238,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
       onTouchStart={handlePrefetchIntent}
     >
       {/* Image container */}
-      <Link href={`/product/${product.id}`} className="block">
+      <Link href={productHref} className="block">
         <div ref={nearViewportRef} className={`relative overflow-hidden bg-white ${compact ? "aspect-[1/1] mb-2.5 rounded-2xl" : "aspect-[3/4] mb-3 rounded-[1.6rem] shadow-[0_10px_30px_-18px_rgba(45,15,36,0.3)]"}`}>
           {/* Blur-up placeholder — shows a tiny blurred preview while the real image loads.
               For R2 images: a pre-generated tiny blur.webp fades out when the photo arrives.
@@ -373,7 +378,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setLocation(`/product/${product.id}`);
+              setLocation(productHref);
             }}
             className="absolute bottom-0 inset-x-0 z-30 flex items-center justify-center gap-2 bg-foreground/90 text-background text-xs font-semibold uppercase tracking-widest py-2.5 translate-y-[calc(100%+2px)] group-hover:translate-y-0 transition-transform duration-300 ease-out"
             data-testid={`button-view-product-${product.id}`}
@@ -419,7 +424,7 @@ export const ProductCard = memo(function ProductCard({ product, initialColorName
 
       {/* Info */}
       <div className={compact ? "flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5 px-1 pb-1 [&>a]:w-full" : "space-y-2 px-0.5"}>
-        <Link href={`/product/${product.id}`}>
+        <Link href={productHref}>
           <h3 className={`font-semibold text-xs sm:text-sm leading-snug line-clamp-2 transition-colors duration-200 ${isSoldOut ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
             {product.name}
           </h3>

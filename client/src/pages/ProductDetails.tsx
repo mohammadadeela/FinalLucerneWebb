@@ -1603,6 +1603,21 @@ variants.length > 1 ||
 (variants.length === 1 && variants[0].name !== "Default");
 const activeVariant = variants[selectedColorIdx] || variants[0];
 
+// Arriving from a product card with ?color=… opens that colour (once per product, after
+// the product has loaded), so the photo the customer tapped is the one she lands on.
+const colorFromUrlDone = useRef<string | null>(null);
+useEffect(() => {
+if (!product || !variants.length || colorFromUrlDone.current === String(id)) return;
+colorFromUrlDone.current = String(id);
+const wanted = new URLSearchParams(window.location.search).get("color");
+if (!wanted) return;
+const idx = variants.findIndex((v: any) => String(v.name).trim().toLowerCase() === wanted.trim().toLowerCase());
+if (idx > 0) {
+setSelectedColorIdx(idx);
+setSelectedImageIdx(0);
+}
+}, [product, variants, id]);
+
 const baseMedia = useMemo(() => {
 if (!activeVariant) return [];
 type GalleryMedia = { type: "image" | "video"; url: string; poster?: string; isPrimary?: boolean };

@@ -97,7 +97,7 @@ async function gemini(prompt: string): Promise<string> {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
     }),
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(45_000),
   });
   if (!res.ok) {
     const text = (await res.text()).slice(0, 300);
@@ -130,8 +130,17 @@ async function translateBatch(items: { id: string; text: string; what: string }[
     throw Object.assign(new Error("The AI reply could not be read"), { code: "failed" });
   }
   const out: Record<string, string> = {};
-  for (const entry of parsed?.items || []) {
-    const text = String(entry?.text ?? "").trim();
+  // Models do not always keep the asked shape: accept a bare list, another wrapper name,
+  // or a plain { id: text } object.
+  let entries: any[] = Array.isArray(parsed) ? parsed : parsed?.items || parsed?.translations || parsed?.results || parsed?.data || [];
+  if (!Array.isArray(entries) || !entries.length) {
+    entries = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? Object.entries(parsed).filter(([, v]) => typeof v === "string").map(([id, text]) => ({ id, text }))
+      : [];
+  }
+  if (!entries.length) console.error("[translations] unreadable AI reply:", raw.slice(0, 300));
+  for (const entry of entries) {
+    const text = String(entry?.text ?? entry?.translation ?? entry?.value ?? entry?.[to] ?? "").trim();
     if (!entry?.id || !text) continue;
     // A translation still in the wrong alphabet is no translation.
     if (to === "en" ? !hasLatin(text) || hasArabic(text) : !hasArabic(text)) continue;
@@ -151,8 +160,16 @@ async function saveTranslation(key: string, lang: "en" | "ar", value: string): P
   }
   const numId = Number(id);
   if (!Number.isFinite(numId)) return false;
-  if (kind === "category") return !!(await storage.updateCategory(numId, (lang === "en" ? { name: text } : { nameAr: text }) as any));
-  if (kind === "subcategory") return !!(await storage.updateSubcategory(numId, (lang === "en" ? { name: text } : { nameAr: text }) as any));
+  if (kind === "category" || kind === "subcategory") {
+    const list: any[] = kind === "category" ? await storage.getCategories() : await storage.getSubcategories();
+    const row = list.find((r) => r.id === numId);
+    if (!row) return false;
+    const patch: any = lang === "en" ? { name: text } : { nameAr: text };
+    // Older rows keep their Arabic name in "name" with name_ar empty. Writing the English
+    // name there would erase it, so the Arabic is moved to name_ar first.
+    if (lang === "en" && hasArabic(row.name) && blank(row.nameAr)) patch.nameAr = row.name;
+    return !!(kind === "category" ? await storage.updateCategory(numId, patch) : await storage.updateSubcategory(numId, patch));
+  }
   if (kind === "product") {
     if (lang === "en") return !!(await storage.updateProduct(numId, (field === "description" ? { descriptionEn: text } : { nameEn: text }) as any));
     return !!(await storage.updateProduct(numId, (field === "description" ? { description: text } : { name: text }) as any));
@@ -230,34 +247,39 @@ export function registerTranslationRoutes(app: Express) {
     const jobs = pick
       .map((r) => ({ row: r, to: (r.missing || (overwrite ? "en" : null)) as "en" | "ar" | null }))
       .filter((j) => j.to && !blank(j.to === "en" ? j.row.ar : j.row.en))
-      .slice(0, 400);
+      .slice(0, 60);
 
     const done: { key: string; lang: "en" | "ar"; value: string }[] = [];
+    const failed: string[] = [];
     let stopped: string | null = null;
+    let message = "";
     for (const to of ["en", "ar"] as const) {
       const list = jobs.filter((j) => j.to === to);
       // Names go many at a time; descriptions are longer, so fewer per request.
       const names = list.filter((j) => j.row.field === "name");
       const longer = list.filter((j) => j.row.field !== "name");
       const batches: (typeof list)[] = [];
-      for (let i = 0; i < names.length; i += 40) batches.push(names.slice(i, i + 40));
-      for (let i = 0; i < longer.length; i += 10) batches.push(longer.slice(i, i + 10));
+      for (let i = 0; i < names.length; i += 20) batches.push(names.slice(i, i + 20));
+      for (let i = 0; i < longer.length; i += 6) batches.push(longer.slice(i, i + 6));
       for (const batch of batches) {
-        if (stopped) break;
+        if (stopped) { failed.push(...batch.map((j) => j.row.key)); continue; }
         try {
           const out = await translateBatch(batch.map((j) => ({ id: j.row.key, text: to === "en" ? j.row.ar : j.row.en, what: j.row.field })), to);
           for (const j of batch) {
             const value = out[j.row.key];
             if (value && (await saveTranslation(j.row.key, to, value))) done.push({ key: j.row.key, lang: to, value });
+            else failed.push(j.row.key);
           }
         } catch (err: any) {
           // Stop at the first failure so a billing problem does not keep sending requests.
           stopped = err?.code || "failed";
+          message = String(err?.message || err).slice(0, 200);
+          failed.push(...batch.map((j) => j.row.key));
           console.error("[translations]", err?.message || err);
         }
       }
     }
-    res.json({ success: true, data: { done, asked: jobs.length, stopped } });
+    res.json({ success: true, data: { done, failed, asked: jobs.length, stopped, message } });
   });
 
   // The admin's own wording for one text.
