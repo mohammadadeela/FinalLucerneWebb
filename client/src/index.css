@@ -450,3 +450,14 @@ body.menu-open [data-testid="instagram-widget"] {
   visibility: hidden;
   pointer-events: none;
 }
+
+/* Shop photos and videos: no long-press "save" sheet on phones, no dragging, no selecting.
+   The admin area is left alone so staff can save and download. */
+html:not(.admin-theme) img,
+html:not(.admin-theme) video,
+html:not(.admin-theme) picture {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}

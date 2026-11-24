@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { useLanguage } from "./i18n";
+import { protectMedia } from "./lib/protectMedia";
 
 const lang = useLanguage.getState().language;
 const dir = lang === "ar" ? "rtl" : "ltr";
@@ -34,5 +35,7 @@ window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
   }
   return nativeFetch(input, init);
 };
+
+protectMedia();
 
 createRoot(document.getElementById("root")!).render(<App />);
