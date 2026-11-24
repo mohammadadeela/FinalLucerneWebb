@@ -956,6 +956,13 @@ export default function Home() {
           </Section>
         )}
 
+        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
+        {promoSlides.length > 0 && (
+          <Section>
+            <PromoSlider slides={promoSlides} isAr={isAr} />
+          </Section>
+        )}
+
         {/* Category circles */}
         <Reveal>
         {categoryCircles}
@@ -1096,13 +1103,6 @@ export default function Home() {
               </>
             )}
             </div>
-          </Section>
-        )}
-
-        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
-        {promoSlides.length > 0 && (
-          <Section>
-            <PromoSlider slides={promoSlides} isAr={isAr} />
           </Section>
         )}
 
