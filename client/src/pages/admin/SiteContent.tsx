@@ -1370,7 +1370,7 @@ function EditorialGridCard({ values, onChange }: { values: Record<string, string
               <VideoUploadField
                 value={values["editorial_center_video"] ?? ""}
                 onChange={(url) => onChange("editorial_center_video", url)}
-                aiSubject="the new collection"
+                aiSubject="an elegant long dress from the new collection, with the model walking"
                 aiImage={values["editorial_center_image"] ?? ""}
               />
             </div>

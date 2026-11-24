@@ -654,7 +654,9 @@ export async function generateVideoFromPrompt(subject: string, imageUrl?: string
       // person shows a garment far better than a row of pieces hanging on a wall.
       text: `A short, smooth fashion clip for a women's web store banner. Subject: ${subject}.
 Show ONE fictional elegant woman modelling ONE single product of this kind — never two models, never a row or group of products, nothing else for sale in the frame. ${
-        canHang(subject)
+        canHang(subject) && /walk|تمشي|مشي/i.test(subject)
+          ? "She wears the piece and walks slowly and gracefully towards the camera, full length from head to toe, four or five unhurried steps like a runway walk, the fabric flowing naturally with each step, then slows to a stop and looks at the camera with a soft smile. The camera stays still and level so she is always whole in the frame."
+          : canHang(subject)
           ? pickOne([
               "She wears the piece and stands facing the camera, full length from head to toe, turning slowly a quarter turn so the cut and the fabric show, then looks back to the camera with a soft smile.",
               "She wears the piece and walks two slow steps towards the camera, full length, the fabric moving naturally, then pauses with one hand resting lightly at her waist.",
