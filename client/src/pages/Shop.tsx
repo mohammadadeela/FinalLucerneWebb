@@ -245,7 +245,7 @@ export default function Shop() {
         <div className="flex flex-col lg:flex-row lg:gap-8">
           {/* Desktop sidebar */}
           <aside className="hidden w-[280px] shrink-0 lg:block">
-            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-40 pe-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="sticky top-24 max-h-[calc(100vh-6.5rem)] overflow-y-auto pb-4 pe-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <FilterPanel variant="sidebar" {...filterProps} />
             </div>
           </aside>

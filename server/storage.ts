@@ -691,10 +691,12 @@ export class DatabaseStorage implements IStorage {
    * come first inside their category; a category with nothing marked still shows its newest
    * pieces from the last `freshDays` days.
    */
-  async getNewArrivalsMixed(limit = 8, freshDays = 45): Promise<Product[]> {
+  async getNewArrivalsMixed(limit = 8, freshDays = 14): Promise<Product[]> {
+    // "New" means really new: added within the period the admin set. An old "new" tick on
+    // a piece from months ago does not count, and a category with nothing new is left out.
     const since = Date.now() - freshDays * 24 * 60 * 60 * 1000;
     const fresh = (await this.getProducts()).filter(
-      (p) => (p.stockQuantity ?? 0) > 0 && (p.isNewArrival || +new Date(p.createdAt || 0) >= since),
+      (p) => (p.stockQuantity ?? 0) > 0 && +new Date(p.createdAt || 0) >= since,
     );
     const byCategory = new Map<number, Product[]>();
     for (const p of fresh) {

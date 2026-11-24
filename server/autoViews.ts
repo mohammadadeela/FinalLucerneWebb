@@ -13,11 +13,10 @@ import { db } from "./db";
 import { storage } from "./storage";
 import { uploadToCloudinary, deleteFromCloudinary } from "./cloudinary";
 
-export const AUTO_VIEWS_VERSION = 1;
+export const AUTO_VIEWS_VERSION = 2; // 2: views keep the original photo's shape and size
 type Box = { left: number; top: number; width: number; height: number };
 export type AutoViews = { v: number; bySource: Record<string, string[]> };
 
-const ASPECT = 3 / 4; // width / height — the shape of the product gallery
 const MIN_SOURCE_WIDTH = 700; // smaller photos would only give blurry close-ups
 const MIN_CROP_WIDTH = 420; // a view is never cut smaller than this (in source pixels)
 
@@ -95,10 +94,12 @@ export async function findViews(input: Buffer): Promise<{ width: number; height:
   const minW = Math.ceil((MIN_CROP_WIDTH / W) * w);
   const out: { x: number; y: number; ww: number; wh: number }[] = [];
   const fit = (cx: number, cy: number, ww: number) => {
-    // A 3:4 window of the given width, centred where asked, kept inside the photo.
+    // A window of the given width, centred where asked, kept inside the photo.
     ww = Math.min(w, Math.max(minW, Math.round(ww)));
-    let wh = Math.round(ww / ASPECT / (W / w) * (H / h)); // rows of the small copy that make 3:4 in real pixels
-    if (wh > h) { wh = h; ww = Math.min(w, Math.round(wh * ASPECT * (W / w) / (H / h))); }
+    // Every view has the same shape as the photo it is cut from, so in the gallery it sits
+    // exactly like the original (the small copy keeps the photo's proportions).
+    let wh = Math.round((ww * h) / w);
+    if (wh > h) { wh = h; ww = w; }
     const x = Math.round(Math.min(w - ww, Math.max(0, cx - ww / 2)));
     const y = Math.round(Math.min(h - wh, Math.max(0, cy - wh / 2)));
     return { x, y, ww, wh };
@@ -116,13 +117,12 @@ export async function findViews(input: Buffer): Promise<{ width: number; height:
     plainBackground ? coverage(b) >= 0.3 : detailIn(b.x, b.y, b.x + b.ww, b.y + b.wh) / (b.ww * b.wh) >= detailMean * 1.05;
 
   // 1. The whole product, closer — only when the original leaves real empty space around it.
-  const yScale = (H / h) / (W / w);
-  const needW = Math.max(bw * 1.16, bh * yScale * ASPECT * 1.16);
+  const needW = Math.max(bw * 1.16, ((bh * w) / h) * 1.16);
   const whole = fit(x0 + bw / 2, y0 + bh / 2, needW);
   if (plainBackground && whole.ww * whole.wh <= w * h * 0.62 && coverage(whole) >= 0.12) out.push(whole);
 
   // 2-3. Close-ups: slide a window over the product and keep the spots with the most detail.
-  const closeW = Math.max(minW, Math.min(Math.max(bw, bh * yScale * ASPECT) * 0.52, w * 0.5));
+  const closeW = Math.max(minW, Math.min(Math.max(bw, (bh * w) / h) * 0.52, w * 0.5));
   const probe = fit(0, 0, closeW);
   const candidates: (typeof out[number] & { score: number })[] = [];
   const step = Math.max(2, Math.round(probe.ww / 6));
@@ -175,10 +175,13 @@ export async function makeViews(sourceUrl: string): Promise<string[] | null> {
     failures.set(sourceUrl, (failures.get(sourceUrl) || 0) + 1);
     return null; // could not be read now: try again another time
   }
-  const { boxes } = await findViews(input);
+  const { boxes, width, height } = await findViews(input);
+  // Saved at the original photo's own width and height (up to 1600px wide).
+  const outW = Math.min(width, 1600);
+  const outH = Math.round((outW * height) / width);
   const urls: string[] = [];
   for (let i = 0; i < boxes.length; i++) {
-    const out = await sharp(input).rotate().extract(boxes[i]).resize({ width: 1200, withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
+    const out = await sharp(input).rotate().extract(boxes[i]).resize(outW, outH, { fit: "cover", kernel: "lanczos3" }).sharpen({ sigma: 0.6 }).webp({ quality: 90 }).toBuffer();
     urls.push(await uploadToCloudinary(out, `auto-view-${i + 1}.webp`));
   }
   return urls;
@@ -201,7 +204,7 @@ let running = false;
 let pausedUntil = 0;
 
 /** Makes the missing views, a few products at a time. Safe to call as often as you like. */
-export async function sweepAutoViews(maxProducts = 25): Promise<{ done: number; left: number }> {
+export async function sweepAutoViews(maxProducts = 40): Promise<{ done: number; left: number }> {
   if (running || Date.now() < pausedUntil) return { done: 0, left: -1 };
   running = true;
   let done = 0, left = 0;
@@ -209,12 +212,19 @@ export async function sweepAutoViews(maxProducts = 25): Promise<{ done: number; 
     if ((await storage.getSiteSetting("auto_product_views")) === "off") return { done: 0, left: 0 };
     const products = (await storage.getProducts()) as any[];
     for (const product of products) {
+      const outdated = !!product.autoViews && product.autoViews.v !== AUTO_VIEWS_VERSION;
       const current: AutoViews = product.autoViews?.v === AUTO_VIEWS_VERSION ? product.autoViews : { v: AUTO_VIEWS_VERSION, bySource: {} };
       const sources = sourcesOf(product);
       const missing = sources.filter((s) => !(s in current.bySource) && (failures.get(s) || 0) < 3);
       const stale = Object.keys(current.bySource).filter((s) => !sources.includes(s));
       if (!missing.length && !stale.length) continue;
       if (done >= maxProducts) { left++; continue; }
+      // Views made by an older version of this file are removed before the new ones are cut.
+      if (outdated) {
+        for (const urls of Object.values((product.autoViews as AutoViews).bySource || {})) {
+          for (const url of urls || []) await deleteFromCloudinary(url).catch(() => {});
+        }
+      }
       const next: AutoViews = { v: AUTO_VIEWS_VERSION, bySource: { ...current.bySource } };
       // A photo that was replaced or removed takes its views with it.
       for (const s of stale) {
@@ -250,5 +260,5 @@ export async function sweepAutoViews(maxProducts = 25): Promise<{ done: number; 
 export function startAutoViews() {
   const tick = () => sweepAutoViews().then((r) => r.done && console.log(`[auto-views] made views for ${r.done} products, ${r.left} still waiting`)).catch(() => {});
   setTimeout(tick, 45_000).unref?.();
-  setInterval(tick, 4 * 60_000).unref?.();
+  setInterval(tick, 3 * 60_000).unref?.();
 }

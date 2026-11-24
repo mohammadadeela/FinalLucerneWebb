@@ -241,7 +241,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                     <Link
                       href={slide.primary.href}
                       tabIndex={active ? 0 : -1}
-                      className="group inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#E8257D] px-4 text-[12.5px] font-medium text-white shadow-[0_14px_30px_-14px_rgba(232,37,125,0.9)] transition-all duration-300 hover:bg-[#B3125C] hover:shadow-[0_18px_34px_-14px_rgba(232,37,125,1)] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
+                      className="group inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#F7B7CD] px-4 text-[12.5px] font-medium text-[#2D0F24] shadow-[0_14px_30px_-14px_rgba(243,163,191,0.9)] transition-all duration-300 hover:bg-[#F3A3BF] hover:shadow-[0_18px_34px_-14px_rgba(243,163,191,1)] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
                       data-testid={i === 0 ? "button-shop-collection" : undefined}
                       style={skin ? { background: skin.accent, color: skin.night, boxShadow: "none" } : undefined}
                     >
@@ -252,7 +252,7 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                       <Link
                         href={slide.secondary.href}
                         tabIndex={active ? 0 : -1}
-                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E8257D]/60 bg-white/55 px-4 text-[12.5px] font-medium text-foreground backdrop-blur-sm transition-colors duration-300 hover:border-[#E8257D] hover:bg-white hover:text-[#E8257D] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
+                        className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E88AAB]/70 bg-white/55 px-4 text-[12.5px] font-medium text-foreground backdrop-blur-sm transition-colors duration-300 hover:border-[#E8257D] hover:bg-white hover:text-[#E8257D] sm:h-[3.25rem] sm:px-8 sm:text-[15px]"
                         style={skin ? { borderColor: `${skin.accent}99`, color: skin.ink, background: "rgba(255,255,255,.08)" } : undefined}
                       >
                         {slide.secondary.label}
@@ -302,14 +302,14 @@ export function HeroSlider({ slides, isAr }: { slides: HeroSlide[]; isAr: boolea
                     onClick={() => go(i)}
                     aria-label={`${isAr ? "الشريحة" : "Slide"} ${i + 1}`}
                     aria-current={active}
-                    className={`relative h-2 overflow-hidden rounded-full transition-all duration-500 ${active ? "w-8 bg-[#E8257D]/25" : "w-2 bg-foreground/25 hover:bg-foreground/45"}`}
+                    className={`relative h-2 overflow-hidden rounded-full transition-all duration-500 ${active ? "w-8 bg-[#E88AAB]/25" : "w-2 bg-foreground/25 hover:bg-foreground/45"}`}
                     style={skin ? { background: `${skin.ink}40` } : undefined}
                     data-testid={`button-hero-dot-${i}`}
                   >
                     {active && (
                       <span
                         key={`${cycle}-${paused}`}
-                        className={`absolute inset-0 rounded-full bg-[#E8257D] ${paused || reducedMotion ? "" : "hero-progress"}`}
+                        className={`absolute inset-0 rounded-full bg-[#E88AAB] ${paused || reducedMotion ? "" : "hero-progress"}`}
                         style={{ animationDuration: `${SLIDE_MS}ms`, ...(skin ? { background: skin.accent } : {}) }}
                       />
                     )}

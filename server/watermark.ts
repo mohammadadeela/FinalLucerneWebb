@@ -61,7 +61,7 @@ export async function watermarkImage(input: Buffer): Promise<Buffer> {
   // Same visual proportion as the site's "md" watermark on the main image.
   // Never larger than the photo itself (tiny images would otherwise fail to export).
   const h = meta.height || w;
-  const wmWidth = Math.max(8, Math.min(Math.max(120, Math.round(w * 0.42)), w, Math.floor((h * 393) / 360)));
+  const wmWidth = Math.max(8, Math.min(Math.max(90, Math.round(w * 0.26)), w, Math.floor((h * 393) / 360)));
   const wmSvg = buildWatermarkSvg(wmWidth);
   return img
     .composite([{ input: wmSvg, gravity: "center" }])

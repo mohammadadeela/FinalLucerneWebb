@@ -1,3 +1,4 @@
+import { useSiteSettings } from "@/hooks/use-site-settings";
 import { useState, useMemo, useEffect, useRef, type ElementType } from "react";
 import { SlidersHorizontal, ImageIcon } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -195,6 +196,19 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
 
   const clearAll = () => setFilters({ sort: null, sizes: [], colors: [], brands: [], priceRange: [minPrice, maxPrice], inStockOnly: false, newArrivals: false, onSale: false });
 
+  // The category's main banner uses the photo the admin set for it in the home slider
+  // (Content → Home), when there is one; otherwise the category's own banner photo or video.
+  const { data: bannerSettings } = useSiteSettings();
+  const promoBanner = [1, 2, 3, 4]
+    .map((n) => ({
+      image: (bannerSettings as any)?.[`promo_slide_${n}_image`] as string | undefined,
+      categoryId: Number((bannerSettings as any)?.[`promo_slide_${n}_category_id`]),
+      sub: (bannerSettings as any)?.[`promo_slide_${n}_subcategory_id`],
+    }))
+    .find((slide) => slide.image && !slide.sub && categoryIds.includes(slide.categoryId))?.image;
+  const bannerImage = promoBanner || heroImage;
+  const bannerVideo = promoBanner ? undefined : heroVideo;
+
   const brandCounts: Record<string, number> = {};
   (products || []).forEach((p: any) => { if (p.brand) brandCounts[p.brand] = (brandCounts[p.brand] || 0) + 1; });
   const filterProps = {
@@ -217,11 +231,11 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {heroImage || heroVideo ? (
+      {bannerImage || bannerVideo ? (
         <PageHero
-          image={heroImage}
-          imagePosition={heroImagePosition}
-          video={heroVideo}
+          image={bannerImage}
+          imagePosition={promoBanner ? "center" : heroImagePosition}
+          video={bannerVideo}
           videoPosition={heroVideoPosition}
           title={title}
           subtitle={subtitle}
@@ -312,7 +326,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
         </div>
         <div className="flex flex-col lg:flex-row lg:gap-8">
           <aside className="hidden w-[280px] shrink-0 lg:block">
-            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-40 pe-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="sticky top-24 max-h-[calc(100vh-6.5rem)] overflow-y-auto pb-4 pe-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <FilterPanel variant="sidebar" {...filterProps} />
             </div>
           </aside>

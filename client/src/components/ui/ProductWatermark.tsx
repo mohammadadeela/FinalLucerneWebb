@@ -16,27 +16,27 @@ export function ProductWatermark({
   const logoSize =
     size === "thumb"
       // Slightly bigger on mobile for the horizontal thumbnail strip
-      ? "w-[52%] h-auto"
+      ? "w-[34%] h-auto"
       : size === "sm"
         // Fixed — prevents blowup on narrow desktop listing cards
-        ? "w-16 h-auto"
+        ? "w-10 h-auto"
         : size === "lg"
           // Mobile: 42% of the small best-seller card; desktop lg+: 44%
-          ? "w-[42%] h-auto lg:w-[44%]"
+          ? "w-[28%] h-auto lg:w-[28%]"
           : // md — main product image: bigger on mobile, large on sm+
-            "w-32 h-auto sm:w-48 sm:h-[132px]";
+            "w-20 h-auto sm:w-28 sm:h-[78px]";
 
   const textSize =
     size === "thumb"
       // Min 5px so text is just visible on tiny phone thumbnails
-      ? "text-[clamp(5px,1.5cqw,7px)]"
+      ? "text-[clamp(4px,1.1cqw,6px)]"
       : size === "sm"
-        ? "text-[8px]"
+        ? "text-[6px]"
         : size === "lg"
           // Min 8px on mobile (was 4px = invisible); 14px fixed on desktop
-          ? "text-[clamp(8px,1.8cqw,14px)] lg:text-[14px]"
+          ? "text-[clamp(6px,1.3cqw,10px)] lg:text-[10px]"
           : // md — bigger text on mobile
-            "text-[13px] sm:text-[17px]";
+            "text-[9px] sm:text-[11px]";
 
   // md uses the container type too so text scales on mobile
   const useContainer = size !== "md";

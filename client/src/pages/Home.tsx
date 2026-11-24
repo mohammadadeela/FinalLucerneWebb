@@ -598,9 +598,25 @@ export default function Home() {
         image: g(`promo_slide_${n}_image`) || sub?.image || cat?.image || "",
         title: pick(g(`promo_slide_${n}_title_ar`), g(`promo_slide_${n}_title_en`)) || targetName,
         href: target || g(`promo_slide_${n}_link`) || "/shop",
+        subtitle: cat ? pick(g(`${cat.slug}_hero_subtitle_ar`), g(`${cat.slug}_hero_subtitle_en`)) : "",
       };
     })
     .filter((slide) => slide.image);
+  // The main banner uses the admin's slider photos (Content → Home): one slide per photo,
+  // each with its title and a button to its page. Without any, the older banner is used.
+  const heroSlides: HeroSlide[] =
+    adminSlides.length > 0
+      ? adminSlides.map((slide) => ({
+          key: `hero-${slide.key}`,
+          image: slide.image,
+          imagePosition: "center",
+          tag: pick(g("home_hero_tag_ar"), g("home_hero_tag_en")),
+          title: slide.title || pick(g("home_hero_title_ar"), g("home_hero_title_en")),
+          subtitle: slide.subtitle || pick(g("home_hero_subtitle_ar"), g("home_hero_subtitle_en")),
+          primary: { label: pick("تسوقي الآن", "Shop Now"), href: slide.href },
+          secondary: { label: pick("كل المنتجات", "View everything"), href: "/shop" },
+        }))
+      : slides;
   const promoSlides: PromoSlide[] =
     adminSlides.length > 0
       ? adminSlides
@@ -852,7 +868,7 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1 pb-6">
-        <HeroSlider slides={slides} isAr={isAr} />
+        <HeroSlider slides={heroSlides} isAr={isAr} />
 
         {/* ── Shop by category: pills directly under the hero (desktop), as in the design ── */}
         {catTiles.length > 0 && (
@@ -953,13 +969,6 @@ export default function Home() {
               mobileGrid
               more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
             />
-          </Section>
-        )}
-
-        {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
-        {promoSlides.length > 0 && (
-          <Section>
-            <PromoSlider slides={promoSlides} isAr={isAr} />
           </Section>
         )}
 

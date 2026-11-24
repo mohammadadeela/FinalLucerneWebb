@@ -97,10 +97,10 @@ function LoginNotification({
     action?: () => void; actionLabel?: string; actionArrow?: ReactNode;
   }> = {
     email_not_found: {
-      bg: "bg-[#E8257D]/10",
+      bg: "bg-[#F7B7CD]/40",
       border: "border-transparent",
       iconWrap: "bg-white",
-      iconColor: "text-[#E8257D]",
+      iconColor: "text-[#C2607F]",
       icon: <Mail className="w-4 h-4" />,
       title: ar ? "البريد غير مسجّل" : "Email not registered",
       desc: ar ? "هذا البريد الإلكتروني غير موجود في النظام. هل تريدين إنشاء حساب جديد؟" : "This email does not exist in our system. Would you like to create a new account?",
@@ -109,10 +109,10 @@ function LoginNotification({
       actionArrow: ar ? <ArrowLeft className="w-3 h-3" /> : <ArrowRight className="w-3 h-3" />,
     },
     google_account: {
-      bg: "bg-[#E8257D]/10",
+      bg: "bg-[#F7B7CD]/40",
       border: "border-transparent",
       iconWrap: "bg-white",
-      iconColor: "text-[#E8257D]",
+      iconColor: "text-[#C2607F]",
       icon: <Mail className="w-4 h-4" />,
       title: ar ? "هذا الحساب مسجّل عبر Google" : "This account uses Google Sign-In",
       desc: ar
@@ -221,7 +221,7 @@ function PhoneLoginNotification({
     <div
       className={`relative flex items-start gap-3 rounded-2xl border p-3.5 animate-in fade-in slide-in-from-top-1 duration-200 ${
         isNotSignedUp
-          ? "border-transparent bg-[#E8257D]/10"
+          ? "border-transparent bg-[#F7B7CD]/40"
           : "border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/25"
       }`}
       data-testid="phone-login-error-notification"
@@ -1183,7 +1183,7 @@ export default function Auth() {
             className={`relative w-full h-12 flex items-center justify-center gap-3 rounded-full border transition-colors text-sm font-semibold ${isLastPhone ? lastBtn : normalBtn}`}
             data-testid="button-phone-login"
           >
-            <Phone className="w-4 h-4 text-[#E8257D] shrink-0" />
+            <Phone className="w-4 h-4 text-[#C2607F] shrink-0" />
             {language === "ar" ? "تسجيل الدخول باستخدام الهاتف" : "Sign in using Phone"}
             {isLastPhone && badge}
           </button>
@@ -1243,7 +1243,7 @@ export default function Auth() {
             n === current
               ? "bg-[#E8257D] text-white border-[#E8257D]"
               : n < current
-              ? "bg-[#E8257D]/10 text-[#E8257D] border-transparent"
+              ? "bg-[#F7B7CD]/40 text-[#C2607F] border-transparent"
               : "bg-transparent text-muted-foreground border-border"
           }`}>
             {n < current ? "✓" : n}
@@ -1271,7 +1271,7 @@ export default function Auth() {
               <p className="display-latin mt-1 text-[10px] uppercase tracking-[0.42em] text-muted-foreground">Boutique</p>
             </div>
             {(step === "auth" || step === "reg-email") && (
-              <div className="relative mt-6 grid grid-cols-2 rounded-full bg-[#E8257D]/10 p-1 text-sm font-semibold" role="tablist">
+              <div className="relative mt-6 grid grid-cols-2 rounded-full bg-[#F7B7CD]/40 p-1 text-sm font-semibold" role="tablist">
                 {([
                   { id: "auth", label: t.auth.signIn },
                   { id: "reg-email", label: t.auth.createAccount },
@@ -1360,7 +1360,7 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() => setRememberMe(v => !v)}
-                  className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl border transition-all duration-300 group ${rememberMe ? "border-transparent bg-[#E8257D]/10" : "border-border/60 bg-transparent hover:bg-[#E8257D]/10"}`}
+                  className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl border transition-all duration-300 group ${rememberMe ? "border-transparent bg-[#F7B7CD]/40" : "border-border/60 bg-transparent hover:bg-[#F7B7CD]/40"}`}
                   data-testid="checkbox-remember-me"
                   aria-pressed={rememberMe}
                 >
@@ -1423,7 +1423,7 @@ export default function Auth() {
                 {t.auth.noAccount}
                 <button
                   onClick={() => { setSignupEmail(""); setSignupCode(""); setStep("reg-email"); }}
-                  className="ms-1 font-semibold text-[#E8257D] hover:underline"
+                  className="ms-1 font-semibold text-[#C2607F] hover:underline"
                   data-testid="button-toggle-auth"
                 >
                   {t.auth.register}
@@ -1490,7 +1490,7 @@ export default function Auth() {
                 {t.auth.hasAccount}
                 <button
                   onClick={() => setStep("auth")}
-                  className="ms-1 font-semibold text-[#E8257D] hover:underline"
+                  className="ms-1 font-semibold text-[#C2607F] hover:underline"
                   data-testid="button-back-to-login"
                 >
                   {t.auth.signIn}
@@ -1504,7 +1504,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("reg-email")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-step2"
                 aria-label="Go back"
               >
@@ -1568,7 +1568,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("reg-code")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-step3"
                 aria-label="Go back"
               >
@@ -1689,7 +1689,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("auth")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-forgot-email"
                 aria-label="Go back"
               >
@@ -1714,7 +1714,7 @@ export default function Auth() {
                 </div>
 
                 {forgotEmailNotFound && (
-                  <div className="rounded-2xl bg-[#E8257D]/10 p-4" data-testid="forgot-email-not-found">
+                  <div className="rounded-2xl bg-[#F7B7CD]/40 p-4" data-testid="forgot-email-not-found">
                     <div className="flex items-start gap-3">
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-bold text-[#B3125C]">{t.auth.emailNotRegistered}</p>
@@ -1722,14 +1722,14 @@ export default function Auth() {
                         <button
                           type="button"
                           onClick={() => { setSignupEmail(forgotEmail); setForgotEmailNotFound(false); setStep("reg-email"); }}
-                          className="inline-flex items-center gap-1 text-sm font-bold text-[#E8257D] hover:text-[#B3125C] transition-colors mt-1"
+                          className="inline-flex items-center gap-1 text-sm font-bold text-[#C2607F] hover:text-[#B3125C] transition-colors mt-1"
                           data-testid="button-signup-instead"
                         >
                           {t.auth.signUpInstead} <span className="text-base">←</span>
                         </button>
                       </div>
                       <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                        <svg className="w-5 h-5 text-[#E8257D]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <svg className="w-5 h-5 text-[#C2607F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                         </svg>
                       </div>
@@ -1761,7 +1761,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("forgot-email")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-forgot-code"
                 aria-label="Go back"
               >
@@ -1818,7 +1818,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("forgot-code")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-forgot-newpass"
                 aria-label="Go back"
               >
@@ -1891,15 +1891,15 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("auth")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-login"
                 aria-label="Go back"
               >
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-2">
-                <div className="w-14 h-14 rounded-full bg-[#E8257D]/10 flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-7 h-7 text-[#E8257D]" />
+                <div className="w-14 h-14 rounded-full bg-[#F7B7CD]/40 flex items-center justify-center mx-auto mb-4">
+                  <Phone className="w-7 h-7 text-[#C2607F]" />
                 </div>
                 <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-login-title">
                   {language === "ar" ? "الدخول برقم الهاتف" : "Sign in with Phone"}
@@ -2034,17 +2034,17 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep(phoneIntent === "signup" ? "reg-email" : "phone-login")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-entry"
                 aria-label="Go back"
               >
                 {language === "ar" ? <ArrowRight className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
               </button>
               <div className="text-center mb-2">
-                <div className="w-14 h-14 rounded-full bg-[#E8257D]/10 flex items-center justify-center mx-auto mb-4">
+                <div className="w-14 h-14 rounded-full bg-[#F7B7CD]/40 flex items-center justify-center mx-auto mb-4">
                   {phoneChannel !== "whatsapp"
-                    ? <MessageSquare className="w-7 h-7 text-[#E8257D]" />
-                    : <Phone className="w-7 h-7 text-[#E8257D]" />}
+                    ? <MessageSquare className="w-7 h-7 text-[#C2607F]" />
+                    : <Phone className="w-7 h-7 text-[#C2607F]" />}
                 </div>
                 <h1 className="mb-1.5 text-2xl font-bold text-foreground sm:text-[1.75rem]" data-testid="text-phone-entry-title">
                   {language === "ar"
@@ -2130,7 +2130,7 @@ export default function Auth() {
                   setPhoneOtp("");
                   setStep("auth");
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-otp"
                 aria-label="Go back"
               >
@@ -2257,7 +2257,7 @@ export default function Auth() {
             <div className="space-y-6">
               <button
                 onClick={() => setStep("phone-signup-name")}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8257D]/10 text-[#E8257D] transition-colors hover:bg-[#E8257D] hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F7B7CD]/40 text-[#C2607F] transition-colors hover:bg-[#E8257D] hover:text-white"
                 data-testid="button-back-arrow-phone-signup-pwd"
                 aria-label="Go back"
               >

@@ -100,7 +100,7 @@ export function CartOffers({
               className="offer-confetti"
               style={{
                 left: `${6 + ((i * 41) % 88)}%`,
-                background: ["#E8257D", "#FFB703", "#2D0F24", "#7BD0C0", "#FF8FB8", "#C9A6D8"][i % 6],
+                background: ["#F7B7CD", "#FCD9A8", "#C9A6D8", "#A8DCCF", "#FF9FC0", "#B8D8F2"][i % 6],
                 animationDelay: `${(i % 7) * 45}ms`,
                 ["--dx" as any]: `${((i * 37) % 90) - 45}px`,
                 ["--rot" as any]: `${(i * 67) % 360}deg`,
@@ -136,7 +136,7 @@ export function CartOffers({
               </p>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${offer.unlocked ? "bg-primary" : "bg-gradient-to-r from-[#FFA8C8] to-[#FF5FA2] rtl:bg-gradient-to-l"}`}
+                  className={`h-full rounded-full transition-all duration-500 ${offer.unlocked ? "bg-primary" : "bg-gradient-to-r from-[#FAD0DE] to-[#F3A3BF] rtl:bg-gradient-to-l"}`}
                   style={{ width: `${Math.max(4, Math.min(100, offer.progress * 100))}%` }}
                 />
               </div>

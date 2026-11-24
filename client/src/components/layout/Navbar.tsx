@@ -708,7 +708,7 @@ export function Navbar() {
       {showNewsBar && newsItems.length > 0 && (
         <div
           ref={newsBarRef}
-          className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-[#E8257D] text-white"}`}
+          className={`fixed top-0 w-full z-[51] overflow-hidden ${seasonInfo ? "" : "bg-[#F7B7CD] text-[#2D0F24]"}`}
           style={
             seasonInfo
               ? { background: seasonInfo.barBg, color: seasonInfo.barText }
@@ -1114,62 +1114,33 @@ export function Navbar() {
                 </button>
               </div>
 
-              {/* Categories: the rows share the height that is left, so nothing needs scrolling */}
-              {(() => {
-                const cols = navCategories.length > 8 ? 3 : 2;
-                const rows = Math.ceil(navCategories.length / cols);
-                const spare = cols - (navCategories.length % cols || cols);
-                return (
-                  <div
-                    className="grid min-h-0 flex-1 gap-2 overflow-y-auto overscroll-contain px-4 pb-3"
-                    style={{
-                      gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                      gridTemplateRows: `repeat(${rows}, minmax(3.25rem, 11.5rem)) 3rem`,
-                    }}
-                  >
-                    {navCategories.map((c: any, idx: number) => {
-                      const photo = getSetting(siteSettings, `menu_photo_${c.id}`) || c.image || "";
-                      const last = idx === navCategories.length - 1;
-                      return (
-                        <Link
-                          key={c.id}
-                          href={categoryHref(c)}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="relative block min-h-0 overflow-hidden rounded-2xl bg-gradient-to-br from-blush to-sand"
-                          style={last && spare > 0 ? { gridColumn: `span ${spare + 1}` } : undefined}
-                          data-testid={`link-${c.slug}-mobile`}
-                        >
-                          {photo && (
-                            <img
-                              src={optimizeCloudinaryUrl(photo, 500) || photo}
-                              alt=""
-                              loading="lazy"
-                              className="absolute inset-0 h-full w-full object-cover"
-                            />
-                          )}
-                          <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                          <span className="font-heading absolute inset-x-3 bottom-2 truncate text-[17px] font-medium leading-tight text-white">
-                            {catLabel(c)}
-                          </span>
-                        </Link>
-                      );
-                    })}
+              {/* Categories: plain text, one per line — no photos or icons */}
+              <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4 pt-2" aria-label="Categories" data-testid="nav-mobile-categories">
+                <ul className="flex flex-col">
+                  {navCategories.map((c: any) => (
+                    <li key={c.id}>
+                      <Link
+                        href={categoryHref(c)}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block py-3 text-[19px] font-medium leading-tight tracking-wide text-foreground transition-colors hover:text-berry"
+                        data-testid={`link-${c.slug}-mobile`}
+                      >
+                        {catLabel(c)}
+                      </Link>
+                    </li>
+                  ))}
+                  <li className="mt-2 border-t border-black/[0.08] pt-2">
                     <Link
                       href="/sales"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center justify-between gap-3 rounded-2xl bg-berry px-4 text-white"
-                      style={{ gridColumn: "1 / -1" }}
+                      className="block py-3 text-[19px] font-semibold leading-tight tracking-wide text-[#B91C1C]"
                       data-testid="link-sales-mobile"
                     >
-                      <span className="flex items-center gap-2.5 text-[15px] font-medium">
-                        <BadgePercent className="h-5 w-5 shrink-0" strokeWidth={1.6} />
-                        {t.nav.sales}
-                      </span>
-                      <ArrowUpRight className="h-[18px] w-[18px] rtl:-scale-x-100" strokeWidth={1.8} />
+                      {t.nav.sales}
                     </Link>
-                  </div>
-                );
-              })()}
+                  </li>
+                </ul>
+              </nav>
 
               {/* Account and settings — pinned to the bottom of the sheet */}
               <div className="shrink-0 border-t border-black/[0.06] bg-background px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">

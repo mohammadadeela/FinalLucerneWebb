@@ -2177,7 +2177,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
       const limit = Math.min(parseInt(String(req.query.limit || "8")), 24);
       // The newest pieces of every category in turns (shoes, dresses, clothes...), not only
       // the category that was stocked last.
-      const items = await storage.getNewArrivalsMixed(limit);
+      const saved = Number(await storage.getSiteSetting("new_arrivals_days"));
+      const days = Math.max(1, Math.min(90, Number(req.query.days) || saved || 14));
+      const items = await storage.getNewArrivalsMixed(limit, days);
       res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       return successResponse(res, items);
     } catch (err: any) {

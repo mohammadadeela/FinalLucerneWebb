@@ -234,9 +234,10 @@ export function FilterPanel({
 
   const tr = (ar: string, en: string) => (language === "ar" ? ar : en);
   const [coloursOpen, setColoursOpen] = useState(false);
-  const title = "mb-3 font-display text-lg font-semibold text-foreground";
+  const title = "mb-2 font-display text-[16px] font-semibold text-foreground";
+  const [brandsAll, setBrandsAll] = useState(false);
   const chip = (on: boolean) =>
-    `inline-flex h-9 items-center rounded-full border px-4 text-[13px] font-medium transition-colors ${
+    `inline-flex h-8 items-center rounded-full border px-3.5 text-[12.5px] font-medium transition-colors ${
       on ? "border-foreground bg-foreground text-background" : "border-foreground/15 bg-card text-foreground/80 hover:border-primary hover:text-primary"
     }`;
 
@@ -259,12 +260,12 @@ export function FilterPanel({
         });
 
   const groups = (
-    <div className="space-y-7" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="space-y-4" dir={isRtl ? "rtl" : "ltr"}>
       {availableBrands.length > 1 && (
         <div>
           <p className={title}>{t.filter.brand}</p>
           <div className="space-y-0.5">
-            {availableBrands.map((brand) => {
+            {(brandsAll ? availableBrands : availableBrands.slice(0, 3)).map((brand) => {
               const on = filters.brands.includes(brand);
               return (
                 <button
@@ -272,7 +273,7 @@ export function FilterPanel({
                   type="button"
                   aria-pressed={on}
                   onClick={() => toggleBrand(brand)}
-                  className={`flex w-full items-center justify-between rounded-full px-3.5 py-2 text-start text-[15px] transition-colors ${on ? "bg-foreground text-background" : "text-foreground/80 hover:bg-accent"}`}
+                  className={`flex w-full items-center justify-between rounded-full px-3 py-1.5 text-start text-[14px] transition-colors ${on ? "bg-foreground text-background" : "text-foreground/80 hover:bg-accent"}`}
                   data-testid={`button-brand-${brand}`}
                 >
                   <span className="truncate">{brand}</span>
@@ -281,6 +282,12 @@ export function FilterPanel({
               );
             })}
           </div>
+          {availableBrands.length > 3 && (
+            <button type="button" onClick={() => setBrandsAll((v) => !v)} aria-expanded={brandsAll} className="mt-1.5 inline-flex items-center gap-1 px-3 text-[12.5px] font-semibold text-foreground hover:underline" data-testid="button-more-brands">
+              {brandsAll ? tr("عرض أقل", "Show less") : tr(`عرض المزيد (${availableBrands.length - 3})`, `Show more (${availableBrands.length - 3})`)}
+              <ChevronDown className={`h-4 w-4 transition-transform ${brandsAll ? "rotate-180" : ""}`} />
+            </button>
+          )}
         </div>
       )}
 
@@ -293,7 +300,7 @@ export function FilterPanel({
                 {gi === 1 && all[0].length > 0 && <p className="mb-1.5 text-[11.5px] font-medium text-muted-foreground">{tr("مقاسات بالأرقام", "Number sizes")}</p>}
                 <div className="flex flex-wrap gap-2">
                   {group.map((size) => (
-                    <button key={size} type="button" aria-pressed={filters.sizes.includes(size)} onClick={() => toggleSize(size)} className={chip(filters.sizes.includes(size)) + " min-w-[46px] justify-center px-3"} data-testid={`button-size-${size}`}>
+                    <button key={size} type="button" aria-pressed={filters.sizes.includes(size)} onClick={() => toggleSize(size)} className={chip(filters.sizes.includes(size)) + " min-w-[42px] justify-center px-2.5"} data-testid={`button-size-${size}`}>
                       {size}
                     </button>
                   ))}
@@ -307,13 +314,13 @@ export function FilterPanel({
       {swatches.length > 0 && (
         <div>
           <p className={title}>{t.filter.colour}</p>
-          <div className="grid grid-cols-5 gap-x-1 gap-y-3">
-            {(coloursOpen ? swatches : swatches.slice(0, 10)).map((c) => {
+          <div className="grid grid-cols-5 gap-x-1 gap-y-2">
+            {(coloursOpen ? swatches : swatches.slice(0, 5)).map((c) => {
               const on = filters.colors.includes(c.key);
               return (
                 <button key={c.key} type="button" aria-pressed={on} onClick={() => toggleColor(c.key)} className="flex min-w-0 flex-col items-center gap-1.5" data-testid={`button-color-${c.key}`}>
                   <span
-                    className={`h-9 w-9 shrink-0 rounded-full border transition-shadow ${c.light ? "border-foreground/20" : "border-black/10"} ${on ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
+                    className={`h-8 w-8 shrink-0 rounded-full border transition-shadow ${c.light ? "border-foreground/20" : "border-black/10"} ${on ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
                     style={c.style}
                   />
                   <span className={`w-full break-words text-center text-[11px] capitalize leading-tight text-foreground ${on ? "font-bold" : "font-medium"}`}>{c.label}</span>
@@ -321,9 +328,9 @@ export function FilterPanel({
               );
             })}
           </div>
-          {swatches.length > 10 && (
-            <button type="button" onClick={() => setColoursOpen((v) => !v)} aria-expanded={coloursOpen} className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-foreground hover:underline" data-testid="button-more-colours">
-              {coloursOpen ? tr("عرض أقل", "Show less") : tr(`عرض المزيد (${swatches.length - 10})`, `Show more (${swatches.length - 10})`)}
+          {swatches.length > 5 && (
+            <button type="button" onClick={() => setColoursOpen((v) => !v)} aria-expanded={coloursOpen} className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-foreground hover:underline" data-testid="button-more-colours">
+              {coloursOpen ? tr("عرض أقل", "Show less") : tr(`عرض المزيد (${swatches.length - 5})`, `Show more (${swatches.length - 5})`)}
               <ChevronDown className={`h-4 w-4 transition-transform ${coloursOpen ? "rotate-180" : ""}`} />
             </button>
           )}
@@ -343,7 +350,7 @@ export function FilterPanel({
               className="w-full"
               data-testid="slider-price"
             />
-            <div className="mt-2.5 flex justify-between text-[13px] tabular-nums text-foreground/80">
+            <div className="mt-2 flex justify-between text-[12.5px] tabular-nums text-foreground/80">
               <span>₪{filters.priceRange[0]}</span>
               <span>₪{filters.priceRange[1]}</span>
             </div>
