@@ -71,6 +71,9 @@ interface GeneratedProduct {
   imageUrl: string;
   name: string;
   nameAr: string;
+  /** English name and description for the English shop (written by the AI, editable). */
+  nameEn?: string;
+  descriptionEn?: string;
   description: string;
   price: string;
   categoryId: string;
@@ -975,6 +978,14 @@ function ProductCard({
               <Input className="h-9 text-sm text-right" dir="rtl" value={product.nameAr}
                 onChange={e => onUpdate(idx,{nameAr:e.target.value})} placeholder="اسم المنتج" />
             </div>
+            {/* English name — shown to customers browsing in English */}
+            <div>
+              <div className="flex justify-end mb-1">
+                <span className="text-[11px] text-muted-foreground">Name (EN)</span>
+              </div>
+              <Input className="h-9 text-sm" dir="ltr" value={product.nameEn || ""}
+                onChange={e => onUpdate(idx,{nameEn:e.target.value})} placeholder="English name" data-testid={`input-bulk-name-en-${idx}`} />
+            </div>
             {/* Description */}
             <div>
               <div className="flex justify-end mb-1">
@@ -982,6 +993,14 @@ function ProductCard({
               </div>
               <textarea className="w-full text-sm border border-input rounded-md p-2 min-h-[56px] bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/60"
                 value={product.description} onChange={e => onUpdate(idx,{description:e.target.value})} placeholder="Description" />
+            </div>
+            {/* English description */}
+            <div>
+              <div className="flex justify-end mb-1">
+                <span className="text-[11px] text-muted-foreground">Description (EN)</span>
+              </div>
+              <textarea className="w-full text-sm border border-input rounded-md p-2 min-h-[48px] bg-background resize-none focus:outline-none focus:ring-2 focus:ring-ring" dir="ltr"
+                value={product.descriptionEn || ""} onChange={e => onUpdate(idx,{descriptionEn:e.target.value})} placeholder="English description" data-testid={`input-bulk-description-en-${idx}`} />
             </div>
             {/* Price */}
             <div className="grid grid-cols-2 gap-2">
@@ -1603,6 +1622,7 @@ export function BulkUploadTab() {
       // Always ship at least one variant so the default sizes are present.
       if (variants.length === 0) { const v = makeVariant("#000000", globalCategory, getSizesForCategory(globalCategory)); v.mainImage = r.url; variants = [v]; }
       all.push({ imageUrl: r.url, name: r.data?.name||"", nameAr: r.data?.nameAr||"",
+        nameEn: r.data?.nameEn||"", descriptionEn: r.data?.descriptionEn||"",
         description: r.data?.description||"", price: String(r.data?.suggestedPrice||""),
         categoryId: globalCategory, subcategoryId: globalSubcategory,
         isFeatured: false, isNewArrival: true, isBestSeller: false,
@@ -1869,6 +1889,8 @@ export function BulkUploadTab() {
             return {
               name: p.name,
               description: p.description || p.name,
+              nameEn: p.nameEn || "",
+              descriptionEn: p.descriptionEn || "",
               price: p.price,
               mainImage: p.imageUrl,
               images: sideImages,

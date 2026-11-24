@@ -59,8 +59,8 @@ export function CartOffers({
             : tr(`أضيفي ${money(remaining)} للتوصيل المجاني`, `Add ${money(remaining)} for free delivery`)
           : tr(`أضيفي ${money(remaining)} للتوصيل المجاني للقدس والضفة (خصم ${money(settings.interiorDiscount)} للداخل)`, `Add ${money(remaining)} for free delivery to Jerusalem & the West Bank (${money(settings.interiorDiscount)} off for the Interior)`);
       }
-      if (!region) return tr(`توصيل مجاني للقدس والضفة · خصم ${money(settings.interiorDiscount)} للداخل`, `Free delivery to Jerusalem & the West Bank · ${money(settings.interiorDiscount)} off for the Interior`);
-      return interior ? tr(`خصم ${money(saving)} على التوصيل`, `${money(saving)} off delivery`) : tr("توصيل مجاني", "Free delivery");
+      if (!region) return tr(`مبروك! توصيلك مجاني للقدس والضفة · خصم ${money(settings.interiorDiscount)} للداخل`, `Free delivery to Jerusalem & the West Bank · ${money(settings.interiorDiscount)} off for the Interior`);
+      return interior ? tr(`مبروك! حصلتِ على خصم ${money(saving)} على التوصيل`, `${money(saving)} off delivery`) : tr("مبروك! توصيلك مجاني", "Free delivery");
     }
     if (id === "gift") return unlocked ? tr(`${gift} مع طلبك`, `${gift} with your order`) : tr(`أضيفي ${money(remaining)} واحصلي على ${gift}`, `Add ${money(remaining)} to get a ${gift.toLowerCase()}`);
     return unlocked
@@ -84,7 +84,7 @@ export function CartOffers({
               <p className={`flex w-full items-start gap-2 whitespace-normal text-[13px] font-medium leading-snug ${offer.unlocked ? "text-foreground" : "text-foreground/75"}`}>
                 <OfferIcon className="mt-0.5 h-4 w-4 shrink-0" />
                 <span className="min-w-0 flex-1 whitespace-normal break-words text-start">{label(offer.id, offer.unlocked, offer.remaining, offer.saving)}</span>
-                {applied && (
+                {applied && unlockedCount > 1 && (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                     <Check className="h-3 w-3" />
                     {tr("مُفعّل", "Applied")}

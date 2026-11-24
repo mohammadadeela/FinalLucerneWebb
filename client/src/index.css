@@ -15,32 +15,32 @@
      Berry rose and sage are separate accent colours (--berry, --sage) used by the landing page and header.
      The admin area keeps its neutral monochrome palette (see html.admin-theme). */
   --background: 332 65% 98.5%; /* pink-tinted white */
-  --foreground: 0 0% 10%;
+  --foreground: 318 50% 12%; /* ink: deep plum instead of black */
 
   --card: 0 0% 100%; /* same white as every other card and tile */
-  --card-foreground: 0 0% 10%;
+  --card-foreground: 318 50% 12%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
+  --popover-foreground: 318 50% 12%;
 
-  --primary: 0 0% 12%;
+  --primary: 318 50% 12%; /* dark buttons use the same plum */
   --primary-foreground: 0 0% 98%;
 
   --secondary: 0 0% 92%;
-  --secondary-foreground: 0 0% 15%;
+  --secondary-foreground: 318 45% 15%;
 
   --muted: 0 0% 94%;
   --muted-foreground: 0 0% 45%;
 
   --accent: 0 0% 94%;
-  --accent-foreground: 0 0% 10%;
+  --accent-foreground: 318 50% 12%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
 
   --border: 0 0% 90%;
   --input: 0 0% 90%;
-  --ring: 0 0% 12%;
+  --ring: 318 50% 12%;
 
   /* Named storefront tints used by the landing page */
   --berry: 342 49% 42%;

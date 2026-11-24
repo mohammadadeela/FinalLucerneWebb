@@ -1,5 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { setCustomColorNames } from "@/lib/colorFamilies";
+
+/** Hands the shop's own colour names to the colour translator. */
+function applyColorNames(data: Record<string, string> | undefined) {
+  try {
+    setCustomColorNames(data?.color_names ? JSON.parse(data.color_names) : {});
+  } catch {
+    /* a broken value just means no custom names */
+  }
+}
 
 const STORAGE_KEY = "lucerne_site_settings_v1";
 const QUERY_KEY = ["/api/site-settings"];
@@ -24,6 +34,7 @@ function writeCache(data: Record<string, string>) {
 
 export function useSiteSettings() {
   const cached = readCache();
+  applyColorNames(cached);
 
   const query = useQuery<Record<string, string>>({
     queryKey: QUERY_KEY,
@@ -31,6 +42,8 @@ export function useSiteSettings() {
     gcTime:    1000 * 60 * 60 * 24,      // 24 h — keep in memory all session
     placeholderData: cached ?? defaultSettings, // show instantly from cache/defaults
   });
+
+  if (query.data) applyColorNames(query.data);
 
   // Write to localStorage whenever fresh data arrives
   useEffect(() => {

@@ -27,9 +27,11 @@ export interface CartOfferSettings {
 }
 
 export const DEFAULT_CART_OFFERS: CartOfferSettings = {
-  // All three offers are switched off. Set a site setting (offer_delivery_on, offer_gift_on,
-  // offer_bundle_on = "true") to bring one back.
-  deliveryOn: false,
+  // Free delivery over the amount below is on (Jerusalem & West Bank free, a fixed discount
+  // for the Interior). It applies by itself: nothing for the customer to press.
+  // The gift and bundle offers are off; a site setting (offer_gift_on / offer_bundle_on =
+  // "true") brings one back.
+  deliveryOn: true,
   deliveryOver: 300,
   interiorDiscount: 30,
   giftOn: false,

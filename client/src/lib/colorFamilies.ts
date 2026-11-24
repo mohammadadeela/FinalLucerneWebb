@@ -268,7 +268,16 @@ export function getColorFamily(colorName: string): ColorFamily | null {
   return null;
 }
 
+/** The shop's own colour names (site setting "color_names"), for colours the built-in list does not know. */
+let CUSTOM_COLOR_NAMES: Record<string, { ar?: string; en?: string }> = {};
+export function setCustomColorNames(map: Record<string, { ar?: string; en?: string }> | null | undefined) {
+  CUSTOM_COLOR_NAMES = {};
+  for (const [name, value] of Object.entries(map || {})) CUSTOM_COLOR_NAMES[String(name).trim().toLowerCase()] = value || {};
+}
+
 export function translateColorName(colorName: string, targetLang: "ar" | "en"): string {
+  const custom = CUSTOM_COLOR_NAMES[String(colorName || "").trim().toLowerCase()]?.[targetLang];
+  if (custom) return custom;
   const key = normalizeKey(colorName);
   const exact = ALL_NAMES.get(key);
   if (exact) return targetLang === "ar" ? exact.member.nameAr : exact.member.nameEn;

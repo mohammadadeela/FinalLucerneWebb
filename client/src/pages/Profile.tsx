@@ -689,7 +689,7 @@ export default function Profile() {
                 {getSetting(siteSettings, "exchange_note") && (
                   <div className="mb-5 flex items-start gap-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 rounded-xl px-4 py-3" data-testid="banner-exchange-note">
                     <span className="text-rose-500 mt-0.5 flex-shrink-0">⚠️</span>
-                    <p className="text-sm text-rose-800 dark:text-rose-300 leading-relaxed font-medium">{getSetting(siteSettings, "exchange_note")}</p>
+                    <p className="text-sm text-rose-800 dark:text-rose-300 leading-relaxed font-medium" dir="auto">{(language === "en" && getSetting(siteSettings, "exchange_note_en")) || getSetting(siteSettings, "exchange_note")}</p>
                   </div>
                 )}
 

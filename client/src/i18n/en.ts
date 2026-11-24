@@ -1,7 +1,7 @@
 export const en = {
   dir: "ltr" as const,
   lang: "en",
-  langLabel: "العربية",
+  langLabel: "عربي",
   currency: "₪",
 
   nav: {

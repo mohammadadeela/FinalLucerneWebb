@@ -9,6 +9,20 @@
 //   3. hands the shop the English names when a customer browses in English.
 import type { Express, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
+import { translateColorName } from "../client/src/lib/colorFamilies";
+
+const COLOR_SETTING = "color_names";
+// Site texts written in one box (Arabic) whose English copy lives under "<key>_en".
+const SINGLE_TEXTS = ["exchange_note"];
+const encodeName = (name: string) => Buffer.from(name, "utf8").toString("base64url");
+const decodeName = (code: string) => Buffer.from(code, "base64url").toString("utf8");
+function readColorNames(settings: any[]): Record<string, { ar?: string; en?: string }> {
+  try {
+    return JSON.parse(settings.find((s) => s.key === COLOR_SETTING)?.value || "{}") || {};
+  } catch {
+    return {};
+  }
+}
 
 const MODEL = process.env.GEMINI_TEXT_MODEL || process.env.GEMINI_CHAT_MODEL || process.env.GEMINI_MODEL || "gemini-flash-latest";
 const API_BASE = (process.env.GEMINI_API_BASE || "https://generativelanguage.googleapis.com").replace(/\/+$/, "");
@@ -17,7 +31,7 @@ const hasArabic = (s: unknown) => /[؀-ۿ]/.test(String(s ?? ""));
 const hasLatin = (s: unknown) => /[A-Za-z]/.test(String(s ?? ""));
 const blank = (s: unknown) => !String(s ?? "").trim();
 
-export type TranslationKind = "category" | "subcategory" | "product" | "text";
+export type TranslationKind = "category" | "subcategory" | "product" | "colour" | "text";
 export type TranslationRow = {
   /** kind:id:field — e.g. "product:12:name" or "text:home_hero_title". */
   key: string;
@@ -71,6 +85,21 @@ export async function collectTranslations(): Promise<TranslationRow[]> {
       pair(`product:${p.id}:description`, "product", "description", p.name, p.description, descEn);
     }
   }
+  // Colour names: every colour used by a product, in both languages. The built-in colour
+  // list answers for the usual ones; the shop's own list (a site setting) covers the rest.
+  const custom = readColorNames(settings as any[]);
+  const colours = new Map<string, number>();
+  for (const p of products as any[]) for (const v of (p.colorVariants as any[]) || []) {
+    const name = String(v?.name || "").trim();
+    if (name && name.toLowerCase() !== "default") colours.set(name, (colours.get(name) || 0) + 1);
+  }
+  for (const [name, used] of colours) {
+    const saved = custom[name] || {};
+    const builtIn = (lang: "ar" | "en") => { const t = translateColorName(name, lang); return (lang === "en" ? !hasArabic(t) && hasLatin(t) : hasArabic(t)) ? t : ""; };
+    const ar = saved.ar || (hasArabic(name) ? name : builtIn("ar"));
+    const en = saved.en || (!hasArabic(name) ? name : builtIn("en"));
+    pair(`colour:${encodeName(name)}:name`, "colour", "name", `${used} منتج`, ar, en);
+  }
   const byKey = new Map((settings as any[]).map((s) => [s.key, s.value]));
   const seen = new Set<string>();
   for (const key of byKey.keys()) {
@@ -83,6 +112,10 @@ export async function collectTranslations(): Promise<TranslationRow[]> {
     const sample = String(ar || en || "");
     if (/^(https?:|\/|#|\{|\[)/.test(sample.trim()) || !/[؀-ۿA-Za-z]{2}/.test(sample)) continue;
     pair(`text:${m[1]}`, "text", "text", m[1], ar, en);
+  }
+  for (const key of SINGLE_TEXTS) {
+    if (seen.has(key)) continue;
+    pair(`text:${key}`, "text", "text", key, byKey.get(key), byKey.get(`${key}_en`));
   }
   return rows;
 }
@@ -115,7 +148,7 @@ async function translateBatch(items: { id: string; text: string; what: string }[
     `You write the ${target} texts for Lucerne Boutique, a women's fashion shop (dresses, abayas, tops, trousers, shoes, bags, accessories).`,
     `Translate each item below from ${to === "en" ? "Arabic" : "English"} into natural ${target} the way a good fashion shop would write it.`,
     `Rules:`,
-    `- "name" items are product or category names: short, title case, no full stop, no quotation marks. Translate the meaning; do not transliterate Arabic words letter by letter unless it is a brand or a garment name with no English word (e.g. "Abaya").`,
+    `- "name" items are product, category or colour names (a colour name becomes the usual fashion colour word, e.g. "خمري" → "Burgundy"): short, title case, no full stop, no quotation marks. Translate the meaning; do not transliterate Arabic words letter by letter unless it is a brand or a garment name with no English word (e.g. "Abaya").`,
     `- "description" and "text" items: keep the same meaning, facts, sizes, numbers and line breaks. Do not add claims, prices, materials or emojis that are not in the original.`,
     `- Keep brand names, model codes and numbers exactly as written.`,
     `Reply with JSON only, in this exact shape: {"items":[{"id":"...","text":"..."}]} — one entry per item, same ids.`,
@@ -155,7 +188,15 @@ async function saveTranslation(key: string, lang: "en" | "ar", value: string): P
   const text = value.trim();
   if (!text) return false;
   if (kind === "text") {
-    await storage.setSiteSetting(`${id}_${lang}`, text);
+    await storage.setSiteSetting(lang === "ar" && SINGLE_TEXTS.includes(id) ? id : `${id}_${lang}`, text);
+    return true;
+  }
+  if (kind === "colour") {
+    // Colour names are kept in one list; the colour's own name on the products never changes.
+    const names = readColorNames(await storage.getSiteSettings());
+    const name = decodeName(id);
+    names[name] = { ...(names[name] || {}), [lang]: text };
+    await storage.setSiteSetting(COLOR_SETTING, JSON.stringify(names));
     return true;
   }
   const numId = Number(id);
@@ -288,7 +329,7 @@ export function registerTranslationRoutes(app: Express) {
     const key = String(req.body?.key || "");
     const lang = req.body?.lang === "ar" ? "ar" : "en";
     const value = String(req.body?.value || "").slice(0, 5000);
-    if (!/^(category|subcategory|product):\d+:(name|description)$|^text:[a-z0-9_]+$/i.test(key)) return res.status(400).json({ success: false, message: "Bad key" });
+    if (!/^(category|subcategory|product):\d+:(name|description)$|^text:[a-z0-9_]+$|^colour:[A-Za-z0-9_-]+:name$/i.test(key)) return res.status(400).json({ success: false, message: "Bad key" });
     const ok = await saveTranslation(key, lang, value);
     res.status(ok ? 200 : 400).json({ success: ok });
   });

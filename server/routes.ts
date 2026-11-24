@@ -6408,6 +6408,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
 - nameAr: نفس اسم المنتج بالعربية
 - description: وصف المنتج بالعربية (12 كلمة كحد أقصى)
 - descriptionAr: نفس الوصف بالعربية
+- nameEn: اسم المنتج بالإنجليزية (2-4 كلمات، Title Case، بدون ذكر اللون) — ترجمة طبيعية كما يكتبها متجر أزياء، مثال: "Lace Evening Dress"
+- descriptionEn: نفس الوصف بالإنجليزية (جملة واحدة قصيرة، 14 كلمة كحد أقصى، بدون مبالغة)
 - colors: مصفوفة تحتوي على كود لون HEX واحد فقط — اللون الرئيسي للمنتج (مثال: ["#c0392b"])
 - colorNames: مصفوفة تحتوي على اسم اللون الرئيسي بالعربية (مثال: ["أحمر"])
 - styleKey: وصف قصير بالإنجليزية للتصميم الهيكلي للمنتج بدون ذكر الألوان (للاستخدام الداخلي فقط)
@@ -7076,6 +7078,9 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
         const productData: any = {
           name: String(p.name || "").trim(),
           description: String(p.description || p.name || "").trim(),
+          // English name and description written by the AI (or typed by the admin).
+          nameEn: String(p.nameEn || "").trim() || null,
+          descriptionEn: String(p.descriptionEn || "").trim() || null,
           price: String(parseFloat(p.price || "0") || 0),
           mainImage: String(p.mainImage || ""),
           images: Array.isArray(p.images) ? p.images.filter((u: string) => u && u !== String(p.mainImage || "")) : [],

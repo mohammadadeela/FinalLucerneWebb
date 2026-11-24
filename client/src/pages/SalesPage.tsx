@@ -262,6 +262,22 @@ export default function SalesPage() {
     });
   };
 
+  const filterProps = {
+    open: filterOpen,
+    onClose: () => setFilterOpen(false),
+    availableColors: allColors,
+    groupedColors: colorGroups,
+    availableSizes: allSizes,
+    availableBrands: allBrands,
+    minPrice,
+    maxPrice,
+    filters,
+    onChange: (f: FilterState) => {
+      setFilters(f);
+      if (f.sort) setSortBy("newest");
+    },
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -277,7 +293,7 @@ export default function SalesPage() {
         subtitleTestId="text-sales-page-subtitle"
       />
 
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <main className="mx-auto w-full max-w-[1640px] flex-1 px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* ── Top toolbar ── */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
           {/* Search */}
@@ -321,7 +337,7 @@ export default function SalesPage() {
           {/* Filter button */}
           <button
             onClick={() => setFilterOpen(true)}
-            className={`h-11 flex items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-semibold transition-colors ${activeFilterCount > 0 ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-background hover:border-foreground"}`}
+            className={`h-11 flex lg:hidden items-center justify-center gap-2 rounded-2xl border px-5 text-sm font-semibold transition-colors ${activeFilterCount > 0 ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-background hover:border-foreground"}`}
             data-testid="button-open-filter"
           >
             <SlidersHorizontal size={16} />
@@ -453,9 +469,16 @@ export default function SalesPage() {
           </div>
         )}
 
+        <div className="flex flex-col lg:flex-row lg:gap-8">
+          <aside className="hidden w-[230px] shrink-0 lg:block">
+            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-40 pe-1 [scrollbar-width:thin]">
+              <FilterPanel variant="sidebar" {...filterProps} />
+            </div>
+          </aside>
+          <div className="min-w-0 flex-1">
         {/* ── Product grid ── */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 min-[1700px]:grid-cols-5 gap-3 sm:gap-4">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="bg-muted aspect-[3/4] mb-4" />
@@ -478,31 +501,19 @@ export default function SalesPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 min-[1700px]:grid-cols-5 gap-3 sm:gap-4">
             {filtered.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
+          </div>
+        </div>
       </main>
 
       <Footer />
 
-      <FilterPanel
-        open={filterOpen}
-        onClose={() => setFilterOpen(false)}
-        availableColors={allColors}
-        groupedColors={colorGroups}
-        availableSizes={allSizes}
-        availableBrands={allBrands}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
-        filters={filters}
-        onChange={(f) => {
-          setFilters(f);
-          if (f.sort) setSortBy("newest");
-        }}
-      />
+      <FilterPanel {...filterProps} />
     </div>
   );
 }

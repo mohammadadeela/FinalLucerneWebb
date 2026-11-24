@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type Row = {
   key: string;
-  kind: "category" | "subcategory" | "product" | "text";
+  kind: "category" | "subcategory" | "product" | "colour" | "text";
   field: "name" | "description" | "text";
   label: string;
   ar: string;
@@ -30,6 +30,7 @@ const GROUPS: { id: string; label: string; match: (r: Row) => boolean }[] = [
   { id: "subcategory", label: "الفئات الفرعية", match: (r) => r.kind === "subcategory" },
   { id: "product-name", label: "أسماء المنتجات", match: (r) => r.kind === "product" && r.field === "name" },
   { id: "product-description", label: "أوصاف المنتجات", match: (r) => r.kind === "product" && r.field === "description" },
+  { id: "colour", label: "أسماء الألوان", match: (r) => r.kind === "colour" },
   { id: "text", label: "عناوين ونصوص الموقع", match: (r) => r.kind === "text" },
 ];
 
