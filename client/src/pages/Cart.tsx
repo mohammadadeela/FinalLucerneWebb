@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { QuickAddCard } from "@/components/cart/QuickAddCard";
+import { SizeSelect } from "@/components/cart/SizeSelect";
+import { sizeOptions } from "@/lib/cartSizes";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart, type CartItem } from "@/store/use-cart";
@@ -87,7 +90,7 @@ function CartItemImage({ item, soldOut, sizeClass, labelSize, language }: {
  * the slide-in drawer (opened from the bag icon) and the /cart page.
  */
 export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; onNavigate?: () => void }) {
-  const { items, updateQuantity, removeFromCart } = useCart();
+  const { items, updateQuantity, removeFromCart, addToCart } = useCart();
   const { data: siteSettings } = useSiteSettings();
   const loyaltyPointsEnabled = siteSettings?.loyalty_points_enabled !== "false";
   const [, setLocation] = useLocation();
@@ -217,6 +220,14 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
   const itemCount = items.reduce((n, item) => n + item.quantity, 0);
   const points = Math.floor(cartTotalAfterOffer / 2);
 
+  // Swap a piece for another size of the same colour, keeping as many as that size has in stock.
+  const changeSize = (item: (typeof items)[number], next: string) => {
+    if (!next || next === item.size) return;
+    const stock = sizeOptions(item.product, item.color).find((o) => o.size === next)?.stock ?? item.quantity;
+    removeFromCart(item.product.id, item.size, item.color);
+    addToCart(item.product as any, Math.max(1, Math.min(item.quantity, stock)), next, item.color);
+  };
+
   const removeButton = (item: (typeof items)[number], idx: number) => (
     <button type="button" onClick={() => removeFromCart(item.product.id, item.size, item.color)} className="flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground transition-colors hover:bg-blush hover:text-foreground" aria-label={isAr ? "حذف" : "Remove"} data-testid={`button-remove-${idx}`}>
               <Trash2 className="h-[15px] w-[15px]" />
@@ -232,7 +243,7 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
     const atMax = item.quantity >= maxStock;
     return (
       <div key={idx} className={`flex items-center justify-between gap-2 ${grouped ? "" : "mt-auto pt-2"} ${grouped && soldOut ? "opacity-60" : ""}`} data-testid={`cart-size-row-${idx}`}>
-        {grouped && <span className="inline-flex h-7 min-w-[40px] shrink-0 items-center justify-center rounded-full bg-secondary px-2 text-[12.5px] font-semibold">{item.size || "—"}</span>}
+        {item.size ? <SizeSelect product={item.product} color={item.color} size={item.size} isAr={isAr} onChange={(next) => changeSize(item, next)} testId={`select-size-${idx}`} /> : grouped ? <span className="text-[12.5px] text-muted-foreground">—</span> : null}
                 {soldOut ? (
                   <span className="text-xs font-semibold text-red-600">{isAr ? "نفذ من المخزون" : "Sold out"}</span>
                 ) : (
@@ -289,10 +300,10 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
               <button type="button" onClick={() => go(`/product/${item.product.id}`)} className="truncate text-start text-[14.5px] font-medium">
                 {item.product.name}
               </button>
-              {(item.color || item.size) && (
+              {(item.color || multi) && (
                 <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
                   {variant?.colorCode && <span className="h-3 w-3 rounded-full border border-black/10" style={{ background: variant.colorCode }} />}
-                  {[item.color ? translateColorName(item.color, language) : "", multi ? (isAr ? group.length + " مقاسات" : group.length + " sizes") : item.size].filter(Boolean).join(" · ")}
+                  {[item.color ? translateColorName(item.color, language) : "", multi ? (isAr ? group.length + " مقاسات" : group.length + " sizes") : ""].filter(Boolean).join(" · ")}
                 </p>
               )}
               {multi ? (
@@ -319,25 +330,10 @@ export function CartContents({ mode, onNavigate }: { mode: "drawer" | "page"; on
   const suggested = suggestions.length > 0 && (
     <div className="mt-2" data-testid="section-cart-suggestions">
       <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{isAr ? "يليق مع سلتك" : "Goes well with your cart"}</p>
-      <div className={mode === "page" ? "grid gap-2 sm:grid-cols-2" : "grid gap-2"}>
-        {suggestions.slice(0, mode === "page" ? 4 : 3).map((p: any) => {
-          const sale = p.discountPrice && Number(p.discountPrice) > 0 && Number(p.discountPrice) < Number(p.price);
-          return (
-            <button key={p.id} type="button" onClick={() => go(`/product/${p.id}`)} className="flex items-center gap-3 rounded-2xl bg-background p-2 text-start shadow-sm transition-transform hover:-translate-y-0.5" data-testid={`card-cart-suggestion-${p.id}`}>
-              <img src={optimizeCloudinaryUrl(p.mainImage, 200) || p.mainImage} alt="" loading="lazy" className="h-14 w-12 shrink-0 rounded-xl object-cover" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13.5px] font-medium">{p.name}</span>
-                <span className="text-[13px] text-muted-foreground">
-                  ₪{Number(sale ? p.discountPrice : p.price)}
-                  {sale && <s className="ms-1.5 text-[11px]">₪{Number(p.price)}</s>}
-                </span>
-              </span>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground text-background">
-                <Plus className="h-[17px] w-[17px]" />
-              </span>
-            </button>
-          );
-        })}
+      <div className={mode === "page" ? "grid items-start gap-2 sm:grid-cols-2" : "grid gap-2"}>
+        {suggestions.slice(0, mode === "page" ? 4 : 3).map((p: any) => (
+          <QuickAddCard key={p.id} product={p} isAr={isAr} onOpen={() => go(`/product/${p.id}`)} />
+        ))}
       </div>
     </div>
   );
