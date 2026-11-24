@@ -102,6 +102,30 @@ async function getShippingRates(): Promise<Record<string, number>> {
   } catch {}
   return { westBank: 20, jerusalem: 30, interior: 75 };
 }
+import { quoteCartOffers, readCartOfferSettings, type CartOfferInput, type CartOfferQuote } from "@shared/cartOffers";
+
+/** The one cart offer this order gets (free delivery / gift / bundle discount), decided on the server. */
+async function cartOfferFor(input: CartOfferInput): Promise<CartOfferQuote> {
+  const rows = await storage.getSiteSettings();
+  const map: Record<string, string> = {};
+  for (const row of rows as any[]) map[row.key] = row.value;
+  return quoteCartOffers(readCartOfferSettings(map), input);
+}
+
+/** Written into the order's notes so whoever packs it sees the offer (above all the free gift). */
+async function offerNote(offer: CartOfferQuote): Promise<string> {
+  if (!offer.applied) return "";
+  if (offer.applied === "gift") {
+    const rows = await storage.getSiteSettings();
+    const map: Record<string, string> = {};
+    for (const row of rows as any[]) map[row.key] = row.value;
+    return `[عرض السلة: ${readCartOfferSettings(map).giftTextAr} — أضيفوها مع الطلب]`;
+  }
+  if (offer.applied === "delivery") return `[عرض السلة: خصم توصيل ₪${offer.shippingDiscount.toFixed(2)}]`;
+  return `[عرض السلة: خصم الكمية ₪${offer.bundleDiscount.toFixed(2)}]`;
+}
+const withOfferNote = (notes: unknown, note: string) => (note ? [String(notes || "").trim(), note].filter(Boolean).join("\n") : (notes as any) ?? null);
+
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 import { initializeLahzaTransaction, verifyLahzaTransaction } from "./lahza";
 
@@ -3512,6 +3536,19 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
 
+      // Cart offer: one of free delivery / gift / bundle discount. The server decides it from
+      // its own prices; the client only says which unlocked offer the customer picked.
+      const cartOffer = await cartOfferFor({
+        spend: subtotal - discountAmount,
+        itemCount: verifiedItems.reduce((n, it) => n + (Number(it.quantity) || 0), 0),
+        region,
+        shipping: serverShippingCost,
+        chosen: (req.body as any)?.cartOffer,
+      });
+      const shippingAfterOffer = Math.max(0, Math.round((serverShippingCost - cartOffer.shippingDiscount) * 100) / 100);
+      discountAmount = Math.round((discountAmount + cartOffer.bundleDiscount) * 100) / 100;
+      const cartOfferNote = await offerNote(cartOffer);
+
       // Loyalty credit usage (optional)
       const requestedCredit = isGuest ? 0 : Math.max(0, Number((req.body as any)?.useCredit) || 0);
       let creditUsed = 0;
@@ -3523,13 +3560,14 @@ Sitemap: ${SITE_URL}/sitemap.xml
         creditUsed = Math.round(creditUsed * 100) / 100;
       }
 
-      const totalAmount = subtotal - discountAmount - creditUsed + serverShippingCost;
+      const totalAmount = subtotal - discountAmount - creditUsed + shippingAfterOffer;
 
       const order = await storage.createOrder({
         ...input.order,
         userId,
+        notes: withOfferNote((input.order as any).notes, cartOfferNote),
         totalAmount: totalAmount.toString(),
-        shippingCost: serverShippingCost.toString(),
+        shippingCost: shippingAfterOffer.toString(),
         shippingRegion: region,
         status: "Pending",
         deliveryMethod: "delivery",
@@ -3594,7 +3632,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
           address: input.order.address,
           city: input.order.city,
           totalAmount: totalAmount.toFixed(2),
-          shippingCost: serverShippingCost.toString(),
+          shippingCost: shippingAfterOffer.toString(),
           shippingRegion: region || "",
           paymentMethod: input.order.paymentMethod || "Cash on delivery",
           items: itemDetails,
@@ -4446,6 +4484,18 @@ Sitemap: ${SITE_URL}/sitemap.xml
         }
       }
 
+      // Cart offer (same rules as cash orders): one of free delivery / gift / bundle discount.
+      const lahzaOffer = await cartOfferFor({
+        spend: subtotal - lahzaDiscountAmount,
+        itemCount: verifiedItems.reduce((n: number, it: any) => n + (Number(it.quantity) || 0), 0),
+        region: deliveryMethod === "pickup" ? "" : order.shippingRegion,
+        shipping: deliveryMethod === "pickup" ? 0 : lahzaShippingRates[order.shippingRegion],
+        pickup: deliveryMethod === "pickup",
+        chosen: (req.body as any)?.cartOffer,
+      });
+      lahzaDiscountAmount = Math.round((lahzaDiscountAmount + lahzaOffer.bundleDiscount) * 100) / 100;
+      const lahzaOfferNote = await offerNote(lahzaOffer);
+
       // Loyalty credit usage (optional)
       const lahzaRequestedCredit = isGuest ? 0 : Math.max(0, Number((req.body as any)?.useCredit) || 0);
       let lahzaCreditUsed = 0;
@@ -4457,7 +4507,8 @@ Sitemap: ${SITE_URL}/sitemap.xml
       }
 
       // Pickup orders have no shipping charge. The server decides this — never the client.
-      const shippingCost = deliveryMethod === "pickup" ? 0 : lahzaShippingRates[order.shippingRegion];
+      const fullShippingCost = deliveryMethod === "pickup" ? 0 : lahzaShippingRates[order.shippingRegion];
+      const shippingCost = Math.max(0, Math.round((fullShippingCost - lahzaOffer.shippingDiscount) * 100) / 100);
       const totalAmount = subtotal - lahzaDiscountAmount - lahzaCreditUsed + shippingCost;
       const reference = isGuest
         ? `LUC-${Date.now()}-g${randomUUID().replace(/-/g, "").slice(0, 10)}`
@@ -4474,6 +4525,7 @@ Sitemap: ${SITE_URL}/sitemap.xml
       pendingLahzaOrders.set(reference, {
         orderData: {
           ...order,
+          notes: withOfferNote(order.notes, lahzaOfferNote),
           userId,
           paymentMethod: "Card (Lahza)",
           deliveryMethod,

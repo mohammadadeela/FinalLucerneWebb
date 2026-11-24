@@ -18,6 +18,8 @@ import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
 import { useSiteSettings, getShippingZones, getSetting } from "@/hooks/use-site-settings";
+import { quoteCartOffers, readCartOfferSettings } from "@shared/cartOffers";
+import { CartOffers, useCartOfferChoice } from "@/components/cart/CartOffers";
 import { rememberPostLoginTarget } from "@/lib/post-login";
 import PurchaseScene from "@/components/checkout/PurchaseScene";
 import GuestVerifyCard, { isGuestContactVerified, type GuestVerified } from "@/components/checkout/GuestVerifyCard";
@@ -172,6 +174,7 @@ export default function Checkout() {
   const queryClient = useQueryClient();
   const { data: siteSettings, refetch: refetchSiteSettings } = useSiteSettings();
   const shippingZones = getShippingZones(siteSettings);
+  const [offerChoice, setOfferChoice] = useCartOfferChoice();
   const cardPaymentEnabled = siteSettings?.card_payment_enabled !== "false";
   const guestCheckoutEnabled = siteSettings?.guest_checkout_enabled !== "false";
   // Pickup is paid online only, so it needs both its own switch and online payment to be on.
@@ -495,12 +498,25 @@ export default function Checkout() {
     (appliedDiscount.categoryExcludeIds && appliedDiscount.categoryExcludeIds.length > 0) ||
     (appliedDiscount.subcategoryExcludeIds && appliedDiscount.subcategoryExcludeIds.length > 0)
   );
-  const maxCreditAllowed = Math.min(availableCredit, Math.max(0, subtotal - discountAmount));
+  // Cart offer: one of free delivery / gift / bundle discount. Calculated here only to show it;
+  // the server works it out again from its own prices when the order is placed.
+  const offerSettings = readCartOfferSettings(siteSettings as any);
+  const offerQuote = quoteCartOffers(offerSettings, {
+    spend: subtotal - discountAmount,
+    itemCount: items.reduce((n, item) => n + item.quantity, 0),
+    region: deliveryMethod === "pickup" ? "" : shippingRegion,
+    shipping: shippingCost,
+    pickup: deliveryMethod === "pickup",
+    chosen: offerChoice,
+  });
+  const shippingAfterOffer = Math.max(0, shippingCost - offerQuote.shippingDiscount);
+  const bundleDiscount = offerQuote.bundleDiscount;
+  const maxCreditAllowed = Math.min(availableCredit, Math.max(0, subtotal - discountAmount - bundleDiscount));
   const requestedCredit = Number(creditInput) || 0;
   const creditApplied = useCreditEnabled
     ? Math.max(0, Math.min(requestedCredit, maxCreditAllowed))
     : 0;
-  const total = subtotal - discountAmount - creditApplied + shippingCost;
+  const total = subtotal - discountAmount - bundleDiscount - creditApplied + shippingAfterOffer;
 
   const applyDiscount = async () => {
     const code = discountInput.trim().toUpperCase();
@@ -870,6 +886,7 @@ export default function Checkout() {
             },
             items: orderItems,
             useCredit: !user ? 0 : creditApplied,
+            cartOffer: offerQuote.applied,
             ...(!user && guestVerified ? { guestProof: guestVerified.proof } : {}),
             }),
         });
@@ -955,6 +972,7 @@ export default function Checkout() {
           } as any,
           items: orderItems,
           useCredit: !user ? 0 : creditApplied,
+          cartOffer: offerQuote.applied,
           ...(!user && guestVerified ? { guestProof: guestVerified.proof } : {}),
           } as any);
 
@@ -1529,6 +1547,10 @@ export default function Checkout() {
                 )}
               </div>
 
+              <div className="mb-5">
+                <CartOffers quote={offerQuote} settings={offerSettings} isAr={language === "ar"} region={deliveryMethod === "pickup" ? null : shippingRegion} onChoose={setOfferChoice} />
+              </div>
+
               <div className="border-t border-border pt-4 mb-6 space-y-3 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>{t.checkout.subtotal}</span>
@@ -1541,9 +1563,26 @@ export default function Checkout() {
                     {deliveryMethod === "delivery" && shippingRegion && <span className="text-xs">({regionLabels[shippingRegion]?.name})</span>}
                   </span>
                   <span className={`ltr-num ${shippingRegion ? "font-medium text-foreground" : ""}`}>
-                    {deliveryMethod === "pickup" ? (language === "ar" ? "مجاني" : "Free") : shippingRegion ? `₪${shippingCost.toFixed(2)}` : t.checkout.selectRegion}
+                    {deliveryMethod === "pickup" ? (language === "ar" ? "مجاني" : "Free") : !shippingRegion ? t.checkout.selectRegion : offerQuote.shippingDiscount > 0 ? (
+                      <>
+                        <s className="me-1.5 font-normal text-muted-foreground">₪{shippingCost.toFixed(2)}</s>
+                        {shippingAfterOffer === 0 ? (language === "ar" ? "مجاني" : "Free") : `₪${shippingAfterOffer.toFixed(2)}`}
+                      </>
+                    ) : `₪${shippingCost.toFixed(2)}`}
                   </span>
                 </div>
+                {bundleDiscount > 0 && (
+                  <div className="flex justify-between font-medium text-foreground" data-testid="row-bundle-discount">
+                    <span>{language === "ar" ? `خصم الكمية (${offerSettings.bundlePercent}%)` : `Bundle discount (${offerSettings.bundlePercent}%)`}</span>
+                    <span className="ltr-num">-₪{bundleDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {offerQuote.gift && (
+                  <div className="flex justify-between font-medium text-foreground" data-testid="row-offer-gift">
+                    <span>{language === "ar" ? offerSettings.giftTextAr : offerSettings.giftTextEn}</span>
+                    <span>{language === "ar" ? "مجاناً" : "Free"}</span>
+                  </div>
+                )}
 
                 {!user ? (
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1" data-testid="text-guest-no-discount">

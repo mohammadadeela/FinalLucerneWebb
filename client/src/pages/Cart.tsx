@@ -12,6 +12,9 @@ import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
 import { useSiteSettings } from "@/hooks/use-site-settings";
 import { optimizeCloudinaryUrl, blurCloudinaryUrl } from "@/lib/utils";
+import { quoteCartOffers, readCartOfferSettings } from "@shared/cartOffers";
+import { CartOffers, useCartOfferChoice } from "@/components/cart/CartOffers";
+import { useBestSellers } from "@/hooks/use-products";
 
 function getItemImage(item: CartItem): string {
   const { product, color } = item;
@@ -172,6 +175,22 @@ export default function Cart() {
   }, 0);
   const hasSoldOut = items.some(i => isItemSoldOut(i));
 
+  // Cart offers (one per order). Delivery is priced at checkout, so here it shows as a promise.
+  const [offerChoice, setOfferChoice] = useCartOfferChoice();
+  const offerSettings = readCartOfferSettings(siteSettings as any);
+  const offerQuote = quoteCartOffers(offerSettings, {
+    spend: availableTotal,
+    itemCount: availableItems.reduce((n, item) => n + item.quantity, 0),
+    shipping: 0,
+    chosen: offerChoice,
+  });
+  const cartTotalAfterOffer = Math.max(0, availableTotal - offerQuote.bundleDiscount);
+
+  // "Goes well with your cart": real best sellers that are not in the cart yet.
+  const { data: bestSellersData } = useBestSellers(12);
+  const inCart = new Set(items.map((i) => i.product.id));
+  const suggestions = (bestSellersData || []).filter((p: any) => !inCart.has(p.id) && (p.stockQuantity ?? 0) > 0).slice(0, 4);
+
   if (items.length === 0) {
     return (
       <div className="min-h-screen flex flex-col pt-navbar">
@@ -316,17 +335,58 @@ export default function Cart() {
                 );
               })}
             </div>
+
+            {suggestions.length > 0 && (
+              <section className="mt-10" data-testid="section-cart-suggestions">
+                <h2 className="mb-4 text-lg font-semibold">{language === "ar" ? "يليق مع سلتك" : "Goes well with your cart"}</h2>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {suggestions.map((p: any) => {
+                    const sale = p.discountPrice && Number(p.discountPrice) > 0 && Number(p.discountPrice) < Number(p.price);
+                    return (
+                      <Link key={p.id} href={`/product/${p.id}`}>
+                        <div className="group cursor-pointer" data-testid={`card-cart-suggestion-${p.id}`}>
+                          <div className="aspect-[3/4] overflow-hidden rounded-2xl bg-secondary">
+                            <img src={optimizeCloudinaryUrl(p.mainImage, 400) || p.mainImage} alt={p.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          </div>
+                          <p className="mt-2 truncate text-sm font-medium">{p.name}</p>
+                          <p className="text-sm">
+                            <span className="font-semibold">₪{Number(sale ? p.discountPrice : p.price)}</span>
+                            {sale && <s className="ms-1.5 text-xs text-muted-foreground">₪{Number(p.price)}</s>}
+                          </p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
           
           <div className="col-span-1">
             <div className="bg-secondary p-6 sm:p-8 sticky top-28">
               <h2 className="font-display text-2xl mb-6 border-b border-border pb-4" data-testid="text-order-summary">{t.cart.orderSummary}</h2>
               
+              <div className="mb-6">
+                <CartOffers quote={offerQuote} settings={offerSettings} isAr={language === "ar"} onChoose={setOfferChoice} />
+              </div>
+
               <div className="space-y-4 mb-6 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t.cart.subtotal}</span>
                   <span>₪{availableTotal.toFixed(2)}</span>
                 </div>
+                {offerQuote.bundleDiscount > 0 && (
+                  <div className="flex justify-between font-medium" data-testid="row-cart-bundle-discount">
+                    <span>{language === "ar" ? `خصم الكمية (${offerSettings.bundlePercent}%)` : `Bundle discount (${offerSettings.bundlePercent}%)`}</span>
+                    <span>-₪{offerQuote.bundleDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {offerQuote.gift && (
+                  <div className="flex justify-between font-medium" data-testid="row-cart-gift">
+                    <span>{language === "ar" ? offerSettings.giftTextAr : offerSettings.giftTextEn}</span>
+                    <span>{language === "ar" ? "مجاناً" : "Free"}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t.product.shipping}</span>
                   <span>{t.cart.shippingCalc}</span>
@@ -335,7 +395,7 @@ export default function Cart() {
               
               <div className="border-t border-border pt-4 mb-4 flex justify-between items-center text-lg font-medium">
                 <span>{t.cart.total}</span>
-                <span data-testid="text-cart-total">₪{availableTotal.toFixed(2)}</span>
+                <span data-testid="text-cart-total">₪{cartTotalAfterOffer.toFixed(2)}</span>
               </div>
 
               {loyaltyPointsEnabled && availableTotal > 0 && Math.floor(availableTotal / 2) > 0 && (
