@@ -1,4 +1,5 @@
 import { useCartDrawer } from "@/store/use-cart-drawer";
+import { subcategoryHref } from "@/lib/storefront";
 import { Link, useLocation } from "wouter";
 import {
   ShoppingBag,
@@ -230,6 +231,8 @@ function HighlightMatch({ text, query }: { text?: string; query: string }) {
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Which category has its subcategories open in the phone menu.
+  const [openMobileCat, setOpenMobileCat] = useState<number | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchHistory, setSearchHistory] = useState<string[]>(() => {
@@ -1117,18 +1120,52 @@ export function Navbar() {
               {/* Categories: plain text, one per line — no photos or icons */}
               <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4 pt-2" aria-label="Categories" data-testid="nav-mobile-categories">
                 <ul className="flex flex-col">
-                  {navCategories.map((c: any) => (
-                    <li key={c.id}>
-                      <Link
-                        href={categoryHref(c)}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-3 text-[19px] font-medium leading-tight tracking-wide text-foreground transition-colors hover:text-berry"
-                        data-testid={`link-${c.slug}-mobile`}
-                      >
-                        {catLabel(c)}
-                      </Link>
-                    </li>
-                  ))}
+                  {navCategories.map((c: any) => {
+                    const subs = (allSubcategories || []).filter((sub: any) => String(sub.categoryId) === String(c.id) && sub.isActive !== false);
+                    const open = openMobileCat === c.id;
+                    return (
+                      <li key={c.id}>
+                        <div className="flex items-center justify-between gap-2">
+                          <Link
+                            href={categoryHref(c)}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="block min-w-0 flex-1 py-3 text-[19px] font-medium leading-tight tracking-wide text-foreground transition-colors hover:text-berry"
+                            data-testid={`link-${c.slug}-mobile`}
+                          >
+                            {catLabel(c)}
+                          </Link>
+                          {subs.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setOpenMobileCat(open ? null : c.id)}
+                              aria-expanded={open}
+                              aria-label={language === "ar" ? `أقسام ${catLabel(c)}` : `${catLabel(c)} sections`}
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+                              data-testid={`button-subs-${c.slug}-mobile`}
+                            >
+                              <ChevronDown className={`h-5 w-5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} strokeWidth={1.6} />
+                            </button>
+                          )}
+                        </div>
+                        {open && subs.length > 0 && (
+                          <ul className="mb-2 ms-1 border-s border-black/10 ps-4" data-testid={`list-subs-${c.slug}-mobile`}>
+                            {subs.map((sub: any) => (
+                              <li key={sub.id}>
+                                <Link
+                                  href={subcategoryHref(c, sub.id)}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="block py-2 text-[15.5px] text-foreground/75 transition-colors hover:text-berry"
+                                  data-testid={`link-sub-${sub.id}-mobile`}
+                                >
+                                  {language === "ar" ? sub.nameAr || sub.name : sub.name || sub.nameAr}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
                   <li className="mt-2 border-t border-black/[0.08] pt-2">
                     <Link
                       href="/sales"
