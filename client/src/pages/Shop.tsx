@@ -8,7 +8,6 @@ import { useCategories } from "@/hooks/use-categories";
 import { useLanguage } from "@/i18n";
 import { useSearch, useLocation } from "wouter";
 import { FilterPanel, type FilterState, type ColorOption } from "@/components/FilterPanel";
-import { ListToolbar } from "@/components/ListToolbar";
 import type { ColorVariant } from "@shared/schema";
 import { COLOR_FAMILIES, groupColorsByFamily, productMatchesColorFamily, getColorFamily, normalizeArabic, type GroupedColor } from "@/lib/colorFamilies";
 
@@ -171,30 +170,13 @@ export default function Shop() {
     (filters.inStockOnly ? 1 : 0) + (filters.newArrivals ? 1 : 0) + (filters.onSale ? 1 : 0) +
     (filters.priceRange[0] > minPrice || filters.priceRange[1] < maxPrice ? 1 : 0);
 
-  const brandCounts: Record<string, number> = {};
-  (products || []).forEach((p: any) => { if (p.brand) brandCounts[p.brand] = (brandCounts[p.brand] || 0) + 1; });
-  const filterProps = {
-    open: filterOpen,
-    onClose: () => setFilterOpen(false),
-    availableColors: allColors,
-    groupedColors: colorGroups,
-    availableSizes: allSizes,
-    availableBrands: allBrands,
-    minPrice,
-    maxPrice,
-    filters,
-    onChange: setFilters,
-    brandCounts,
-    resultCount: filteredProducts.length,
-  };
-
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-10 py-5 sm:py-8">
         <div className="max-w-[1280px] mx-auto">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4 sm:mb-5">
-          <h1 className="font-display text-[2.4rem] font-semibold leading-none sm:text-[3.4rem]" data-testid="text-collection-title">
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-semibold" data-testid="text-collection-title">
             {t.shop.collection}
           </h1>
           <div className="mt-1 md:mt-0 w-full md:w-auto flex flex-row gap-2 items-center">
@@ -206,7 +188,19 @@ export default function Shop() {
               className="h-10 sm:h-12 flex-1 sm:flex-none sm:w-64 rounded-2xl border border-border bg-background/80 px-4 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary"
               data-testid="input-search"
             />
-            
+            <button
+              onClick={() => setFilterOpen(true)}
+              className={`flex h-10 sm:h-12 items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border px-3 sm:px-4 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0 ${activeCount > 0 ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-background hover:border-foreground"}`}
+              data-testid="button-open-filter"
+            >
+              <SlidersHorizontal size={15} />
+              {t.filter.title}
+              {activeCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1 text-[10px] font-bold text-primary">
+                  {activeCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -242,18 +236,41 @@ export default function Shop() {
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row lg:gap-8">
+        <div className="flex flex-col">
           {/* Desktop sidebar */}
-          <aside className="hidden w-[230px] shrink-0 lg:block">
-            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-40 pe-1 [scrollbar-width:thin]">
-              <FilterPanel variant="sidebar" {...filterProps} />
+          <aside className="hidden">
+            <div className="sticky top-28 space-y-8">
+              <div>
+                <h3 className="font-semibold uppercase tracking-widest text-xs mb-4 text-muted-foreground">{t.shop.categories}</h3>
+                <ul className="space-y-3">
+                  <li>
+                    <button
+                      onClick={() => setSelectedCategory(null)}
+                      className={`text-sm hover:text-foreground transition-colors ${selectedCategory === null ? "text-foreground font-medium" : "text-muted-foreground"}`}
+                      data-testid="button-all-products"
+                    >
+                      {t.shop.allProducts}
+                    </button>
+                  </li>
+                  {categories?.map((cat) => (
+                    <li key={cat.id}>
+                      <button
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`text-sm hover:text-foreground transition-colors ${selectedCategory === cat.id ? "text-foreground font-medium" : "text-muted-foreground"}`}
+                        data-testid={`button-category-${cat.id}`}
+                      >
+                        {language === "ar" ? (cat.nameAr || cat.name) : cat.name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </aside>
 
-          <div className="min-w-0 flex-1">
-            <ListToolbar filters={filters} onChange={setFilters} onOpenFilters={() => setFilterOpen(true)} activeCount={activeCount} count={filteredProducts.length} />
+          <div className="flex-1">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <p className="text-sm flex items-center gap-1.5 lg:hidden">
+              <p className="text-sm flex items-center gap-1.5" data-testid="text-results-count">
                   <>
                     <ShoppingBag size={14} className="text-muted-foreground" />
                     <span className="font-semibold text-foreground tabular-nums">{filteredProducts.length}</span>
@@ -294,14 +311,14 @@ export default function Shop() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                   {visibleProducts.map((product, index) => (
                     <ProductCard key={product.id} product={product} priority={index < 4} />
                   ))}
                 </div>
 
                 {hasMore && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 mt-4 sm:mt-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 mt-4 sm:mt-6">
                     {[...Array(Math.min(4, filteredProducts.length - visibleCount))].map((_, i) => (
                       <div key={i} className="animate-pulse">
                         <div className="bg-muted aspect-[3/4] mb-4"></div>
@@ -321,7 +338,18 @@ export default function Shop() {
       </main>
       <Footer />
 
-      <FilterPanel {...filterProps} />
+      <FilterPanel
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        availableColors={allColors}
+        groupedColors={colorGroups}
+        availableSizes={allSizes}
+        availableBrands={allBrands}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        filters={filters}
+        onChange={setFilters}
+      />
     </div>
   );
 }

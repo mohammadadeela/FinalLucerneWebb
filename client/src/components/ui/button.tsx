@@ -8,19 +8,19 @@ const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0" +
   " hover-elevate active-elevate-2" +
   // Storefront only — the admin area keeps the original button exactly.
-  " store:rounded-full store:font-semibold store:select-none store:hover:-translate-y-0.5 store:transition-[background-color,border-color,color,box-shadow,transform] store:duration-200 store:ease-out store:active:translate-y-0 store:active:scale-[0.97]" +
+  " store:rounded-lg store:select-none store:hover:translate-y-0 store:transition-[background-color,border-color,color,box-shadow,transform] store:duration-200 store:ease-out store:active:scale-[0.98]" +
   " store:focus-visible:ring-2 store:focus-visible:ring-offset-2 store:focus-visible:ring-offset-background",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground border border-primary-border store:border-primary store:shadow-[0_18px_40px_-22px_rgba(179,18,92,0.55)] store:hover:bg-berry store:hover:border-berry",
+          "bg-primary text-primary-foreground border border-primary-border store:border-primary store:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_8px_18px_-10px_rgba(0,0,0,0.55)] store:hover:bg-primary/90",
         destructive:
           "bg-destructive text-destructive-foreground border border-destructive-border store:hover:bg-destructive/90",
         outline:
           // Shows the background color of whatever card / sidebar / accent background it is inside of.
           // Inherits the current text color.
-          " border [border-color:var(--button-outline)]  shadow-xs active:shadow-none store:border-foreground/20 store:hover:border-foreground store:hover:bg-foreground store:hover:text-background",
+          " border [border-color:var(--button-outline)]  shadow-xs active:shadow-none store:border-foreground/15 store:hover:border-foreground/35 store:hover:bg-foreground/[0.04]",
         secondary: "border bg-secondary text-secondary-foreground border border-secondary-border store:hover:bg-foreground/[0.1]",
         // Add a transparent border so that when someone toggles a border on later, it doesn't shift layout/size.
         ghost: "border border-transparent store:hover:bg-foreground/[0.06]",
@@ -30,9 +30,9 @@ const buttonVariants = cva(
       // but will expand to fit large amounts of content.
       size: {
         default: "min-h-9 px-4 py-2",
-        sm: "min-h-8 rounded-md px-3 text-xs store:rounded-full store:px-4",
-        lg: "min-h-10 rounded-md px-8 store:rounded-full store:min-h-12",
-        icon: "h-9 w-9 store:rounded-full",
+        sm: "min-h-8 rounded-md px-3 text-xs",
+        lg: "min-h-10 rounded-md px-8",
+        icon: "h-9 w-9",
       },
     },
     defaultVariants: {

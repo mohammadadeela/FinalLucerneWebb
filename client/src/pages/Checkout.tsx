@@ -5,8 +5,6 @@ import { useLocation, Link } from "wouter";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/store/use-cart";
-import { SizeSelect } from "@/components/cart/SizeSelect";
-import { sizeOptions } from "@/lib/cartSizes";
 import { useAuth } from "@/hooks/use-auth";
 import { useCreateOrder } from "@/hooks/use-orders";
 import { Button } from "@/components/ui/button";
@@ -145,17 +143,11 @@ function CheckoutItemImage({ src, alt, onClick, testId }: { src: string; alt: st
 }
 
 export default function Checkout() {
-  const { items, cartTotal, clearCart, removeFromCart, updateQuantity, addToCart, isLoading: cartLoading } = useCart();
+  const { items, cartTotal, clearCart, removeFromCart, updateQuantity, isLoading: cartLoading } = useCart();
   const [soldOutItems, setSoldOutItems] = useState<Array<{productId: number; name: string; color?: string | null; size?: string | null; image?: string}>>([]);
   const soldOutBannerRef = useRef<HTMLDivElement>(null);
   // The order list scrolls when it is long; this tells the customer there is more below.
   const orderListRef = useRef<HTMLDivElement>(null);
-  const changeOrderSize = (item: (typeof items)[number], next: string) => {
-    if (!next || next === item.size) return;
-    const stock = sizeOptions(item.product, item.color).find((o) => o.size === next)?.stock ?? item.quantity;
-    removeFromCart(item.product.id, item.size, item.color);
-    addToCart(item.product as any, Math.max(1, Math.min(item.quantity, stock)), next, item.color);
-  };
   // The same piece in several sizes is one line in the order list.
   const orderGroups: (typeof items)[] = [];
   items.forEach((item) => {
@@ -1062,7 +1054,7 @@ export default function Checkout() {
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
+      <main className="sima-skin flex-1 w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-5xl mx-auto">
         <PurchaseScene open={orderInFlight || sceneHold} done={sceneDone} method={deliveryMethod === "pickup" ? "pickup" : paymentMethod} images={items.slice(0, 3).map((it: any) => getItemImage(it)).filter(Boolean)} />
         <h1 className="font-display text-[2.6rem] leading-none sm:text-[3.4rem] mb-8 sm:mb-10" data-testid="text-checkout-title">{t.checkout.title}</h1>
@@ -1535,24 +1527,12 @@ export default function Checkout() {
                         </div>
                         <div>
                           <p className="font-medium">{item.product.name}</p>
-                          {item.color && <p className="text-muted-foreground text-xs">{translateColorName(item.color, language === "ar" ? "ar" : "en")}</p>}
-                          <div className="mt-1 flex flex-wrap gap-1.5">
-                            {members.map((m) => (
-                              <span key={(m.size || "") + "-" + (m.color || "")} className="inline-flex items-center gap-1 rounded-full bg-secondary/70 pe-0.5 text-xs">
-                                <SizeSelect product={m.product} color={m.color} size={m.size} isAr={language === "ar"} onChange={(next) => changeOrderSize(m, next)} testId={`select-checkout-size-${m.product.id}-${m.size}`} />
-                                <span className={m.size ? "text-foreground/70" : "ps-2.5 text-foreground/70"}>× {m.quantity}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => removeFromCart(m.product.id, m.size, m.color)}
-                                  aria-label={language === "ar" ? "حذف من الطلب" : "Remove from order"}
-                                  className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
-                                  data-testid={`button-checkout-remove-${m.product.id}-${m.size || "x"}`}
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
+                          <p className="text-muted-foreground text-xs">
+                            {item.color ? translateColorName(item.color, language === "ar" ? "ar" : "en") + " " : ""}
+                            {members.length > 1
+                              ? members.map((m) => (m.size || "") + " ×" + m.quantity).join(" · ")
+                              : <>{item.size}<span className="ms-1.5 text-foreground/60">× {item.quantity}</span></>}
+                          </p>
                         </div>
                       </div>
                       <span className="shrink-0 font-medium ltr-num">₪{(price * groupQty).toFixed(2)}</span>

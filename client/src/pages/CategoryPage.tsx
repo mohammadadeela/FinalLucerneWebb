@@ -10,7 +10,6 @@ import { useLanguage } from "@/i18n";
 import { useSearch, useLocation } from "wouter";
 import type { ColorVariant, Subcategory } from "@shared/schema";
 import { FilterPanel, type FilterState, type ColorOption } from "@/components/FilterPanel";
-import { ListToolbar } from "@/components/ListToolbar";
 import { COLOR_FAMILIES, groupColorsByFamily, productMatchesColorFamily, getColorFamily, normalizeArabic } from "@/lib/colorFamilies";
 
 interface CategoryPageProps {
@@ -190,24 +189,6 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
 
   const clearAll = () => setFilters({ sort: null, sizes: [], colors: [], brands: [], priceRange: [minPrice, maxPrice], inStockOnly: false, newArrivals: false, onSale: false });
 
-  const brandCounts: Record<string, number> = {};
-  (products || []).forEach((p: any) => { if (p.brand) brandCounts[p.brand] = (brandCounts[p.brand] || 0) + 1; });
-  const filterProps = {
-    open: filterOpen,
-    onClose: () => setFilterOpen(false),
-    availableColors: allColors,
-    groupedColors: colorGroups,
-    availableSizes: allSizes,
-    availableBrands: allBrands,
-    minPrice,
-    maxPrice,
-    filters,
-    onChange: setFilters,
-    brandCounts,
-    defaultSizes,
-    resultCount: filtered.length,
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -302,17 +283,21 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
               className="h-10 sm:h-12 flex-1 sm:flex-none sm:w-52 rounded-2xl border border-border bg-background/80 px-4 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary"
               data-testid="input-category-search"
             />
-            
+            <button
+              onClick={() => setFilterOpen(true)}
+              className={`flex h-10 sm:h-12 items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border px-3 sm:px-4 text-sm font-semibold transition-colors whitespace-nowrap flex-shrink-0 ${activeCount > 0 ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border bg-background hover:border-foreground"}`}
+              data-testid="button-open-filter"
+            >
+              <SlidersHorizontal size={15} />
+              {t.filter.title}
+              {activeCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-foreground px-1 text-[10px] font-bold text-primary">
+                  {activeCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
-        <div className="flex flex-col lg:flex-row lg:gap-8">
-          <aside className="hidden w-[230px] shrink-0 lg:block">
-            <div className="sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto pb-40 pe-1 [scrollbar-width:thin]">
-              <FilterPanel variant="sidebar" {...filterProps} />
-            </div>
-          </aside>
-          <div className="min-w-0 flex-1">
-            <ListToolbar filters={filters} onChange={setFilters} onOpenFilters={() => setFilterOpen(true)} activeCount={activeCount} count={filtered.length} />
 
         {filtered.length === 0 && !isLoading ? (
           <div className="text-center py-16 sm:py-24 text-muted-foreground">
@@ -322,18 +307,28 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5">
             {filtered.map((product, index) => (
               <ProductCard key={product.id} product={product} priority={index < 4} />
             ))}
           </div>
         )}
-          </div>
-        </div>
       </main>
       <Footer />
 
-      <FilterPanel {...filterProps} />
+      <FilterPanel
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        availableColors={allColors}
+        groupedColors={colorGroups}
+        availableSizes={allSizes}
+        availableBrands={allBrands}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        filters={filters}
+        onChange={setFilters}
+        defaultSizes={defaultSizes}
+      />
     </div>
   );
 }

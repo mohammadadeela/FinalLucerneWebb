@@ -52,7 +52,7 @@ export function CartDrawer() {
             role="dialog"
             aria-modal="true"
             aria-label={t.cart.title}
-            className={`absolute top-0 flex h-full w-[86vw] max-w-[420px] flex-col overflow-hidden bg-background shadow-2xl ${isAr ? "left-0 rounded-e-[1.75rem]" : "right-0 rounded-s-[1.75rem]"}`}
+            className={`sima-skin absolute top-0 flex h-full w-[86vw] max-w-[420px] flex-col overflow-hidden bg-background shadow-2xl ${isAr ? "left-0 rounded-e-[1.75rem]" : "right-0 rounded-s-[1.75rem]"}`}
             initial={{ x: from }}
             animate={{ x: 0 }}
             exit={{ x: from }}

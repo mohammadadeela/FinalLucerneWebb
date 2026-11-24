@@ -416,7 +416,7 @@ export default function Cart() {
   return (
     <div className="min-h-screen flex flex-col pt-navbar">
       <Navbar />
-      <main className="flex flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <main className="sima-skin flex flex-1 flex-col px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <CartContents mode="page" />
       </main>
       <Footer />

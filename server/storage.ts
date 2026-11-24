@@ -1366,8 +1366,9 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(cartItems.userId, userId),
         eq(cartItems.productId, productId),
-        size ? eq(cartItems.size, size) : sql`${cartItems.size} is null`,
-        color ? eq(cartItems.color, color) : sql`${cartItems.color} is null`,
+        // A piece with no size or colour may be stored as NULL or as an empty text; both mean "none".
+        size ? eq(cartItems.size, size) : sql`coalesce(${cartItems.size}, '') = ''`,
+        color ? eq(cartItems.color, color) : sql`coalesce(${cartItems.color}, '') = ''`,
       ));
     if (existing.length > 0) {
       await db
@@ -1375,7 +1376,7 @@ export class DatabaseStorage implements IStorage {
         .set({ quantity: existing[0].quantity + quantity, updatedAt: new Date() })
         .where(eq(cartItems.id, existing[0].id));
     } else {
-      await db.insert(cartItems).values({ userId, productId, quantity, size: size ?? null, color: color ?? null });
+      await db.insert(cartItems).values({ userId, productId, quantity, size: size || null, color: color || null });
     }
   }
 

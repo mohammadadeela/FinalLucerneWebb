@@ -27,14 +27,16 @@ export interface CartOfferSettings {
 }
 
 export const DEFAULT_CART_OFFERS: CartOfferSettings = {
-  deliveryOn: true,
+  // All three offers are switched off. Set a site setting (offer_delivery_on, offer_gift_on,
+  // offer_bundle_on = "true") to bring one back.
+  deliveryOn: false,
   deliveryOver: 300,
   interiorDiscount: 30,
-  giftOn: true,
+  giftOn: false,
   giftOver: 200,
   giftTextAr: "هدية مجانية",
   giftTextEn: "Free gift",
-  bundleOn: true,
+  bundleOn: false,
   bundleQty: 3,
   bundlePercent: 10,
 };

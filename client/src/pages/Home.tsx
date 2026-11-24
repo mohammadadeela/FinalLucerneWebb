@@ -409,8 +409,8 @@ export default function Home() {
   const catName = (c: any) => (isAr ? c?.nameAr || c?.name : c?.name) || "";
 
   const featured = featuredProducts || [];
-  // The "most wanted" row was merged into the best sellers (both came from the same sales).
-  const mostOrdered: any[] = [];
+  const { data: mostOrderedData } = useMostOrderedProducts(10, 30);
+  const mostOrdered = mostOrderedData || [];
   const newArrivals = newArrivalsData || [];
   const bestSellers = bestSellersData || [];
   const onSale = onSaleData || [];
@@ -951,155 +951,6 @@ export default function Home() {
           </Section>
         )}
 
-        {/* ── Best sellers ── */}
-        {bestSellers.length > 0 && (
-          <Section>
-            {/* Same pink panel as the "most wanted" block */}
-            <div className="overflow-hidden rounded-[1.5rem] bg-blush p-3 sm:rounded-[1.75rem] sm:p-5">
-            <AnimatedBanner
-              plain
-              texts={bannerTexts(g("home_banner_best_texts"), ["BEST SELLERS", "MOST LOVED", "TOP PICKS", "FAVOURITES"])}
-              testId="banner-best-sellers"
-            />
-
-            {isBestSellersLoading ? (
-              <RailSkeleton />
-            ) : (
-              <>
-                <div
-                  className={
-                    hasPodium && bestSellerRest.length >= 4
-                      ? "lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-center lg:gap-10 xl:gap-14"
-                      : "lg:mx-auto lg:max-w-4xl"
-                  }
-                >
-                  {hasPodium && (
-                  <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5">
-                    {[podiumProducts[1], podiumProducts[0], podiumProducts[2]].map(
-                      (product, podiumIdx) => {
-                        const rank = podiumIdx === 0 ? 2 : podiumIdx === 1 ? 1 : 3;
-                        const isCenter = rank === 1;
-                        return (
-                          <Link key={`${rank}-${product.id}`} href={`/product/${product.id}`}>
-                            <div
-                              className={`group relative cursor-pointer overflow-hidden rounded-2xl sm:rounded-[1.75rem] ${isCenter ? "aspect-[2/3]" : "mt-4 aspect-[3/4] sm:mt-8"}`}
-                            >
-                              <BannerImage
-                                src={product.mainImage}
-                                alt={product.name}
-                                loading="lazy"
-                                width={600}
-                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
-                              <ProductWatermark size="lg" className="hidden sm:flex" />
-                              <div className="absolute start-2 top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow sm:start-3 sm:top-3 sm:h-9 sm:w-9">
-                                <span className="text-[11px] font-bold leading-none text-berry sm:text-sm">
-                                  {rank}
-                                </span>
-                              </div>
-                              <div className="absolute inset-x-0 bottom-0 p-2 text-white sm:p-4">
-                                <h3 className="mb-1 line-clamp-2 text-[11px] font-semibold leading-tight sm:text-lg">
-                                  {product.name}
-                                </h3>
-                                <div className="flex items-center gap-1.5">
-                                  {product.discountPrice ? (
-                                    <>
-                                      <span className="text-xs font-bold text-[#fca5a5] sm:text-base">
-                                        ₪{Number(product.discountPrice).toFixed(0)}
-                                      </span>
-                                      <span className="text-[10px] line-through opacity-60 sm:text-xs">
-                                        ₪{Number(product.price).toFixed(0)}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span className="text-xs font-bold sm:text-base">
-                                      ₪{Number(product.price).toFixed(0)}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </Link>
-                        );
-                      },
-                    )}
-                  </div>
-                  )}
-
-                  {/* Desktop: ranks 4–9 as a compact chart beside the podium */}
-                  {hasPodium && bestSellerRest.length >= 4 && (
-                    <ol className="hidden grid-cols-2 gap-x-5 gap-y-3 lg:grid">
-                      {bestSellerRest.slice(0, 6).map((product: any, i: number) => (
-                        <li key={product.id}>
-                          <Link
-                            href={`/product/${product.id}`}
-                            className="group flex items-center gap-3.5 rounded-2xl border border-transparent bg-card p-2 pe-4 ring-1 ring-black/[0.05] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-26px_rgba(74,24,43,0.5)]"
-                            data-testid={`link-bestseller-rank-${i + 4}`}
-                          >
-                            <span className="relative block h-[5.5rem] w-[4.25rem] shrink-0 overflow-hidden rounded-xl bg-[hsl(var(--sand))]">
-                              <BannerImage
-                                src={product.mainImage}
-                                alt={product.name}
-                                width={200}
-                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="line-clamp-2 block text-[15px] font-medium leading-snug transition-colors group-hover:text-berry">
-                                {product.name}
-                              </span>
-                              <span className="mt-1 flex items-baseline gap-2 text-sm">
-                                {product.discountPrice ? (
-                                  <>
-                                    <span className="ltr-num font-semibold text-[#9B1C1C]">
-                                      ₪ {Number(product.discountPrice).toFixed(0)}
-                                    </span>
-                                    <span className="ltr-num text-xs text-muted-foreground/70 line-through">
-                                      ₪ {Number(product.price).toFixed(0)}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <span className="ltr-num font-semibold">
-                                    ₪ {Number(product.price).toFixed(0)}
-                                  </span>
-                                )}
-                              </span>
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </div>
-
-                {/* Phones / tablets (and short lists): the rest as a swipeable rail */}
-                {bestSellerRest.length > 0 && (
-                  <div className={`mt-7 sm:mt-9 ${hasPodium && bestSellerRest.length >= 4 ? "lg:hidden" : ""}`}>
-                    <ProductRail
-                      products={bestSellerRest}
-                      testId="rail-bestsellers"
-                      more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-            </div>
-          </Section>
-        )}
-
-        {/* ── On sale ── */}
-        {onSale.length > 0 && (
-          <Section>
-            <ProductRail
-              products={onSale}
-              testId="rail-on-sale"
-              more={{ href: "/sales", label: pick("كل التخفيضات", "All sale pieces"), tone: "sale" }}
-            />
-          </Section>
-        )}
-
         {/* Editorial Category Grid */}
         <Reveal>
         {(() => {
@@ -1332,12 +1183,222 @@ export default function Home() {
         })()}
         </Reveal>
 
+        {/* ── Most wanted: soft panel of white tiles — photo, price, name ── */}
+        {trending.length > 0 && (
+          <Section>
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush p-3 sm:rounded-[1.75rem] sm:p-5">
+              <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+                <h2
+                  className="truncate text-xl font-semibold leading-none text-berry-deep sm:text-[1.75rem] rtl:leading-snug"
+                  data-testid="section-title-trending"
+                >
+                  {secFeaturedTitle}
+                </h2>
+                <Link
+                  href="/shop"
+                  className="group inline-flex h-10 shrink-0 items-center gap-1.5 text-[13.5px] font-semibold text-berry transition-colors hover:text-berry-deep sm:text-[15px]"
+                  data-testid="link-view-all-/shop"
+                >
+                  {pick("تسوقي الكل", "Shop all")}
+                  <Arrow className="h-4 w-4" />
+                </Link>
+              </div>
+              <div
+                className="grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7"
+                data-testid="rail-trending"
+              >
+                {trending.slice(0, 7).map((product: any, i: number) => {
+                  const price = parseFloat(String(product.discountPrice ?? product.price));
+                  return (
+                    <Link
+                      key={product.id}
+                      href={`/product/${product.id}`}
+                      className={`group flex-col items-center rounded-[1.25rem] bg-white p-2 text-center transition-shadow duration-300 hover:shadow-[0_18px_36px_-24px_rgba(0,0,0,0.45)] sm:rounded-[1.5rem] sm:p-2.5 ${i < 6 ? "flex" : "hidden"} ${i < 4 ? "sm:flex" : "sm:hidden"} ${i < 5 ? "md:flex" : "md:hidden"} ${i < 6 ? "lg:flex" : "lg:hidden"} ${i < 7 ? "xl:flex" : "xl:hidden"}`}
+                      data-testid={`tile-trending-${product.id}`}
+                    >
+                      <span className="relative block aspect-square w-full overflow-hidden rounded-[0.9rem] bg-blush sm:rounded-[1.1rem]">
+                        <BannerImage
+                          src={product.mainImage}
+                          alt={product.name}
+                          width={400}
+                          loading={i < 6 ? "eager" : "lazy"}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      </span>
+                      <span className="price-text ltr-num mt-2 text-[14px] leading-tight text-berry sm:text-base">
+                        ₪{Number.isInteger(price) ? price : price.toFixed(2)}
+                      </span>
+                      <span className="mt-0.5 line-clamp-1 w-full text-[12px] text-foreground/75 sm:text-[13px]">
+                        {product.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {/* ── On sale ── */}
+        {onSale.length > 0 && (
+          <Section>
+            <ProductRail
+              products={onSale}
+              testId="rail-on-sale"
+              more={{ href: "/sales", label: pick("كل التخفيضات", "All sale pieces"), tone: "sale" }}
+            />
+          </Section>
+        )}
+
+        {/* ── Best sellers ── */}
+        {bestSellers.length > 0 && (
+          <Section>
+            {/* Same pink panel as the "most wanted" block */}
+            <div className="overflow-hidden rounded-[1.5rem] bg-blush p-3 sm:rounded-[1.75rem] sm:p-5">
+            <AnimatedBanner
+              plain
+              texts={bannerTexts(g("home_banner_best_texts"), ["BEST SELLERS", "MOST LOVED", "TOP PICKS", "FAVOURITES"])}
+              testId="banner-best-sellers"
+            />
+
+            {isBestSellersLoading ? (
+              <RailSkeleton />
+            ) : (
+              <>
+                <div
+                  className={
+                    hasPodium && bestSellerRest.length >= 4
+                      ? "lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:items-center lg:gap-10 xl:gap-14"
+                      : "lg:mx-auto lg:max-w-4xl"
+                  }
+                >
+                  {hasPodium && (
+                  <div className="grid grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5">
+                    {[podiumProducts[1], podiumProducts[0], podiumProducts[2]].map(
+                      (product, podiumIdx) => {
+                        const rank = podiumIdx === 0 ? 2 : podiumIdx === 1 ? 1 : 3;
+                        const isCenter = rank === 1;
+                        return (
+                          <Link key={`${rank}-${product.id}`} href={`/product/${product.id}`}>
+                            <div
+                              className={`group relative cursor-pointer overflow-hidden rounded-2xl sm:rounded-[1.75rem] ${isCenter ? "aspect-[2/3]" : "mt-4 aspect-[3/4] sm:mt-8"}`}
+                            >
+                              <BannerImage
+                                src={product.mainImage}
+                                alt={product.name}
+                                loading="lazy"
+                                width={600}
+                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
+                              <ProductWatermark size="lg" className="hidden sm:flex" />
+                              <div className="absolute start-2 top-2 z-30 flex h-6 w-6 items-center justify-center rounded-full bg-white/95 shadow sm:start-3 sm:top-3 sm:h-9 sm:w-9">
+                                <span className="text-[11px] font-bold leading-none text-berry sm:text-sm">
+                                  {rank}
+                                </span>
+                              </div>
+                              <div className="absolute inset-x-0 bottom-0 p-2 text-white sm:p-4">
+                                <h3 className="mb-1 line-clamp-2 text-[11px] font-semibold leading-tight sm:text-lg">
+                                  {product.name}
+                                </h3>
+                                <div className="flex items-center gap-1.5">
+                                  {product.discountPrice ? (
+                                    <>
+                                      <span className="text-xs font-bold text-[#fca5a5] sm:text-base">
+                                        ₪{Number(product.discountPrice).toFixed(0)}
+                                      </span>
+                                      <span className="text-[10px] line-through opacity-60 sm:text-xs">
+                                        ₪{Number(product.price).toFixed(0)}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="text-xs font-bold sm:text-base">
+                                      ₪{Number(product.price).toFixed(0)}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      },
+                    )}
+                  </div>
+                  )}
+
+                  {/* Desktop: ranks 4–9 as a compact chart beside the podium */}
+                  {hasPodium && bestSellerRest.length >= 4 && (
+                    <ol className="hidden grid-cols-2 gap-x-5 gap-y-3 lg:grid">
+                      {bestSellerRest.slice(0, 6).map((product: any, i: number) => (
+                        <li key={product.id}>
+                          <Link
+                            href={`/product/${product.id}`}
+                            className="group flex items-center gap-3.5 rounded-2xl border border-transparent bg-card p-2 pe-4 ring-1 ring-black/[0.05] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-26px_rgba(74,24,43,0.5)]"
+                            data-testid={`link-bestseller-rank-${i + 4}`}
+                          >
+                            <span className="relative block h-[5.5rem] w-[4.25rem] shrink-0 overflow-hidden rounded-xl bg-[hsl(var(--sand))]">
+                              <BannerImage
+                                src={product.mainImage}
+                                alt={product.name}
+                                width={200}
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="line-clamp-2 block text-[15px] font-medium leading-snug transition-colors group-hover:text-berry">
+                                {product.name}
+                              </span>
+                              <span className="mt-1 flex items-baseline gap-2 text-sm">
+                                {product.discountPrice ? (
+                                  <>
+                                    <span className="ltr-num font-semibold text-[#9B1C1C]">
+                                      ₪ {Number(product.discountPrice).toFixed(0)}
+                                    </span>
+                                    <span className="ltr-num text-xs text-muted-foreground/70 line-through">
+                                      ₪ {Number(product.price).toFixed(0)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="ltr-num font-semibold">
+                                    ₪ {Number(product.price).toFixed(0)}
+                                  </span>
+                                )}
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+
+                {/* Phones / tablets (and short lists): the rest as a swipeable rail */}
+                {bestSellerRest.length > 0 && (
+                  <div className={`mt-7 sm:mt-9 ${hasPodium && bestSellerRest.length >= 4 ? "lg:hidden" : ""}`}>
+                    <ProductRail
+                      products={bestSellerRest}
+                      testId="rail-bestsellers"
+                      more={{ href: "/shop", label: pick("كل المنتجات", "Shop everything") }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+            </div>
+          </Section>
+        )}
+
         {/* ── Photo slider — photos, titles and links are set by the admin (Content → Home) ── */}
         {promoSlides.length > 0 && (
           <Section>
             <PromoSlider slides={promoSlides} isAr={isAr} />
           </Section>
         )}
+
+        {/* Category circles */}
+        <Reveal>
+        {categoryCircles}
+        </Reveal>
 
         {/* ── One rail per category the admin shows on the home page ── */}
         {categorySections
