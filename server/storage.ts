@@ -351,6 +351,7 @@ export interface IStorage {
   getProducts(categoryIds?: number[]): Promise<Product[]>;
   getBestSellers(limit?: number): Promise<Product[]>;
   getMostOrdered(limit?: number, days?: number): Promise<Product[]>;
+  getNewArrivalsMixed(limit?: number, freshDays?: number): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
@@ -595,110 +596,125 @@ export class DatabaseStorage implements IStorage {
     return rows.map((product) => sanitizeProductMedia(product as any) as Product);
   }
 
+  /**
+   * What really sells, counted from every channel: website orders (cancelled ones excluded)
+   * and POS invoices (shop and delivery). One row per product with the pieces sold in total
+   * and in the last `recentDays` days. Kept for two minutes so the home page stays fast.
+   */
+  private salesCache: { at: number; days: number; rows: Map<number, { all: number; recent: number }> } | null = null;
+
+  private async salesByProduct(recentDays = 45): Promise<Map<number, { all: number; recent: number }>> {
+    if (this.salesCache && this.salesCache.days === recentDays && Date.now() - this.salesCache.at < 120_000) return this.salesCache.rows;
+    const result = await db.execute(sql`
+      SELECT product_id,
+             SUM(quantity)::int AS sold_all,
+             COALESCE(SUM(quantity) FILTER (WHERE sold_at >= now() - make_interval(days => ${recentDays})), 0)::int AS sold_recent
+      FROM (
+        SELECT oi.product_id, oi.quantity, o.created_at AS sold_at
+        FROM order_items oi JOIN orders o ON o.id = oi.order_id
+        WHERE o.status <> 'Cancelled'
+        UNION ALL
+        SELECT NULLIF(item->>'productId', '')::int,
+               COALESCE(NULLIF(item->>'quantity', '')::numeric, 1)::int,
+               po.created_at
+        FROM pos_orders po
+        CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(po.items) = 'array' THEN po.items ELSE '[]'::jsonb END) AS item
+        WHERE (item->>'productId') ~ '^[0-9]+$'
+      ) sales
+      WHERE product_id IS NOT NULL
+      GROUP BY product_id
+    `);
+    const rows = new Map<number, { all: number; recent: number }>();
+    for (const r of result.rows as any[]) rows.set(Number(r.product_id), { all: Number(r.sold_all) || 0, recent: Number(r.sold_recent) || 0 });
+    this.salesCache = { at: Date.now(), days: recentDays, rows };
+    return rows;
+  }
+
+  /**
+   * Turns a ranked list into a row that looks natural on the home page: the order of the
+   * ranking is kept, but one category may fill at most half of the row and never appears
+   * more than twice in a row, so the best pieces of every category are seen.
+   */
+  private mixCategories<T extends { categoryId?: number | null }>(ranked: T[], limit: number): T[] {
+    const cap = Math.max(2, Math.ceil(limit / 2));
+    const used = new Map<number, number>();
+    const left = [...ranked];
+    const out: T[] = [];
+    while (out.length < limit && left.length) {
+      const lastTwoSame = out.length >= 2 && out[out.length - 1].categoryId === out[out.length - 2].categoryId ? out[out.length - 1].categoryId : undefined;
+      let index = left.findIndex((p) => (used.get(Number(p.categoryId)) || 0) < cap && (lastTwoSame === undefined || p.categoryId !== lastTwoSame));
+      if (index < 0) index = left.findIndex((p) => (used.get(Number(p.categoryId)) || 0) < cap);
+      if (index < 0) index = 0; // every category is at its cap: fill with the best that is left
+      const [picked] = left.splice(index, 1);
+      used.set(Number(picked.categoryId), (used.get(Number(picked.categoryId)) || 0) + 1);
+      out.push(picked);
+    }
+    return out;
+  }
+
+  /** In-stock products ranked by a score built from real sales. */
+  private async rankedBySales(score: (s: { all: number; recent: number }) => number, recentDays = 45): Promise<Product[]> {
+    const [sales, all] = await Promise.all([this.salesByProduct(recentDays), this.getProducts()]);
+    return all
+      .filter((p) => (p.stockQuantity ?? 0) > 0 && sales.has(p.id))
+      .map((p) => ({ p, score: score(sales.get(p.id)!) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score || +new Date(b.p.createdAt || 0) - +new Date(a.p.createdAt || 0))
+      .map((x) => x.p);
+  }
+
+  /**
+   * Best sellers: the pieces customers have bought most, from the shop, delivery orders and
+   * the website together. Nothing is hand-picked. All-time sales count, with what sold in the
+   * last weeks counting extra, and the row is mixed across categories.
+   */
   async getBestSellers(limit = 8): Promise<Product[]> {
-    // Products ranked by total quantity actually sold — this is the
-    // "real" best sellers list based on customer purchases.
-    const ranked = await db
-      .select({
-        productId: orderItems.productId,
-        totalSold: sql<number>`cast(sum(${orderItems.quantity}) as int)`,
-      })
-      .from(orderItems)
-      .innerJoin(orders, eq(orderItems.orderId, orders.id))
-      // A cancelled order was never a sale, so it must not push a product up the list.
-      .where(ne(orders.status, "Cancelled"))
-      .groupBy(orderItems.productId)
-      .orderBy(desc(sql`sum(${orderItems.quantity})`))
-      .limit(limit);
-
-    // Manually flagged isBestSeller products — the admin's own picks.
-    // These are treated as additions on top of real sales data, not a
-    // full replacement of it.
-    const flaggedRows = await db.select().from(products).where(eq(products.isBestSeller, true));
-
-    const orderedIds: number[] = [];
-    const seen = new Set<number>();
-
-    // Admin picks come first so they're guaranteed to be included...
-    for (const p of flaggedRows) {
-      if (!seen.has(p.id)) {
-        seen.add(p.id);
-        orderedIds.push(p.id);
-      }
-    }
-    // ...then fill the rest with real sales ranking.
-    for (const r of ranked) {
-      if (!seen.has(r.productId)) {
-        seen.add(r.productId);
-        orderedIds.push(r.productId);
-      }
-    }
-
-    if (orderedIds.length > 0) {
-      const rows = await db.select().from(products).where(inArray(products.id, orderedIds));
-      const byId = new Map(rows.map((p) => [p.id, p]));
-      const result: Product[] = [];
-      for (const id of orderedIds) {
-        const p = byId.get(id);
-        if (p) result.push(p);
-        if (result.length >= limit) break;
-      }
-      return result.map((product) => sanitizeProductMedia(product as any) as Product);
-    }
-
-    // Fallback: isFeatured products
+    const ranked = await this.rankedBySales((s) => s.all + s.recent * 2);
+    if (ranked.length > 0) return this.mixCategories(ranked, limit);
+    // A brand-new shop with no sales yet: show the featured pieces instead of an empty row.
     const fallback = await db.select().from(products).where(eq(products.isFeatured, true)).limit(limit);
     return fallback.map((product) => sanitizeProductMedia(product as any) as Product);
   }
 
   /**
-   * "Most ordered" — what customers are actually ordering right now.
-   * Ranked by quantity ordered in the last `days` days (cancelled orders excluded),
-   * in-stock products only. If recent orders are too few to fill the row it is topped
-   * up from the all-time ranking, and then from the admin's featured picks, so a new
-   * or quiet shop still shows a full, honest row.
+   * "Most ordered": what is selling right now. Sales of the last `days` days decide the
+   * order; older sales only break ties and fill the row when recent sales are few.
    */
   async getMostOrdered(limit = 8, days = 30): Promise<Product[]> {
-    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const rank = (recentOnly: boolean) =>
-      db
-        .select({ productId: orderItems.productId })
-        .from(orderItems)
-        .innerJoin(orders, eq(orderItems.orderId, orders.id))
-        .where(
-          recentOnly
-            ? and(ne(orders.status, "Cancelled"), gte(orders.createdAt, since))
-            : ne(orders.status, "Cancelled"),
-        )
-        .groupBy(orderItems.productId)
-        .orderBy(desc(sql`sum(${orderItems.quantity})`))
-        .limit(limit * 3);
+    const ranked = await this.rankedBySales((s) => s.recent * 10 + s.all * 0.1, days);
+    return this.mixCategories(ranked, limit);
+  }
 
-    const [recent, allTime, featuredRows] = await Promise.all([
-      rank(true),
-      rank(false),
-      db.select({ id: products.id }).from(products).where(eq(products.isFeatured, true)).orderBy(desc(products.createdAt)).limit(limit * 2),
-    ]);
-
-    const orderedIds: number[] = [];
-    const seen = new Set<number>();
-    for (const id of [...recent.map((r) => r.productId), ...allTime.map((r) => r.productId), ...featuredRows.map((r) => r.id)]) {
-      if (!seen.has(id)) {
-        seen.add(id);
-        orderedIds.push(id);
+  /**
+   * New arrivals: the newest in-stock pieces of EVERY category, taken in turns, so a big
+   * delivery in one category does not hide the new pieces of the others. Pieces marked "new"
+   * come first inside their category; a category with nothing marked still shows its newest
+   * pieces from the last `freshDays` days.
+   */
+  async getNewArrivalsMixed(limit = 8, freshDays = 45): Promise<Product[]> {
+    const since = Date.now() - freshDays * 24 * 60 * 60 * 1000;
+    const fresh = (await this.getProducts()).filter(
+      (p) => (p.stockQuantity ?? 0) > 0 && (p.isNewArrival || +new Date(p.createdAt || 0) >= since),
+    );
+    const byCategory = new Map<number, Product[]>();
+    for (const p of fresh) {
+      const key = Number(p.categoryId) || 0;
+      byCategory.set(key, [...(byCategory.get(key) || []), p]);
+    }
+    const queues = [...byCategory.values()].map((list) =>
+      list.sort((a, b) => Number(!!b.isNewArrival) - Number(!!a.isNewArrival) || +new Date(b.createdAt || 0) - +new Date(a.createdAt || 0)),
+    );
+    // The category with the newest piece goes first.
+    queues.sort((a, b) => +new Date(b[0].createdAt || 0) - +new Date(a[0].createdAt || 0));
+    const out: Product[] = [];
+    while (out.length < limit && queues.some((q) => q.length)) {
+      for (const q of queues) {
+        const next = q.shift();
+        if (next) out.push(next);
+        if (out.length >= limit) break;
       }
     }
-    if (orderedIds.length === 0) return [];
-
-    const rows = await db.select().from(products).where(inArray(products.id, orderedIds));
-    const byId = new Map(rows.map((p) => [p.id, p]));
-    const result: Product[] = [];
-    for (const id of orderedIds) {
-      const p = byId.get(id);
-      if (p && (p.stockQuantity ?? 0) > 0) result.push(p);
-      if (result.length >= limit) break;
-    }
-    return result.map((product) => sanitizeProductMedia(product as any) as Product);
+    return out;
   }
 
   async getProduct(id: number): Promise<Product | undefined> {
@@ -1743,6 +1759,18 @@ export class DatabaseStorage implements IStorage {
 
         UNION ALL
 
+        -- Products rung up together on the same POS invoice (shop and delivery sales)
+        SELECT NULLIF(other->>'productId', '')::int AS product_id, COUNT(*)::int * 3 AS score
+        FROM pos_orders po
+        CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(po.items) = 'array' THEN po.items ELSE '[]'::jsonb END) AS mine
+        CROSS JOIN LATERAL jsonb_array_elements(po.items) AS other
+        WHERE mine->>'productId' = ${String(productId)}
+          AND (other->>'productId') ~ '^[0-9]+$'
+          AND other->>'productId' <> ${String(productId)}
+        GROUP BY 1
+
+        UNION ALL
+
         -- Products viewed together in the same session
         SELECT pe2.product_id, COUNT(*)::int AS score
         FROM product_events pe1
@@ -1769,7 +1797,16 @@ export class DatabaseStorage implements IStorage {
       ORDER BY total_score DESC
       LIMIT 12
     `);
-    return (result.rows as any[]).map((r) => Number(r.product_id));
+    // Real "bought / viewed together" matches first; then what sells best, so the rows on the
+    // product page are never random. Only pieces that can be bought right now.
+    const [bestSellers, all] = await Promise.all([this.rankedBySales((s) => s.all + s.recent * 2), this.getProducts()]);
+    const inStock = new Set(all.filter((p) => (p.stockQuantity ?? 0) > 0).map((p) => p.id));
+    const ids: number[] = [];
+    for (const id of [...(result.rows as any[]).map((r) => Number(r.product_id)), ...bestSellers.map((p) => p.id)]) {
+      if (id !== productId && inStock.has(id) && !ids.includes(id)) ids.push(id);
+      if (ids.length >= 60) break;
+    }
+    return ids;
   }
 
   // ---- Exchange Requests ----

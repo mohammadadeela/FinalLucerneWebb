@@ -2147,10 +2147,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
   app.get("/api/products/new-arrivals", async (req, res) => {
     try {
       const limit = Math.min(parseInt(String(req.query.limit || "8")), 24);
-      const items = (await storage.getProducts())
-        .filter((item: any) => item.isNewArrival)
-        .sort((a: any, b: any) => +new Date(b.createdAt || 0) - +new Date(a.createdAt || 0))
-        .slice(0, limit);
+      // The newest pieces of every category in turns (shoes, dresses, clothes...), not only
+      // the category that was stocked last.
+      const items = await storage.getNewArrivalsMixed(limit);
       res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       return successResponse(res, items);
     } catch (err: any) {

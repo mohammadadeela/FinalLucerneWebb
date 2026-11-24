@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n";
-import { UserCheck, Coins, CreditCard, Banknote, MapPin, Truck, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, Plus, Store, LogIn, Lock } from "lucide-react";
+import { UserCheck, Coins, CreditCard, Banknote, MapPin, Truck, CheckCircle2, Tag, X, Loader2, ArrowRight, Gift, Wallet, ChevronLeft, ChevronRight, ChevronDown, Plus, Store, LogIn, Lock } from "lucide-react";
 import { PhoneCountrySelect } from "@/components/ui/PhoneCountrySelect";
 import type { ColorVariant } from "@shared/schema";
 import { translateColorName } from "@/lib/colorFamilies";
@@ -144,6 +144,18 @@ export default function Checkout() {
   const { items, cartTotal, clearCart, removeFromCart, updateQuantity, isLoading: cartLoading } = useCart();
   const [soldOutItems, setSoldOutItems] = useState<Array<{productId: number; name: string; color?: string | null; size?: string | null; image?: string}>>([]);
   const soldOutBannerRef = useRef<HTMLDivElement>(null);
+  // The order list scrolls when it is long; this tells the customer there is more below.
+  const orderListRef = useRef<HTMLDivElement>(null);
+  const [orderListMore, setOrderListMore] = useState(false);
+  const updateOrderListMore = () => {
+    const el = orderListRef.current;
+    setOrderListMore(!!el && el.scrollHeight - el.scrollTop - el.clientHeight > 12);
+  };
+  useEffect(() => {
+    updateOrderListMore();
+    const timer = window.setTimeout(updateOrderListMore, 400); // again once the photos have a height
+    return () => window.clearTimeout(timer);
+  }, [items.length]);
   const scrollToSoldOutBanner = () => {
     // On phones the on-screen keyboard is usually still open (the customer
     // was just typing in the form when they tapped checkout). Scrolling
@@ -1453,7 +1465,8 @@ export default function Checkout() {
             <div className="bg-secondary p-6 sm:p-8 sticky top-28">
               <h2 className="text-xl font-semibold mb-6 uppercase tracking-widest border-b border-border pb-4">{t.checkout.yourOrder}</h2>
 
-              <div className="space-y-4 mb-6 max-h-64 overflow-y-auto pt-3 pe-2">
+              <div className="relative mb-6">
+                <div ref={orderListRef} onScroll={updateOrderListMore} className="space-y-4 max-h-64 overflow-y-auto pt-3 pe-2">
                 {items.map((item, idx) => {
                   const price = parseFloat(item.product.discountPrice?.toString() || item.product.price.toString());
                   return (
@@ -1497,6 +1510,23 @@ export default function Checkout() {
                     </div>
                   );
                 })}
+                </div>
+                {/* More pieces below: a soft fade and an arrow that scrolls the list down. */}
+                {orderListMore && (
+                  <>
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-secondary to-transparent" />
+                    <button
+                      type="button"
+                      onClick={() => orderListRef.current?.scrollBy({ top: 150, behavior: "smooth" })}
+                      aria-label={language === "ar" ? "عرض باقي المنتجات" : "Show more items"}
+                      className="absolute bottom-1 left-1/2 flex h-9 -translate-x-1/2 items-center gap-1.5 rounded-full bg-foreground px-3.5 text-xs font-semibold text-background shadow-md transition-transform hover:scale-105 active:scale-95"
+                      data-testid="button-order-list-more"
+                    >
+                      {language === "ar" ? "باقي المنتجات" : "More items"}
+                      <ChevronDown className="h-4 w-4 animate-bounce" />
+                    </button>
+                  </>
+                )}
               </div>
 
               <div className="border-t border-border pt-4 mb-6 space-y-3 text-sm">

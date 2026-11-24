@@ -1959,7 +1959,8 @@ const pool = allProducts.filter(
 (p) =>
 p.id !== product.id &&
 !idSet.has(p.id) &&
-p.categoryId === product.categoryId,
+p.categoryId === product.categoryId &&
+(p.stockQuantity ?? 0) > 0,
 );
 return [...ordered, ...seededShuffle(pool, product.id)].slice(0, 12);
 }
@@ -1972,7 +1973,7 @@ return seededShuffle(pool, product.id).slice(0, 12);
 const matchingOutfits = useMemo(() => {
 if (!product || !allProducts) return [];
 const pool = allProducts.filter(
-(p) => p.id !== product.id && p.categoryId !== product.categoryId,
+(p) => p.id !== product.id && p.categoryId !== product.categoryId && (p.stockQuantity ?? 0) > 0,
 );
 if (pool.length === 0) return [];
 const crossCatIds = new Set(

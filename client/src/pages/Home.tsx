@@ -520,17 +520,8 @@ export default function Home() {
     pick(g("section_on_sale_title_ar"), g("section_on_sale_title_en")) ||
     t.home.sales;
 
-  /* ── Pinned best sellers podium (admin override) ── */
-  const findPinned = (id: string) =>
-    id
-      ? allProducts.find((p: any) => String(p.id) === id) ||
-        bestSellers.find((p: any) => String(p.id) === id)
-      : null;
-  const podiumProducts: [any, any, any] = [
-    findPinned(g("best_sellers_pinned_1")) ?? bestSellers[0],
-    findPinned(g("best_sellers_pinned_2")) ?? bestSellers[1],
-    findPinned(g("best_sellers_pinned_3")) ?? bestSellers[2],
-  ];
+  /* ── Best sellers podium: the three pieces that really sold the most (shop, delivery and website). ── */
+  const podiumProducts: [any, any, any] = [bestSellers[0], bestSellers[1], bestSellers[2]];
   const hasPodium = !isBestSellersLoading && podiumProducts.every(Boolean);
 
   /* ── Category tiles: categories the admin marked "show on home" + featured subcategories ── */
