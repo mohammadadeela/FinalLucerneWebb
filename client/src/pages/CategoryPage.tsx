@@ -242,7 +242,7 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
         const ar = language === "ar";
         return (
           <section className="w-full bg-background border-b border-border/40">
-            <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            <div className="px-4 sm:px-6 lg:px-8 pt-4 pb-3 sm:pt-5 sm:pb-4">
               {/* Scroll container: horizontal scroll on mobile, centered wrap on desktop */}
               <div className="relative">
                 {/* Edge fade hint – mobile only, accounts for RTL */}
@@ -285,8 +285,8 @@ export default function CategoryPage({ title, subtitle, categoryIds, heroImage, 
         );
       })()}
 
-      <main ref={productsRef} className="mx-auto w-full max-w-[1640px] flex-1 px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-10">
+      <main ref={productsRef} className="mx-auto w-full max-w-[1640px] flex-1 px-4 sm:px-6 lg:px-8 pt-3 pb-8 sm:pt-4 sm:pb-12">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-3">
           <div className="flex items-center gap-3">
             <p className="text-sm flex items-center gap-1.5 lg:hidden" data-testid="text-product-count">
               {CategoryIcon && <CategoryIcon size={14} className="text-muted-foreground" />}
