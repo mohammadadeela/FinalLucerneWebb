@@ -6887,11 +6887,14 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
     if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    const { prompt, aspect, style, slot } = req.body as {
+    const { prompt, aspect, style, slot, subcategoryId, categoryId } = req.body as {
       prompt?: string;
       aspect?: "square" | "portrait" | "landscape";
       style?: "row";
       slot?: string;
+      /** When given, a few of the shop's own products of that group are shown to the model. */
+      subcategoryId?: number;
+      categoryId?: number;
     };
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
       return res.status(400).json({ message: "prompt required" });
@@ -6900,10 +6903,42 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
       const ai = await import("./aiPhotoGen");
       const subject = prompt.trim().slice(0, 600);
 
+      // Let the model see what the shop really sells in this group, so a "tall boots" photo
+      // shows a tall boot. Products in stock come first, the newest first; if anything fails
+      // the photo is generated from the name alone, as before.
+      let references: { data: string; mimeType: string }[] = [];
+      const subId = Number(subcategoryId);
+      const catId = Number(categoryId);
+      if ((Number.isInteger(subId) && subId > 0) || (Number.isInteger(catId) && catId > 0)) {
+        try {
+          const rows = await db.execute(
+            Number.isInteger(subId) && subId > 0
+              ? sql`SELECT main_image FROM products
+                    WHERE (subcategory_id = ${subId} OR ${subId} = ANY(COALESCE(subcategory_ids, '{}')))
+                      AND main_image IS NOT NULL AND main_image <> ''
+                    ORDER BY (COALESCE(stock_quantity, 0) > 0) DESC, created_at DESC NULLS LAST, id DESC
+                    LIMIT 12`
+              : sql`SELECT main_image FROM products
+                    WHERE category_id = ${catId} AND main_image IS NOT NULL AND main_image <> ''
+                    ORDER BY (COALESCE(stock_quantity, 0) > 0) DESC, created_at DESC NULLS LAST, id DESC
+                    LIMIT 12`,
+          );
+          const urls = ((rows as any).rows ?? (rows as any) ?? [])
+            .map((row: any) => String(row.main_image || ""))
+            .filter(Boolean);
+          // Three photos spread over the list, so they are not three colours of one product.
+          const spread = urls.length <= 3 ? urls : [urls[0], urls[Math.floor(urls.length / 2)], urls[urls.length - 1]];
+          const { r2ImageVariantUrl } = await import("./r2");
+          references = await ai.loadReferencePhotos(spread.map((url: string) => r2ImageVariantUrl(url, 800)));
+        } catch (refErr: any) {
+          console.warn("[ai-generate-image] reference products skipped:", refErr?.message || refErr);
+        }
+      }
+
       // Category banner row: products on pure white. The empty background is trimmed here; the
       // storefront blends the white into the banner colour and fits the row on any screen.
       if (style === "row") {
-        const { buffer: raw } = await ai.generateImageFromPrompt(subject, "landscape", ai.buildProductRowPrompt(subject));
+        const { buffer: raw } = await ai.generateImageFromPrompt(subject, "landscape", ai.buildProductRowPrompt(subject), references);
         const sharp = (await import("sharp")).default;
         const corner = await sharp(raw).extract({ left: 0, top: 0, width: 8, height: 8 }).resize(1, 1).removeAlpha().raw().toBuffer();
         const bg = "#" + [corner[0], corner[1], corner[2]].map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
@@ -6953,6 +6988,7 @@ Respond with ONLY valid JSON, no markdown, no extra text, in this exact shape:
         subject,
         chosen === "circle" || chosen === "menu" ? "square" : "landscape",
         ai.buildThemedPrompt(chosen, subject),
+        references,
       );
       const url = await uploadToCloudinary(buffer, "ai-generated-image.png");
       res.json({ url });

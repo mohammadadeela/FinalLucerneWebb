@@ -11,6 +11,9 @@ export interface BulkAIItem {
   aspect?: "square" | "portrait" | "landscape";
   /** "row" = a category banner row (products on white, trimmed on the server). */
   style?: "row";
+  /** The server shows the AI a few real products of this group, so the photo is the right type. */
+  subcategoryId?: number;
+  categoryId?: number;
   /** Called with the server's answer ({ url, bg?, ar? }) once this item is generated. */
   apply: (data: { url: string; bg?: string; ar?: number }) => void | Promise<void>;
 }
@@ -51,7 +54,7 @@ export default function BulkAIGenerate({ items, label = "توليد كل الص�
         const res = await fetch("/api/admin/ai-generate-image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: it.prompt, slot: it.slot, aspect: it.aspect, style: it.style }),
+          body: JSON.stringify({ prompt: it.prompt, slot: it.slot, aspect: it.aspect, style: it.style, subcategoryId: it.subcategoryId, categoryId: it.categoryId }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.url) {

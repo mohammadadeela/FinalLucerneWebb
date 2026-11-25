@@ -265,6 +265,8 @@ export async function generateImageFromPrompt(
   aspect: "square" | "portrait" | "landscape" = "landscape",
   /** When given, this exact prompt is sent instead of the editorial one built below. */
   fullPrompt?: string,
+  /** Photos of the shop's own products of this kind, shown to the model so it draws the right type. */
+  references: { data: string; mimeType: string }[] = [],
 ): Promise<GeneratedPhoto> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -299,7 +301,12 @@ Generate only the image.`;
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent`;
 
   const body = {
-    contents: [{ parts: [{ text: fullPrompt || prompt }] }],
+    contents: [{
+      parts: [
+        { text: (fullPrompt || prompt) + (references.length ? REFERENCE_RULES(references.length) : "") },
+        ...references.map((ref) => ({ inlineData: { mimeType: ref.mimeType, data: ref.data } })),
+      ],
+    }],
     generationConfig: {
       responseModalities: ["TEXT", "IMAGE"],
     },
@@ -370,6 +377,27 @@ Generate only the image.`;
 interface GeneratedPhoto {
   buffer: Buffer;
   mimeType: string;
+}
+
+/** Added to a prompt when photos of the shop's own products of this group are attached. */
+const REFERENCE_RULES = (count: number) => `
+
+Reference photos (important): the ${count} attached photo${count > 1 ? "s show" : " shows"} real products this shop sells in exactly this group. Study them to learn what KIND of product this group is: its type, its height and length (for example a boot that reaches the knee is not an ankle boot), its silhouette, its heel or sole, its typical details and materials. The product you show must clearly be that same kind, so a customer who sees the photo knows at once which products are inside this group.
+Do not copy anything else from the reference photos: not their backgrounds, floors, rooms, lighting or props, not any person or legs, and not any logo, watermark or text. Do not paste a reference photo into the image. Photograph a new product of the same kind on the set described above, following every art direction and composition rule above.`;
+
+/** Loads a few product photos as inline data for the image model; a photo that fails is skipped. */
+export async function loadReferencePhotos(urls: string[]): Promise<{ data: string; mimeType: string }[]> {
+  const loaded = await Promise.all(
+    urls.slice(0, 3).map(async (url) => {
+      try {
+        const ref = await fetchAsBase64(url);
+        return /^image\//i.test(ref.mimeType) ? ref : { ...ref, mimeType: "image/webp" };
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return loaded.filter((ref): ref is { data: string; mimeType: string } => !!ref);
 }
 
 async function fetchAsBase64(url: string): Promise<{ data: string; mimeType: string }> {
@@ -558,7 +586,7 @@ const SLOT_RULES: Record<PhotoSlot, { ideas: string[]; composition: string }> = 
   circle: {
     ideas: ["one single product", "a pair of the product", "one piece on a slim gold hanger"],
     composition:
-      "Square image, shown on the website as a circle. Place the subject in the exact centre, filling about 65% of the frame, completely inside an imaginary circle that touches the four edges. Nothing in the corners.",
+      "Square image, shown on the website as a small circle, so the product must be large and easy to recognise at a glance. Show ONE product (or one pair), seen from its clearest side, sharp and well lit, in the exact centre, filling about 80% of the frame while staying completely inside an imaginary circle that touches the four edges. Show the whole product, nothing cut off. Nothing in the corners.",
   },
 };
 

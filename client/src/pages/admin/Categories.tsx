@@ -307,6 +307,7 @@ export default function AdminCategories() {
               prompt: `women's ${c.name || c.nameAr || ""}`,
               slot: "circle",
               aspect: "square" as const,
+              categoryId: c.id,
               apply: async (d: { url: string }) => {
                 await updateCat.mutateAsync({ id: c.id, image: d.url });
               },
@@ -319,6 +320,7 @@ export default function AdminCategories() {
                 prompt: `women's ${sub.name || sub.nameAr || ""}${parent?.name ? ` (a kind of ${parent.name})` : ""}`,
                 slot: "circle",
                 aspect: "square" as const,
+                subcategoryId: sub.id,
                 apply: async (d: { url: string }) => {
                   await updateSub.mutateAsync({ id: sub.id, image: d.url });
                 },
@@ -432,6 +434,7 @@ export default function AdminCategories() {
                           }}
                           aspect="square"
                           slot="circle"
+                          categoryId={cat.id}
                           className="h-8 text-xs"
                         />
                         {/* Show on Home toggle */}
@@ -468,7 +471,7 @@ export default function AdminCategories() {
                           <div key={sub.id} className="border border-border p-3 flex items-center gap-3 bg-background" data-testid={`subcategory-card-${sub.id}`}>
                             <button
                               type="button"
-                              className="relative w-12 h-12 rounded-full overflow-hidden border border-border flex-shrink-0 group cursor-pointer"
+                              className="relative w-16 h-16 rounded-full overflow-hidden border border-border bg-muted/20 flex-shrink-0 group cursor-pointer"
                               onClick={() => subFileRefs.current[sub.id]?.click()}
                               disabled={subImgUploading === sub.id}
                               title={isAr ? "تغيير الصورة" : "Change image"}
@@ -688,6 +691,8 @@ export default function AdminCategories() {
                     }}
                     onGenerated={(url) => setSubForm(prev => ({ ...prev, image: url }))}
                     aspect="square"
+                    slot="circle"
+                    subcategoryId={editingSub?.id}
                     className="rounded-none w-full text-[11px]"
                   />
                 </div>
