@@ -71,7 +71,7 @@ export async function buildSocialImage(
 // Tiny in-memory cache: Instagram and Facebook each fetch the file once or
 // twice when a post is published, so a handful of entries is plenty.
 const cache = new Map<string, { data: Buffer; at: number }>();
-const CACHE_MAX = 40;
+const CACHE_MAX = 80;
 const CACHE_MS = 60 * 60 * 1000;
 let running = 0;
 const MAX_RUNNING = 3;
@@ -97,10 +97,18 @@ export function registerSocialImageRoutes(app: Express) {
     const hit = cache.get(key);
     if (hit && Date.now() - hit.at < CACHE_MS) return send(hit.data);
 
-    if (running >= MAX_RUNNING) {
-      res.setHeader("Retry-After", "5");
-      return res.status(503).end();
+    // Instagram asks for all photos of a multi-photo post at once: wait for a
+    // free slot instead of turning the extra requests away.
+    const waitUntil = Date.now() + 45_000;
+    while (running >= MAX_RUNNING) {
+      if (Date.now() > waitUntil) {
+        res.setHeader("Retry-After", "5");
+        return res.status(503).end();
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
     }
+    const ready = cache.get(key);
+    if (ready && Date.now() - ready.at < CACHE_MS) return send(ready.data);
     running++;
     try {
       const base = String(process.env.R2_PUBLIC_BASE_URL || DEFAULT_PUBLIC_BASE).replace(/\/+$/, "");
