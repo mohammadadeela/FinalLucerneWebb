@@ -34,6 +34,7 @@ import { getEnvEmployees } from "./staff-env";
 import { auditMiddleware, registerAuditRoutes } from "./audit";
 import { adminUndoMiddleware, registerAdminUndoRoutes } from "./adminUndo";
 import { registerProductPhotoExportRoutes, trackAiProductPhoto, resolveOriginalAiSource } from "./photoExport";
+import { registerSocialImageRoutes } from "./socialImage";
 import {
   PICKUP_REGION, PICKUP_ADDRESS_PLACEHOLDER, PICKUP_CITY_PLACEHOLDER,
   isGuestCheckoutEnabled, isOnlinePickupEnabled, guestOrderToken, verifyGuestOrderToken,
@@ -623,6 +624,7 @@ export async function registerRoutes(
   registerAuditRoutes(app);
   registerAdminUndoRoutes(app);
   registerProductPhotoExportRoutes(app);
+  registerSocialImageRoutes(app);
 
   // ── SEO: sitemap.xml + robots.txt ────────────────────────────────────────
   // Dynamically generated so new products/categories are picked up
