@@ -991,11 +991,26 @@ function CategoryIconBadge({
   emoji,
   icon: Icon,
   color,
+  image,
 }: {
   emoji?: string;
   icon?: React.ComponentType<{ className?: string }>;
   color: string;
+  /** The category's or subcategory's own photo; the emoji is only used when there is none. */
+  image?: string | null;
 }) {
+  const [broken, setBroken] = useState(false);
+  if (image && !broken) {
+    return (
+      <img
+        src={image}
+        alt=""
+        loading="lazy"
+        onError={() => setBroken(true)}
+        className="h-7 w-7 shrink-0 rounded-full border border-border object-cover"
+      />
+    );
+  }
   if (Icon) {
     return (
       <span className={`flex items-center justify-center w-5 h-5 rounded-md shrink-0 ${color}`}>
@@ -4404,7 +4419,7 @@ export default function Products() {
                   return (
                     <SelectItem key={cat.id} value={String(cat.id)}>
                       <span className="flex items-center gap-2">
-                        <CategoryIconBadge emoji={emoji} color={color} />
+                        <CategoryIconBadge emoji={emoji} color={color} image={(cat as any).image} />
                         {label} ({count})
                       </span>
                     </SelectItem>
@@ -4472,7 +4487,7 @@ export default function Products() {
                     return (
                       <SelectItem key={s.id} value={String(s.id)}>
                         <span className="flex items-center gap-2">
-                          <CategoryIconBadge emoji={emoji} color={color} />
+                          <CategoryIconBadge emoji={emoji} color={color} image={s.image} />
                           {label} ({count})
                         </span>
                       </SelectItem>
