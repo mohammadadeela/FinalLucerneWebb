@@ -2183,7 +2183,9 @@ Sitemap: ${SITE_URL}/sitemap.xml
       // The newest pieces of every category in turns (shoes, dresses, clothes...), not only
       // the category that was stocked last.
       const saved = Number(await storage.getSiteSetting("new_arrivals_days"));
-      const days = Math.max(1, Math.min(90, Number(req.query.days) || saved || 14));
+      // A category stays in the row for at least a month after its delivery; the admin's
+      // period can make that longer (the rule itself is in home-rows.ts).
+      const days = Math.min(90, Number(req.query.days) || saved || 30);
       const items = await storage.getNewArrivalsMixed(limit, days);
       res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
       return successResponse(res, items);

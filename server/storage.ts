@@ -1,5 +1,6 @@
 import { users, categories, subcategories, products, orders, orderItems, wishlist, cartItems, reviews, discountCodes, siteSettings, posOrders, productEvents, exchangeRequests, notifications, productGroups, type User, type InsertUser, type Category, type InsertCategory, type Subcategory, type InsertSubcategory, type Product, type InsertProduct, type ColorVariant, type Order, type InsertOrder, type OrderItem, type InsertOrderItem, type Wishlist, type InsertWishlist, type CartItemRow, type InsertCartItem, type Review, type InsertReview, type DiscountCode, type InsertDiscountCode, type SiteSetting, type PosOrder, type InsertPosOrder, type InsertProductEvent, type ExchangeRequest, type InsertExchangeRequest, type Notification, type InsertNotification, type ProductGroup } from "@shared/schema";
 import { db } from "./db";
+import { pickBestSellers, pickNewSeason } from "./home-rows";
 import { eq, desc, and, sql, inArray, ne, gte } from "drizzle-orm";
 
 function quotePgIdentifier(value: string): string {
@@ -652,25 +653,29 @@ export class DatabaseStorage implements IStorage {
     return out;
   }
 
-  /** In-stock products ranked by a score built from real sales. */
-  private async rankedBySales(score: (s: { all: number; recent: number }) => number, recentDays = 45): Promise<Product[]> {
+  /** In-stock products with real sales, best first, each with its sales score. */
+  private async scoredBySales(score: (s: { all: number; recent: number }) => number, recentDays = 45): Promise<{ p: Product; score: number }[]> {
     const [sales, all] = await Promise.all([this.salesByProduct(recentDays), this.getProducts()]);
     return all
       .filter((p) => (p.stockQuantity ?? 0) > 0 && sales.has(p.id))
       .map((p) => ({ p, score: score(sales.get(p.id)!) }))
       .filter((x) => x.score > 0)
-      .sort((a, b) => b.score - a.score || +new Date(b.p.createdAt || 0) - +new Date(a.p.createdAt || 0))
-      .map((x) => x.p);
+      .sort((a, b) => b.score - a.score || +new Date(b.p.createdAt || 0) - +new Date(a.p.createdAt || 0));
+  }
+
+  private async rankedBySales(score: (s: { all: number; recent: number }) => number, recentDays = 45): Promise<Product[]> {
+    return (await this.scoredBySales(score, recentDays)).map((x) => x.p);
   }
 
   /**
    * Best sellers: the pieces customers have bought most, from the shop, delivery orders and
    * the website together. Nothing is hand-picked. All-time sales count, with what sold in the
-   * last weeks counting extra, and the row is mixed across categories.
+   * last weeks counting extra. Every category that sells keeps its places in the row (shoes
+   * included) — the rules are in home-rows.ts.
    */
   async getBestSellers(limit = 8): Promise<Product[]> {
-    const ranked = await this.rankedBySales((s) => s.all + s.recent * 2);
-    if (ranked.length > 0) return this.mixCategories(ranked, limit);
+    const ranked = await this.scoredBySales((s) => s.all + s.recent * 2);
+    if (ranked.length > 0) return pickBestSellers(ranked, limit);
     // A brand-new shop with no sales yet: show the featured pieces instead of an empty row.
     const fallback = await db.select().from(products).where(eq(products.isFeatured, true)).limit(limit);
     return fallback.map((product) => sanitizeProductMedia(product as any) as Product);
@@ -686,37 +691,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   /**
-   * New arrivals: the newest in-stock pieces of EVERY category, taken in turns, so a big
-   * delivery in one category does not hide the new pieces of the others. Pieces marked "new"
-   * come first inside their category; a category with nothing marked still shows its newest
-   * pieces from the last `freshDays` days.
+   * New Season row: only categories that really received new pieces lately, taking turns.
+   * The rules are in home-rows.ts.
    */
-  async getNewArrivalsMixed(limit = 8, freshDays = 14): Promise<Product[]> {
-    // "New" means really new: added within the period the admin set. An old "new" tick on
-    // a piece from months ago does not count, and a category with nothing new is left out.
-    const since = Date.now() - freshDays * 24 * 60 * 60 * 1000;
-    const fresh = (await this.getProducts()).filter(
-      (p) => (p.stockQuantity ?? 0) > 0 && +new Date(p.createdAt || 0) >= since,
-    );
-    const byCategory = new Map<number, Product[]>();
-    for (const p of fresh) {
-      const key = Number(p.categoryId) || 0;
-      byCategory.set(key, [...(byCategory.get(key) || []), p]);
-    }
-    const queues = [...byCategory.values()].map((list) =>
-      list.sort((a, b) => Number(!!b.isNewArrival) - Number(!!a.isNewArrival) || +new Date(b.createdAt || 0) - +new Date(a.createdAt || 0)),
-    );
-    // The category with the newest piece goes first.
-    queues.sort((a, b) => +new Date(b[0].createdAt || 0) - +new Date(a[0].createdAt || 0));
-    const out: Product[] = [];
-    while (out.length < limit && queues.some((q) => q.length)) {
-      for (const q of queues) {
-        const next = q.shift();
-        if (next) out.push(next);
-        if (out.length >= limit) break;
-      }
-    }
-    return out;
+  async getNewArrivalsMixed(limit = 8, freshDays = 30): Promise<Product[]> {
+    return pickNewSeason(await this.getProducts(), limit, freshDays);
   }
 
   async getProduct(id: number): Promise<Product | undefined> {

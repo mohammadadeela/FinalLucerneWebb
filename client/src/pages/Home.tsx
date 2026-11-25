@@ -395,7 +395,7 @@ export default function Home() {
   });
 
   const newArrivalsDays = parseInt(
-    getSetting(siteSettings, "new_arrivals_days") || "14",
+    getSetting(siteSettings, "new_arrivals_days") || "30",
   );
   const { data: featuredProducts, isLoading: isFeaturedLoading } =
     useFeaturedProducts(10);

@@ -4684,8 +4684,8 @@ export default function Products() {
               </Button>
               <p className="w-full text-xs text-muted-foreground leading-relaxed">
                 {language === "ar"
-                  ? `المنتجات المضافة منذ أكثر من ${newArrivalDays} يوم ستُزال تلقائياً من قسم الوصول الجديد`
-                  : `Products older than ${newArrivalDays} days are automatically hidden from New Arrivals`}
+                  ? `تُزال علامة "جديد" عن المنتجات المضافة منذ أكثر من ${newArrivalDays} يوم. في الصفحة الرئيسية يبقى القسم الذي وصلته بضاعة جديدة ظاهراً ${Math.max(newArrivalDays, 30)} يوماً`
+                  : `The "New" mark is removed from products older than ${newArrivalDays} days. On the home page a category that received new pieces stays in New Season for ${Math.max(newArrivalDays, 30)} days`}
               </p>
             </div>
           </div>
